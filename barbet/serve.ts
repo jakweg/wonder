@@ -1,7 +1,7 @@
 import { serve } from 'https://deno.land/std@0.119.0/http/server.ts'
 
 const cwd = Deno.cwd() + '/'
-const extensionsToContentTypeMap: {[key: string]: string} = {
+const extensionsToContentTypeMap: { [key: string]: string } = {
 	'html': 'text/html',
 	'css': 'text/css',
 	'js': 'text/javascript',
@@ -27,7 +27,9 @@ const handler = async (request: Request): Promise<Response> => {
 		}
 		return new Response(await file, {
 			headers: {
-				'content-type': contentType ?? 'application/octet-stream',
+				'Content-Type': contentType ?? 'application/octet-stream',
+				'Cross-Origin-Opener-Policy': 'same-origin',
+				'Cross-Origin-Embedder-Policy': 'require-corp',
 			},
 		})
 	} catch (e) {
