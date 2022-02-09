@@ -15,3 +15,5 @@
 #### Build for production:
 
 ```deno run -A build.ts --prod```
+
+##### Uses matrix math library called [gl-matrix](https://github.com/toji/gl-matrix)
