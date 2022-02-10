@@ -1,26 +1,40 @@
-import {
-	createBuffer,
-	createProgram,
-	createShader,
-	newGlResourcesContext,
-	PrecisionHeader,
-	setBufferContent,
-	VersionHeader,
-} from './shader/common'
+import { MainRenderer } from './main-renderer'
+import { PrecisionHeader, VersionHeader } from './shader/common'
 
 const canvas: HTMLCanvasElement = document.getElementById('main-canvas') as HTMLCanvasElement
 canvas.width = 1280
 canvas.height = 720
 
-const gl = canvas.getContext('webgl2', {
-	alpha: false,
-	antialias: false,
-	depth: true,
-	stencil: false,
-}) as WebGL2RenderingContext
+const renderer = MainRenderer.fromHTMLCanvas(canvas)
+const program2 = (() => {
+	const vertex = renderer.createShader(true, `${VersionHeader()}
+${PrecisionHeader()}
+in vec2 a_position;
+void main() {
+	gl_Position = vec4(a_position, 0, 1);
+}
+`)
+	const fragment = renderer.createShader(false, `${VersionHeader()}
+${PrecisionHeader()}
+out vec4 finalColor;
+void main() {
+	finalColor = vec4(1, 0, 0, 1);
+}
+`)
 
-const ctx = newGlResourcesContext(canvas, gl)
-const vertex = createShader(ctx, true, `${VersionHeader()}
+	const program = renderer.createProgram<string, 'position'>(vertex, fragment)
+
+	const positions = renderer.createBuffer(true, false)
+	positions.setContent(new Float32Array([
+		-1, -1,
+		1, -1,
+		1, 1,
+	]))
+	program.enableAttribute(program.attributes.position, 2, 0, 0, 0)
+	return program
+})()
+const program1 = (() => {
+	const vertex = renderer.createShader(true, `${VersionHeader()}
 ${PrecisionHeader()}
 in vec2 a_position;
 in vec3 a_color;
@@ -37,7 +51,7 @@ void main() {
         gl_Position = vec4(a_position.x + xOffset, a_position.y + yOffset, 0, 1);
 }
 `)
-const fragment = createShader(ctx, false, `${VersionHeader()}
+	const fragment = renderer.createShader(false, `${VersionHeader()}
 ${PrecisionHeader()}
 out vec4 finalColor;
 in vec3 v_color;
@@ -46,56 +60,45 @@ void main() {
 }
 `)
 
-type Uniforms = 'time' | 'transform' | 'projection' | 'view' | 'mouseX' | 'mouseY'
-type Attributes = 'position' | 'color' | 'invert'
-const program = createProgram<Uniforms, Attributes>(ctx, vertex, fragment)
+	type Uniforms = 'time' | 'transform' | 'projection' | 'view'
+	type Attributes = 'position' | 'color' | 'invert'
+	const program = renderer.createProgram<Uniforms, Attributes>(vertex, fragment)
 
-const positions = createBuffer(ctx, gl.ARRAY_BUFFER, false)
-setBufferContent(ctx, positions, new Float32Array([
-	-1, -1,
-	1, -1,
-	0, 1,
-]))
-gl.vertexAttribPointer(program.attributes.position, 2, gl.FLOAT, false, 0, 0)
-gl.vertexAttribDivisor(program.attributes.position, 0)
-
-
-const colors = createBuffer(ctx, gl.ARRAY_BUFFER, false)
-setBufferContent(ctx, colors, new Float32Array([
-	1, 0, 0,
-	0, 1, 0,
-	0, 0, 1,
-]))
-gl.vertexAttribPointer(program.attributes.color, 3, gl.FLOAT, false, 0, 0)
-gl.vertexAttribDivisor(program.attributes.color, 0)
-
-const inverts = createBuffer(ctx, gl.ARRAY_BUFFER, false)
-setBufferContent(ctx, inverts, new Float32Array([
-	0, 1,
-]))
-gl.vertexAttribPointer(program.attributes.invert, 1, gl.FLOAT, false, 0, 0)
-gl.vertexAttribDivisor(program.attributes.invert, 1)
+	const positions = renderer.createBuffer(true, false)
+	positions.setContent(new Float32Array([
+		-1, -1,
+		1, -1,
+		0, 0.85,
+	]))
+	program.enableAttribute(program.attributes.position, 2, 0, 0, 0)
 
 
-gl.useProgram(program.program)
+	const colors = renderer.createBuffer(true, false)
+	colors.setContent(new Float32Array([
+		1, 0, 0,
+		0, 1, 0,
+		0, 0, 1,
+	]))
+	program.enableAttribute(program.attributes.color, 3, 0, 0, 0)
 
 
-const fpsCap = 120
-const minMillisBetweenFrames = 1000 / fpsCap
-let lastFrameTime = 0
+	const inverts = renderer.createBuffer(true, false)
+	inverts.setContent(new Float32Array([
+		0, 1,
+	]))
+	program.enableAttribute(program.attributes.invert, 1, 0, 0, 1)
+	return program
+})()
+
 const firstRenderTime = Date.now()
-const render = () => {
+renderer.beginRendering((gl, delta) => {
 	const now = Date.now()
-	if (now - lastFrameTime > minMillisBetweenFrames) {
-		lastFrameTime = now
 
-		gl.uniform1f(program.uniforms.time, (now - firstRenderTime) / 1000)
+	program1.use()
+	gl.uniform1f(program1.uniforms.time, (now - firstRenderTime) / 1000)
+	gl.drawArraysInstanced(gl.TRIANGLES, 0, 3, 2)
 
+	program2.use()
+	gl.drawArraysInstanced(gl.TRIANGLES, 0, 3, 1)
+})
 
-		gl.clearColor(0.1, 0.1, 0.1, 1)
-		gl.clear(gl.COLOR_BUFFER_BIT)
-		gl.drawArraysInstanced(gl.TRIANGLES, 0, 3, 2)
-	}
-	requestAnimationFrame(render)
-}
-requestAnimationFrame(render)
