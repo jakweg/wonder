@@ -1,3 +1,5 @@
+import { DEBUG } from '../build-info'
+
 type AllocatedResourceEntry = { id: any, type: 'shader' | 'program' | 'buffer' | 'vertex-array' }
 
 const obtainWebGl2ContextFromCanvas = (canvas: HTMLCanvasElement): WebGL2RenderingContext => {
@@ -26,10 +28,8 @@ const getAllUniforms = (gl: WebGL2RenderingContext, program: WebGLProgram) => {
 			throw new Error(`Uniform name '${name}' doesn't start with proper prefix`)
 		allNames.push(name)
 	}
-	return {
-		...Object.fromEntries(allNames.map((name) => ([name.substr(2), gl.getUniformLocation(program, name)]))),
-		names: allNames,
-	}
+	const mapped = Object.fromEntries(allNames.map((name) => ([name.substr(2), gl.getUniformLocation(program, name)])))
+	return DEBUG ? {...mapped, names: allNames} : mapped
 }
 
 const getAllAttributes = (gl: WebGL2RenderingContext, program: WebGLProgram) => {
@@ -43,11 +43,8 @@ const getAllAttributes = (gl: WebGL2RenderingContext, program: WebGLProgram) => 
 			throw new Error(`Attribute name '${name}' doesn't start with proper prefix`)
 		allNames.push(name)
 	}
-	// allNames.forEach(name => gl.enableVertexAttribArray(gl.getAttribLocation(program, name)))
-	return {
-		...Object.fromEntries(allNames.map((name) => [name.substr(2), gl.getAttribLocation(program, name)])),
-		names: allNames,
-	}
+	const mapped = Object.fromEntries(allNames.map((name) => [name.substr(2), gl.getAttribLocation(program, name)]))
+	return DEBUG ? {...mapped, names: allNames} : mapped
 }
 
 export type RenderFunction = (gl: WebGL2RenderingContext, secondsSinceLastFrame: number) => void
@@ -68,12 +65,21 @@ export class MainRenderer {
 		return this.gl
 	}
 
-	public renderFunction: RenderFunction = () => void 0
-	public beforeRenderFunction: BeforeRenderFunction = () => true
-
 	static fromHTMLCanvas(canvas: HTMLCanvasElement): MainRenderer {
 		return new MainRenderer(canvas, obtainWebGl2ContextFromCanvas(canvas))
 	}
+
+	private static setUpFrameBeforeRender(gl: WebGL2RenderingContext) {
+		gl.clearColor(0.1, 0.1, 0.1, 1)
+		gl.clear(gl.COLOR_BUFFER_BIT)
+
+		gl.cullFace(gl.BACK)
+		// gl.enable(gl.CULL_FACE)
+	}
+
+	public renderFunction: RenderFunction = () => void 0
+
+	public beforeRenderFunction: BeforeRenderFunction = () => true
 
 	public createShader(vertex: boolean, source: string): WebGLShader {
 		const gl = this.gl
@@ -149,9 +155,7 @@ export class MainRenderer {
 			const elapsedSeconds = (now - lastFrameTime) / 1000
 			if (this.beforeRenderFunction(elapsedSeconds)) {
 				lastFrameTime = now
-
-				gl.clearColor(0.1, 0.1, 0.1, 1)
-				gl.clear(gl.COLOR_BUFFER_BIT)
+				MainRenderer.setUpFrameBeforeRender(gl)
 
 				this.renderFunction(gl, elapsedSeconds)
 			}
