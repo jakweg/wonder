@@ -24,6 +24,9 @@ void main() {
 
 	const program = renderer.createProgram<string, 'position'>(vertex, fragment)
 
+	const vao = renderer.createVAO()
+	vao.bind()
+
 	const positions = renderer.createBuffer(true, false)
 	positions.setContent(new Float32Array([
 		-1, -1,
@@ -31,7 +34,7 @@ void main() {
 		1, 1,
 	]))
 	program.enableAttribute(program.attributes.position, 2, 0, 0, 0)
-	return program
+	return {program, vao}
 })()
 const program1 = (() => {
 	const vertex = renderer.createShader(true, `${VersionHeader()}
@@ -63,6 +66,8 @@ void main() {
 	type Uniforms = 'time' | 'transform' | 'projection' | 'view'
 	type Attributes = 'position' | 'color' | 'invert'
 	const program = renderer.createProgram<Uniforms, Attributes>(vertex, fragment)
+	const vao = renderer.createVAO()
+	vao.bind()
 
 	const positions = renderer.createBuffer(true, false)
 	positions.setContent(new Float32Array([
@@ -87,18 +92,20 @@ void main() {
 		0, 1,
 	]))
 	program.enableAttribute(program.attributes.invert, 1, 0, 0, 1)
-	return program
+	return {program, vao}
 })()
 
 const firstRenderTime = Date.now()
 renderer.beginRendering((gl, delta) => {
 	const now = Date.now()
 
-	program1.use()
-	gl.uniform1f(program1.uniforms.time, (now - firstRenderTime) / 1000)
+	program1.vao.bind()
+	program1.program.use()
+	gl.uniform1f(program1.program!.uniforms.time, (now - firstRenderTime) / 1000)
 	gl.drawArraysInstanced(gl.TRIANGLES, 0, 3, 2)
 
-	program2.use()
+	program2.vao.bind()
+	program2.program.use()
 	gl.drawArraysInstanced(gl.TRIANGLES, 0, 3, 1)
 })
 

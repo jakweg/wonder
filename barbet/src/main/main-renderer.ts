@@ -126,6 +126,13 @@ export class MainRenderer {
 		return new GPUBuffer(gl, buffer, target, usage)
 	}
 
+	public createVAO() {
+		const gl = this.gl
+		const array = gl.createVertexArray()!
+		this.allocatedResources.push({id: array, type: 'vertex-array'})
+		return new VertexArray(gl, array)
+	}
+
 	public beginRendering(func: RenderFunction) {
 
 		const gl = this.gl
@@ -148,6 +155,17 @@ export class MainRenderer {
 
 	public stopRendering() {
 		// TODO implement
+	}
+}
+
+class VertexArray {
+	constructor(
+		private readonly gl: WebGL2RenderingContext,
+		private readonly array: WebGLVertexArrayObject) {
+	}
+
+	public bind() {
+		this.gl.bindVertexArray(this.array)
 	}
 }
 
