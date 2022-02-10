@@ -1,57 +1,23 @@
-import { MainRenderer } from './main-renderer'
-import { PrecisionHeader, VersionHeader } from './shader/common'
+import { MainRenderer } from './3d-stuff/main-renderer'
+import { PrecisionHeader, VersionHeader } from './3d-stuff/shader/common'
 
 const canvas: HTMLCanvasElement = document.getElementById('main-canvas') as HTMLCanvasElement
 canvas.width = 1280
 canvas.height = 720
 
 const renderer = MainRenderer.fromHTMLCanvas(canvas)
-const program2 = (() => {
-	const vertex = renderer.createShader(true, `${VersionHeader()}
-${PrecisionHeader()}
-in vec2 a_position;
-void main() {
-	gl_Position = vec4(a_position, 0, 1);
-}
-`)
-	const fragment = renderer.createShader(false, `${VersionHeader()}
-${PrecisionHeader()}
-out vec4 finalColor;
-void main() {
-	finalColor = vec4(1, 0, 0, 1);
-}
-`)
-
-	const program = renderer.createProgram<string, 'position'>(vertex, fragment)
-
-	const vao = renderer.createVAO()
-	vao.bind()
-
-	const positions = renderer.createBuffer(true, false)
-	positions.setContent(new Float32Array([
-		-1, -1,
-		1, -1,
-		1, 1,
-	]))
-	program.enableAttribute(program.attributes.position, 2, 0, 0, 0)
-	return {program, vao}
-})()
 const program1 = (() => {
 	const vertex = renderer.createShader(true, `${VersionHeader()}
 ${PrecisionHeader()}
 in vec2 a_position;
 in vec3 a_color;
-in float a_invert;
-uniform float u_time;
+in float a_size;
 out vec3 v_color;
+uniform float u_time;
 void main() {
 	v_color = a_color;
-	float xOffset = gl_VertexID == 2 ? sin(u_time) * 0.5 : 0.0;
-	float yOffset = gl_VertexID == 2 ? sin(u_time * 10.0) * 0.1 : 0.0;
-	if (a_invert > 0.0)
-        gl_Position = vec4(a_position.x - xOffset, -a_position.y + yOffset, 0, 1);
-    else
-        gl_Position = vec4(a_position.x + xOffset, a_position.y + yOffset, 0, 1);
+	gl_PointSize = a_size;
+    gl_Position = vec4(a_position.x + float(gl_InstanceID) * 0.1, a_position.y + sin(u_time) * 0.1, 0, 1);
 }
 `)
 	const fragment = renderer.createShader(false, `${VersionHeader()}
@@ -64,16 +30,16 @@ void main() {
 `)
 
 	type Uniforms = 'time' | 'transform' | 'projection' | 'view'
-	type Attributes = 'position' | 'color' | 'invert'
+	type Attributes = 'position' | 'color' | 'size'
 	const program = renderer.createProgram<Uniforms, Attributes>(vertex, fragment)
 	const vao = renderer.createVAO()
 	vao.bind()
 
 	const positions = renderer.createBuffer(true, false)
 	positions.setContent(new Float32Array([
-		-1, -1,
-		1, -1,
-		0, 0.85,
+		-0.8, -0.5,
+		0.1, 0.3,
+		0.4, -0.3,
 	]))
 	program.enableAttribute(program.attributes.position, 2, 0, 0, 0)
 
@@ -84,28 +50,27 @@ void main() {
 		0, 1, 0,
 		0, 0, 1,
 	]))
-	program.enableAttribute(program.attributes.color, 3, 0, 0, 0)
+	program.enableAttribute(program.attributes.color, 3, 0, 0, 2)
 
-
-	const inverts = renderer.createBuffer(true, false)
-	inverts.setContent(new Float32Array([
-		0, 1,
+	const sizes = renderer.createBuffer(true, false)
+	sizes.setContent(new Float32Array([
+		10, 30, 50, 40, 20, 100,
 	]))
-	program.enableAttribute(program.attributes.invert, 1, 0, 0, 1)
+	program.enableAttribute(program.attributes.size, 1, 0, 0, 1)
+
 	return {program, vao}
 })()
 
 const firstRenderTime = Date.now()
-renderer.beginRendering((gl, delta) => {
+renderer.renderFunction = (gl) => {
 	const now = Date.now()
 
 	program1.vao.bind()
 	program1.program.use()
-	gl.uniform1f(program1.program!.uniforms.time, (now - firstRenderTime) / 1000)
-	gl.drawArraysInstanced(gl.TRIANGLES, 0, 3, 2)
-
-	program2.vao.bind()
-	program2.program.use()
-	gl.drawArraysInstanced(gl.TRIANGLES, 0, 3, 1)
-})
+	gl.uniform1f(program1.program.uniforms.time, (now - firstRenderTime) / 1000)
+	gl.drawArraysInstanced(gl.POINTS, 0, 3, 5)
+	// renderer.stopRendering()
+}
+renderer.beforeRenderFunction = (secondsSinceLastFrame) => secondsSinceLastFrame > 0.25 || document.hasFocus()
+renderer.beginRendering()
 

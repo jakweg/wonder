@@ -51,6 +51,7 @@ const getAllAttributes = (gl: WebGL2RenderingContext, program: WebGLProgram) => 
 }
 
 export type RenderFunction = (gl: WebGL2RenderingContext, secondsSinceLastFrame: number) => void
+export type BeforeRenderFunction = (secondsSinceLastFrame: number) => boolean
 
 
 export class MainRenderer {
@@ -66,6 +67,9 @@ export class MainRenderer {
 	public get rawContext(): WebGL2RenderingContext {
 		return this.gl
 	}
+
+	public renderFunction: RenderFunction = () => void 0
+	public beforeRenderFunction: BeforeRenderFunction = () => true
 
 	static fromHTMLCanvas(canvas: HTMLCanvasElement): MainRenderer {
 		return new MainRenderer(canvas, obtainWebGl2ContextFromCanvas(canvas))
@@ -134,7 +138,7 @@ export class MainRenderer {
 		return new VertexArray(gl, array)
 	}
 
-	public beginRendering(func: RenderFunction) {
+	public beginRendering() {
 		if (this.nextFrameRequest !== 0) return
 
 		const gl = this.gl
@@ -143,14 +147,18 @@ export class MainRenderer {
 		const render = () => {
 			const now = Date.now()
 			const elapsedSeconds = (now - lastFrameTime) / 1000
-			lastFrameTime = now
+			if (this.beforeRenderFunction(elapsedSeconds)) {
+				lastFrameTime = now
 
-			gl.clearColor(0.1, 0.1, 0.1, 1)
-			gl.clear(gl.COLOR_BUFFER_BIT)
+				gl.clearColor(0.1, 0.1, 0.1, 1)
+				gl.clear(gl.COLOR_BUFFER_BIT)
 
-			func(gl, elapsedSeconds)
+				this.renderFunction(gl, elapsedSeconds)
+			}
 
-			this.nextFrameRequest = requestAnimationFrame(render)
+			// someone could cancel rendering in render callback
+			if (this.nextFrameRequest !== 0)
+				this.nextFrameRequest = requestAnimationFrame(render)
 		}
 		this.nextFrameRequest = requestAnimationFrame(render)
 	}
@@ -205,13 +213,13 @@ export class GlProgram<U extends 'names', A extends 'names'> {
 	}
 
 	public enableAttribute(attribute: GLint,
-	                       elementsPerVertex: number,
+	                       floatsPerVertex: number,
 	                       stride: number,
 	                       offset: number,
 	                       instancesDivisor: number) {
 		const gl = this.gl
 		gl.enableVertexAttribArray(attribute)
-		gl.vertexAttribPointer(attribute, elementsPerVertex | 0, gl.FLOAT, false, stride | 0, offset | 0)
+		gl.vertexAttribPointer(attribute, floatsPerVertex | 0, gl.FLOAT, false, stride | 0, offset | 0)
 		gl.vertexAttribDivisor(attribute, instancesDivisor | 0)
 	}
 }
