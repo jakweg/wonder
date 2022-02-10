@@ -1,6 +1,7 @@
 import { MainRenderer } from './3d-stuff/main-renderer'
 import { PrecisionHeader, VersionHeader } from './3d-stuff/shader/common'
 import { Camera, universalUpVector } from './camera'
+import KEYBOARD from './keyboard-controller'
 import { toGl } from './util/matrix/common'
 import * as vec3 from './util/matrix/vec3'
 
@@ -88,43 +89,27 @@ renderer.renderFunction = (gl, dt) => {
 	gl.drawArraysInstanced(gl.TRIANGLES, 0, 3, 1)
 	// renderer.stopRendering()
 }
-renderer.beforeRenderFunction = (secondsSinceLastFrame) => secondsSinceLastFrame > 0.001 || document.hasFocus()
+renderer.beforeRenderFunction = (secondsSinceLastFrame) => secondsSinceLastFrame > 0.5 || document.hasFocus()
 renderer.beginRendering()
 
-const pressedKeys: { [key: string]: boolean } = {}
-document.addEventListener('keydown', event => {
-	const code = event.code
-	pressedKeys[code] = true
-})
-document.addEventListener('keyup', event => {
-	const code = event.code
-	pressedKeys[code] = false
-})
-document.addEventListener('blur', event => {
-	for (const code in pressedKeys) {
-		pressedKeys[code] = false
-	}
-})
 const moveCameraByKeys = (camera: Camera, dt: number) => {
+	if (!KEYBOARD.isAnyPressed()) return
 	const speed = dt * 3
-	const isPressed = (code: string): boolean => {
-		return pressedKeys[code] ?? false
-	}
 
 	const front1 = vec3.subtract(vec3.create(), camera.center, camera.eye)
 	vec3.normalize(front1, front1)
 	const front2 = vec3.clone(front1)
 	const toAdd = vec3.fromValues(0, 0, 0)
-	if (isPressed('KeyW')) {
+	if (KEYBOARD.isPressed('KeyW') || KEYBOARD.isPressed('ArrowUp')) {
 		vec3.scale(toAdd, front1, speed)
 	}
-	if (isPressed('KeyS')) {
+	if (KEYBOARD.isPressed('KeyS') || KEYBOARD.isPressed('ArrowDown')) {
 		vec3.scale(toAdd, front1, -speed)
 	}
-	if (isPressed('KeyA')) {
+	if (KEYBOARD.isPressed('KeyA') || KEYBOARD.isPressed('ArrowLeft')) {
 		vec3.scale(toAdd, vec3.normalize(front2, vec3.cross(front2, front2, universalUpVector)), -speed)
 	}
-	if (isPressed('KeyD')) {
+	if (KEYBOARD.isPressed('KeyD') || KEYBOARD.isPressed('ArrowRight')) {
 		vec3.scale(toAdd, vec3.normalize(front2, vec3.cross(front2, front2, universalUpVector)), speed)
 	}
 
