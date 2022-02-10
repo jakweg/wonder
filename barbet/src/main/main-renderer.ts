@@ -156,6 +156,27 @@ export class MainRenderer {
 	public stopRendering() {
 		// TODO implement
 	}
+
+	public cleanUp() {
+		const gl = this.gl
+		for (const res of [...this.allocatedResources].reverse()) {
+			switch (res.type) {
+				case 'shader':
+					gl.deleteShader(res.id)
+					break
+				case 'program':
+					gl.deleteProgram(res.id)
+					break
+				case 'buffer':
+					gl.deleteBuffer(res.id)
+					break
+				case 'vertex-array':
+					gl.deleteVertexArray(res.id)
+					break
+			}
+		}
+		this.allocatedResources.splice(0)
+	}
 }
 
 class VertexArray {
