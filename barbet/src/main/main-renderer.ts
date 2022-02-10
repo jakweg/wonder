@@ -54,6 +54,7 @@ export type RenderFunction = (gl: WebGL2RenderingContext, secondsSinceLastFrame:
 
 
 export class MainRenderer {
+	private nextFrameRequest: number = 0
 	private readonly allocatedResources: AllocatedResourceEntry[] = []
 
 	private constructor(
@@ -134,6 +135,7 @@ export class MainRenderer {
 	}
 
 	public beginRendering(func: RenderFunction) {
+		if (this.nextFrameRequest !== 0) return
 
 		const gl = this.gl
 
@@ -148,13 +150,14 @@ export class MainRenderer {
 
 			func(gl, elapsedSeconds)
 
-			requestAnimationFrame(render)
+			this.nextFrameRequest = requestAnimationFrame(render)
 		}
-		requestAnimationFrame(render)
+		this.nextFrameRequest = requestAnimationFrame(render)
 	}
 
 	public stopRendering() {
-		// TODO implement
+		cancelAnimationFrame(this.nextFrameRequest)
+		this.nextFrameRequest = 0
 	}
 
 	public cleanUp() {
