@@ -1,19 +1,19 @@
 import { makeNoise2D } from './util/noise/2d'
 
 const getBlockTypeByNoiseValue = (v: number): BlockType => {
-	if (v < 0.15)
+	if (v < 0.04)
 		return BlockType.DeepWater
 
-	if (v < 0.25)
+	if (v < 0.08)
 		return BlockType.Water
 
-	if (v < 0.30)
+	if (v < 0.20)
 		return BlockType.Sand
 
-	if (v < 0.80)
+	if (v < 0.50)
 		return BlockType.Grass
 
-	if (v < 0.90)
+	if (v < 0.80)
 		return BlockType.Stone
 
 	return BlockType.Snow
@@ -74,11 +74,19 @@ export const generateWorld = ({sizeX, sizeY, sizeZ}: WorldSize): Uint8Array => {
 			if (k > borderSizeXSecond)
 				remappedNoiseValue = (1 - (k - borderSizeXSecond) / borderSizeX) * (remappedNoiseValue)
 
-			const y = (remappedNoiseValue ** 5) * sizeY | 0
-			for (let i = 0; i < y; i++) {
-				world[i * sizeX * sizeZ + k * sizeZ + j] = BlockType.Stone
+			let y = (remappedNoiseValue ** 2) * sizeY | 0
+			const block = getBlockTypeByNoiseValue(y / sizeY)
+			world[y * sizeX * sizeZ + k * sizeZ + j] = block
+			let blockToSet = BlockType.Stone
+
+			if (block === BlockType.Water || block === BlockType.DeepWater) {
+				blockToSet = block
+				y = 3
 			}
-			world[y * sizeX * sizeZ + k * sizeZ + j] = getBlockTypeByNoiseValue(remappedNoiseValue)
+
+			for (let i = 0; i < y; i++) {
+				world[i * sizeX * sizeZ + k * sizeZ + j] = blockToSet
+			}
 		}
 	}
 	return world
@@ -100,7 +108,7 @@ export const generateMeshData = (world: Uint8Array, size: WorldSize) => {
 
 	const vertexesPerX = (sizeZ + 1)
 	const forceAddVertex = (positionIndex: number, x: number, y: number, z: number): number => {
-		vertexes.push(x, y, z, 2, 2, 2, 0, 0, 0)
+		vertexes.push(x, y, z, 2, 2, 2, 0)
 		vertexIndexes[positionIndex] = addedVertexesCounter
 		return addedVertexesCounter++
 	}
@@ -115,22 +123,22 @@ export const generateMeshData = (world: Uint8Array, size: WorldSize) => {
 	const setColor = (vertexIndex: number,
 	                  colorValue: [number, number, number],
 	                  normal: [number, number, number]): number => {
-		vertexIndex *= 9
+		vertexIndex *= 7
 		const wasNeverUsed = vertexes[vertexIndex + 3]! === 2 && vertexes[vertexIndex + 4]! === 2 && vertexes[vertexIndex + 5]! === 2
 		if (!wasNeverUsed) {
 			const x = vertexes[vertexIndex]!
 			const y = vertexes[vertexIndex + 1]!
 			const z = vertexes[vertexIndex + 2]!
 			const positionIndex = y * vertexesPerY + x * vertexesPerX + z
-			vertexIndex = forceAddVertex(positionIndex, x, y, z) * 9
+			vertexIndex = forceAddVertex(positionIndex, x, y, z) * 7
 		}
 		vertexes[vertexIndex + 3] = colorValue[0]
 		vertexes[vertexIndex + 4] = colorValue[1]
 		vertexes[vertexIndex + 5] = colorValue[2]
-		vertexes[vertexIndex + 6] = normal[0]
-		vertexes[vertexIndex + 7] = normal[1]
-		vertexes[vertexIndex + 8] = normal[2]
-		return vertexIndex / 9
+		vertexes[vertexIndex + 6] = ((normal[0] + 1) << 4) + ((normal[1] + 1) << 2) + (normal[2] + 1) | 0
+		// vertexes[vertexIndex + 7] = normal[1]
+		// vertexes[vertexIndex + 8] = normal[2]
+		return vertexIndex / 7
 	}
 
 	for (let y = 0; y < sizeY; y++) {

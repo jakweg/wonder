@@ -16,22 +16,24 @@ const program1 = (() => {
 ${PrecisionHeader()}
 in vec3 a_position;
 in vec3 a_color;
-in vec3 a_normal;
+in float a_flags;
 flat out vec3 v_color;
-flat out vec3 v_normal;
 flat out vec3 v_currentPosition;
+flat out int v_flags;
 uniform mat4 u_projection;
 uniform mat4 u_view;
 uniform float u_time;
 void main() {
+	// v_flags = (int(a_normal.x) + 1) << 4 | (int(a_normal.y) + 1) << 2 | (int(a_normal.z) + 1);
+	v_flags = int(a_flags);
 	v_color = a_color;
-	v_normal = a_normal;
 	v_currentPosition = a_position;
 	vec3 pos = a_position;
-	if (v_color == vec3(0.21875, 0.4921875, 0.9140625) || v_color == vec3(0.21875, 0.3421875, 0.8140625)){
-		pos.y += sin(u_time + pos.x + pos.z * 100.0) * 0.5;
-		pos.z += sin(u_time * 1.4 + pos.x + pos.z * 30.0) * 0.2;
-		pos.x += cos(u_time + pos.x + pos.z * 100.0) * 0.3;
+	// if (v_color == vec3(0.21875, 0.4921875, 0.9140625) || v_color == vec3(0.21875, 0.3421875, 0.8140625)){
+	if (pos.y < 3.50) {
+		pos.y += sin(u_time * 2.1 + pos.x + pos.z * 100.0) * 0.2 + 0.4;
+		// pos.z += sin(u_time * 1.6 + pos.x + pos.z * 30.0) * 0.05;
+		// pos.x += cos(u_time + pos.x + pos.z * 100.0) * 0.10;
 	}
     gl_Position = u_projection * u_view * vec4(pos, 1);
     gl_PointSize = 10.0;
@@ -40,27 +42,28 @@ void main() {
 	const fragment = renderer.createShader(false, `${VersionHeader()}
 ${PrecisionHeader()}
 out vec4 finalColor;
-flat in vec3 v_normal;
+flat in int v_flags;
 flat in vec3 v_color;
 flat in vec3 v_currentPosition;
 uniform float u_time;
 uniform vec3 u_lightPosition;
 void main() {
+	vec3 normal = vec3(ivec3((v_flags >> 4) - 1, ((v_flags >> 2) & 3) - 1, (v_flags & 3) - 1));
 	vec3 lightDirection = normalize(u_lightPosition - v_currentPosition);
-	float diffuse = max(dot(v_normal, lightDirection), 0.3);
+	float diffuse = max(dot(normal, lightDirection), 0.3);
 	vec3 lightColor = mix(vec3(1,1,0.8), vec3(1,0.57,0.3), sin(u_time * 0.3) * 0.5 + 0.5);
 	finalColor = vec4(v_color * lightColor * diffuse, 1);
 }
 `)
 
 	type Uniforms = 'time' | 'projection' | 'view' | 'lightPosition'
-	type Attributes = 'position' | 'color' | 'normal'
+	type Attributes = 'position' | 'color' | 'flags'
 	const program = renderer.createProgram<Uniforms, Attributes>(vertex, fragment)
 	const vao = renderer.createVAO()
 	vao.bind()
 
 	const a = performance.now()
-	const size = {sizeX: 500, sizeY: 30, sizeZ: 500}
+	const size = {sizeX: 1000, sizeY: 30, sizeZ: 1000}
 	const {elements, vertexes} = generateMeshData(generateWorld(size), size)
 	const numbers = new Float32Array(vertexes)
 	const uint32Array = new Uint32Array(elements)
@@ -69,10 +72,10 @@ void main() {
 	const positions = renderer.createBuffer(true, false)
 	positions.setContent(numbers)
 	const floatSize = Float32Array.BYTES_PER_ELEMENT
-	const stride = 9 * floatSize
-	program.enableAttribute(program.attributes.position, 3, stride, 0, 0)
-	program.enableAttribute(program.attributes.color, 3, stride, 3 * floatSize, 0)
-	program.enableAttribute(program.attributes.normal, 3, stride, 6 * floatSize, 0)
+	const stride = 7 * floatSize
+	program.enableAttribute(program.attributes.position, 3, true, stride, 0, 0)
+	program.enableAttribute(program.attributes.color, 3, true, stride, 3 * floatSize, 0)
+	program.enableAttribute(program.attributes.flags, 1, true, stride, 6 * floatSize, 0)
 
 	const elementsBuffer = renderer.createBuffer(false, false)
 	elementsBuffer.setContent(uint32Array)
@@ -100,10 +103,10 @@ renderer.renderFunction = (gl, dt) => {
 	gl.uniformMatrix4fv(program.uniforms.view, false, toGl(camera.viewMatrix))
 	const secondsSinceRender = (now - firstRenderTime) / 1000
 	gl.uniform1f(program.uniforms.time, secondsSinceRender)
-	const r = 100
-	lightPosition[0] = Math.cos(secondsSinceRender / 2) * r + 250
-	lightPosition[1] = Math.sin(secondsSinceRender / 2) * 10 + 120
-	lightPosition[2] = Math.sin(secondsSinceRender / 2) * r + 250
+	const r = 200
+	lightPosition[0] = Math.cos(secondsSinceRender / 2) * r + 500
+	lightPosition[1] = Math.sin(secondsSinceRender / 2) * 10 + 240
+	lightPosition[2] = Math.sin(secondsSinceRender / 2) * r + 500
 	gl.uniform3fv(program.uniforms.lightPosition, toGl(lightPosition))
 	// gl.drawArraysInstanced(gl.TRIANGLES, 0, triangles * 3, 1)
 	gl.drawElements(gl.TRIANGLES, 3 * trianglesToRender, gl.UNSIGNED_INT, 0)
