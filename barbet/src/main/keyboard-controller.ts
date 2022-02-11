@@ -35,6 +35,8 @@ class KeyboardController {
 		if (this.pressedKeys[code] === pressed) return
 		this.pressedKeys[code] = pressed
 		this.pressedCount += pressed ? 1 : -1
+		if (this.pressedCount < 0)
+			this.pressedCount = 0
 	}
 }
 

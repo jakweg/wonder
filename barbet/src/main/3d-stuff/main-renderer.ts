@@ -5,7 +5,7 @@ type AllocatedResourceEntry = { id: any, type: 'shader' | 'program' | 'buffer' |
 const obtainWebGl2ContextFromCanvas = (canvas: HTMLCanvasElement): WebGL2RenderingContext => {
 	const context = canvas.getContext('webgl2', {
 		alpha: false,
-		antialias: false,
+		antialias: true,
 		depth: true,
 		stencil: false,
 		failIfMajorPerformanceCaveat: true,
@@ -70,11 +70,14 @@ export class MainRenderer {
 	}
 
 	private static setUpFrameBeforeRender(gl: WebGL2RenderingContext) {
-		gl.clearColor(0.1, 0.1, 0.1, 1)
-		gl.clear(gl.COLOR_BUFFER_BIT)
+		gl.clearColor(0.15, 0.15, 0.15, 1)
+		gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
+
+		gl.enable(gl.DEPTH_TEST)
+		gl.depthFunc(gl.LEQUAL)
 
 		gl.cullFace(gl.BACK)
-		// gl.enable(gl.CULL_FACE)
+		gl.enable(gl.CULL_FACE)
 	}
 
 	public renderFunction: RenderFunction = () => void 0
@@ -216,15 +219,23 @@ export class GlProgram<U extends 'names', A extends 'names'> {
 		this.gl.useProgram(this.program)
 	}
 
+	/**
+	 *
+	 * @param attribute
+	 * @param size number of floats per attribute (eg 3 for vec3)
+	 * @param stride number of bytes in each set of data (eg 5 when each vertex shader call receives vec3 and vec2)
+	 * @param offset
+	 * @param divisor
+	 */
 	public enableAttribute(attribute: GLint,
-	                       floatsPerVertex: number,
+	                       size: number,
 	                       stride: number,
 	                       offset: number,
-	                       instancesDivisor: number) {
+	                       divisor: number) {
 		const gl = this.gl
 		gl.enableVertexAttribArray(attribute)
-		gl.vertexAttribPointer(attribute, floatsPerVertex | 0, gl.FLOAT, false, stride | 0, offset | 0)
-		gl.vertexAttribDivisor(attribute, instancesDivisor | 0)
+		gl.vertexAttribPointer(attribute, size | 0, gl.FLOAT, false, stride | 0, offset | 0)
+		gl.vertexAttribDivisor(attribute, divisor | 0)
 	}
 }
 
@@ -241,7 +252,7 @@ export class GPUBuffer {
 		this.gl.bindBuffer(this.target, this.id)
 	}
 
-	public setContent(data: Float32Array) {
+	public setContent(data: BufferSource) {
 		const gl = this.gl
 		const target = this.target
 		gl.bindBuffer(target, this.id)
