@@ -1,10 +1,12 @@
-/**
- * x, y, z, r, g, b
- */
 import { makeNoise2D } from './util/noise/2d'
 
-
-type Vertex = [number, number, number, number, number, number]
+/**
+ * 3 floats for Position
+ * 3 floats for Color
+ * 3 floats for Normal vector
+ * x, y, z, r, g, b, nx, ny, nz
+ */
+type Vertex = [number, number, number, number, number, number, number, number, number]
 
 const getBlockTypeByNoiseValue = (v: number): BlockType => {
 	if (v < 0.15)
@@ -65,7 +67,7 @@ export const generateWorld = ({sizeX, sizeY, sizeZ}: WorldSize): Uint8Array => {
 	const noise = makeNoise2D(123)
 	for (let j = 0; j < sizeZ; j++) {
 		for (let k = 0; k < sizeX; k++) {
-			const factor = 0.01
+			const factor = 0.02
 			const noiseValue = noise(j * factor, k * factor)
 			const y = (noiseValue * 0.5 + 0.5) * sizeY | 0
 			for (let i = 0; i < y; i++) {
@@ -93,7 +95,7 @@ export const generateMeshData = (world: Uint8Array, size: WorldSize) => {
 
 	const vertexesPerX = (sizeZ + 1)
 	const forceAddVertex = (positionIndex: number, x: number, y: number, z: number): number => {
-		vertexes.push([x, y, z, 2, 2, 2])
+		vertexes.push([x, y, z, 2, 2, 2, 0, 0, 0])
 		vertexIndexes[positionIndex] = addedVertexesCounter
 		return addedVertexesCounter++
 	}
@@ -105,7 +107,9 @@ export const generateMeshData = (world: Uint8Array, size: WorldSize) => {
 		}
 		return elementIndex
 	}
-	const setColor = (vertexIndex: number, value: [number, number, number]): number => {
+	const setColor = (vertexIndex: number,
+	                  value: [number, number, number],
+	                  normal: [number, number, number]): number => {
 		const wasNeverUsed = vertexes[vertexIndex]![3] === 2 && vertexes[vertexIndex]![4] === 2 && vertexes[vertexIndex]![5] === 2
 		if (!wasNeverUsed) {
 			const x = vertexes[vertexIndex]![0]
@@ -117,6 +121,9 @@ export const generateMeshData = (world: Uint8Array, size: WorldSize) => {
 		vertexes[vertexIndex]![3] = value[0]
 		vertexes[vertexIndex]![4] = value[1]
 		vertexes[vertexIndex]![5] = value[2]
+		vertexes[vertexIndex]![6] = normal[0]
+		vertexes[vertexIndex]![7] = normal[1]
+		vertexes[vertexIndex]![8] = normal[2]
 		return vertexIndex
 	}
 
@@ -148,7 +155,7 @@ export const generateMeshData = (world: Uint8Array, size: WorldSize) => {
 				let e8 = addVertexIfNotExists(x + 1, y, z)
 
 				if (needsTop) {
-					e1 = setColor(e1, color)
+					e1 = setColor(e1, color, [0, 1, 0])
 					elements.push(
 						e2, e3, e1,
 						e3, e4, e1,
@@ -156,7 +163,7 @@ export const generateMeshData = (world: Uint8Array, size: WorldSize) => {
 				}
 
 				// if (needsBottom) {
-				// 	e5 = setColor(e5, color)
+				// 	e5 = setColor(e5, color, [0, -1, 0])
 				// 	elements.push(
 				// 		e7, e6, e5,
 				// 		e8, e7, e5,
@@ -164,7 +171,7 @@ export const generateMeshData = (world: Uint8Array, size: WorldSize) => {
 				// }
 
 				if (needsPositiveX) {
-					e7 = setColor(e7, color)
+					e7 = setColor(e7, color, [1, 0, 0])
 					elements.push(
 						e4, e3, e7,
 						e8, e4, e7,
@@ -172,7 +179,7 @@ export const generateMeshData = (world: Uint8Array, size: WorldSize) => {
 				}
 
 				if (needsNegativeX) {
-					e2 = setColor(e2, color)
+					e2 = setColor(e2, color, [-1, 0, 0])
 					elements.push(
 						e1, e5, e2,
 						e5, e6, e2,
@@ -180,7 +187,7 @@ export const generateMeshData = (world: Uint8Array, size: WorldSize) => {
 				}
 
 				if (needsPositiveZ) {
-					e3 = setColor(e3, color)
+					e3 = setColor(e3, color, [0, 0, 1])
 					elements.push(
 						e2, e6, e3,
 						e6, e7, e3,
@@ -188,7 +195,7 @@ export const generateMeshData = (world: Uint8Array, size: WorldSize) => {
 				}
 
 				if (needsNegativeZ) {
-					e8 = setColor(e8, color)
+					e8 = setColor(e8, color, [0, 0, -1])
 					elements.push(
 						e1, e4, e8,
 						e5, e1, e8,
@@ -205,7 +212,7 @@ export const generateMeshData = (world: Uint8Array, size: WorldSize) => {
 }
 
 export const buildVertexData = (sizeX: number, sizeZ: number): { vertexes: Vertex[], elements: number[] } => {
-	const size = {sizeX, sizeY: 10, sizeZ}
+	const size = {sizeX, sizeY: 80, sizeZ}
 	// @ts-ignore
 	return generateMeshData(generateWorld(size), size)
 	// const vertexes: Vertex[] = []

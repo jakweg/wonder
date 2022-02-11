@@ -16,48 +16,54 @@ const program1 = (() => {
 ${PrecisionHeader()}
 in vec3 a_position;
 in vec3 a_color;
+in vec3 a_normal;
 flat out vec3 v_color;
+flat out vec3 v_normal;
+flat out vec3 v_currentPosition;
 uniform mat4 u_projection;
 uniform mat4 u_view;
 uniform float u_time;
 void main() {
 	v_color = a_color;
-	// if (a_position.x > 9.0 && a_position.z > 9.0)
-	// 	v_color = vec3(0,0,0);
-	// v_color = vec3(gl_VertexID % 3 == 0 ? 1 : 0, gl_VertexID % 3 == 1 ? 1 : 0, gl_VertexID % 3 == 2 ? 1 : 0);
-    gl_Position = u_projection * u_view * vec4(a_position.x, a_position.y, a_position.z, 1);
-    // gl_Position = vec4(x, 0, z, 1);
-    // gl_Position = vec4(0,0,0,0);
+	v_normal = a_normal;
+	v_currentPosition = a_position;
+	
+    gl_Position = u_projection * u_view * vec4(a_position, 1);
     gl_PointSize = 10.0;
 }
 `)
 	const fragment = renderer.createShader(false, `${VersionHeader()}
 ${PrecisionHeader()}
 out vec4 finalColor;
+flat in vec3 v_normal;
 flat in vec3 v_color;
+flat in vec3 v_currentPosition;
 uniform float u_time;
+uniform vec3 u_lightPosition;
 void main() {
-	if (gl_FrontFacing)
-	finalColor = vec4(v_color, 1);
-	else
-	finalColor = vec4(1, sin(u_time * 5.0) / 2.0 + 0.5, 0, 1);
+	vec3 lightDirection = normalize(u_lightPosition - v_currentPosition);
+	float diffuse = max(dot(v_normal, lightDirection), 0.3);
+	vec3 lightColor = mix(vec3(1,1,0.8), vec3(1,0.57,0.3), sin(u_time * 0.3) * 0.5 + 0.5);
+	finalColor = vec4(v_color * lightColor * diffuse, 1);
 }
 `)
 
-	type Uniforms = 'time' | 'projection' | 'view'
-	type Attributes = 'position' | 'color'
+	type Uniforms = 'time' | 'projection' | 'view' | 'lightPosition'
+	type Attributes = 'position' | 'color' | 'normal'
 	const program = renderer.createProgram<Uniforms, Attributes>(vertex, fragment)
 	const vao = renderer.createVAO()
 	vao.bind()
 
-	const sizeX = 100
-	const sizeY = 100
+	const sizeX = 500
+	const sizeY = 500
 	const {elements, vertexes} = buildVertexData(sizeX, sizeY)
 	const positions = renderer.createBuffer(true, false)
 	positions.setContent(new Float32Array(vertexes.flat()))
 	const floatSize = Float32Array.BYTES_PER_ELEMENT
-	program.enableAttribute(program.attributes.position, 3, 6 * floatSize, 0, 0)
-	program.enableAttribute(program.attributes.color, 3, 6 * floatSize, 3 * floatSize, 0)
+	const stride = 9 * floatSize
+	program.enableAttribute(program.attributes.position, 3, stride, 0, 0)
+	program.enableAttribute(program.attributes.color, 3, stride, 3 * floatSize, 0)
+	program.enableAttribute(program.attributes.normal, 3, stride, 6 * floatSize, 0)
 
 
 	const elementsBuffer = renderer.createBuffer(false, false)
@@ -67,6 +73,9 @@ void main() {
 })()
 
 const camera = Camera.newPerspective(90, 1280 / 720)
+camera.moveCamera(15, 50, 55)
+
+const lightPosition = vec3.fromValues(0, 50, 0)
 
 const firstRenderTime = Date.now()
 renderer.renderFunction = (gl, dt) => {
@@ -81,9 +90,16 @@ renderer.renderFunction = (gl, dt) => {
 	program.use()
 	gl.uniformMatrix4fv(program.uniforms.projection, false, toGl(camera.perspectiveMatrix))
 	gl.uniformMatrix4fv(program.uniforms.view, false, toGl(camera.viewMatrix))
-	gl.uniform1f(program.uniforms.time, (now - firstRenderTime) / 1000)
+	const secondsSinceRender = (now - firstRenderTime) / 1000
+	gl.uniform1f(program.uniforms.time, secondsSinceRender)
+	const r = 100
+	lightPosition[0] = Math.cos(secondsSinceRender / 2) * r + 250
+	lightPosition[1] = Math.sin(secondsSinceRender / 2) * 10 + 120
+	lightPosition[2] = Math.sin(secondsSinceRender / 2) * r + 250
+	gl.uniform3fv(program.uniforms.lightPosition, toGl(lightPosition))
 	// gl.drawArraysInstanced(gl.TRIANGLES, 0, triangles * 3, 1)
 	gl.drawElements(gl.TRIANGLES, 3 * trianglesToRender, gl.UNSIGNED_INT, 0)
+
 	// gl.drawArrays(gl.LINE_STRIP, 0,3 * trianglesToRender)
 	// renderer.stopRendering()
 }
