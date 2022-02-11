@@ -2,7 +2,7 @@ import { MainRenderer } from './3d-stuff/main-renderer'
 import { PrecisionHeader, VersionHeader } from './3d-stuff/shader/common'
 import { Camera } from './camera'
 import KEYBOARD from './keyboard-controller'
-import { buildVertexData } from './terrain-builder'
+import { generateMeshData, generateWorld } from './terrain-builder'
 import { toGl } from './util/matrix/common'
 import * as vec3 from './util/matrix/vec3'
 
@@ -59,20 +59,23 @@ void main() {
 	const vao = renderer.createVAO()
 	vao.bind()
 
-	const sizeX = 500
-	const sizeY = 500
-	const {elements, vertexes} = buildVertexData(sizeX, sizeY)
+	const a = performance.now()
+	const size = {sizeX: 500, sizeY: 30, sizeZ: 500}
+	const {elements, vertexes} = generateMeshData(generateWorld(size), size)
+	const numbers = new Float32Array(vertexes)
+	const uint32Array = new Uint32Array(elements)
+	const elapsed = performance.now() - a
+	console.log({elapsed})
 	const positions = renderer.createBuffer(true, false)
-	positions.setContent(new Float32Array(vertexes.flat()))
+	positions.setContent(numbers)
 	const floatSize = Float32Array.BYTES_PER_ELEMENT
 	const stride = 9 * floatSize
 	program.enableAttribute(program.attributes.position, 3, stride, 0, 0)
 	program.enableAttribute(program.attributes.color, 3, stride, 3 * floatSize, 0)
 	program.enableAttribute(program.attributes.normal, 3, stride, 6 * floatSize, 0)
 
-
 	const elementsBuffer = renderer.createBuffer(false, false)
-	elementsBuffer.setContent(new Uint32Array(elements))
+	elementsBuffer.setContent(uint32Array)
 
 	return {program, vao, trianglesToRender: elements.length / 3}
 })()

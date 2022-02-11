@@ -1,13 +1,5 @@
 import { makeNoise2D } from './util/noise/2d'
 
-/**
- * 3 floats for Position
- * 3 floats for Color
- * 3 floats for Normal vector
- * x, y, z, r, g, b, nx, ny, nz
- */
-type Vertex = [number, number, number, number, number, number, number, number, number]
-
 const getBlockTypeByNoiseValue = (v: number): BlockType => {
 	if (v < 0.15)
 		return BlockType.DeepWater
@@ -99,7 +91,7 @@ export const generateMeshData = (world: Uint8Array, size: WorldSize) => {
 	vertexIndexes.fill(NO_ELEMENT_INDEX_MARKER)
 	console.assert(vertexIndexes[0] === NO_ELEMENT_INDEX_MARKER)
 
-	const vertexes: Vertex[] = []
+	const vertexes: number[] = []
 	const elements: number[] = []
 
 	let addedVertexesCounter = 0
@@ -108,7 +100,7 @@ export const generateMeshData = (world: Uint8Array, size: WorldSize) => {
 
 	const vertexesPerX = (sizeZ + 1)
 	const forceAddVertex = (positionIndex: number, x: number, y: number, z: number): number => {
-		vertexes.push([x, y, z, 2, 2, 2, 0, 0, 0])
+		vertexes.push(x, y, z, 2, 2, 2, 0, 0, 0)
 		vertexIndexes[positionIndex] = addedVertexesCounter
 		return addedVertexesCounter++
 	}
@@ -121,23 +113,24 @@ export const generateMeshData = (world: Uint8Array, size: WorldSize) => {
 		return elementIndex
 	}
 	const setColor = (vertexIndex: number,
-	                  value: [number, number, number],
+	                  colorValue: [number, number, number],
 	                  normal: [number, number, number]): number => {
-		const wasNeverUsed = vertexes[vertexIndex]![3] === 2 && vertexes[vertexIndex]![4] === 2 && vertexes[vertexIndex]![5] === 2
+		vertexIndex *= 9
+		const wasNeverUsed = vertexes[vertexIndex + 3]! === 2 && vertexes[vertexIndex + 4]! === 2 && vertexes[vertexIndex + 5]! === 2
 		if (!wasNeverUsed) {
-			const x = vertexes[vertexIndex]![0]
-			const y = vertexes[vertexIndex]![1]
-			const z = vertexes[vertexIndex]![2]
+			const x = vertexes[vertexIndex]!
+			const y = vertexes[vertexIndex + 1]!
+			const z = vertexes[vertexIndex + 2]!
 			const positionIndex = y * vertexesPerY + x * vertexesPerX + z
-			vertexIndex = forceAddVertex(positionIndex, x, y, z)
+			vertexIndex = forceAddVertex(positionIndex, x, y, z) * 9
 		}
-		vertexes[vertexIndex]![3] = value[0]
-		vertexes[vertexIndex]![4] = value[1]
-		vertexes[vertexIndex]![5] = value[2]
-		vertexes[vertexIndex]![6] = normal[0]
-		vertexes[vertexIndex]![7] = normal[1]
-		vertexes[vertexIndex]![8] = normal[2]
-		return vertexIndex
+		vertexes[vertexIndex + 3] = colorValue[0]
+		vertexes[vertexIndex + 4] = colorValue[1]
+		vertexes[vertexIndex + 5] = colorValue[2]
+		vertexes[vertexIndex + 6] = normal[0]
+		vertexes[vertexIndex + 7] = normal[1]
+		vertexes[vertexIndex + 8] = normal[2]
+		return vertexIndex / 9
 	}
 
 	for (let y = 0; y < sizeY; y++) {
@@ -219,98 +212,7 @@ export const generateMeshData = (world: Uint8Array, size: WorldSize) => {
 	}
 
 	return {
-		vertexes: vertexes.map(e => [...e]),
+		vertexes,
 		elements,
 	}
-}
-
-export const buildVertexData = (sizeX: number, sizeZ: number): { vertexes: Vertex[], elements: number[] } => {
-	const size = {sizeX, sizeY: 30, sizeZ}
-	// @ts-ignore
-	return generateMeshData(generateWorld(size), size)
-	// const vertexes: Vertex[] = []
-	// const elements: number[] = []
-
-	// const world = generateHeightMap(sizeX, sizeZ)
-
-
-	// for (let z = 0; z < sizeZ; ++z) {
-	// 	for (let x = 0; x < sizeX; ++x) {
-	// 		const y = world[z * sizeX + x]!
-	// 		if (x === 0) {
-	// 			// first on the left
-	// 			if (z === 0) {
-	// 				// first at the top
-	// 				const currentIndex = vertexes.length
-	// 				vertexes.push([x, y, z, 1, 1, 1]) // provoking vertex
-	// 				vertexes.push([x, y, z + 1, 1, 1, 1])
-	// 				vertexes.push([x + 1, y, z + 1, 1, 1, 1])
-	// 				vertexes.push([x + 1, y, z, 1, 1, 1])
-	//
-	// 				elements.push(
-	// 					currentIndex + 1, currentIndex + 2, currentIndex,
-	// 					currentIndex + 2, currentIndex + 3, currentIndex,
-	// 				)
-	// 			}
-	// 		} else {
-	// 			if (z === 0) {
-	// 				// first at the top
-	//
-	// 				if (y !== world[z * sizeX + (x - 1)]!) {
-	// 					// place vertical plane
-	// 					const currentIndex = vertexes.length
-	// 					vertexes.push([x, y, z, Math.random(), 1, 1]) // provoking vertex
-	// 					vertexes.push([x, y, z + 1, 1, 1, 1])
-	// 					vertexes.push([x + 1, y, z + 1, 1, 1, 1])
-	// 					vertexes.push([x + 1, y, z, 1, 1, 1])
-	//
-	// 					elements.push(
-	// 						currentIndex + 1, currentIndex + 2, currentIndex,
-	// 						currentIndex + 2, currentIndex + 3, currentIndex,
-	// 					)
-	// 				}
-	//
-	// 				const currentIndex = vertexes.length
-	// 				vertexes.push([x, y, z, Math.random(), 1, 1]) // provoking vertex
-	// 				vertexes.push([x, y, z + 1, 1, 1, 1])
-	// 				vertexes.push([x + 1, y, z + 1, 1, 1, 1])
-	// 				vertexes.push([x + 1, y, z, 1, 1, 1])
-	//
-	// 				elements.push(
-	// 					currentIndex + 1, currentIndex + 2, currentIndex,
-	// 					currentIndex + 2, currentIndex + 3, currentIndex,
-	// 				)
-	// 			}
-	// 		}
-	//
-	// 		// vertexes.push([x, z, 1, 1, 1])
-	// 	}
-	// }
-
-	// for (let y = 0; y <= sizeZ; ++y) {
-	// 	for (let x = 0; x <= sizeX; ++x) {
-	// 		vertexes.push([x, 1, y, 1, 1, 1])
-	// 	}
-	// }
-	//
-	//
-	// const vertexesInRow = sizeX + 1
-	// for (let y = 0; y < sizeZ; ++y) {
-	// 	for (let x = 0; x < sizeX; ++x) {
-	// 		elements.push(
-	// 			(y + 1) * vertexesInRow + x,
-	// 			(y + 1) * vertexesInRow + 1 + x,
-	// 			y * vertexesInRow + x,
-	//
-	// 			(y + 1) * vertexesInRow + 1 + x,
-	// 			y * vertexesInRow + x + 1,
-	// 			y * vertexesInRow + x,
-	// 		)
-	// 	}
-	// }
-
-	// return {
-	// 	vertexes,
-	// 	elements,
-	// }
 }
