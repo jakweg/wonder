@@ -1,38 +1,38 @@
 /**
  * x, y, z, r, g, b
  */
+import { makeNoise2D } from './util/noise/2d'
 
 
 type Vertex = [number, number, number, number, number, number]
 
-const determineColorByNoiseValue = (v: number): [number, number, number] => {
-	if (v < 0.10) // deep water
-		return [0.1953125, 0.35546875, 0.60546875]
+const getBlockTypeByNoiseValue = (v: number): BlockType => {
+	if (v < 0.15)
+		return BlockType.DeepWater
 
-	if (v < 0.20) // water
-		return [0.21875, 0.4921875, 0.9140625]
+	if (v < 0.25)
+		return BlockType.Water
 
-	if (v < 0.30) // sand
-		return [0.859375, 0.81640625, 0.6484375]
+	if (v < 0.30)
+		return BlockType.Sand
 
-	if (v < 0.70) // grass
-		return [0.41015625, 0.73046875, 0.2578125]
+	if (v < 0.70)
+		return BlockType.Grass
 
-	if (v < 0.90) // stone
-		return [0.515625, 0.51171875, 0.51171875]
+	if (v < 0.90)
+		return BlockType.Stone
 
-	// snow
-	return [1, 1, 1]
+	return BlockType.Snow
 }
 
 enum BlockType {
-	None = 0,
+	Air = 0,
+	Snow,
 	Stone,
 	Grass,
 	Sand,
 	Water,
-	RED,
-	PURPLE,
+	DeepWater,
 }
 
 const getColorByBlock = (block: BlockType): [number, number, number] => {
@@ -45,10 +45,9 @@ const getColorByBlock = (block: BlockType): [number, number, number] => {
 			return [0.859375, 0.81640625, 0.6484375]
 		case BlockType.Water:
 			return [0.21875, 0.4921875, 0.9140625]
-		case BlockType.RED:
-			return [1, 0, 0]
-		case BlockType.PURPLE:
-			return [1, 0, 1]
+		case BlockType.DeepWater:
+			return [0.21875, 0.3421875, 0.8140625]
+		case BlockType.Snow:
 		default:
 			return [1, 1, 1]
 	}
@@ -62,24 +61,19 @@ interface WorldSize {
 
 export const generateWorld = ({sizeX, sizeY, sizeZ}: WorldSize): Uint8Array => {
 	const world = new Uint8Array(sizeX * sizeY * sizeZ)
-	let index = 0
-	for (let i = 0; i < sizeY; i++) {
-		for (let j = 0; j < sizeZ; j++) {
-			for (let k = 0; k < sizeX; k++) {
-				// if (Math.sqrt(j * j + k * k) < 10)
-				// world[index++] = BlockType.Stone
-				// else
-				// 	world[index++] = BlockType.None
-				world[index++] = (Math.random() * 5 | 0) + 1
+	world.fill(BlockType.Air)
+	const noise = makeNoise2D(123)
+	for (let j = 0; j < sizeZ; j++) {
+		for (let k = 0; k < sizeX; k++) {
+			const factor = 0.01
+			const noiseValue = noise(j * factor, k * factor)
+			const y = (noiseValue * 0.5 + 0.5) * sizeY | 0
+			for (let i = 0; i < y; i++) {
+				world[i * sizeX * sizeZ + k * sizeZ + j] = BlockType.Stone
 			}
+			world[y * sizeX * sizeZ + k * sizeZ + j] = getBlockTypeByNoiseValue(noiseValue * 0.5 + 0.5)
 		}
 	}
-	world[0] = BlockType.Sand
-	world[7] = BlockType.Sand
-	world[5] = BlockType.Water
-	world[4] = BlockType.Grass
-	world[2] = BlockType.RED
-	world[3] = BlockType.PURPLE
 	return world
 }
 
@@ -125,21 +119,21 @@ export const generateMeshData = (world: Uint8Array, size: WorldSize) => {
 		vertexes[vertexIndex]![5] = value[2]
 		return vertexIndex
 	}
-	let blockIndex = 0
+
 	for (let y = 0; y < sizeY; y++) {
 		for (let z = 0; z < sizeZ; z++) {
 			for (let x = 0; x < sizeX; x++) {
-				const thisBlock = world[blockIndex++]! as BlockType
-				if (thisBlock === BlockType.None) continue
+				const thisBlock = world[y * sizeX * sizeZ + x * sizeZ + z]! as BlockType
+				if (thisBlock === BlockType.Air) continue
 
 				const color = getColorByBlock(thisBlock)
 
-				const needsTop = y === sizeY - 1 || world[(y + 1) * sizeX * sizeZ + x * sizeZ + z]! as BlockType === BlockType.None
-				const needsBottom = y === 0 || world[(y - 1) * sizeX * sizeZ + x * sizeZ + z]! as BlockType === BlockType.None
-				const needsPositiveZ = z === sizeZ - 1 || world[y * sizeX * sizeZ + x * sizeZ + (z + 1)]! as BlockType === BlockType.None
-				const needsNegativeZ = z === 0 || world[y * sizeX * sizeZ + x * sizeZ + (z - 1)]! as BlockType === BlockType.None
-				const needsPositiveX = x === sizeX - 1 || world[y * sizeX * sizeZ + (x + 1) * sizeZ + z]! as BlockType === BlockType.None
-				const needsNegativeX = x === 0 || world[y * sizeX * sizeZ + (x - 1) * sizeZ + z]! as BlockType === BlockType.None
+				const needsTop = y === sizeY - 1 || world[(y + 1) * sizeX * sizeZ + x * sizeZ + z]! as BlockType === BlockType.Air
+				const needsBottom = y === 0 || world[(y - 1) * sizeX * sizeZ + x * sizeZ + z]! as BlockType === BlockType.Air
+				const needsPositiveZ = z === sizeZ - 1 || world[y * sizeX * sizeZ + x * sizeZ + (z + 1)]! as BlockType === BlockType.Air
+				const needsNegativeZ = z === 0 || world[y * sizeX * sizeZ + x * sizeZ + (z - 1)]! as BlockType === BlockType.Air
+				const needsPositiveX = x === sizeX - 1 || world[y * sizeX * sizeZ + (x + 1) * sizeZ + z]! as BlockType === BlockType.Air
+				const needsNegativeX = x === 0 || world[y * sizeX * sizeZ + (x - 1) * sizeZ + z]! as BlockType === BlockType.Air
 
 				if (!(needsTop || needsBottom || needsPositiveZ || needsNegativeZ || needsPositiveX || needsNegativeX)) continue
 
@@ -161,13 +155,13 @@ export const generateMeshData = (world: Uint8Array, size: WorldSize) => {
 					)
 				}
 
-				if (needsBottom) {
-					e5 = setColor(e5, color)
-					elements.push(
-						e7, e6, e5,
-						e8, e7, e5,
-					)
-				}
+				// if (needsBottom) {
+				// 	e5 = setColor(e5, color)
+				// 	elements.push(
+				// 		e7, e6, e5,
+				// 		e8, e7, e5,
+				// 	)
+				// }
 
 				if (needsPositiveX) {
 					e7 = setColor(e7, color)
@@ -210,21 +204,8 @@ export const generateMeshData = (world: Uint8Array, size: WorldSize) => {
 	}
 }
 
-const generateHeightMap = (sizeX: number, sizeZ: number): number[] => {
-	const map: number[] = []
-	for (let y = 0; y <= sizeZ; ++y) {
-		for (let x = 0; x <= sizeX; ++x) {
-			if (y % 3 === 0 && x % 3 === 0)
-				map.push(1)
-			else
-				map.push(0)
-		}
-	}
-	return map
-}
-
 export const buildVertexData = (sizeX: number, sizeZ: number): { vertexes: Vertex[], elements: number[] } => {
-	const size = {sizeX, sizeY: sizeX, sizeZ}
+	const size = {sizeX, sizeY: 10, sizeZ}
 	// @ts-ignore
 	return generateMeshData(generateWorld(size), size)
 	// const vertexes: Vertex[] = []

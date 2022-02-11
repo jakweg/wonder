@@ -50,8 +50,8 @@ void main() {
 	const vao = renderer.createVAO()
 	vao.bind()
 
-	const sizeX = 10
-	const sizeY = 10
+	const sizeX = 100
+	const sizeY = 100
 	const {elements, vertexes} = buildVertexData(sizeX, sizeY)
 	const positions = renderer.createBuffer(true, false)
 	positions.setContent(new Float32Array(vertexes.flat()))
