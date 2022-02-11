@@ -18,7 +18,7 @@ const getBlockTypeByNoiseValue = (v: number): BlockType => {
 	if (v < 0.30)
 		return BlockType.Sand
 
-	if (v < 0.70)
+	if (v < 0.80)
 		return BlockType.Grass
 
 	if (v < 0.90)
@@ -65,15 +65,28 @@ export const generateWorld = ({sizeX, sizeY, sizeZ}: WorldSize): Uint8Array => {
 	const world = new Uint8Array(sizeX * sizeY * sizeZ)
 	world.fill(BlockType.Air)
 	const noise = makeNoise2D(123)
+	const borderSizeX = sizeX * 0.1 | 0
+	const borderSizeZ = sizeZ * 0.1 | 0
+	const borderSizeXSecond = sizeX - borderSizeX
+	const borderSizeZSecond = sizeZ - borderSizeZ
 	for (let j = 0; j < sizeZ; j++) {
 		for (let k = 0; k < sizeX; k++) {
-			const factor = 0.02
-			const noiseValue = noise(j * factor, k * factor)
-			const y = (noiseValue * 0.5 + 0.5) * sizeY | 0
+			const factor = 0.01
+			let remappedNoiseValue = noise(j * factor, k * factor) * 0.5 + 0.5
+			if (j < borderSizeZ)
+				remappedNoiseValue = (j / borderSizeZ) * remappedNoiseValue
+			if (k < borderSizeX)
+				remappedNoiseValue = (k / borderSizeX) * remappedNoiseValue
+			if (j > borderSizeZSecond)
+				remappedNoiseValue = (1 - (j - borderSizeZSecond) / borderSizeZ) * (remappedNoiseValue)
+			if (k > borderSizeXSecond)
+				remappedNoiseValue = (1 - (k - borderSizeXSecond) / borderSizeX) * (remappedNoiseValue)
+
+			const y = (remappedNoiseValue ** 5) * sizeY | 0
 			for (let i = 0; i < y; i++) {
 				world[i * sizeX * sizeZ + k * sizeZ + j] = BlockType.Stone
 			}
-			world[y * sizeX * sizeZ + k * sizeZ + j] = getBlockTypeByNoiseValue(noiseValue * 0.5 + 0.5)
+			world[y * sizeX * sizeZ + k * sizeZ + j] = getBlockTypeByNoiseValue(remappedNoiseValue)
 		}
 	}
 	return world
@@ -212,7 +225,7 @@ export const generateMeshData = (world: Uint8Array, size: WorldSize) => {
 }
 
 export const buildVertexData = (sizeX: number, sizeZ: number): { vertexes: Vertex[], elements: number[] } => {
-	const size = {sizeX, sizeY: 80, sizeZ}
+	const size = {sizeX, sizeY: 30, sizeZ}
 	// @ts-ignore
 	return generateMeshData(generateWorld(size), size)
 	// const vertexes: Vertex[] = []

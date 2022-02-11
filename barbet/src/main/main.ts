@@ -27,8 +27,13 @@ void main() {
 	v_color = a_color;
 	v_normal = a_normal;
 	v_currentPosition = a_position;
-	
-    gl_Position = u_projection * u_view * vec4(a_position, 1);
+	vec3 pos = a_position;
+	if (v_color == vec3(0.21875, 0.4921875, 0.9140625) || v_color == vec3(0.21875, 0.3421875, 0.8140625)){
+		pos.y += sin(u_time + pos.x + pos.z * 100.0) * 0.5;
+		pos.z += sin(u_time * 1.4 + pos.x + pos.z * 30.0) * 0.2;
+		pos.x += cos(u_time + pos.x + pos.z * 100.0) * 0.3;
+	}
+    gl_Position = u_projection * u_view * vec4(pos, 1);
     gl_PointSize = 10.0;
 }
 `)
