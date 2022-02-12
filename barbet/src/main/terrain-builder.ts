@@ -165,23 +165,31 @@ export const generateMeshData = (world: Uint8Array, size: WorldSize) => {
 				if (thisBlock === BlockType.Air) continue
 
 				const needsTop = y === sizeY - 1 || world[(y + 1) * sizeX * sizeZ + x * sizeZ + z]! as BlockType === BlockType.Air
-				const needsBottom = y === 0 || world[(y - 1) * sizeX * sizeZ + x * sizeZ + z]! as BlockType === BlockType.Air
+				// const needsBottom = y === 0 || world[(y - 1) * sizeX * sizeZ + x * sizeZ + z]! as BlockType === BlockType.Air
+				const needsBottom = false // disabled temporarily
 				const needsPositiveZ = z === sizeZ - 1 || world[y * sizeX * sizeZ + x * sizeZ + (z + 1)]! as BlockType === BlockType.Air
 				const needsNegativeZ = z === 0 || world[y * sizeX * sizeZ + x * sizeZ + (z - 1)]! as BlockType === BlockType.Air
 				const needsPositiveX = x === sizeX - 1 || world[y * sizeX * sizeZ + (x + 1) * sizeZ + z]! as BlockType === BlockType.Air
 				const needsNegativeX = x === 0 || world[y * sizeX * sizeZ + (x - 1) * sizeZ + z]! as BlockType === BlockType.Air
 
-				if (!(needsTop || needsBottom || needsPositiveZ || needsNegativeZ || needsPositiveX || needsNegativeX)) continue
+				const needsHorizontal = needsTop || needsBottom
+				const needsAnySide = needsPositiveZ || needsNegativeZ || needsPositiveX || needsNegativeX
+				if (!(needsHorizontal || needsAnySide)) continue
+				let e1 = 0, e2 = 0, e3 = 0, e4 = 0, e5 = 0, e6 = 0, e7 = 0, e8 = 0
 
-				let e1 = addVertexIfNotExists(x, y + 1, z)
-				let e2 = addVertexIfNotExists(x, y + 1, z + 1)
-				let e3 = addVertexIfNotExists(x + 1, y + 1, z + 1)
-				let e4 = addVertexIfNotExists(x + 1, y + 1, z)
+				if (needsTop || needsAnySide) {
+					e1 = addVertexIfNotExists(x, y + 1, z)
+					e2 = addVertexIfNotExists(x, y + 1, z + 1)
+					e3 = addVertexIfNotExists(x + 1, y + 1, z + 1)
+					e4 = addVertexIfNotExists(x + 1, y + 1, z)
+				}
 
-				let e5 = addVertexIfNotExists(x, y, z)
-				let e6 = addVertexIfNotExists(x, y, z + 1)
-				let e7 = addVertexIfNotExists(x + 1, y, z + 1)
-				let e8 = addVertexIfNotExists(x + 1, y, z)
+				if (needsBottom || needsAnySide) {
+					e5 = addVertexIfNotExists(x, y, z)
+					e6 = addVertexIfNotExists(x, y, z + 1)
+					e7 = addVertexIfNotExists(x + 1, y, z + 1)
+					e8 = addVertexIfNotExists(x + 1, y, z)
+				}
 
 				if (needsTop) {
 					const topColor = randomizeColor(getTopColorByBlock(thisBlock))
