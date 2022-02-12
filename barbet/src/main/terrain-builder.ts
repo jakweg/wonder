@@ -66,13 +66,13 @@ export const generateWorld = ({sizeX, sizeY, sizeZ}: WorldSize): Uint8Array => {
 			const factor = 0.01
 			let remappedNoiseValue = noise(j * factor, k * factor) * 0.5 + 0.5
 			if (j < borderSizeZ)
-				remappedNoiseValue = (j / borderSizeZ) * remappedNoiseValue
+				remappedNoiseValue = (j / borderSizeZ) ** (1 / 3) * remappedNoiseValue
 			if (k < borderSizeX)
-				remappedNoiseValue = (k / borderSizeX) * remappedNoiseValue
+				remappedNoiseValue = (k / borderSizeX) ** (1 / 3) * remappedNoiseValue
 			if (j > borderSizeZSecond)
-				remappedNoiseValue = (1 - (j - borderSizeZSecond) / borderSizeZ) * (remappedNoiseValue)
+				remappedNoiseValue = (1 - (j - borderSizeZSecond) / borderSizeZ) ** (1 / 3) * (remappedNoiseValue)
 			if (k > borderSizeXSecond)
-				remappedNoiseValue = (1 - (k - borderSizeXSecond) / borderSizeX) * (remappedNoiseValue)
+				remappedNoiseValue = (1 - (k - borderSizeXSecond) / borderSizeX) ** (1 / 3) * (remappedNoiseValue)
 
 			let y = (remappedNoiseValue ** 2) * sizeY | 0
 			const block = getBlockTypeByNoiseValue(y / sizeY)
