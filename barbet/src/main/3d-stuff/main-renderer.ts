@@ -101,11 +101,11 @@ export class MainRenderer {
 		return shader
 	}
 
-	public createProgram<Uniforms = string, Attributes = string>(
+	public createProgram<Attributes = string, Uniforms = string>(
 		vertex: WebGLShader,
 		fragment: WebGLShader):
 // @ts-ignore
-		GlProgram<Uniforms, Attributes> {
+		GlProgram<Attributes, Uniforms> {
 
 		const gl = this.gl
 		const program = gl.createProgram()!
@@ -121,7 +121,7 @@ export class MainRenderer {
 		this.allocatedResources.push({type: 'program', id: program})
 
 		// @ts-ignore
-		return new GlProgram<Uniforms, Attributes>(
+		return new GlProgram<Attributes, Uniforms>(
 			gl, program,
 			getAllUniforms(gl, program) as unknown as any,
 			getAllAttributes(gl, program) as unknown as any,
@@ -208,7 +208,7 @@ class VertexArray {
 	}
 }
 
-export class GlProgram<U extends 'names', A extends 'names'> {
+export class GlProgram<A extends 'names', U extends 'names'> {
 	constructor(private readonly gl: WebGL2RenderingContext,
 	            private readonly program: WebGLProgram,
 	            readonly uniforms: { [key in U]: WebGLUniformLocation },

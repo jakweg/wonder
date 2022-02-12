@@ -1,9 +1,10 @@
 import { MainRenderer } from './3d-stuff/main-renderer'
-import { PrecisionHeader, VersionHeader } from './3d-stuff/shader/common'
+import { RenderContext } from './3d-stuff/renderable/render-context'
+import { createNewTerrainRenderable } from './3d-stuff/renderable/terrain'
+import { allBlocks, BlockId } from './3d-stuff/world/block'
+import { World } from './3d-stuff/world/world'
 import { Camera } from './camera'
 import KEYBOARD from './keyboard-controller'
-import { generateMeshData, generateWorld } from './terrain-builder'
-import { toGl } from './util/matrix/common'
 import * as vec3 from './util/matrix/vec3'
 
 const canvas: HTMLCanvasElement = document.getElementById('main-canvas') as HTMLCanvasElement
@@ -11,118 +12,37 @@ canvas.width = 1280
 canvas.height = 720
 
 const renderer = MainRenderer.fromHTMLCanvas(canvas)
-const program1 = (() => {
-	const vertex = renderer.createShader(true, `${VersionHeader()}
-${PrecisionHeader()}
-in vec3 a_position;
-in vec3 a_color;
-in float a_flags;
-flat out vec3 v_color;
-flat out vec3 v_currentPosition;
-flat out int v_flags;
-uniform mat4 u_projection;
-uniform mat4 u_view;
-uniform float u_time;
-void main() {
-	// v_flags = (int(a_normal.x) + 1) << 4 | (int(a_normal.y) + 1) << 2 | (int(a_normal.z) + 1);
-	v_flags = int(a_flags);
-	v_color = a_color;
-	v_currentPosition = a_position;
-	vec3 pos = a_position;
-	// if (v_color == vec3(0.21875, 0.4921875, 0.9140625) || v_color == vec3(0.21875, 0.3421875, 0.8140625)){
-	if (pos.y < 5.50) {
-		pos.y += sin(u_time * 2.1 + pos.x + pos.z * 100.0) * 0.15 + 0.5;
-		// pos.z += sin(u_time * 1.6 + pos.x + pos.z * 30.0) * 0.05;
-		// pos.x += cos(u_time + pos.x + pos.z * 100.0) * 0.10;
-	}
-    gl_Position = u_projection * u_view * vec4(pos, 1);
-    gl_PointSize = 10.0;
-}
-`)
-	const fragment = renderer.createShader(false, `${VersionHeader()}
-${PrecisionHeader()}
-out vec4 finalColor;
-flat in int v_flags;
-flat in vec3 v_color;
-flat in vec3 v_currentPosition;
-uniform float u_time;
-uniform vec3 u_lightPosition;
-const float ambientLight = 0.3;
-void main() {
-	vec3 normal = vec3(ivec3(((v_flags >> 4) & 3) - 1, ((v_flags >> 2) & 3) - 1, (v_flags & 3) - 1));
-	vec3 lightDirection = normalize(u_lightPosition - v_currentPosition);
-	float diffuse = max(dot(normal, lightDirection), ambientLight);
-	// vec3 lightColor = mix(vec3(1,1,0.8), vec3(1,0.57,0.3), sin(u_time * 0.3) * 0.5 + 0.5);
-	vec3 lightColor = vec3(1,1,1);
-	finalColor = vec4(v_color * lightColor * diffuse, 1);
-}
-`)
-
-	type Uniforms = 'time' | 'projection' | 'view' | 'lightPosition'
-	type Attributes = 'position' | 'color' | 'flags'
-	const program = renderer.createProgram<Uniforms, Attributes>(vertex, fragment)
-	const vao = renderer.createVAO()
-	vao.bind()
-
-	const a = performance.now()
-	const size = {sizeX: 1000, sizeY: 60, sizeZ: 1000}
-	const {elements, vertexes} = generateMeshData(generateWorld(size), size)
-	const numbers = new Float32Array(vertexes)
-	const uint32Array = new Uint32Array(elements)
-	const elapsed = performance.now() - a
-	console.log({elapsed})
-	const positions = renderer.createBuffer(true, false)
-	positions.setContent(numbers)
-	const floatSize = Float32Array.BYTES_PER_ELEMENT
-	const stride = 7 * floatSize
-	program.enableAttribute(program.attributes.position, 3, true, stride, 0, 0)
-	program.enableAttribute(program.attributes.color, 3, true, stride, 3 * floatSize, 0)
-	program.enableAttribute(program.attributes.flags, 1, true, stride, 6 * floatSize, 0)
-
-	const elementsBuffer = renderer.createBuffer(false, false)
-	elementsBuffer.setContent(uint32Array)
-
-	return {program, vao, trianglesToRender: elements.length / 3}
-})()
-
 const camera = Camera.newPerspective(90, 1280 / 720)
 camera.moveCamera(255, 50, 255)
 
-const lightPosition = vec3.fromValues(-300, 2500, -1000)
+const world = World.createEmpty(10, 10, 10, allBlocks[BlockId.Stone])
+const terrain = createNewTerrainRenderable(renderer, world)
+
+const sunPosition = vec3.fromValues(-300, 2500, -1000)
 
 const firstRenderTime = Date.now()
 renderer.renderFunction = (gl, dt) => {
 	const now = Date.now()
 
+	const ctx: RenderContext = {
+		gl,
+		camera,
+		sunPosition,
+		secondsSinceFirstRender: (now - firstRenderTime) / 1000,
+	}
 	moveCameraByKeys(camera, dt)
-	camera.lastEyeChangeId++
 	camera.updateMatrixIfNeeded()
-	// mat4.rotateY(camera.viewMatrix, camera.viewMatrix, -3 * Math.PI / 4)
-	const {vao, program, trianglesToRender} = program1
-	vao.bind()
-	program.use()
-	gl.uniformMatrix4fv(program.uniforms.projection, false, toGl(camera.perspectiveMatrix))
-	gl.uniformMatrix4fv(program.uniforms.view, false, toGl(camera.viewMatrix))
-	const secondsSinceRender = (now - firstRenderTime) / 1000
-	gl.uniform1f(program.uniforms.time, secondsSinceRender)
-	// const r = 5000
-	// lightPosition[0] = Math.cos(secondsSinceRender / 2) * r + 500
-	// lightPosition[1] = Math.sin(secondsSinceRender / 2) * 5000 + 100
-	// lightPosition[2] = Math.sin(secondsSinceRender / 2) * r + 500
-	gl.uniform3fv(program.uniforms.lightPosition, toGl(lightPosition))
-	// gl.drawArraysInstanced(gl.TRIANGLES, 0, triangles * 3, 1)
-	gl.drawElements(gl.TRIANGLES, 3 * trianglesToRender, gl.UNSIGNED_INT, 0)
+	Object.freeze(ctx)
 
-	// gl.drawArrays(gl.LINE_STRIP, 0,3 * trianglesToRender)
-	// renderer.stopRendering()
+	terrain.render(ctx)
 }
+
 renderer.beforeRenderFunction = (secondsSinceLastFrame) => secondsSinceLastFrame > 0.5 || document.hasFocus()
 renderer.beginRendering()
 
 const moveCameraByKeys = (camera: Camera, dt: number) => {
 	if (!KEYBOARD.isAnyPressed()) return
 	const speed = dt * 3 * camera.eye[1]
-	const speedVerticalSpeed = speed / camera.eye[1]
 
 	const front1 = vec3.subtract(vec3.create(), camera.center, camera.eye)
 	vec3.normalize(front1, front1)
