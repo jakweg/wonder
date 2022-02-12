@@ -30,8 +30,8 @@ void main() {
 	v_currentPosition = a_position;
 	vec3 pos = a_position;
 	// if (v_color == vec3(0.21875, 0.4921875, 0.9140625) || v_color == vec3(0.21875, 0.3421875, 0.8140625)){
-	if (pos.y < 3.50) {
-		pos.y += sin(u_time * 2.1 + pos.x + pos.z * 100.0) * 0.2 + 0.4;
+	if (pos.y < 5.50) {
+		pos.y += sin(u_time * 2.1 + pos.x + pos.z * 100.0) * 0.15 + 0.5;
 		// pos.z += sin(u_time * 1.6 + pos.x + pos.z * 30.0) * 0.05;
 		// pos.x += cos(u_time + pos.x + pos.z * 100.0) * 0.10;
 	}
@@ -47,11 +47,13 @@ flat in vec3 v_color;
 flat in vec3 v_currentPosition;
 uniform float u_time;
 uniform vec3 u_lightPosition;
+const float ambientLight = 0.3;
 void main() {
-	vec3 normal = vec3(ivec3((v_flags >> 4) - 1, ((v_flags >> 2) & 3) - 1, (v_flags & 3) - 1));
+	vec3 normal = vec3(ivec3(((v_flags >> 4) & 3) - 1, ((v_flags >> 2) & 3) - 1, (v_flags & 3) - 1));
 	vec3 lightDirection = normalize(u_lightPosition - v_currentPosition);
-	float diffuse = max(dot(normal, lightDirection), 0.3);
-	vec3 lightColor = mix(vec3(1,1,0.8), vec3(1,0.57,0.3), sin(u_time * 0.3) * 0.5 + 0.5);
+	float diffuse = max(dot(normal, lightDirection), ambientLight);
+	// vec3 lightColor = mix(vec3(1,1,0.8), vec3(1,0.57,0.3), sin(u_time * 0.3) * 0.5 + 0.5);
+	vec3 lightColor = vec3(1,1,1);
 	finalColor = vec4(v_color * lightColor * diffuse, 1);
 }
 `)
@@ -63,7 +65,7 @@ void main() {
 	vao.bind()
 
 	const a = performance.now()
-	const size = {sizeX: 1000, sizeY: 30, sizeZ: 1000}
+	const size = {sizeX: 1000, sizeY: 60, sizeZ: 1000}
 	const {elements, vertexes} = generateMeshData(generateWorld(size), size)
 	const numbers = new Float32Array(vertexes)
 	const uint32Array = new Uint32Array(elements)
@@ -84,9 +86,9 @@ void main() {
 })()
 
 const camera = Camera.newPerspective(90, 1280 / 720)
-camera.moveCamera(15, 50, 55)
+camera.moveCamera(255, 50, 255)
 
-const lightPosition = vec3.fromValues(0, 50, 0)
+const lightPosition = vec3.fromValues(-300, 2500, -1000)
 
 const firstRenderTime = Date.now()
 renderer.renderFunction = (gl, dt) => {
@@ -103,10 +105,10 @@ renderer.renderFunction = (gl, dt) => {
 	gl.uniformMatrix4fv(program.uniforms.view, false, toGl(camera.viewMatrix))
 	const secondsSinceRender = (now - firstRenderTime) / 1000
 	gl.uniform1f(program.uniforms.time, secondsSinceRender)
-	const r = 200
-	lightPosition[0] = Math.cos(secondsSinceRender / 2) * r + 500
-	lightPosition[1] = Math.sin(secondsSinceRender / 2) * 10 + 240
-	lightPosition[2] = Math.sin(secondsSinceRender / 2) * r + 500
+	// const r = 5000
+	// lightPosition[0] = Math.cos(secondsSinceRender / 2) * r + 500
+	// lightPosition[1] = Math.sin(secondsSinceRender / 2) * 5000 + 100
+	// lightPosition[2] = Math.sin(secondsSinceRender / 2) * r + 500
 	gl.uniform3fv(program.uniforms.lightPosition, toGl(lightPosition))
 	// gl.drawArraysInstanced(gl.TRIANGLES, 0, triangles * 3, 1)
 	gl.drawElements(gl.TRIANGLES, 3 * trianglesToRender, gl.UNSIGNED_INT, 0)

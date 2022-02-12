@@ -13,7 +13,7 @@ const getBlockTypeByNoiseValue = (v: number): BlockType => {
 	if (v < 0.50)
 		return BlockType.Grass
 
-	if (v < 0.80)
+	if (v < 0.70)
 		return BlockType.Stone
 
 	return BlockType.Snow
@@ -29,7 +29,7 @@ enum BlockType {
 	DeepWater,
 }
 
-const getColorByBlock = (block: BlockType): [number, number, number] => {
+const getTopColorByBlock = (block: BlockType): [number, number, number] => {
 	switch (block) {
 		case BlockType.Stone:
 			return [0.415625, 0.41171875, 0.41171875]
@@ -47,6 +47,19 @@ const getColorByBlock = (block: BlockType): [number, number, number] => {
 	}
 }
 
+const getSideColorByBlock = (block: BlockType): [number, number, number] => {
+	if (block === BlockType.Grass)
+		return [0.39453125, 0.2890625, 0.20703125]
+	if (block === BlockType.Snow)
+		return getTopColorByBlock(BlockType.Stone)
+	return getTopColorByBlock(block)
+}
+
+const randomizeColor = (color: [number, number, number]): [number, number, number] => {
+	const r = Math.random() * 0.03 - 0.015
+	return [color[0]! + r, color[1]! + r, color[2]! + r]
+}
+
 interface WorldSize {
 	readonly sizeX: number,
 	readonly sizeY: number,
@@ -61,6 +74,8 @@ export const generateWorld = ({sizeX, sizeY, sizeZ}: WorldSize): Uint8Array => {
 	const borderSizeZ = sizeZ * 0.1 | 0
 	const borderSizeXSecond = sizeX - borderSizeX
 	const borderSizeZSecond = sizeZ - borderSizeZ
+	const centerX = sizeX / 2
+	const centerZ = sizeZ / 2
 	for (let j = 0; j < sizeZ; j++) {
 		for (let k = 0; k < sizeX; k++) {
 			const factor = 0.01
@@ -74,14 +89,16 @@ export const generateWorld = ({sizeX, sizeY, sizeZ}: WorldSize): Uint8Array => {
 			if (k > borderSizeXSecond)
 				remappedNoiseValue = (1 - (k - borderSizeXSecond) / borderSizeX) ** (1 / 3) * (remappedNoiseValue)
 
-			let y = (remappedNoiseValue ** 2) * sizeY | 0
+			const distanceToCenter = (1 - Math.sqrt(((centerX - k) / sizeX) ** 2 + ((centerZ - j) / sizeZ) ** 2)) ** 3
+			let y = ((remappedNoiseValue ** (2 / 3)) * distanceToCenter * sizeY) | 0
+
 			const block = getBlockTypeByNoiseValue(y / sizeY)
 			world[y * sizeX * sizeZ + k * sizeZ + j] = block
 			let blockToSet = BlockType.Stone
 
 			if (block === BlockType.Water || block === BlockType.DeepWater) {
 				blockToSet = block
-				y = 3
+				y = 5
 			}
 
 			for (let i = 0; i < y; i++) {
@@ -147,8 +164,6 @@ export const generateMeshData = (world: Uint8Array, size: WorldSize) => {
 				const thisBlock = world[y * sizeX * sizeZ + x * sizeZ + z]! as BlockType
 				if (thisBlock === BlockType.Air) continue
 
-				const color = getColorByBlock(thisBlock)
-
 				const needsTop = y === sizeY - 1 || world[(y + 1) * sizeX * sizeZ + x * sizeZ + z]! as BlockType === BlockType.Air
 				const needsBottom = y === 0 || world[(y - 1) * sizeX * sizeZ + x * sizeZ + z]! as BlockType === BlockType.Air
 				const needsPositiveZ = z === sizeZ - 1 || world[y * sizeX * sizeZ + x * sizeZ + (z + 1)]! as BlockType === BlockType.Air
@@ -169,7 +184,8 @@ export const generateMeshData = (world: Uint8Array, size: WorldSize) => {
 				let e8 = addVertexIfNotExists(x + 1, y, z)
 
 				if (needsTop) {
-					e1 = setColor(e1, color, [0, 1, 0])
+					const topColor = randomizeColor(getTopColorByBlock(thisBlock))
+					e1 = setColor(e1, topColor, [0, 1, 0])
 					elements.push(
 						e2, e3, e1,
 						e3, e4, e1,
@@ -184,8 +200,9 @@ export const generateMeshData = (world: Uint8Array, size: WorldSize) => {
 				// 	)
 				// }
 
+				const sideColor = randomizeColor(getSideColorByBlock(thisBlock))
 				if (needsPositiveX) {
-					e7 = setColor(e7, color, [1, 0, 0])
+					e7 = setColor(e7, sideColor, [1, 0, 0])
 					elements.push(
 						e4, e3, e7,
 						e8, e4, e7,
@@ -193,7 +210,7 @@ export const generateMeshData = (world: Uint8Array, size: WorldSize) => {
 				}
 
 				if (needsNegativeX) {
-					e2 = setColor(e2, color, [-1, 0, 0])
+					e2 = setColor(e2, sideColor, [-1, 0, 0])
 					elements.push(
 						e1, e5, e2,
 						e5, e6, e2,
@@ -201,7 +218,7 @@ export const generateMeshData = (world: Uint8Array, size: WorldSize) => {
 				}
 
 				if (needsPositiveZ) {
-					e3 = setColor(e3, color, [0, 0, 1])
+					e3 = setColor(e3, sideColor, [0, 0, 1])
 					elements.push(
 						e2, e6, e3,
 						e6, e7, e3,
@@ -209,7 +226,7 @@ export const generateMeshData = (world: Uint8Array, size: WorldSize) => {
 				}
 
 				if (needsNegativeZ) {
-					e8 = setColor(e8, color, [0, 0, -1])
+					e8 = setColor(e8, sideColor, [0, 0, -1])
 					elements.push(
 						e1, e4, e8,
 						e5, e1, e8,
