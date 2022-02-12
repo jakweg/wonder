@@ -6,6 +6,7 @@ export enum BlockId {
 	Snow,
 	Water,
 	Ice,
+	Gravel,
 }
 
 export interface BlockType {
@@ -29,6 +30,7 @@ export const allBlocks: BlockType[] = [
 	{numericId: BlockId.Snow, colorR: 0.95, colorG: 0.95, colorB: 0.95},
 	{numericId: BlockId.Water, colorR: 0.21875, colorG: 0.4921875, colorB: 0.9140625},
 	{numericId: BlockId.Ice, colorR: 0.5625, colorG: 0.70703125, colorB: 0.98046875},
+	{numericId: BlockId.Gravel, colorR: 0.5234375, colorG: 0.5078125, colorB: 0.50390625},
 ]
 
 Object.freeze(allBlocks)

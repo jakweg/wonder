@@ -1,13 +1,14 @@
 import { MainRenderer } from './3d-stuff/main-renderer'
 import { RenderContext } from './3d-stuff/renderable/render-context'
 import { createNewTerrainRenderable } from './3d-stuff/renderable/terrain'
-import { allBiomes } from './3d-stuff/world/biome'
+import { allBiomes, BiomeId } from './3d-stuff/world/biome'
 import { BlockId } from './3d-stuff/world/block'
 import { generateBiomeMap, generateHeightMap } from './3d-stuff/world/generator'
 import { World } from './3d-stuff/world/world'
 import { Camera } from './camera'
 import KEYBOARD from './keyboard-controller'
 import * as vec3 from './util/matrix/vec3'
+import { makeNoise2D } from './util/noise/2d'
 
 const canvas: HTMLCanvasElement = document.getElementById('main-canvas') as HTMLCanvasElement
 canvas.width = 1280
@@ -22,11 +23,15 @@ const settings = {...world.size, biomeSeed: 123, heightSeed: 1234}
 const biomeMap = generateBiomeMap(settings)
 const heightMap = generateHeightMap(settings)
 
+const noise = makeNoise2D(12345)
+const factor = 0.05
+
+
 let index = 0
 for (let z = 0; z < settings.sizeZ; z++) {
 	for (let x = 0; x < settings.sizeX; x++) {
 		const biomeValue = allBiomes[biomeMap[index]!]!
-		const yHere = heightMap[index]!
+		let yHere = heightMap[index]!
 		world.setBlock(x, yHere, z, biomeValue.surfaceMaterialId)
 		const underSurfaceMaterialId = biomeValue.underSurfaceMaterialId
 		for (let y = 0; y < yHere; ++y)
@@ -37,6 +42,10 @@ for (let z = 0; z < settings.sizeZ; z++) {
 			const upperWaterLimit = 3 + (waterSurfaceMaterialId === BlockId.Water ? 0 : 1)
 			for (let y = 0; y <= upperWaterLimit; ++y)
 				world.setBlock(x, y, z, waterSurfaceMaterialId)
+		} else if (yHere < 5 && biomeValue.numericId !== BiomeId.Snowy) {
+			const value = noise(x * factor, z * factor)
+			if (value > (yHere === 5 ? 0.7 : 0.1))
+				world.setBlock(x, yHere, z, BlockId.Gravel)
 		}
 		index++
 	}
