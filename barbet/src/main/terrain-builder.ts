@@ -137,9 +137,10 @@ export const generateMeshData = (world: Uint8Array, size: WorldSize) => {
 		}
 		return elementIndex
 	}
+
 	const setColor = (vertexIndex: number,
 	                  colorValue: [number, number, number],
-	                  normal: [number, number, number]): number => {
+	                  encodedNormal: number): number => {
 		vertexIndex *= 7
 		const wasNeverUsed = vertexes[vertexIndex + 3]! === 2 && vertexes[vertexIndex + 4]! === 2 && vertexes[vertexIndex + 5]! === 2
 		if (!wasNeverUsed) {
@@ -152,9 +153,7 @@ export const generateMeshData = (world: Uint8Array, size: WorldSize) => {
 		vertexes[vertexIndex + 3] = colorValue[0]
 		vertexes[vertexIndex + 4] = colorValue[1]
 		vertexes[vertexIndex + 5] = colorValue[2]
-		vertexes[vertexIndex + 6] = ((normal[0] + 1) << 4) + ((normal[1] + 1) << 2) + (normal[2] + 1) | 0
-		// vertexes[vertexIndex + 7] = normal[1]
-		// vertexes[vertexIndex + 8] = normal[2]
+		vertexes[vertexIndex + 6] = encodedNormal
 		return vertexIndex / 7
 	}
 
@@ -193,7 +192,7 @@ export const generateMeshData = (world: Uint8Array, size: WorldSize) => {
 
 				if (needsTop) {
 					const topColor = randomizeColor(getTopColorByBlock(thisBlock))
-					e1 = setColor(e1, topColor, [0, 1, 0])
+					e1 = setColor(e1, topColor, 0b011001)
 					elements.push(
 						e2, e3, e1,
 						e3, e4, e1,
@@ -201,7 +200,7 @@ export const generateMeshData = (world: Uint8Array, size: WorldSize) => {
 				}
 
 				// if (needsBottom) {
-				// 	e5 = setColor(e5, color, [0, -1, 0])
+				// 	e5 = setColor(e5, topColor, 0b010001)
 				// 	elements.push(
 				// 		e7, e6, e5,
 				// 		e8, e7, e5,
@@ -210,7 +209,7 @@ export const generateMeshData = (world: Uint8Array, size: WorldSize) => {
 
 				const sideColor = randomizeColor(getSideColorByBlock(thisBlock))
 				if (needsPositiveX) {
-					e7 = setColor(e7, sideColor, [1, 0, 0])
+					e7 = setColor(e7, sideColor, 0b100101)
 					elements.push(
 						e4, e3, e7,
 						e8, e4, e7,
@@ -218,7 +217,7 @@ export const generateMeshData = (world: Uint8Array, size: WorldSize) => {
 				}
 
 				if (needsNegativeX) {
-					e2 = setColor(e2, sideColor, [-1, 0, 0])
+					e2 = setColor(e2, sideColor, 0b000101)
 					elements.push(
 						e1, e5, e2,
 						e5, e6, e2,
@@ -226,7 +225,7 @@ export const generateMeshData = (world: Uint8Array, size: WorldSize) => {
 				}
 
 				if (needsPositiveZ) {
-					e3 = setColor(e3, sideColor, [0, 0, 1])
+					e3 = setColor(e3, sideColor, 0b010110)
 					elements.push(
 						e2, e6, e3,
 						e6, e7, e3,
@@ -234,7 +233,7 @@ export const generateMeshData = (world: Uint8Array, size: WorldSize) => {
 				}
 
 				if (needsNegativeZ) {
-					e8 = setColor(e8, sideColor, [0, 0, -1])
+					e8 = setColor(e8, sideColor, 0b010100)
 					elements.push(
 						e1, e4, e8,
 						e5, e1, e8,
