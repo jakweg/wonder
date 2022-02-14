@@ -1,8 +1,14 @@
 import { PrecisionHeader, VersionHeader } from '../shader/common'
 
-export const FLAG_BOTTOM = 0b000000000
-export const FLAG_TOP = 0b001000000
-const FLAG_TOP_BOTTOM_MASK = 0b001000000
+export const MASK_PROVOKING = 0b1 << 6
+export const FLAG_PROVOKING_BOTTOM = 0b0 << 6
+export const FLAG_PROVOKING_TOP = 0b1 << 6
+
+export const MASK_POSITION = 0b11 << 7
+export const FLAG_POSITION_BOTTOM = 0b00 << 7
+export const FLAG_POSITION_MIDDLE = 0b01 << 7
+export const FLAG_POSITION_TOP = 0b10 << 7
+
 
 export const vertexShaderSource = `${VersionHeader()}
 ${PrecisionHeader()}
@@ -19,14 +25,20 @@ uniform mat4 u_view;
 uniform float u_time;
 void main() {
 	int flagsAsInt = int(a_flags);
-	bool isTop = (flagsAsInt & ${FLAG_TOP_BOTTOM_MASK}) == ${FLAG_TOP};
-	v_color = (isTop ?  a_secondaryColor :a_primaryColor);
-	
 	v_normal = vec3(ivec3(((flagsAsInt >> 4) & 3) - 1, ((flagsAsInt >> 2) & 3) - 1, (flagsAsInt & 3) - 1));
 	
-	vec3 pos = (a_modelPosition * vec3(0.7, 0.8, 0.7) + vec3(0.5,0,0.5)) + a_worldPosition;
-	pos.x += cos(u_time);	
-	pos.z += sin(u_time);	
+	bool isProvokingTop = (flagsAsInt & ${MASK_PROVOKING}) == ${FLAG_PROVOKING_TOP};
+	v_color = (isProvokingTop ? a_secondaryColor : a_primaryColor);
+	
+	bool isTopVertex = (flagsAsInt & ${MASK_POSITION}) == ${FLAG_POSITION_TOP};
+	
+	vec3 pos = a_modelPosition;
+	if (isTopVertex) {
+		pos.z += cos(u_time) * 0.5;
+		pos.y += (sin(u_time) * 0.15);
+	}
+	pos *= vec3(0.7, 0.8, 0.7);
+	pos += vec3(0.5,0,0.5) + a_worldPosition;	
     v_currentPosition = pos;
     gl_Position = u_projection * u_view * vec4(pos, 1);
     gl_PointSize = 10.0;
