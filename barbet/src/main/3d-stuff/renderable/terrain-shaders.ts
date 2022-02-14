@@ -16,7 +16,7 @@ void main() {
 	v_color = a_color;
 	v_currentPosition = a_position;
 	vec3 pos = a_position;
-	if (pos.y < 4.50) {
+	if (pos.y < 1.50) {
 		pos.y += sin(u_time * 2.1 + pos.x + pos.z * 100.0) * 0.15 + 0.5;
 	}
     gl_Position = u_projection * u_view * vec4(pos, 1);

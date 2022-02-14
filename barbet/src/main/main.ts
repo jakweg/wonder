@@ -1,14 +1,12 @@
 import { MainRenderer } from './3d-stuff/main-renderer'
 import { RenderContext } from './3d-stuff/renderable/render-context'
 import { createNewTerrainRenderable } from './3d-stuff/renderable/terrain'
-import { allBiomes, BiomeId } from './3d-stuff/world/biome'
+import { createNewUnitRenderable } from './3d-stuff/renderable/unit'
 import { BlockId } from './3d-stuff/world/block'
-import { generateBiomeMap, generateHeightMap } from './3d-stuff/world/generator'
 import { World } from './3d-stuff/world/world'
 import { Camera } from './camera'
 import KEYBOARD from './keyboard-controller'
 import * as vec3 from './util/matrix/vec3'
-import { makeNoise2D } from './util/noise/2d'
 
 const canvas: HTMLCanvasElement = document.getElementById('main-canvas') as HTMLCanvasElement
 canvas.width = 1280
@@ -16,46 +14,24 @@ canvas.height = 720
 
 const renderer = MainRenderer.fromHTMLCanvas(canvas)
 const camera = Camera.newPerspective(90, 1280 / 720)
-camera.moveCamera(25, 80, 180)
+camera.moveCamera(6, 4, 12)
 
-const world = World.createEmpty(1000, 30, 1000, BlockId.Air)
-const settings = {...world.size, biomeSeed: 123, heightSeed: 1234}
-const biomeMap = generateBiomeMap(settings)
-const heightMap = generateHeightMap(settings)
+const world = World.createEmpty(20, 30, 20, BlockId.Air)
+for (let i = 0, w = world.size.sizeX; i < w; i++)
+	for (let j = 0, h = world.size.sizeZ; j < h; j++)
+		world.setBlock(i, 0, j, BlockId.Water)
 
-const noise = makeNoise2D(12345)
-const factor = 0.05
+for (let i = 2, w = world.size.sizeX - 2; i < w; i++)
+	for (let j = 2, h = world.size.sizeZ - 2; j < h; j++)
+		world.setBlock(i, 1, j, BlockId.Sand)
+for (let i = 3, w = world.size.sizeX - 3; i < w; i++)
+	for (let j = 3, h = world.size.sizeZ - 3; j < h; j++)
+		world.setBlock(i, 1, j, BlockId.Grass)
 
-
-let index = 0
-for (let z = 0; z < settings.sizeZ; z++) {
-	for (let x = 0; x < settings.sizeX; x++) {
-		const biomeValue = allBiomes[biomeMap[index]!]!
-		let yHere = heightMap[index]!
-		world.setBlock(x, yHere, z, biomeValue.surfaceMaterialId)
-		const underSurfaceMaterialId = biomeValue.underSurfaceMaterialId
-		for (let y = 0; y < yHere; ++y)
-			world.setBlock(x, y, z, underSurfaceMaterialId)
-
-		if (yHere < 4) {
-			const waterSurfaceMaterialId = biomeValue.waterSurfaceMaterialId
-			const upperWaterLimit = 3 + (waterSurfaceMaterialId === BlockId.Water ? 0 : 1)
-			for (let y = 0; y <= upperWaterLimit; ++y)
-				world.setBlock(x, y, z, waterSurfaceMaterialId)
-		} else if (yHere < 5 && biomeValue.numericId !== BiomeId.Snowy) {
-			const value = noise(x * factor, z * factor)
-			if (value > (yHere === 5 ? 0.7 : 0.1))
-				world.setBlock(x, yHere, z, BlockId.Gravel)
-		}
-		index++
-	}
-}
-for (let i = 0; i < settings.sizeY; i++) {
-	world.setBlock(100, i, 100, BlockId.Stone)
-}
 const terrain = createNewTerrainRenderable(renderer, world)
+const unit = createNewUnitRenderable(renderer)
 
-const sunPosition = vec3.fromValues(-300, 2500, -1000)
+const sunPosition = vec3.fromValues(-500, 500, -500)
 
 const firstRenderTime = Date.now()
 renderer.renderFunction = (gl, dt) => {
@@ -71,7 +47,12 @@ renderer.renderFunction = (gl, dt) => {
 	camera.updateMatrixIfNeeded()
 	Object.freeze(ctx)
 
+	const r = 200
+	sunPosition[0] = Math.cos(ctx.secondsSinceFirstRender) * r + 10
+	sunPosition[2] = Math.sin(ctx.secondsSinceFirstRender) * r + 10
+
 	terrain.render(ctx)
+	unit.render(ctx)
 }
 
 renderer.beforeRenderFunction = (secondsSinceLastFrame) => secondsSinceLastFrame > 0.5 || document.hasFocus()
