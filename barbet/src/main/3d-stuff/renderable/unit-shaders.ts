@@ -11,9 +11,14 @@ export const FLAG_POSITION_TOP = 0b10 << 7
 
 export const MASK_BODY_PART = 0b111 << 9
 export const FLAG_PART_MAIN_BODY = 0b001 << 9
-export const FLAG_PART_LEFT_ARM = 0b010 << 9
-export const FLAG_PART_RIGHT_ARM = 0b011 << 9
 export const MASK_PART_ANY_ARM = 0b010 << 9
+export const MASK_PART_ANY_LEG = 0b100 << 9
+export const FLAG_PART_LEFT = 0b000 << 9
+export const FLAG_PART_RIGHT = 0b001 << 9
+export const FLAG_PART_LEFT_ARM = MASK_PART_ANY_ARM | FLAG_PART_LEFT
+export const FLAG_PART_RIGHT_ARM = MASK_PART_ANY_ARM | FLAG_PART_RIGHT
+export const FLAG_PART_LEFT_LEG = MASK_PART_ANY_LEG | FLAG_PART_LEFT
+export const FLAG_PART_RIGHT_LEG = MASK_PART_ANY_LEG | FLAG_PART_RIGHT
 
 
 export const vertexShaderSource = `${VersionHeader()}
@@ -40,15 +45,17 @@ void main() {
 	bool isBottomVertex = (flagsAsInt & ${MASK_POSITION}) == ${FLAG_POSITION_BOTTOM};
 	bool isLeftArmVertex = (flagsAsInt & ${MASK_BODY_PART}) == ${FLAG_PART_LEFT_ARM};
 	bool isRightArmVertex = (flagsAsInt & ${MASK_BODY_PART}) == ${FLAG_PART_RIGHT_ARM};
+	bool isLeftLegVertex = (flagsAsInt & ${MASK_BODY_PART}) == ${FLAG_PART_LEFT_LEG};
+	bool isRightLegVertex = (flagsAsInt & ${MASK_BODY_PART}) == ${FLAG_PART_RIGHT_LEG};
 	
 	vec3 pos = a_modelPosition;
-	if (isLeftArmVertex) {
-		pos.z += cos(u_time * 2.0) * (isTopVertex ? 0.0 : (isBottomVertex ? -0.2 : -0.1));
-	} else if (isRightArmVertex) {
-		pos.z -= cos(u_time * 2.0) * (isTopVertex ? 0.0 : (isBottomVertex ? -0.2 : -0.1));
+	if (isLeftArmVertex || isRightLegVertex) {
+		pos.z += cos(u_time * 5.0) * (isTopVertex ? 0.0 : (isBottomVertex ? -0.2 : -0.1));
+	} else if (isRightArmVertex || isLeftLegVertex) {
+		pos.z -= cos(u_time * 5.0) * (isTopVertex ? 0.0 : (isBottomVertex ? -0.2 : -0.1));
 	}
 	pos *= vec3(0.7, 0.8, 0.7);
-	pos += vec3(0.5,2,0.5) + a_worldPosition;	
+	pos += vec3(0.5,4,0.5) + a_worldPosition;	
     v_currentPosition = pos;
     gl_Position = u_projection * u_view * vec4(pos, 1);
     gl_PointSize = 10.0;

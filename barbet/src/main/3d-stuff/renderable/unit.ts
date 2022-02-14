@@ -6,8 +6,10 @@ import { RenderContext } from './render-context'
 import {
 	Attributes,
 	FLAG_PART_LEFT_ARM,
+	FLAG_PART_LEFT_LEG,
 	FLAG_PART_MAIN_BODY,
 	FLAG_PART_RIGHT_ARM,
+	FLAG_PART_RIGHT_LEG,
 	FLAG_POSITION_BOTTOM,
 	FLAG_POSITION_MIDDLE,
 	FLAG_POSITION_TOP,
@@ -45,31 +47,56 @@ export const createNewUnitRenderable = (renderer: MainRenderer) => {
 		-0.5, 1, 0.5, 1, 1, 1, FLAG_PART_MAIN_BODY | FLAG_PROVOKING_TOP | FLAG_POSITION_TOP | 0b000101,// top left side
 	]
 	const tmp: number[][] = []
+	const tmp2: number[][] = []
 	for (let i = 0; i < numbers.length / 7; i++) {
 		const x = []
 		for (let j = 0; j < 7; j++) {
 			x.push(numbers[i * 7 + j]!)
 		}
 		tmp.push(x)
+		tmp2.push([...x])
 	}
 	for (let i = 0; i < tmp.length; i++) {
-		const x: number[] = tmp[i]!
-		x[0] = x[0]! * 0.4 - 0.7
-		x[1] = x[1]! * 0.4 - 0.2
-		x[2] = x[2]! * 0.4
-		if ((x[6]! & MASK_PROVOKING) === FLAG_PROVOKING_TOP)
-			x[6] = (x[6]! & ~MASK_PROVOKING) | FLAG_PROVOKING_BOTTOM
-		else
-			x[6] = (x[6]! & ~MASK_PROVOKING) | FLAG_PROVOKING_TOP
-		x[6] = (x[6]! & ~MASK_BODY_PART) | FLAG_PART_LEFT_ARM
+		{
+			const x: number[] = tmp[i]!
+			x[0] = x[0]! * 0.4 - 0.68
+			x[1] = x[1]! * 0.4 - 0.2
+			x[2] = x[2]! * 0.4
+			if ((x[6]! & MASK_PROVOKING) === FLAG_PROVOKING_TOP)
+				x[6] = (x[6]! & ~MASK_PROVOKING) | FLAG_PROVOKING_BOTTOM
+			else
+				x[6] = (x[6]! & ~MASK_PROVOKING) | FLAG_PROVOKING_TOP
+			x[6] = (x[6]! & ~MASK_BODY_PART) | FLAG_PART_LEFT_ARM
+		}
+
+		{
+			const x: number[] = tmp2[i]!
+			x[0] = x[0]! * 0.3 - 0.25
+			x[1] = x[1]! * 0.25 - 1.28
+			x[2] = x[2]! * 0.3
+			if ((x[6]! & MASK_PROVOKING) === FLAG_PROVOKING_TOP)
+				x[6] = (x[6]! & ~MASK_PROVOKING) | FLAG_PROVOKING_BOTTOM
+			else
+				x[6] = (x[6]! & ~MASK_PROVOKING) | FLAG_PROVOKING_TOP
+			x[6] = (x[6]! & ~MASK_BODY_PART) | FLAG_PART_LEFT_LEG
+		}
 	}
 	numbers.push(...tmp.flat())
+	numbers.push(...tmp2.flat())
 	for (let i = 0; i < tmp.length; i++) {
-		const x: number[] = tmp[i]!
-		x[0] = -x[0]!
-		x[6] = (x[6]! & ~MASK_BODY_PART) | FLAG_PART_RIGHT_ARM
+		{
+			const x: number[] = tmp[i]!
+			x[0] = -x[0]!
+			x[6] = (x[6]! & ~MASK_BODY_PART) | FLAG_PART_RIGHT_ARM
+		}
+		{
+			const x: number[] = tmp2[i]!
+			x[0] = -x[0]!
+			x[6] = (x[6]! & ~MASK_BODY_PART) | FLAG_PART_RIGHT_LEG
+		}
 	}
 	numbers.push(...tmp.flat())
+	numbers.push(...tmp2.flat())
 	modelBuffer.setContent(new Float32Array(numbers))
 	program.enableAttribute(program.attributes.modelPosition, 3, true, 7 * floatSize, 0, 0)
 	program.enableAttribute(program.attributes.flags, 1, true, 7 * floatSize, 6 * floatSize, 0)
@@ -130,13 +157,18 @@ export const createNewUnitRenderable = (renderer: MainRenderer) => {
 		11, 10, 8,
 	]
 	const length = tmp.length
-	elementsData.push(...elementsData.map(e => e + length), ...elementsData.map(e => e + length + length))
-	modelElementsBuffer.setContent(new Uint8Array(elementsData))
+	elementsData.push(
+		...elementsData.map(e => e + length),
+		...elementsData.map(e => e + length * 2),
+		...elementsData.map(e => e + length * 3),
+		...elementsData.map(e => e + length * 4),
+	)
+	modelElementsBuffer.setContent(new Uint16Array(elementsData))
 
 
 	const trianglesToRender = elementsData.length | 0
 	const instancesCount = positionsList.length / 3 | 0
-	console.assert(trianglesToRender < 255)
+	console.assert(trianglesToRender < 2 ** 15)
 	return {
 		render(ctx: RenderContext) {
 			const {gl, camera} = ctx
@@ -150,7 +182,7 @@ export const createNewUnitRenderable = (renderer: MainRenderer) => {
 			gl.uniform1f(program.uniforms.time, ctx.secondsSinceFirstRender)
 			gl.uniform3fv(program.uniforms.lightPosition, toGl(add(clone(ctx.sunPosition), ctx.sunPosition, fromValues(0, -400, 0))))
 
-			gl.drawElementsInstanced(gl.TRIANGLES, trianglesToRender, gl.UNSIGNED_BYTE, 0, instancesCount)
+			gl.drawElementsInstanced(gl.TRIANGLES, trianglesToRender, gl.UNSIGNED_SHORT, 0, instancesCount)
 			gl.enable(gl.CULL_FACE)
 		},
 	}
