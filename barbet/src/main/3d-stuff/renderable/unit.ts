@@ -5,12 +5,16 @@ import { createProgramFromNewShaders } from '../shader/common'
 import { RenderContext } from './render-context'
 import {
 	Attributes,
+	FLAG_PART_LEFT_ARM,
+	FLAG_PART_MAIN_BODY,
+	FLAG_PART_RIGHT_ARM,
 	FLAG_POSITION_BOTTOM,
 	FLAG_POSITION_MIDDLE,
 	FLAG_POSITION_TOP,
 	FLAG_PROVOKING_BOTTOM,
 	FLAG_PROVOKING_TOP,
 	fragmentShaderSource,
+	MASK_BODY_PART,
 	MASK_PROVOKING,
 	Uniforms,
 	vertexShaderSource,
@@ -25,20 +29,20 @@ export const createNewUnitRenderable = (renderer: MainRenderer) => {
 	const modelBuffer = renderer.createBuffer(true, false)
 	const numbers = [
 		// MAIN BODY:
-		-0.5, 0, -0.5, 1, 1, 0, FLAG_PROVOKING_BOTTOM | FLAG_POSITION_BOTTOM | 0b010001, // bottom
-		0.5, 0, -0.5, 0, 1, 0, FLAG_PROVOKING_BOTTOM | FLAG_POSITION_BOTTOM | 0b010100, // bottom front
-		0.5, 0, 0.5, 1, 1, 0, FLAG_PROVOKING_BOTTOM | FLAG_POSITION_BOTTOM | 0b100101, // bottom right side
-		-0.5, 0, 0.5, 1, 1, 1, FLAG_PROVOKING_BOTTOM | FLAG_POSITION_BOTTOM,
+		-0.5, -1, -0.5, 1, 1, 0, FLAG_PART_MAIN_BODY | FLAG_PROVOKING_BOTTOM | FLAG_POSITION_BOTTOM | 0b010001, // bottom
+		0.5, -1, -0.5, 0, 1, 0, FLAG_PART_MAIN_BODY | FLAG_PROVOKING_BOTTOM | FLAG_POSITION_BOTTOM | 0b010100, // bottom front
+		0.5, -1, 0.5, 1, 1, 0, FLAG_PART_MAIN_BODY | FLAG_PROVOKING_BOTTOM | FLAG_POSITION_BOTTOM | 0b100101, // bottom right side
+		-0.5, -1, 0.5, 1, 1, 1, FLAG_PART_MAIN_BODY | FLAG_PROVOKING_BOTTOM | FLAG_POSITION_BOTTOM,
 
-		-0.5, 1, -0.5, 1, 1, 1, FLAG_PROVOKING_TOP | FLAG_POSITION_MIDDLE,
-		0.5, 1, -0.5, 1, 0, 1, FLAG_PROVOKING_TOP | FLAG_POSITION_MIDDLE | 0b010100, // top front
-		0.5, 1, 0.5, 1, 1, 0, FLAG_PROVOKING_BOTTOM | FLAG_POSITION_MIDDLE | 0b010110,// bottom back
-		-0.5, 1, 0.5, 1, 1, 0, FLAG_PROVOKING_BOTTOM | FLAG_POSITION_MIDDLE | 0b000101,// bottom left side
+		-0.5, 0, -0.5, 1, 1, 1, FLAG_PART_MAIN_BODY | FLAG_PROVOKING_TOP | FLAG_POSITION_MIDDLE,
+		0.5, 0, -0.5, 1, 0, 1, FLAG_PART_MAIN_BODY | FLAG_PROVOKING_TOP | FLAG_POSITION_MIDDLE | 0b010100, // top front
+		0.5, 0, 0.5, 1, 1, 0, FLAG_PART_MAIN_BODY | FLAG_PROVOKING_BOTTOM | FLAG_POSITION_MIDDLE | 0b010110,// bottom back
+		-0.5, 0, 0.5, 1, 1, 0, FLAG_PART_MAIN_BODY | FLAG_PROVOKING_BOTTOM | FLAG_POSITION_MIDDLE | 0b000101,// bottom left side
 
-		-0.5, 2, -0.5, 0, 1, 1, FLAG_PROVOKING_TOP | FLAG_POSITION_TOP | 0b011001,// top
-		0.5, 2, -0.5, 1, 1, 1, FLAG_PROVOKING_TOP | FLAG_POSITION_TOP | 0b100101,// top right side
-		0.5, 2, 0.5, 1, 1, 1, FLAG_PROVOKING_TOP | FLAG_POSITION_TOP | 0b010110,// top back
-		-0.5, 2, 0.5, 1, 1, 1, FLAG_PROVOKING_TOP | FLAG_POSITION_TOP | 0b000101,// top left side
+		-0.5, 1, -0.5, 0, 1, 1, FLAG_PART_MAIN_BODY | FLAG_PROVOKING_TOP | FLAG_POSITION_TOP | 0b011001,// top
+		0.5, 1, -0.5, 1, 1, 1, FLAG_PART_MAIN_BODY | FLAG_PROVOKING_TOP | FLAG_POSITION_TOP | 0b100101,// top right side
+		0.5, 1, 0.5, 1, 1, 1, FLAG_PART_MAIN_BODY | FLAG_PROVOKING_TOP | FLAG_POSITION_TOP | 0b010110,// top back
+		-0.5, 1, 0.5, 1, 1, 1, FLAG_PART_MAIN_BODY | FLAG_PROVOKING_TOP | FLAG_POSITION_TOP | 0b000101,// top left side
 	]
 	const tmp: number[][] = []
 	for (let i = 0; i < numbers.length / 7; i++) {
@@ -51,17 +55,19 @@ export const createNewUnitRenderable = (renderer: MainRenderer) => {
 	for (let i = 0; i < tmp.length; i++) {
 		const x: number[] = tmp[i]!
 		x[0] = x[0]! * 0.4 - 0.7
-		x[1] = x[1]! * 0.4 + 0.4
+		x[1] = x[1]! * 0.4 - 0.2
 		x[2] = x[2]! * 0.4
 		if ((x[6]! & MASK_PROVOKING) === FLAG_PROVOKING_TOP)
 			x[6] = (x[6]! & ~MASK_PROVOKING) | FLAG_PROVOKING_BOTTOM
 		else
 			x[6] = (x[6]! & ~MASK_PROVOKING) | FLAG_PROVOKING_TOP
+		x[6] = (x[6]! & ~MASK_BODY_PART) | FLAG_PART_LEFT_ARM
 	}
 	numbers.push(...tmp.flat())
 	for (let i = 0; i < tmp.length; i++) {
 		const x: number[] = tmp[i]!
 		x[0] = -x[0]!
+		x[6] = (x[6]! & ~MASK_BODY_PART) | FLAG_PART_RIGHT_ARM
 	}
 	numbers.push(...tmp.flat())
 	modelBuffer.setContent(new Float32Array(numbers))

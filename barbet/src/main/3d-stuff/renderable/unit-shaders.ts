@@ -9,6 +9,12 @@ export const FLAG_POSITION_BOTTOM = 0b00 << 7
 export const FLAG_POSITION_MIDDLE = 0b01 << 7
 export const FLAG_POSITION_TOP = 0b10 << 7
 
+export const MASK_BODY_PART = 0b111 << 9
+export const FLAG_PART_MAIN_BODY = 0b001 << 9
+export const FLAG_PART_LEFT_ARM = 0b010 << 9
+export const FLAG_PART_RIGHT_ARM = 0b011 << 9
+export const MASK_PART_ANY_ARM = 0b010 << 9
+
 
 export const vertexShaderSource = `${VersionHeader()}
 ${PrecisionHeader()}
@@ -31,14 +37,18 @@ void main() {
 	v_color = (isProvokingTop ? a_secondaryColor : a_primaryColor);
 	
 	bool isTopVertex = (flagsAsInt & ${MASK_POSITION}) == ${FLAG_POSITION_TOP};
+	bool isBottomVertex = (flagsAsInt & ${MASK_POSITION}) == ${FLAG_POSITION_BOTTOM};
+	bool isLeftArmVertex = (flagsAsInt & ${MASK_BODY_PART}) == ${FLAG_PART_LEFT_ARM};
+	bool isRightArmVertex = (flagsAsInt & ${MASK_BODY_PART}) == ${FLAG_PART_RIGHT_ARM};
 	
 	vec3 pos = a_modelPosition;
-	if (isTopVertex) {
-		pos.z += cos(u_time) * 0.5;
-		pos.y += (sin(u_time) * 0.15);
+	if (isLeftArmVertex) {
+		pos.z += cos(u_time * 2.0) * (isTopVertex ? 0.0 : (isBottomVertex ? -0.2 : -0.1));
+	} else if (isRightArmVertex) {
+		pos.z -= cos(u_time * 2.0) * (isTopVertex ? 0.0 : (isBottomVertex ? -0.2 : -0.1));
 	}
 	pos *= vec3(0.7, 0.8, 0.7);
-	pos += vec3(0.5,0,0.5) + a_worldPosition;	
+	pos += vec3(0.5,2,0.5) + a_worldPosition;	
     v_currentPosition = pos;
     gl_Position = u_projection * u_view * vec4(pos, 1);
     gl_PointSize = 10.0;

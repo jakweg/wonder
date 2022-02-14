@@ -48,8 +48,10 @@ renderer.renderFunction = (gl, dt) => {
 	Object.freeze(ctx)
 
 	const r = 200
-	sunPosition[0] = Math.cos(ctx.secondsSinceFirstRender) * r + 10
-	sunPosition[2] = Math.sin(ctx.secondsSinceFirstRender) * r + 10
+	// sunPosition[0] = Math.cos(ctx.secondsSinceFirstRender) * r + 10
+	// sunPosition[2] = Math.sin(ctx.secondsSinceFirstRender) * r + 10
+	sunPosition[0] = Math.cos(1) * r + 10
+	sunPosition[2] = Math.sin(1) * r + 10
 
 	terrain.render(ctx)
 	unit.render(ctx)
