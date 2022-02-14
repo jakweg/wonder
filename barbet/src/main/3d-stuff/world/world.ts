@@ -41,7 +41,9 @@ export class World {
 	}
 
 	private validateCoords(x: number, y: number, z: number) {
-		if (x < 0 || x >= this.size.sizeX || y < 0 || y >= this.size.sizeY || z < 0 || z >= this.size.sizeZ)
+		if (x < 0 || x >= this.size.sizeX || x !== (x | 0)
+			|| y < 0 || y >= this.size.sizeY || y !== (y | 0)
+			|| z < 0 || z >= this.size.sizeZ || z !== (z | 0))
 			throw new Error(`Invalid coords ${x} ${y} ${z}`)
 	}
 }

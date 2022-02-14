@@ -1,31 +1,32 @@
 import { MainRenderer } from './3d-stuff/main-renderer'
 import { RenderContext } from './3d-stuff/renderable/render-context'
 import { createNewTerrainRenderable } from './3d-stuff/renderable/terrain'
-import { allBiomes, BiomeId } from './3d-stuff/world/biome'
+import { allBiomes } from './3d-stuff/world/biome'
 import { BlockId } from './3d-stuff/world/block'
 import { generateBiomeMap, generateHeightMap } from './3d-stuff/world/generator'
 import { World } from './3d-stuff/world/world'
 import { Camera } from './camera'
 import KEYBOARD from './keyboard-controller'
 import * as vec3 from './util/matrix/vec3'
-import { makeNoise2D } from './util/noise/2d'
 
 const canvas: HTMLCanvasElement = document.getElementById('main-canvas') as HTMLCanvasElement
 canvas.width = 1280
 canvas.height = 720
 
+const world = World.createEmpty(500, 50, 500, BlockId.Air)
+const settings = {...world.size, biomeSeed: 123, heightSeed: 1234}
 const renderer = MainRenderer.fromHTMLCanvas(canvas)
 const camera = Camera.newPerspective(90, 1280 / 720)
+// const sunCamera = Camera.newPerspective(45, 1/1)
+const sunCamera = Camera.newOrtho()
+sunCamera.center[0] = settings.sizeX / 2
+sunCamera.center[1] = 0
+sunCamera.center[2] = settings.sizeZ / 2
+sunCamera.eye[1] = 500
 camera.moveCamera(25, 80, 180)
 
-const world = World.createEmpty(1000, 30, 1000, BlockId.Air)
-const settings = {...world.size, biomeSeed: 123, heightSeed: 1234}
 const biomeMap = generateBiomeMap(settings)
 const heightMap = generateHeightMap(settings)
-
-const noise = makeNoise2D(12345)
-const factor = 0.05
-
 
 let index = 0
 for (let z = 0; z < settings.sizeZ; z++) {
@@ -42,47 +43,74 @@ for (let z = 0; z < settings.sizeZ; z++) {
 			const upperWaterLimit = 3 + (waterSurfaceMaterialId === BlockId.Water ? 0 : 1)
 			for (let y = 0; y <= upperWaterLimit; ++y)
 				world.setBlock(x, y, z, waterSurfaceMaterialId)
-		} else if (yHere < 5 && biomeValue.numericId !== BiomeId.Snowy) {
-			const value = noise(x * factor, z * factor)
-			if (value > (yHere === 5 ? 0.7 : 0.1))
-				world.setBlock(x, yHere, z, BlockId.Gravel)
 		}
 		index++
 	}
 }
-for (let i = 0; i < settings.sizeY; i++) {
-	world.setBlock(100, i, 100, BlockId.Stone)
+for (let i = 0; i < settings.sizeY; i++)
+	world.setBlock(70, i, 70, BlockId.Stone)
+
+for (let j = 20; j < 30; j++)
+	for (let i = 0; i < settings.sizeY; i++)
+		world.setBlock(j, i, 40, BlockId.Sand)
+
+for (let j = 30; j < 40; j++)
+	for (let i = 0; i < settings.sizeY; i++)
+		world.setBlock(j, i, 50, BlockId.Gravel)
+
+for (let i = 0; i < 20; i++) {
+	for (let j = 0; j < 20; j++) {
+		for (let k = 0; k < 20; k++) {
+			world.setBlock(i + settings.sizeX / 2 | 0, settings.sizeY - j - 1, k + settings.sizeZ / 2 | 0, BlockId.Stone)
+		}
+	}
 }
+
 const terrain = createNewTerrainRenderable(renderer, world)
 
-const sunPosition = vec3.fromValues(-300, 2500, -1000)
-
 const firstRenderTime = Date.now()
+let xd = true
 renderer.renderFunction = (gl, dt) => {
 	const now = Date.now()
 
 	const ctx: RenderContext = {
 		gl,
-		camera,
-		sunPosition,
+		// sunCamera: camera, camera: sunCamera,
+		camera, sunCamera,
+		sunPosition: vec3.fromValues(-300, 2500, -1000),
 		secondsSinceFirstRender: (now - firstRenderTime) / 1000,
 	}
-	moveCameraByKeys(camera, dt)
-	camera.updateMatrixIfNeeded()
 	Object.freeze(ctx)
+	moveCameraByKeys(ctx.camera, dt)
 
+
+	if (xd) {
+
+		const nowInSeconds = now / 2000
+		// const nowInSeconds = 1
+		const r = settings.sizeX / 2 * 3
+		ctx.sunCamera.eye[0] = Math.cos(nowInSeconds) * r + settings.sizeX / 2
+		ctx.sunCamera.eye[1] = Math.cos(nowInSeconds / 2) * 200 + 620
+		ctx.sunCamera.eye[2] = Math.sin(nowInSeconds) * r + settings.sizeZ / 2
+
+		ctx.sunCamera.lastEyeChangeId++
+		ctx.sunCamera.updateMatrixIfNeeded()
+
+		terrain.renderDepth(ctx)
+	}
+	ctx.camera.updateMatrixIfNeeded()
 	terrain.render(ctx)
-}
 
-renderer.beforeRenderFunction = (secondsSinceLastFrame) => secondsSinceLastFrame > 0.5 || document.hasFocus()
+}
+// setTimeout(() => xd = false, 5000)
+
+renderer.beforeRenderFunction = (secondsSinceLastFrame) => secondsSinceLastFrame > 5 || document.hasFocus()
 renderer.beginRendering()
 
 const moveCameraByKeys = (camera: Camera, dt: number) => {
 	if (!KEYBOARD.isAnyPressed()) return
 	const speed = dt * 3 * camera.eye[1]
 
-	const front1 = vec3.subtract(vec3.create(), camera.center, camera.eye)
-	vec3.normalize(front1, front1)
 	if (KEYBOARD.isPressed('KeyW') || KEYBOARD.isPressed('ArrowUp')) {
 		camera.moveCamera(speed, 0, 0)
 	}

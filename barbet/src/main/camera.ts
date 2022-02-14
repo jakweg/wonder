@@ -20,7 +20,25 @@ export class Camera {
 			mat4.create(),
 			toRadian(fovDegress),
 			aspect,
-			0.1, 5000)
+			0.1, 2000)
+
+		const eye = vec3.fromValues(-2.1, 4, 1.0001)
+		const center = vec3.fromValues(0, 0, 0)
+		const viewMatrix = mat4.lookAt(
+			mat4.create(),
+			eye,
+			center,
+			universalUpVector)
+
+		return new Camera(perspectiveMatrix, viewMatrix, eye, center)
+	}
+
+	public static newOrtho() {
+		const size = 300
+		const perspectiveMatrix = mat4.ortho(
+			mat4.create(),
+			-size, size, -size, size,
+			10, 5000)
 
 		const eye = vec3.fromValues(-2.1, 4, 1.0001)
 		const center = vec3.fromValues(0, 0, 0)
