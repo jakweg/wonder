@@ -1,9 +1,9 @@
-import { toGl } from '../../util/matrix/common'
-import { MainRenderer } from '../main-renderer'
-import { createProgramFromNewShaders } from '../shader/common'
-import { World } from '../world/world'
-import { convertWorldToMesh } from '../world/world-to-mesh-converter'
-import { Renderable, RenderContext } from './render-context'
+import { toGl } from '../../../util/matrix/common'
+import { MainRenderer } from '../../main-renderer'
+import { createProgramFromNewShaders } from '../../shader/common'
+import { World } from '../../world/world'
+import { convertWorldToMesh } from '../../world/world-to-mesh-converter'
+import { Renderable, RenderContext } from '../render-context'
 import { Attributes, fragmentShaderSource, Uniforms, vertexShaderSource } from './terrain-shaders'
 
 export const createNewTerrainRenderable = (renderer: MainRenderer,

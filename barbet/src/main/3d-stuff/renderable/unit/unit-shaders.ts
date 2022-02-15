@@ -1,4 +1,4 @@
-import { PrecisionHeader, VersionHeader } from '../shader/common'
+import { PrecisionHeader, VersionHeader } from '../../shader/common'
 
 export const MASK_PROVOKING = 0b1 << 6
 export const FLAG_PROVOKING_BOTTOM = 0b0 << 6
@@ -41,21 +41,26 @@ void main() {
 	bool isProvokingTop = (flagsAsInt & ${MASK_PROVOKING}) == ${FLAG_PROVOKING_TOP};
 	v_color = (isProvokingTop ? a_secondaryColor : a_primaryColor);
 	
+	vec3 pos = a_modelPosition;
 	bool isTopVertex = (flagsAsInt & ${MASK_POSITION}) == ${FLAG_POSITION_TOP};
 	bool isBottomVertex = (flagsAsInt & ${MASK_POSITION}) == ${FLAG_POSITION_BOTTOM};
-	bool isLeftArmVertex = (flagsAsInt & ${MASK_BODY_PART}) == ${FLAG_PART_LEFT_ARM};
-	bool isRightArmVertex = (flagsAsInt & ${MASK_BODY_PART}) == ${FLAG_PART_RIGHT_ARM};
-	bool isLeftLegVertex = (flagsAsInt & ${MASK_BODY_PART}) == ${FLAG_PART_LEFT_LEG};
-	bool isRightLegVertex = (flagsAsInt & ${MASK_BODY_PART}) == ${FLAG_PART_RIGHT_LEG};
+	bool isAnimatableElement = (flagsAsInt & ${MASK_PART_ANY_LEG | MASK_PART_ANY_ARM}) > 0;
 	
-	vec3 pos = a_modelPosition;
-	if (isLeftArmVertex || isRightLegVertex) {
-		pos.z += cos(u_time * 5.0) * (isTopVertex ? 0.0 : (isBottomVertex ? -0.2 : -0.1));
-	} else if (isRightArmVertex || isLeftLegVertex) {
-		pos.z -= cos(u_time * 5.0) * (isTopVertex ? 0.0 : (isBottomVertex ? -0.2 : -0.1));
+	if (isAnimatableElement && !isTopVertex) {
+		bool isLeftArmVertex = (flagsAsInt & ${MASK_BODY_PART}) == ${FLAG_PART_LEFT_ARM};
+		bool isRightArmVertex = (flagsAsInt & ${MASK_BODY_PART}) == ${FLAG_PART_RIGHT_ARM};
+		bool isLeftLegVertex = (flagsAsInt & ${MASK_BODY_PART}) == ${FLAG_PART_LEFT_LEG};
+		bool isRightLegVertex = (flagsAsInt & ${MASK_BODY_PART}) == ${FLAG_PART_RIGHT_LEG};
+		
+		float additionalZOffset = cos(u_time * 5.0) * (isBottomVertex ? -0.2 : -0.1);
+		if (isLeftArmVertex || isRightLegVertex)
+			pos.z += additionalZOffset;
+		else if (isRightArmVertex || isLeftLegVertex)
+			pos.z -= additionalZOffset;
+		
 	}
-	pos *= vec3(0.7, 0.8, 0.7);
-	pos += vec3(0.5,4,0.5) + a_worldPosition;	
+	pos *= vec3(0.7, 0.7, 0.7);
+	pos += vec3(0.5, 1.1, 0.5) + a_worldPosition;	
     v_currentPosition = pos;
     gl_Position = u_projection * u_view * vec4(pos, 1);
     gl_PointSize = 10.0;
@@ -73,7 +78,6 @@ uniform vec3 u_lightPosition;
 const float ambientLight = 0.5;
 void main() {
 	vec3 lightDirection = normalize(vec3(u_lightPosition) - v_currentPosition);
-	// vec3 lightDirection = normalize(vec3(u_lightPosition.x, v_currentPosition.y + 1.0, u_lightPosition.z) - v_currentPosition);
 	float diffuse = max(sqrt(dot(v_normal, lightDirection)), ambientLight);
 	finalColor = vec4(v_color * diffuse, 1);
 	// if (!gl_FrontFacing) {

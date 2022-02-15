@@ -1,4 +1,4 @@
-import { PrecisionHeader, VersionHeader } from '../shader/common'
+import { PrecisionHeader, VersionHeader } from '../../shader/common'
 
 export const vertexShaderSource = `${VersionHeader()}
 ${PrecisionHeader()}
