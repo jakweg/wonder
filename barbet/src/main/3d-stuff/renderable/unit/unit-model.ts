@@ -1,4 +1,5 @@
 import {
+	FLAG_PART_FACE,
 	FLAG_PART_LEFT_ARM,
 	FLAG_PART_LEFT_LEG,
 	FLAG_PART_MAIN_BODY,
@@ -21,10 +22,10 @@ export const buildUnitModel = () => {
 		0.5, -1, 0.5, 1, 1, 0, FLAG_PROVOKING_BOTTOM | FLAG_POSITION_BOTTOM | 0b100101, // bottom right side
 		-0.5, -1, 0.5, 1, 1, 1, FLAG_PROVOKING_BOTTOM | FLAG_POSITION_BOTTOM,
 
-		-0.5, 0, -0.5, 1, 1, 1, FLAG_PROVOKING_TOP | FLAG_POSITION_MIDDLE,
-		0.5, 0, -0.5, 1, 0, 1, FLAG_PROVOKING_TOP | FLAG_POSITION_MIDDLE | 0b010100, // top front
-		0.5, 0, 0.5, 1, 1, 0, FLAG_PROVOKING_BOTTOM | FLAG_POSITION_MIDDLE | 0b010110,// bottom back
-		-0.5, 0, 0.5, 1, 1, 0, FLAG_PROVOKING_BOTTOM | FLAG_POSITION_MIDDLE | 0b000101,// bottom left side
+		-0.5, 0.2, -0.5, 1, 1, 1, FLAG_PROVOKING_TOP | FLAG_POSITION_MIDDLE,
+		0.5, 0.2, -0.5, 1, 0, 1, FLAG_PROVOKING_TOP | FLAG_POSITION_MIDDLE | 0b010100, // top front
+		0.5, 0.2, 0.5, 1, 1, 0, FLAG_PROVOKING_BOTTOM | FLAG_POSITION_MIDDLE | 0b010110,// bottom back
+		-0.5, 0.2, 0.5, 1, 1, 0, FLAG_PROVOKING_BOTTOM | FLAG_POSITION_MIDDLE | 0b000101,// bottom left side
 
 		-0.5, 1, -0.5, 0, 1, 1, FLAG_PROVOKING_TOP | FLAG_POSITION_TOP | 0b011001,// top
 		0.5, 1, -0.5, 1, 1, 1, FLAG_PROVOKING_TOP | FLAG_POSITION_TOP | 0b100101,// top right side
@@ -113,6 +114,54 @@ export const buildUnitModel = () => {
 
 	addBodyPart(0.3, 0.25, 0.3, 0.25, -1.28, 0, FLAG_PART_RIGHT_LEG, false)
 	addBodyPart(0.3, 0.25, 0.3, -0.25, -1.28, 0, FLAG_PART_LEFT_LEG, false)
+
+	const addFacePart = () => {
+		// mouth
+		let start = finalModelVertexData.length / VERTEX_SIZE | 0
+		const zPosition = -0.51
+		finalModelVertexData.push(
+			0.26, 0.50, zPosition, 1, 1, 1, FLAG_PART_FACE | 0b010100,
+			0.26, 0.44, zPosition, 1, 1, 1, FLAG_PART_FACE | 0b010100,
+			-0.26, 0.44, zPosition, 1, 1, 1, FLAG_PART_FACE | 0b010100,
+			-0.26, 0.50, zPosition, 1, 1, 1, FLAG_PART_FACE | 0b010100,
+		)
+		finalModelElements.push(start, start + 1, start + 2)
+		finalModelElements.push(start, start + 2, start + 3)
+
+		// left eye
+		start = finalModelVertexData.length / VERTEX_SIZE | 0
+		finalModelVertexData.push(
+			-0.20, 0.83, zPosition, 1, 1, 1, FLAG_PART_FACE | 0b010100,
+			-0.20, 0.76, zPosition, 1, 1, 1, FLAG_PART_FACE | 0b010100,
+			-0.26, 0.76, zPosition, 1, 1, 1, FLAG_PART_FACE | 0b010100,
+			-0.26, 0.83, zPosition, 1, 1, 1, FLAG_PART_FACE | 0b010100,
+		)
+		finalModelElements.push(start, start + 1, start + 2)
+		finalModelElements.push(start, start + 2, start + 3)
+
+		// right eye
+		start = finalModelVertexData.length / VERTEX_SIZE | 0
+		finalModelVertexData.push(
+			0.20, 0.83, zPosition, 1, 1, 1, FLAG_PART_FACE | 0b010100,
+			0.20, 0.76, zPosition, 1, 1, 1, FLAG_PART_FACE | 0b010100,
+			0.26, 0.76, zPosition, 1, 1, 1, FLAG_PART_FACE | 0b010100,
+			0.26, 0.83, zPosition, 1, 1, 1, FLAG_PART_FACE | 0b010100,
+		)
+		finalModelElements.push(start, start + 2, start + 1)
+		finalModelElements.push(start, start + 3, start + 2)
+
+		// nose eye
+		start = finalModelVertexData.length / VERTEX_SIZE | 0
+		finalModelVertexData.push(
+			0.00, 0.65, zPosition * 1.2, 1, 1, 1, FLAG_PART_FACE,
+			0.10, 0.60, zPosition, 1, 1, 1, FLAG_PART_FACE,
+			0.00, 0.75, zPosition, 1, 1, 1, FLAG_PART_FACE,
+			-0.10, 0.60, zPosition, 1, 1, 1, FLAG_PART_FACE,
+		)
+		finalModelElements.push(start, start + 2, start + 1)
+		finalModelElements.push(start, start + 3, start + 2)
+	}
+	addFacePart()
 
 	return {
 		vertexes: new Float32Array(finalModelVertexData),

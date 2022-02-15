@@ -9,12 +9,13 @@ export const FLAG_POSITION_BOTTOM = 0b00 << 7
 export const FLAG_POSITION_MIDDLE = 0b01 << 7
 export const FLAG_POSITION_TOP = 0b10 << 7
 
-export const MASK_BODY_PART = 0b111 << 9
-export const FLAG_PART_MAIN_BODY = 0b001 << 9
-export const MASK_PART_ANY_ARM = 0b010 << 9
-export const MASK_PART_ANY_LEG = 0b100 << 9
-export const FLAG_PART_LEFT = 0b000 << 9
-export const FLAG_PART_RIGHT = 0b001 << 9
+export const MASK_BODY_PART = 0b1111 << 9
+export const FLAG_PART_MAIN_BODY = 0b0001 << 9
+export const FLAG_PART_FACE = 0b1001 << 9
+export const MASK_PART_ANY_ARM = 0b0010 << 9
+export const MASK_PART_ANY_LEG = 0b0100 << 9
+export const FLAG_PART_LEFT = 0b0000 << 9
+export const FLAG_PART_RIGHT = 0b0001 << 9
 export const FLAG_PART_LEFT_ARM = MASK_PART_ANY_ARM | FLAG_PART_LEFT
 export const FLAG_PART_RIGHT_ARM = MASK_PART_ANY_ARM | FLAG_PART_RIGHT
 export const FLAG_PART_LEFT_LEG = MASK_PART_ANY_LEG | FLAG_PART_LEFT
@@ -27,6 +28,7 @@ in vec3 a_modelPosition;
 in vec3 a_worldPosition;
 in vec3 a_primaryColor;
 in vec3 a_secondaryColor;
+in vec3 a_faceColor;
 in float a_flags;
 flat out vec3 v_color;
 flat out vec3 v_normal; 
@@ -38,8 +40,12 @@ void main() {
 	int flagsAsInt = int(a_flags);
 	v_normal = vec3(ivec3(((flagsAsInt >> 4) & 3) - 1, ((flagsAsInt >> 2) & 3) - 1, (flagsAsInt & 3) - 1));
 	
-	bool isProvokingTop = (flagsAsInt & ${MASK_PROVOKING}) == ${FLAG_PROVOKING_TOP};
-	v_color = (isProvokingTop ? a_secondaryColor : a_primaryColor);
+	if ((flagsAsInt & ${MASK_BODY_PART}) == ${FLAG_PART_FACE}) {
+		v_color = a_faceColor;
+	} else {
+		bool isProvokingTop = (flagsAsInt & ${MASK_PROVOKING}) == ${FLAG_PROVOKING_TOP};
+		v_color = (isProvokingTop ? a_secondaryColor : a_primaryColor);
+	}
 	
 	vec3 pos = a_modelPosition;
 	bool isTopVertex = (flagsAsInt & ${MASK_POSITION}) == ${FLAG_POSITION_TOP};
@@ -87,4 +93,4 @@ void main() {
 `
 
 export type Uniforms = 'time' | 'projection' | 'view' | 'lightPosition'
-export type Attributes = 'modelPosition' | 'worldPosition' | 'flags' | 'primaryColor' | 'secondaryColor'
+export type Attributes = 'modelPosition' | 'worldPosition' | 'flags' | 'primaryColor' | 'secondaryColor' | 'faceColor'
