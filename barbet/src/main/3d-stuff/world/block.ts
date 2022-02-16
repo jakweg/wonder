@@ -1,3 +1,5 @@
+import { freezeAndValidateOptionsList } from '../shader/common'
+
 export enum BlockId {
 	Air,
 	Stone,
@@ -33,9 +35,7 @@ export const allBlocks: BlockType[] = [
 	{numericId: BlockId.Gravel, colorR: 0.5234375, colorG: 0.5078125, colorB: 0.50390625},
 ]
 
-Object.freeze(allBlocks)
-for (const b of allBlocks) Object.freeze(b)
+freezeAndValidateOptionsList(allBlocks)
 
 
-export const AIR = allBlocks[BlockId.Air]!
 export const AIR_ID: BlockId = BlockId.Air

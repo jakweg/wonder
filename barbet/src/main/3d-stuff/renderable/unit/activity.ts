@@ -1,4 +1,5 @@
 import { GameState, Unit } from '../../game-state/game-state'
+import { freezeAndValidateOptionsList } from '../../shader/common'
 import { ShaderId } from './unit-shaders'
 
 export enum ActivityId {
@@ -44,7 +45,12 @@ export const allActivities: ActivityType[] = [
 	},
 ]
 
-Object.freeze(allActivities)
-for (const b of allActivities) Object.freeze(b)
+freezeAndValidateOptionsList(allActivities)
+export const requireActivity = (id: number): ActivityType => {
+	const activity = allActivities[id]
+	if (activity == null)
+		throw new Error(`Invalid activity id ${id}`)
+	return activity
+}
 
 export const IDLE = allActivities[ActivityId.Idle]!

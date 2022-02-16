@@ -2,9 +2,8 @@ import { toGl } from '../../../util/matrix/common'
 import { add, clone, fromValues } from '../../../util/matrix/vec3'
 import { GameState } from '../../game-state/game-state'
 import { GlProgram, MainRenderer } from '../../main-renderer'
-import { createProgramFromNewShaders } from '../../shader/common'
 import { RenderContext } from '../render-context'
-import { allActivities } from './activity'
+import { requireActivity } from './activity'
 import { buildUnitModel } from './unit-model'
 import { allShaderSources, Attributes, fragmentShaderSource, Uniforms } from './unit-shaders'
 
@@ -21,9 +20,12 @@ export const createNewUnitRenderable = (renderer: MainRenderer,
 	const modelElementsBuffer = renderer.createBuffer(false, false)
 	modelElementsBuffer.setContent(mesh.elements)
 
+	const fragmentShader = renderer.createShader(false, fragmentShaderSource)
+
 	const programs: GlProgram<Attributes, Uniforms>[] = []
 	for (const source of allShaderSources) {
-		const program = createProgramFromNewShaders<Attributes, Uniforms>(renderer, source, fragmentShaderSource)
+		const vertexShader = renderer.createShader(true, source)
+		const program = renderer.createProgram<Attributes, Uniforms>(vertexShader, fragmentShader)
 
 		modelBuffer.bind()
 		program.enableAttribute(program.attributes.modelPosition, 3, true, 7 * floatSize, 0, 0)
@@ -49,9 +51,7 @@ export const createNewUnitRenderable = (renderer: MainRenderer,
 			modelBuffer.bind()
 
 			for (const unit of game.allUnits) {
-				const activity = allActivities[unit.activityId]
-				if (activity == null)
-					throw new Error(`Invalid activity id ${unit.activityId}`)
+				const activity = requireActivity(unit.activityId)
 				const program = programs[activity.shaderId]
 				if (program == null)
 					throw new Error(`Invalid unit program id ${activity.shaderId}`)

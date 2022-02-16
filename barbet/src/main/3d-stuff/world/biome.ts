@@ -1,3 +1,4 @@
+import { freezeAndValidateOptionsList } from '../shader/common'
 import { BlockId } from './block'
 
 export enum BiomeId {
@@ -46,6 +47,5 @@ export const allBiomes: BiomeType[] = [
 	},
 ]
 
-Object.freeze(allBiomes)
-for (const b of allBiomes) Object.freeze(b)
+freezeAndValidateOptionsList(allBiomes)
 

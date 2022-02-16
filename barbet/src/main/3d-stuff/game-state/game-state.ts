@@ -1,4 +1,4 @@
-import { ActivityId, allActivities, IDLE } from '../renderable/unit/activity'
+import { ActivityId, IDLE, requireActivity } from '../renderable/unit/activity'
 import { UnitColorPalette } from '../renderable/unit/unit-color'
 
 
@@ -47,9 +47,7 @@ export class GameState {
 	public advanceActivities() {
 		this._currentTick++
 		for (const unit of [...this._units]) {
-			const activity = allActivities[unit.activityId]
-			if (activity == null)
-				throw new Error(`Invalid activity id ${unit.activityId}`)
+			const activity = requireActivity(unit.activityId)
 
 			activity.perform(this, unit)
 		}

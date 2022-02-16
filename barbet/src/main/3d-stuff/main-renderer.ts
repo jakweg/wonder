@@ -107,7 +107,6 @@ export class MainRenderer {
 	public createProgram<Attributes = string, Uniforms = string>(
 		vertex: WebGLShader,
 		fragment: WebGLShader):
-// @ts-ignore
 		GlProgram<Attributes, Uniforms> {
 
 		const gl = this.gl
@@ -123,7 +122,6 @@ export class MainRenderer {
 
 		this.allocatedResources.push({type: 'program', id: program})
 
-		// @ts-ignore
 		return new GlProgram<Attributes, Uniforms>(
 			gl, program,
 			getAllUniforms(gl, program) as unknown as any,
