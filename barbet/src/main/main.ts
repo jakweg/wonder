@@ -1,8 +1,10 @@
+import { GameState } from './3d-stuff/game-state/game-state'
 import { MainRenderer } from './3d-stuff/main-renderer'
 import { createNewItemRenderable } from './3d-stuff/renderable/item/item'
 import { RenderContext } from './3d-stuff/renderable/render-context'
 import { createNewTerrainRenderable } from './3d-stuff/renderable/terrain/terrain'
 import { createNewUnitRenderable } from './3d-stuff/renderable/unit/unit'
+import { example2 } from './3d-stuff/renderable/unit/unit-color'
 import { BlockId } from './3d-stuff/world/block'
 import { World } from './3d-stuff/world/world'
 import { Camera } from './camera'
@@ -35,17 +37,22 @@ world.setBlock(6, 2, 13, BlockId.Stone)
 world.setBlock(6, 3, 13, BlockId.Stone)
 
 const terrain = createNewTerrainRenderable(renderer, world)
-const unit = createNewUnitRenderable(renderer)
+const state = GameState.createNew()
+// state.spawnUnit(5, 5, example1)
+state.spawnUnit(8, 5, example2)
+
+const unit = createNewUnitRenderable(renderer, state)
 const items = createNewItemRenderable(renderer)
 
 const sunPosition = vec3.fromValues(-500, 500, -500)
 
 const firstRenderTime = Date.now()
-let fixedTime: number | null = 0
+let fixedTime: number | null = null
 document.getElementById('input-u_time')
 	?.addEventListener('input', (event) => {
 		fixedTime = +(event.target as HTMLInputElement).value
 	})
+
 renderer.renderFunction = (gl, dt) => {
 	const now = Date.now()
 
@@ -65,6 +72,7 @@ renderer.renderFunction = (gl, dt) => {
 	sunPosition[0] = Math.cos(1) * r + 10
 	sunPosition[2] = Math.sin(1) * r + 10
 
+	state.advanceActivities()
 	terrain.render(ctx)
 	unit.render(ctx)
 	items.render(ctx)

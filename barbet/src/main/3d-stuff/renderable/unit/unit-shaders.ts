@@ -21,8 +21,7 @@ export const FLAG_PART_RIGHT_ARM = MASK_PART_ANY_ARM | FLAG_PART_RIGHT
 export const FLAG_PART_LEFT_LEG = MASK_PART_ANY_LEG | FLAG_PART_LEFT
 export const FLAG_PART_RIGHT_LEG = MASK_PART_ANY_LEG | FLAG_PART_RIGHT
 
-
-export const vertexShaderSource = `${VersionHeader()}
+const vertexShaderSourceHead = `${VersionHeader()}
 ${PrecisionHeader()}
 in vec3 a_modelPosition;
 in vec3 a_worldPosition;
@@ -36,6 +35,7 @@ flat out vec3 v_currentPosition;
 uniform mat4 u_projection;
 uniform mat4 u_view;
 uniform float u_time;
+
 void main() {
 	int flagsAsInt = int(a_flags);
 	v_normal = vec3(ivec3(((flagsAsInt >> 4) & 3) - 1, ((flagsAsInt >> 2) & 3) - 1, (flagsAsInt & 3) - 1));
@@ -56,9 +56,24 @@ void main() {
 	bool isAnimatableElement = (flagsAsInt & ${MASK_PART_ANY_LEG | MASK_PART_ANY_ARM}) > 0;
 	bool isLeftArmVertex = (flagsAsInt & ${MASK_BODY_PART}) == ${FLAG_PART_LEFT_ARM};
 	bool isRightArmVertex = (flagsAsInt & ${MASK_BODY_PART}) == ${FLAG_PART_RIGHT_ARM};
+	bool isLeftLegVertex = (flagsAsInt & ${MASK_BODY_PART}) == ${FLAG_PART_LEFT_LEG};
+	bool isRightLegVertex = (flagsAsInt & ${MASK_BODY_PART}) == ${FLAG_PART_RIGHT_LEG};
 	
 	float computedSin1 = sin(u_time);
-	if ((isMainBodyVertex && isTopVertex)) {
+	float computedSin5 = sin(u_time * 5.0);
+`
+const vertexShaderSourceTail = `
+	pos *= vec3(0.7, 0.7, 0.7);
+	pos += vec3(0.5, 1.1, 0.5) + a_worldPosition;	
+    v_currentPosition = pos;
+    gl_Position = u_projection * u_view * vec4(pos, 1);
+    gl_PointSize = 10.0;
+}
+`
+
+const pickUpItemShader = `
+${vertexShaderSourceHead}
+	if (isMainBodyVertex && isTopVertex) {
 		pos.z -= computedSin1 * (pos.y + 0.05) * 0.8;
 		pos.y += computedSin1 * pos.z * 0.2;
 	}
@@ -74,13 +89,37 @@ void main() {
 		pos.z -= computedSin1 * (pos.y + (isBottomVertex ? 1.9 : (isMiddleVertex ? 0.85 : 0.4))) * 0.9;
 		pos.y -= computedSin1 * 0.4;
 	}
-	
-	pos *= vec3(0.7, 0.7, 0.7);
-	pos += vec3(0.5, 1.1, 0.5) + a_worldPosition;	
-    v_currentPosition = pos;
-    gl_Position = u_projection * u_view * vec4(pos, 1);
-    gl_PointSize = 10.0;
+${vertexShaderSourceTail}
+`
+
+const stationaryShader = `
+${vertexShaderSourceHead}
+${vertexShaderSourceTail}
+`
+
+const idleShader = `
+${vertexShaderSourceHead}
+if (isAnimatableElement && !isTopVertex) {
+	float additionalZOffset = computedSin1 * (isBottomVertex ? -0.18 : -0.06);
+	if (isLeftArmVertex)
+		pos.z += additionalZOffset;
+	else if (isRightArmVertex)
+		pos.z -= additionalZOffset;
 }
+pos.y += computedSin1 * 0.02;
+${vertexShaderSourceTail}
+`
+
+const walkingShader = `
+${vertexShaderSourceHead}
+if (isAnimatableElement && !isTopVertex) {
+	float additionalZOffset = computedSin5 * (isBottomVertex ? -0.2 : -0.1);
+	if (isLeftArmVertex || isRightLegVertex)
+		pos.z += additionalZOffset;
+	else if (isRightArmVertex || isLeftLegVertex)
+		pos.z -= additionalZOffset;
+}
+${vertexShaderSourceTail}
 `
 
 export const fragmentShaderSource = `${VersionHeader()}
@@ -104,3 +143,17 @@ void main() {
 
 export type Uniforms = 'time' | 'projection' | 'view' | 'lightPosition'
 export type Attributes = 'modelPosition' | 'worldPosition' | 'flags' | 'primaryColor' | 'secondaryColor' | 'faceColor'
+
+export const enum ShaderId {
+	Stationary,
+	Idle,
+	Walking,
+	PickUpItem,
+}
+
+export const allShaderSources = [
+	stationaryShader,
+	idleShader,
+	walkingShader,
+	pickUpItemShader,
+]

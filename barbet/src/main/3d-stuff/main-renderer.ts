@@ -88,6 +88,9 @@ export class MainRenderer {
 		const gl = this.gl
 		const shader = gl.createShader(vertex ? gl.VERTEX_SHADER : gl.FRAGMENT_SHADER)!
 
+		if (source.startsWith(' ') || source.startsWith('\n'))
+			source = source.trimStart()
+
 		gl.shaderSource(shader, source)
 		gl.compileShader(shader)
 		if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
@@ -208,10 +211,12 @@ class VertexArray {
 	}
 }
 
-export class GlProgram<A extends 'names', U extends 'names'> {
+export class GlProgram<A, U> {
 	constructor(private readonly gl: WebGL2RenderingContext,
 	            private readonly program: WebGLProgram,
+	            // @ts-ignore
 	            readonly uniforms: { [key in U]: WebGLUniformLocation },
+	            // @ts-ignore
 	            readonly attributes: { [key in A]: GLint }) {
 	}
 
