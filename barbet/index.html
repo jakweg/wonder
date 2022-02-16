@@ -10,10 +10,32 @@
         canvas {
             border: 1px solid green;
         }
+
+        body {
+            position: relative;
+        }
+
+        body > * {
+            position: absolute;
+        }
+
+        .controls {
+            right: 0;
+            top: 0;
+            padding: 4px;
+            margin: 4px;
+            background: rgba(0, 0, 0, .3);
+        }
     </style>
 </head>
 <body>
 <canvas id="main-canvas"></canvas>
-    <script type=module src="build-js/main.js"></script>
+<div class="controls">
+    <label>
+        <span>u_time</span>
+        <input id="input-u_time" max="3.14" min=0 step=any type="range" value=0>
+    </label>
+</div>
+<script src="build-js/main.js" type=module></script>
 </body>
 </html>

@@ -48,7 +48,7 @@ export const createNewUnitRenderable = (renderer: MainRenderer) => {
 			gl.uniformMatrix4fv(program.uniforms.projection, false, toGl(camera.perspectiveMatrix))
 			gl.uniformMatrix4fv(program.uniforms.view, false, toGl(camera.viewMatrix))
 			gl.uniform1f(program.uniforms.time, ctx.secondsSinceFirstRender)
-			gl.uniform3fv(program.uniforms.lightPosition, toGl(add(clone(ctx.sunPosition), ctx.sunPosition, fromValues(0, -400, 0))))
+			gl.uniform3fv(program.uniforms.lightPosition, toGl(add(clone(ctx.sunPosition), ctx.sunPosition, fromValues(0, -10, -400))))
 
 			gl.drawElementsInstanced(gl.TRIANGLES, trianglesToRender, gl.UNSIGNED_SHORT, 0, instancesCount)
 		},

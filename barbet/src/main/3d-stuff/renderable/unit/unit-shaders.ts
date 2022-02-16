@@ -48,23 +48,33 @@ void main() {
 	}
 	
 	vec3 pos = a_modelPosition;
+	bool isMainBodyVertex = (flagsAsInt & ${MASK_BODY_PART}) == ${FLAG_PART_MAIN_BODY};
+	bool isFaceVertex = (flagsAsInt & ${MASK_BODY_PART}) == ${FLAG_PART_FACE};
 	bool isTopVertex = (flagsAsInt & ${MASK_POSITION}) == ${FLAG_POSITION_TOP};
+	bool isMiddleVertex = (flagsAsInt & ${MASK_POSITION}) == ${FLAG_POSITION_MIDDLE};
 	bool isBottomVertex = (flagsAsInt & ${MASK_POSITION}) == ${FLAG_POSITION_BOTTOM};
 	bool isAnimatableElement = (flagsAsInt & ${MASK_PART_ANY_LEG | MASK_PART_ANY_ARM}) > 0;
+	bool isLeftArmVertex = (flagsAsInt & ${MASK_BODY_PART}) == ${FLAG_PART_LEFT_ARM};
+	bool isRightArmVertex = (flagsAsInt & ${MASK_BODY_PART}) == ${FLAG_PART_RIGHT_ARM};
 	
-	if (isAnimatableElement && !isTopVertex) {
-		bool isLeftArmVertex = (flagsAsInt & ${MASK_BODY_PART}) == ${FLAG_PART_LEFT_ARM};
-		bool isRightArmVertex = (flagsAsInt & ${MASK_BODY_PART}) == ${FLAG_PART_RIGHT_ARM};
-		bool isLeftLegVertex = (flagsAsInt & ${MASK_BODY_PART}) == ${FLAG_PART_LEFT_LEG};
-		bool isRightLegVertex = (flagsAsInt & ${MASK_BODY_PART}) == ${FLAG_PART_RIGHT_LEG};
-		
-		float additionalZOffset = cos(u_time * 5.0) * (isBottomVertex ? -0.2 : -0.1);
-		if (isLeftArmVertex || isRightLegVertex)
-			pos.z += additionalZOffset;
-		else if (isRightArmVertex || isLeftLegVertex)
-			pos.z -= additionalZOffset;
-		
+	float computedSin1 = sin(u_time);
+	if ((isMainBodyVertex && isTopVertex)) {
+		pos.z -= computedSin1 * (pos.y + 0.05) * 0.8;
+		pos.y += computedSin1 * pos.z * 0.2;
 	}
+	if (isFaceVertex) {
+		pos.z -= computedSin1 * (pos.y + 1.1) * 0.35;
+		pos.y -= computedSin1 * pos.y * 0.45;
+	}
+	if (isMainBodyVertex && isMiddleVertex) {
+		pos.z -= computedSin1 * (pos.y + 0.01) * 1.6;
+		pos.y += computedSin1 * pos.z * 0.2;
+	}
+	if (isLeftArmVertex || isRightArmVertex) {
+		pos.z -= computedSin1 * (pos.y + (isBottomVertex ? 1.9 : (isMiddleVertex ? 0.85 : 0.4))) * 0.9;
+		pos.y -= computedSin1 * 0.4;
+	}
+	
 	pos *= vec3(0.7, 0.7, 0.7);
 	pos += vec3(0.5, 1.1, 0.5) + a_worldPosition;	
     v_currentPosition = pos;

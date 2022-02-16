@@ -1,7 +1,8 @@
 import { MainRenderer } from './3d-stuff/main-renderer'
+import { createNewItemRenderable } from './3d-stuff/renderable/item/item'
 import { RenderContext } from './3d-stuff/renderable/render-context'
-import { createNewTerrainRenderable } from './3d-stuff/renderable/terrain'
-import { createNewUnitRenderable } from './3d-stuff/renderable/unit'
+import { createNewTerrainRenderable } from './3d-stuff/renderable/terrain/terrain'
+import { createNewUnitRenderable } from './3d-stuff/renderable/unit/unit'
 import { BlockId } from './3d-stuff/world/block'
 import { World } from './3d-stuff/world/world'
 import { Camera } from './camera'
@@ -14,7 +15,7 @@ canvas.height = 720
 
 const renderer = MainRenderer.fromHTMLCanvas(canvas)
 const camera = Camera.newPerspective(90, 1280 / 720)
-camera.moveCamera(6, 4, 12)
+camera.moveCamera(9.5, 0, 7)
 
 const world = World.createEmpty(20, 30, 20, BlockId.Air)
 for (let i = 0, w = world.size.sizeX; i < w; i++)
@@ -28,12 +29,23 @@ for (let i = 3, w = world.size.sizeX - 3; i < w; i++)
 	for (let j = 3, h = world.size.sizeZ - 3; j < h; j++)
 		world.setBlock(i, 1, j, BlockId.Grass)
 
+world.setBlock(7, 2, 14, BlockId.Stone)
+world.setBlock(7, 3, 14, BlockId.Stone)
+world.setBlock(6, 2, 13, BlockId.Stone)
+world.setBlock(6, 3, 13, BlockId.Stone)
+
 const terrain = createNewTerrainRenderable(renderer, world)
 const unit = createNewUnitRenderable(renderer)
+const items = createNewItemRenderable(renderer)
 
 const sunPosition = vec3.fromValues(-500, 500, -500)
 
 const firstRenderTime = Date.now()
+let fixedTime: number | null = 0
+document.getElementById('input-u_time')
+	?.addEventListener('input', (event) => {
+		fixedTime = +(event.target as HTMLInputElement).value
+	})
 renderer.renderFunction = (gl, dt) => {
 	const now = Date.now()
 
@@ -41,7 +53,7 @@ renderer.renderFunction = (gl, dt) => {
 		gl,
 		camera,
 		sunPosition,
-		secondsSinceFirstRender: (now - firstRenderTime) / 1000,
+		secondsSinceFirstRender: fixedTime ?? (now - firstRenderTime) / 1000,
 	}
 	moveCameraByKeys(camera, dt)
 	camera.updateMatrixIfNeeded()
@@ -55,6 +67,7 @@ renderer.renderFunction = (gl, dt) => {
 
 	terrain.render(ctx)
 	unit.render(ctx)
+	items.render(ctx)
 }
 
 renderer.beforeRenderFunction = (secondsSinceLastFrame) => secondsSinceLastFrame > 0.5 || document.hasFocus()
@@ -62,21 +75,21 @@ renderer.beginRendering()
 
 const moveCameraByKeys = (camera: Camera, dt: number) => {
 	if (!KEYBOARD.isAnyPressed()) return
-	const speed = dt * 3 * camera.eye[1]
+	const speed = dt * 1.2 * camera.eye[1]
 
 	const front1 = vec3.subtract(vec3.create(), camera.center, camera.eye)
 	vec3.normalize(front1, front1)
 	if (KEYBOARD.isPressed('KeyW') || KEYBOARD.isPressed('ArrowUp')) {
-		camera.moveCamera(speed, 0, 0)
+		camera.moveCamera(0, 0, speed)
 	}
 	if (KEYBOARD.isPressed('KeyS') || KEYBOARD.isPressed('ArrowDown')) {
-		camera.moveCamera(-speed, 0, 0)
-	}
-	if (KEYBOARD.isPressed('KeyA') || KEYBOARD.isPressed('ArrowLeft')) {
 		camera.moveCamera(0, 0, -speed)
 	}
+	if (KEYBOARD.isPressed('KeyA') || KEYBOARD.isPressed('ArrowLeft')) {
+		camera.moveCamera(speed, 0, 0)
+	}
 	if (KEYBOARD.isPressed('KeyD') || KEYBOARD.isPressed('ArrowRight')) {
-		camera.moveCamera(0, 0, speed)
+		camera.moveCamera(-speed, 0, 0)
 	}
 	if (KEYBOARD.isPressed('ShiftLeft')) {
 		camera.moveCamera(0, -speed, 0)
