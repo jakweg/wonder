@@ -46,7 +46,7 @@ export const allActivities: ActivityType[] = [
 ]
 
 freezeAndValidateOptionsList(allActivities)
-export const requireActivity = (id: number): ActivityType => {
+export const requireActivity = (id: ActivityId): ActivityType => {
 	const activity = allActivities[id]
 	if (activity == null)
 		throw new Error(`Invalid activity id ${id}`)

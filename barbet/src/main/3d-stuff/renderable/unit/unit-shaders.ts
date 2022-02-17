@@ -1,4 +1,5 @@
 import { PrecisionHeader, VersionHeader } from '../../shader/common'
+import { buildShaderColorArray } from './unit-color'
 
 export const MASK_PROVOKING = 0b1 << 6
 export const FLAG_PROVOKING_BOTTOM = 0b0 << 6
@@ -25,11 +26,9 @@ const vertexShaderSourceHead = `${VersionHeader()}
 ${PrecisionHeader()}
 in vec3 a_modelPosition;
 in vec3 a_worldPosition;
-in vec3 a_primaryColor;
-in vec3 a_secondaryColor;
-in vec3 a_faceColor;
+in float a_colorPaletteId;
 in float a_flags;
-flat out vec3 v_color;
+flat out int v_colorPaletteId;
 flat out vec3 v_normal; 
 flat out vec3 v_currentPosition; 
 uniform mat4 u_projection;
@@ -41,10 +40,10 @@ void main() {
 	v_normal = vec3(ivec3(((flagsAsInt >> 4) & 3) - 1, ((flagsAsInt >> 2) & 3) - 1, (flagsAsInt & 3) - 1));
 	
 	if ((flagsAsInt & ${MASK_BODY_PART}) == ${FLAG_PART_FACE}) {
-		v_color = a_faceColor;
+		v_colorPaletteId = int(a_colorPaletteId) * 9 + 6;
 	} else {
 		bool isProvokingTop = (flagsAsInt & ${MASK_PROVOKING}) == ${FLAG_PROVOKING_TOP};
-		v_color = (isProvokingTop ? a_secondaryColor : a_primaryColor);
+		v_colorPaletteId = (isProvokingTop ? (int(a_colorPaletteId) * 9 + 3) : int(a_colorPaletteId) * 9);
 	}
 	
 	vec3 pos = a_modelPosition;
@@ -125,16 +124,18 @@ ${vertexShaderSourceTail}
 export const fragmentShaderSource = `${VersionHeader()}
 ${PrecisionHeader()}
 out vec4 finalColor;
-flat in vec3 v_color;
+flat in int v_colorPaletteId;
 flat in vec3 v_normal;
 flat in vec3 v_currentPosition;
 uniform float u_time;
 uniform vec3 u_lightPosition;
 const float ambientLight = 0.5;
+${buildShaderColorArray('unitColors')}
 void main() {
 	vec3 lightDirection = normalize(vec3(u_lightPosition) - v_currentPosition);
 	float diffuse = max(sqrt(dot(v_normal, lightDirection)), ambientLight);
-	finalColor = vec4(v_color * diffuse, 1);
+	vec3 color = vec3(unitColors[v_colorPaletteId], unitColors[v_colorPaletteId + 1], unitColors[v_colorPaletteId + 2]);
+	finalColor = vec4(color * diffuse, 1);
 	// if (!gl_FrontFacing) {
 	// 	finalColor = vec4(sin(u_time * 4.0) * 0.5 + 0.5, 0, cos(u_time * 3.0) * 0.5 + 0.5, 1);
 	// }
@@ -142,7 +143,7 @@ void main() {
 `
 
 export type Uniforms = 'time' | 'projection' | 'view' | 'lightPosition'
-export type Attributes = 'modelPosition' | 'worldPosition' | 'flags' | 'primaryColor' | 'secondaryColor' | 'faceColor'
+export type Attributes = 'modelPosition' | 'worldPosition' | 'flags' | 'colorPaletteId'
 
 export const enum ShaderId {
 	Stationary,

@@ -4,7 +4,7 @@ import { createNewItemRenderable } from './3d-stuff/renderable/item/item'
 import { RenderContext } from './3d-stuff/renderable/render-context'
 import { createNewTerrainRenderable } from './3d-stuff/renderable/terrain/terrain'
 import { createNewUnitRenderable } from './3d-stuff/renderable/unit/unit'
-import { example2 } from './3d-stuff/renderable/unit/unit-color'
+import { UnitColorPaletteId } from './3d-stuff/renderable/unit/unit-color'
 import { BlockId } from './3d-stuff/world/block'
 import { World } from './3d-stuff/world/world'
 import { Camera } from './camera'
@@ -38,8 +38,7 @@ world.setBlock(6, 3, 13, BlockId.Stone)
 
 const terrain = createNewTerrainRenderable(renderer, world)
 const state = GameState.createNew()
-// state.spawnUnit(5, 5, example1)
-state.spawnUnit(8, 5, example2)
+state.spawnUnit(8, 5, UnitColorPaletteId.LightOrange)
 
 const unit = createNewUnitRenderable(renderer, state)
 const items = createNewItemRenderable(renderer)

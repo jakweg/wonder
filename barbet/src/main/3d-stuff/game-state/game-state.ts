@@ -1,12 +1,12 @@
 import { ActivityId, IDLE, requireActivity } from '../renderable/unit/activity'
-import { UnitColorPalette } from '../renderable/unit/unit-color'
+import { UnitColorPaletteId } from '../renderable/unit/unit-color'
 
 
 export interface Unit {
 	posX: number
 	posY: number
 	posZ: number
-	color: UnitColorPalette
+	color: UnitColorPaletteId
 	activityId: ActivityId
 	activityStartedAt: number
 	activityMemory: Float32Array
@@ -34,10 +34,10 @@ export class GameState {
 
 	public spawnUnit(atX: number,
 	                 atZ: number,
-	                 colorPalette: UnitColorPalette): void {
+	                 color: UnitColorPaletteId): void {
 		this._units.push({
 			posX: atX, posY: 2, posZ: atZ,
-			color: colorPalette,
+			color: color,
 			activityId: IDLE.numericId,
 			activityStartedAt: this._currentTick,
 			activityMemory: new Float32Array(10),

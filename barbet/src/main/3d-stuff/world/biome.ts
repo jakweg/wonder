@@ -1,7 +1,7 @@
 import { freezeAndValidateOptionsList } from '../shader/common'
 import { BlockId } from './block'
 
-export enum BiomeId {
+export const enum BiomeId {
 	Void,
 	Forest,
 	Desert,

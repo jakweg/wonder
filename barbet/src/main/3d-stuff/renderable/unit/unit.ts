@@ -33,17 +33,14 @@ export const createNewUnitRenderable = (renderer: MainRenderer,
 
 
 		unitDataBuffer.bind()
-		program.enableAttribute(program.attributes.worldPosition, 3, true, 12 * floatSize, 0, 1)
-		program.enableAttribute(program.attributes.primaryColor, 3, true, 12 * floatSize, 3 * floatSize, 1)
-		program.enableAttribute(program.attributes.secondaryColor, 3, true, 12 * floatSize, 6 * floatSize, 1)
-		program.enableAttribute(program.attributes.faceColor, 3, true, 12 * floatSize, 9 * floatSize, 1)
+		program.enableAttribute(program.attributes.worldPosition, 3, true, 4 * floatSize, 0, 1)
+		program.enableAttribute(program.attributes.colorPaletteId, 1, true, 4 * floatSize, 3 * floatSize, 1)
 
 		programs.push(program)
 	}
 
 
 	const trianglesToRender = mesh.trianglesToRender
-	// const instancesCount = unitData.length / 12 | 0
 	return {
 		render(ctx: RenderContext) {
 			const {gl, camera} = ctx
@@ -59,10 +56,7 @@ export const createNewUnitRenderable = (renderer: MainRenderer,
 				program.use()
 				const unitData = []
 
-				unitData.push(unit.posX, unit.posY, unit.posZ,
-					...unit.color.primary,
-					...unit.color.secondary,
-					...unit.color.face)
+				unitData.push(unit.posX, unit.posY, unit.posZ, unit.color)
 				unitDataBuffer.setContent(new Float32Array(unitData))
 
 
@@ -71,7 +65,6 @@ export const createNewUnitRenderable = (renderer: MainRenderer,
 				gl.uniform1f(program.uniforms.time, ctx.secondsSinceFirstRender)
 				gl.uniform3fv(program.uniforms.lightPosition, toGl(add(clone(ctx.sunPosition), ctx.sunPosition, fromValues(0, -10, -400))))
 
-				// gl.drawElementsInstanced(gl.TRIANGLES, trianglesToRender, gl.UNSIGNED_SHORT, 0, instancesCount)
 				gl.drawElementsInstanced(gl.TRIANGLES, trianglesToRender, gl.UNSIGNED_SHORT, 0, 1)
 			}
 		},

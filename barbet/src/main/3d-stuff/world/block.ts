@@ -1,6 +1,6 @@
 import { freezeAndValidateOptionsList } from '../shader/common'
 
-export enum BlockId {
+export const enum BlockId {
 	Air,
 	Stone,
 	Grass,
