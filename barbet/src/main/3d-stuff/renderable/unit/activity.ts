@@ -3,8 +3,10 @@ import { freezeAndValidateOptionsList } from '../../shader/common'
 import { ShaderId } from './unit-shaders'
 
 export enum ActivityId {
+	None,
 	Idle,
 	Walking,
+	ItemPickup1,
 }
 
 export interface ActivityType {
@@ -19,27 +21,43 @@ export interface ActivityType {
 
 export const allActivities: ActivityType[] = [
 	{
+		numericId: ActivityId.None,
+		shaderId: ShaderId.Stationary,
+		perform(_: GameState, __: Unit) {
+		},
+	}, {
 		numericId: ActivityId.Idle,
 		shaderId: ShaderId.Idle,
 		perform(game: GameState, unit: Unit) {
+			// unit.activityStartedAt = game.currentTick
 			const counter = unit.activityMemory[0]!
-			if (counter === 60) {
-				unit.activityId = ActivityId.Walking
+			if (counter === 30) {
+				unit.activityId = ActivityId.ItemPickup1
 				unit.activityStartedAt = game.currentTick
 			} else {
 				unit.activityMemory[0] = counter + 1
 			}
 		},
-	},
-	{
+	}, {
 		numericId: ActivityId.Walking,
 		shaderId: ShaderId.Walking,
 		perform(game: GameState, unit: Unit) {
+			// const now = game.currentTick
+			// if (now === unit.activityStartedAt + 100) {
+			// 	unit.activityStartedAt = now
+			// 	unit.activityId = ActivityId.Idle
+			// 	unit.activityMemory[0] = 0
+			// }
+		},
+	}, {
+		numericId: ActivityId.ItemPickup1,
+		shaderId: ShaderId.PickUpItem,
+		perform(game: GameState, unit: Unit) {
 			const now = game.currentTick
-			if (now === unit.activityStartedAt + 100) {
+			if (now === unit.activityStartedAt + 10) {
+				unit.activityMemory[0] = 0
 				unit.activityStartedAt = now
 				unit.activityId = ActivityId.Idle
-				unit.activityMemory[0] = 0
 			}
 		},
 	},

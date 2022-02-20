@@ -26,6 +26,11 @@
             margin: 4px;
             background: rgba(0, 0, 0, .3);
         }
+
+        label {
+            display: block;
+            text-align: right;
+        }
     </style>
 </head>
 <body>
@@ -34,6 +39,10 @@
     <label>
         <span>u_time</span>
         <input id="input-u_time" max="3.14" min=0 step=any type="range" value=0>
+    </label>
+    <label>
+        <span>ticksPerSecond</span>
+        <input id="input-ticksPerSecond" max="60" min=1 step=1 type="range" value=20>
     </label>
 </div>
 <script src="build-js/main.js" type=module></script>

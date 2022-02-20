@@ -28,12 +28,15 @@ in vec3 a_modelPosition;
 in vec3 a_worldPosition;
 in float a_colorPaletteId;
 in float a_flags;
+in float a_activityStartTick;
 flat out int v_colorPaletteId;
 flat out vec3 v_normal; 
 flat out vec3 v_currentPosition; 
 uniform mat4 u_projection;
 uniform mat4 u_view;
 uniform float u_time;
+uniform float u_gameTick;
+const float PI = 3.14159;
 
 void main() {
 	int flagsAsInt = int(a_flags);
@@ -57,9 +60,14 @@ void main() {
 	bool isRightArmVertex = (flagsAsInt & ${MASK_BODY_PART}) == ${FLAG_PART_RIGHT_ARM};
 	bool isLeftLegVertex = (flagsAsInt & ${MASK_BODY_PART}) == ${FLAG_PART_LEFT_LEG};
 	bool isRightLegVertex = (flagsAsInt & ${MASK_BODY_PART}) == ${FLAG_PART_RIGHT_LEG};
+	float activityDuration = u_gameTick - a_activityStartTick;
 	
 	float computedSin1 = sin(u_time);
+	float computedSin2 = sin(u_time * 2.0);
 	float computedSin5 = sin(u_time * 5.0);
+	
+	float computedSin1_2 = sin(activityDuration / PI / 1.0);
+	float computedSin5_2 = sin(activityDuration * 5.0 / PI);
 `
 const vertexShaderSourceTail = `
 	pos *= vec3(0.7, 0.7, 0.7);
@@ -72,21 +80,22 @@ const vertexShaderSourceTail = `
 
 const pickUpItemShader = `
 ${vertexShaderSourceHead}
+	float usedSin = computedSin1_2;
 	if (isMainBodyVertex && isTopVertex) {
-		pos.z -= computedSin1 * (pos.y + 0.05) * 0.8;
-		pos.y += computedSin1 * pos.z * 0.2;
+		pos.z -= usedSin * (pos.y + 0.05) * 0.8;
+		pos.y += usedSin * pos.z * 0.2;
 	}
 	if (isFaceVertex) {
-		pos.z -= computedSin1 * (pos.y + 1.1) * 0.35;
-		pos.y -= computedSin1 * pos.y * 0.45;
+		pos.z -= usedSin * (pos.y + 1.1) * 0.35;
+		pos.y -= usedSin * pos.y * 0.45;
 	}
 	if (isMainBodyVertex && isMiddleVertex) {
-		pos.z -= computedSin1 * (pos.y + 0.01) * 1.6;
-		pos.y += computedSin1 * pos.z * 0.2;
+		pos.z -= usedSin * (pos.y + 0.01) * 1.6;
+		pos.y += usedSin * pos.z * 0.2;
 	}
 	if (isLeftArmVertex || isRightArmVertex) {
-		pos.z -= computedSin1 * (pos.y + (isBottomVertex ? 1.9 : (isMiddleVertex ? 0.85 : 0.4))) * 0.9;
-		pos.y -= computedSin1 * 0.4;
+		pos.z -= usedSin * (pos.y + (isBottomVertex ? 1.9 : (isMiddleVertex ? 0.85 : 0.4))) * 0.9;
+		pos.y -= usedSin * 0.4;
 	}
 ${vertexShaderSourceTail}
 `
@@ -99,7 +108,7 @@ ${vertexShaderSourceTail}
 const idleShader = `
 ${vertexShaderSourceHead}
 if (isAnimatableElement && !isTopVertex) {
-	float additionalZOffset = computedSin1 * (isBottomVertex ? -0.18 : -0.06);
+	float additionalZOffset = computedSin2 * (isBottomVertex ? -0.18 : -0.06);
 	if (isLeftArmVertex)
 		pos.z += additionalZOffset;
 	else if (isRightArmVertex)
@@ -112,7 +121,7 @@ ${vertexShaderSourceTail}
 const walkingShader = `
 ${vertexShaderSourceHead}
 if (isAnimatableElement && !isTopVertex) {
-	float additionalZOffset = computedSin5 * (isBottomVertex ? -0.2 : -0.1);
+	float additionalZOffset = computedSin5_2 * (isBottomVertex ? -0.2 : -0.1);
 	if (isLeftArmVertex || isRightLegVertex)
 		pos.z += additionalZOffset;
 	else if (isRightArmVertex || isLeftLegVertex)
@@ -142,8 +151,8 @@ void main() {
 }
 `
 
-export type Uniforms = 'time' | 'projection' | 'view' | 'lightPosition'
-export type Attributes = 'modelPosition' | 'worldPosition' | 'flags' | 'colorPaletteId'
+export type Uniforms = 'time' | 'projection' | 'view' | 'lightPosition' | 'gameTick'
+export type Attributes = 'modelPosition' | 'worldPosition' | 'flags' | 'colorPaletteId' | 'activityStartTick'
 
 export const enum ShaderId {
 	Stationary,

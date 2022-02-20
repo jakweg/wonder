@@ -231,12 +231,14 @@ export class GlProgram<A, U> {
 	 * @param offset
 	 * @param divisor
 	 */
-	public enableAttribute(attribute: GLint,
+	public enableAttribute(attribute: GLint | undefined,
 	                       size: number,
 	                       float: boolean,
 	                       stride: number,
 	                       offset: number,
 	                       divisor: number) {
+		if (attribute === undefined)
+			return
 		const gl = this.gl
 		gl.enableVertexAttribArray(attribute)
 		if (float) {

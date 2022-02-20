@@ -1,4 +1,5 @@
 import { GameState } from './3d-stuff/game-state/game-state'
+import { StateUpdater } from './3d-stuff/game-state/state-updater'
 import { MainRenderer } from './3d-stuff/main-renderer'
 import { createNewItemRenderable } from './3d-stuff/renderable/item/item'
 import { RenderContext } from './3d-stuff/renderable/render-context'
@@ -38,6 +39,8 @@ world.setBlock(6, 3, 13, BlockId.Stone)
 
 const terrain = createNewTerrainRenderable(renderer, world)
 const state = GameState.createNew()
+const updater = StateUpdater.createNew(state, 20)
+updater.start()
 state.spawnUnit(8, 5, UnitColorPaletteId.LightOrange)
 
 const unit = createNewUnitRenderable(renderer, state)
@@ -45,20 +48,30 @@ const items = createNewItemRenderable(renderer)
 
 const sunPosition = vec3.fromValues(-500, 500, -500)
 
-const firstRenderTime = Date.now()
+const firstRenderTime = performance.now()
 let fixedTime: number | null = null
 document.getElementById('input-u_time')
 	?.addEventListener('input', (event) => {
 		fixedTime = +(event.target as HTMLInputElement).value
 	})
 
+let speedToSet = 20
+document.getElementById('input-ticksPerSecond')
+	?.addEventListener('input', async (event) => {
+		speedToSet = +(event.target as HTMLInputElement).value
+		if (await updater.stop() === 'stopped') {
+			updater.start(speedToSet)
+		}
+	})
+
 renderer.renderFunction = (gl, dt) => {
-	const now = Date.now()
+	const now = performance.now()
 
 	const ctx: RenderContext = {
 		gl,
 		camera,
 		sunPosition,
+		gameTickEstimation: updater.estimateCurrentGameTickTime(),
 		secondsSinceFirstRender: fixedTime ?? (now - firstRenderTime) / 1000,
 	}
 	moveCameraByKeys(camera, dt)
@@ -71,7 +84,6 @@ renderer.renderFunction = (gl, dt) => {
 	sunPosition[0] = Math.cos(1) * r + 10
 	sunPosition[2] = Math.sin(1) * r + 10
 
-	state.advanceActivities()
 	terrain.render(ctx)
 	unit.render(ctx)
 	items.render(ctx)

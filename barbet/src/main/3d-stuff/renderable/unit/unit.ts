@@ -33,8 +33,9 @@ export const createNewUnitRenderable = (renderer: MainRenderer,
 
 
 		unitDataBuffer.bind()
-		program.enableAttribute(program.attributes.worldPosition, 3, true, 4 * floatSize, 0, 1)
-		program.enableAttribute(program.attributes.colorPaletteId, 1, true, 4 * floatSize, 3 * floatSize, 1)
+		program.enableAttribute(program.attributes.worldPosition, 3, true, 5 * floatSize, 0, 1)
+		program.enableAttribute(program.attributes.colorPaletteId, 1, true, 5 * floatSize, 3 * floatSize, 1)
+		program.enableAttribute(program.attributes.activityStartTick, 1, true, 5 * floatSize, 4 * floatSize, 1)
 
 		programs.push(program)
 	}
@@ -43,7 +44,7 @@ export const createNewUnitRenderable = (renderer: MainRenderer,
 	const trianglesToRender = mesh.trianglesToRender
 	return {
 		render(ctx: RenderContext) {
-			const {gl, camera} = ctx
+			const {gl, camera, gameTickEstimation} = ctx
 			vao.bind()
 			modelBuffer.bind()
 
@@ -56,13 +57,16 @@ export const createNewUnitRenderable = (renderer: MainRenderer,
 				program.use()
 				const unitData = []
 
-				unitData.push(unit.posX, unit.posY, unit.posZ, unit.color)
+				// const secondsOfActivity = ctx.secondsSinceLastTick + (game.currentTick - unit.activityStartedAt) * (1 / 2)
+
+				unitData.push(unit.posX, unit.posY, unit.posZ, unit.color, unit.activityStartedAt)
 				unitDataBuffer.setContent(new Float32Array(unitData))
 
 
 				gl.uniformMatrix4fv(program.uniforms.projection, false, toGl(camera.perspectiveMatrix))
 				gl.uniformMatrix4fv(program.uniforms.view, false, toGl(camera.viewMatrix))
 				gl.uniform1f(program.uniforms.time, ctx.secondsSinceFirstRender)
+				gl.uniform1f(program.uniforms.gameTick, gameTickEstimation)
 				gl.uniform3fv(program.uniforms.lightPosition, toGl(add(clone(ctx.sunPosition), ctx.sunPosition, fromValues(0, -10, -400))))
 
 				gl.drawElementsInstanced(gl.TRIANGLES, trianglesToRender, gl.UNSIGNED_SHORT, 0, 1)
