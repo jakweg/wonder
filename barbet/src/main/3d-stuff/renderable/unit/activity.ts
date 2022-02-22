@@ -33,7 +33,7 @@ export const allActivities: ActivityType[] = [
 			// unit.activityStartedAt = game.currentTick
 			const counter = unit.activityMemory[0]!
 			if (counter === 0) {
-				unit.activityId = ActivityId.ItemPickup1
+				unit.activityId = ActivityId.Walking
 				unit.activityStartedAt = game.currentTick
 			} else {
 				unit.activityMemory[0] = counter + 1
@@ -42,13 +42,16 @@ export const allActivities: ActivityType[] = [
 	}, {
 		numericId: ActivityId.Walking,
 		shaderId: ShaderId.Walking,
-		perform(_: GameState, __: Unit) {
-			// const now = game.currentTick
-			// if (now === unit.activityStartedAt + 100) {
-			// 	unit.activityStartedAt = now
-			// 	unit.activityId = ActivityId.Idle
-			// 	unit.activityMemory[0] = 0
-			// }
+		perform(game: GameState, unit: Unit) {
+			const now = game.currentTick
+			if (now === unit.activityStartedAt + 15) {
+				unit.posZ--
+				unit.activityStartedAt = now
+				if (unit.posZ === 5) {
+					unit.activityId = ActivityId.ItemPickup1
+					unit.activityMemory[0] = 0
+				}
+			}
 		},
 	}, {
 		numericId: ActivityId.ItemPickup1,

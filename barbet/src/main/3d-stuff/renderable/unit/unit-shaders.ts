@@ -39,6 +39,7 @@ uniform float u_gameTick;
 const float PI = 3.14159;
 
 void main() {
+	vec3 worldPosition = a_worldPosition;
 	int flagsAsInt = int(a_flags);
 	v_normal = vec3(ivec3(((flagsAsInt >> 4) & 3) - 1, ((flagsAsInt >> 2) & 3) - 1, (flagsAsInt & 3) - 1));
 	
@@ -68,12 +69,12 @@ void main() {
 `
 const vertexShaderSourceTail = `
 	pos *= vec3(0.7, 0.7, 0.7);	
-    v_currentPosition = pos + a_worldPosition;
+    v_currentPosition = pos + worldPosition;
     float a = 0.0;
     mat4 rotation = mat4(cos(a), 0, -sin(a), 0, 0, 1, 0, 0, sin(a), 0, cos(a), 0, 0, 0, 0, 1);
     v_normal = (rotation * vec4(v_normal, 1.0)).xyz;
 	vec4 posRotated = rotation * vec4(pos, 1);
-	posRotated += vec4(0.5, 1.1, 0.5, 0.0) + vec4(a_worldPosition, 0.0);
+	posRotated += vec4(0.5, 1.1, 0.5, 0.0) + vec4(worldPosition, 0.0);
     gl_Position = u_projection * u_view * posRotated;
     gl_PointSize = 10.0;
 }
@@ -135,12 +136,13 @@ ${vertexShaderSourceTail}
 const walkingShader = `
 ${vertexShaderSourceHead}
 if (isAnimatableElement && !isTopVertex) {
-	float additionalZOffset = sin(activityDuration * 5.0 / PI) * (isBottomVertex ? -0.2 : -0.1);
+	float additionalZOffset = sin(u_time * 20.0 / PI) * (isBottomVertex ? -0.2 : -0.1);
 	if (isLeftArmVertex || isRightLegVertex)
 		pos.z += additionalZOffset;
 	else if (isRightArmVertex || isLeftLegVertex)
 		pos.z -= additionalZOffset;
 }
+worldPosition.z -= activityDuration / 15.0;
 ${vertexShaderSourceTail}
 `
 
