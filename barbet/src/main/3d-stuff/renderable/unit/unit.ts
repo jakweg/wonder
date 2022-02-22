@@ -40,7 +40,6 @@ export const createNewUnitRenderable = (renderer: MainRenderer,
 		programs.push(program)
 	}
 
-
 	const trianglesToRender = mesh.trianglesToRender
 	return {
 		render(ctx: RenderContext) {
@@ -56,8 +55,6 @@ export const createNewUnitRenderable = (renderer: MainRenderer,
 
 				program.use()
 				const unitData = []
-
-				// const secondsOfActivity = ctx.secondsSinceLastTick + (game.currentTick - unit.activityStartedAt) * (1 / 2)
 
 				unitData.push(unit.posX, unit.posY, unit.posZ, unit.color, unit.activityStartedAt)
 				unitDataBuffer.setContent(new Float32Array(unitData))

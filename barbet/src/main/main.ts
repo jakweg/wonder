@@ -39,12 +39,12 @@ world.setBlock(6, 3, 13, BlockId.Stone)
 
 const terrain = createNewTerrainRenderable(renderer, world)
 const state = GameState.createNew()
-const updater = StateUpdater.createNew(state, 20)
+const updater = StateUpdater.createNew(state, 10)
 updater.start()
 state.spawnUnit(8, 5, UnitColorPaletteId.LightOrange)
 
 const unit = createNewUnitRenderable(renderer, state)
-const items = createNewItemRenderable(renderer)
+const items = createNewItemRenderable(renderer, state)
 
 const sunPosition = vec3.fromValues(-500, 500, -500)
 
@@ -115,6 +115,13 @@ const moveCameraByKeys = (camera: Camera, dt: number) => {
 	}
 	if (KEYBOARD.isPressed('Space')) {
 		camera.moveCamera(0, speed, 0)
+	}
+	if (KEYBOARD.isPressed('KeyP')) {
+		if (!updater.isStopRequested)
+			updater.stop().then(r => r === 'stopped' && console.log('Paused'))
+	}
+	if (KEYBOARD.isPressed('KeyR')) {
+		updater.start()
 	}
 
 	camera.lastEyeChangeId++

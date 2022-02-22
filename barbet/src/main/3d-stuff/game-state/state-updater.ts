@@ -16,6 +16,10 @@ export class StateUpdater {
 		this._executedTicksCounter = _state.currentTick
 	}
 
+	public get isStopRequested(): boolean {
+		return !!this._stopPromise
+	}
+
 	public static createNew(state: GameState,
 	                        ticksPerSecond: number): StateUpdater {
 		return new StateUpdater(state, 1000 / ticksPerSecond)
@@ -31,7 +35,8 @@ export class StateUpdater {
 			this._expectedDelayBetweenTicks = (1000 / ticksPerSecond)
 		}
 
-		this._lastTickFinishTime = this._requestStartTime = performance.now() - this._executedTicksCounter * this._expectedDelayBetweenTicks
+		this._requestStartTime = performance.now() - this._executedTicksCounter * this._expectedDelayBetweenTicks
+		this._lastTickFinishTime = this._requestStartTime + this._executedTicksCounter * this._expectedDelayBetweenTicks
 		this._intervalId = setInterval(() => this.handleTimer(), this._expectedDelayBetweenTicks)
 	}
 

@@ -65,22 +65,23 @@ void main() {
 	float computedSin1 = sin(u_time);
 	float computedSin2 = sin(u_time * 2.0);
 	float computedSin5 = sin(u_time * 5.0);
-	
-	float computedSin1_2 = sin(activityDuration / PI / 1.0);
-	float computedSin5_2 = sin(activityDuration * 5.0 / PI);
 `
 const vertexShaderSourceTail = `
-	pos *= vec3(0.7, 0.7, 0.7);
-	pos += vec3(0.5, 1.1, 0.5) + a_worldPosition;	
-    v_currentPosition = pos;
-    gl_Position = u_projection * u_view * vec4(pos, 1);
+	pos *= vec3(0.7, 0.7, 0.7);	
+    v_currentPosition = pos + a_worldPosition;
+    float a = 0.0;
+    mat4 rotation = mat4(cos(a), 0, -sin(a), 0, 0, 1, 0, 0, sin(a), 0, cos(a), 0, 0, 0, 0, 1);
+    v_normal = (rotation * vec4(v_normal, 1.0)).xyz;
+	vec4 posRotated = rotation * vec4(pos, 1);
+	posRotated += vec4(0.5, 1.1, 0.5, 0.0) + vec4(a_worldPosition, 0.0);
+    gl_Position = u_projection * u_view * posRotated;
     gl_PointSize = 10.0;
 }
 `
 
 const pickUpItemShader = `
 ${vertexShaderSourceHead}
-	float usedSin = computedSin1_2;
+	float usedSin = sin(activityDuration / PI / 1.0);
 	if (isMainBodyVertex && isTopVertex) {
 		pos.z -= usedSin * (pos.y + 0.05) * 0.8;
 		pos.y += usedSin * pos.z * 0.2;
@@ -94,7 +95,11 @@ ${vertexShaderSourceHead}
 		pos.y += usedSin * pos.z * 0.2;
 	}
 	if (isLeftArmVertex || isRightArmVertex) {
-		pos.z -= usedSin * (pos.y + (isBottomVertex ? 1.9 : (isMiddleVertex ? 0.85 : 0.4))) * 0.9;
+		bool isPhaseOne = activityDuration < 5.0; 
+		if (isPhaseOne)
+			pos.z -= usedSin * (pos.y + (isBottomVertex ? 1.9 : (isMiddleVertex ? 0.85 : 0.4))) * 0.9;
+		else
+			pos.z -= sin(5.0 / PI / 1.0) * (pos.y + (isBottomVertex ? 1.9 : (isMiddleVertex ? 0.85 : 0.4))) * 0.9 - cos(activityDuration / PI / 1.0) * -0.5;
 		pos.y -= usedSin * 0.4;
 	}
 ${vertexShaderSourceTail}
@@ -118,10 +123,19 @@ pos.y += computedSin1 * 0.02;
 ${vertexShaderSourceTail}
 `
 
+const idleHoldingItemShader = `
+${vertexShaderSourceHead}
+if (isLeftArmVertex || isRightArmVertex) {
+	pos.z -= sin(5.0 / PI / 1.0) * (pos.y + (isBottomVertex ? 1.9 : (isMiddleVertex ? 0.85 : 0.4))) * 0.9 - cos(10.0 / PI / 1.0) * -0.5;
+}
+pos.y += computedSin1 * 0.02;
+${vertexShaderSourceTail}
+`
+
 const walkingShader = `
 ${vertexShaderSourceHead}
 if (isAnimatableElement && !isTopVertex) {
-	float additionalZOffset = computedSin5_2 * (isBottomVertex ? -0.2 : -0.1);
+	float additionalZOffset = sin(activityDuration * 5.0 / PI) * (isBottomVertex ? -0.2 : -0.1);
 	if (isLeftArmVertex || isRightLegVertex)
 		pos.z += additionalZOffset;
 	else if (isRightArmVertex || isLeftLegVertex)
@@ -158,7 +172,8 @@ export const enum ShaderId {
 	Stationary,
 	Idle,
 	Walking,
-	PickUpItem,
+	PickUpItem1,
+	IdleHoldingItem,
 }
 
 export const allShaderSources = [
@@ -166,4 +181,7 @@ export const allShaderSources = [
 	idleShader,
 	walkingShader,
 	pickUpItemShader,
+	idleHoldingItemShader,
 ]
+
+Object.freeze(allShaderSources)

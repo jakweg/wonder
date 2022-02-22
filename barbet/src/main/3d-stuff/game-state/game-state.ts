@@ -1,6 +1,9 @@
 import { ActivityId, IDLE, requireActivity } from '../renderable/unit/activity'
 import { UnitColorPaletteId } from '../renderable/unit/unit-color'
 
+export interface HeldItem {
+	type: number
+}
 
 export interface Unit {
 	posX: number
@@ -10,6 +13,7 @@ export interface Unit {
 	activityId: ActivityId
 	activityStartedAt: number
 	activityMemory: Float32Array
+	heldItem: HeldItem | null
 }
 
 export class GameState {
@@ -41,6 +45,7 @@ export class GameState {
 			activityId: IDLE.numericId,
 			activityStartedAt: this._currentTick,
 			activityMemory: new Float32Array(10),
+			heldItem: null,
 		})
 	}
 
