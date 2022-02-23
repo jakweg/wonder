@@ -41,7 +41,7 @@ const terrain = createNewTerrainRenderable(renderer, world)
 const state = GameState.createNew()
 const updater = StateUpdater.createNew(state, 20)
 updater.start()
-state.spawnUnit(8, 10, UnitColorPaletteId.LightOrange)
+state.spawnUnit(8, 6, UnitColorPaletteId.LightOrange)
 
 const unit = createNewUnitRenderable(renderer, state)
 const items = createNewItemRenderable(renderer, state)

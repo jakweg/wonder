@@ -146,6 +146,22 @@ worldPosition.z -= activityDuration / 15.0;
 ${vertexShaderSourceTail}
 `
 
+const walkingHoldingItemShader = `
+${vertexShaderSourceHead}
+if (isAnimatableElement && !isTopVertex) {
+	float additionalZOffset = sin(u_time * 20.0 / PI) * (isBottomVertex ? -0.2 : -0.1);
+	if (isRightLegVertex)
+		pos.z += additionalZOffset;
+	else if (isLeftLegVertex)
+		pos.z -= additionalZOffset;
+}
+if (isLeftArmVertex || isRightArmVertex) {
+	pos.z -= sin(5.0 / PI / 1.0) * (pos.y + (isBottomVertex ? 1.9 : (isMiddleVertex ? 0.85 : 0.4))) * 0.9 - cos(10.0 / PI / 1.0) * -0.5;
+}
+worldPosition.z -= activityDuration / 15.0;
+${vertexShaderSourceTail}
+`
+
 export const fragmentShaderSource = `${VersionHeader()}
 ${PrecisionHeader()}
 out vec4 finalColor;
@@ -176,6 +192,7 @@ export const enum ShaderId {
 	Walking,
 	PickUpItem1,
 	IdleHoldingItem,
+	WalkingHoldingItem,
 }
 
 export const allShaderSources = [
@@ -184,6 +201,7 @@ export const allShaderSources = [
 	walkingShader,
 	pickUpItemShader,
 	idleHoldingItemShader,
+	walkingHoldingItemShader,
 ]
 
 Object.freeze(allShaderSources)

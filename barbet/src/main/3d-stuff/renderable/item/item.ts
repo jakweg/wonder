@@ -4,6 +4,7 @@ import { GameState } from '../../game-state/game-state'
 import { MainRenderer } from '../../main-renderer'
 import { createProgramFromNewShaders } from '../../shader/common'
 import { RenderContext } from '../render-context'
+import { ActivityId } from '../unit/activity'
 import { buildBoxModel } from './item-model'
 import {
 	Attributes,
@@ -70,6 +71,9 @@ export const createNewItemRenderable = (renderer: MainRenderer,
 				gl.uniformMatrix4fv(itemInHandProgram.uniforms.projection, false, toGl(camera.perspectiveMatrix))
 				gl.uniformMatrix4fv(itemInHandProgram.uniforms.view, false, toGl(camera.viewMatrix))
 				gl.uniform1f(itemInHandProgram.uniforms.time, ctx.secondsSinceFirstRender)
+				gl.uniform1f(itemInHandProgram.uniforms.activityStartTick, unit.activityStartedAt)
+				gl.uniform1i(itemInHandProgram.uniforms.moving, unit.activityId === ActivityId.WalkingHoldingItem ? 1 : 0)
+				gl.uniform1f(itemInHandProgram.uniforms.gameTick, ctx.gameTickEstimation)
 				gl.uniform3fv(itemInHandProgram.uniforms.lightPosition, toGl(add(clone(ctx.sunPosition), ctx.sunPosition, fromValues(0, -400, 0))))
 
 				gl.drawElementsInstanced(gl.TRIANGLES, trianglesToRender, gl.UNSIGNED_BYTE, 0, instancesCount)

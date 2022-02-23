@@ -8,6 +8,7 @@ export enum ActivityId {
 	Walking,
 	ItemPickup1,
 	IdleHoldingItem,
+	WalkingHoldingItem,
 }
 
 export interface ActivityType {
@@ -69,12 +70,23 @@ export const allActivities: ActivityType[] = [
 		numericId: ActivityId.IdleHoldingItem,
 		shaderId: ShaderId.IdleHoldingItem,
 		perform(game: GameState, unit: Unit) {
-			// const now = game.currentTick
-			// if (now === unit.activityStartedAt + 10) {
-			// 	unit.activityMemory[0] = 0
-			// 	unit.activityStartedAt = now
-			// 	unit.activityId = ActivityId.Idle
-			// }
+			const now = game.currentTick
+			if (now === unit.activityStartedAt + 50) {
+				unit.activityMemory[0] = 0
+				unit.activityStartedAt = now
+				unit.activityId = ActivityId.WalkingHoldingItem
+			}
+		},
+	}, {
+		numericId: ActivityId.WalkingHoldingItem,
+		shaderId: ShaderId.WalkingHoldingItem,
+		perform(game: GameState, unit: Unit) {
+			const now = game.currentTick
+			if (now === unit.activityStartedAt + 15) {
+				unit.posZ--
+				unit.activityStartedAt = now
+				unit.activityId = ActivityId.WalkingHoldingItem
+			}
 		},
 	},
 ]
