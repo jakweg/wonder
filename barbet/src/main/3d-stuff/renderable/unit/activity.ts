@@ -6,7 +6,7 @@ export enum ActivityId {
 	None,
 	Idle,
 	Walking,
-	ItemPickup1,
+	ItemPickup,
 	IdleHoldingItem,
 	WalkingHoldingItem,
 }
@@ -46,17 +46,17 @@ export const allActivities: ActivityType[] = [
 		perform(game: GameState, unit: Unit) {
 			const now = game.currentTick
 			if (now === unit.activityStartedAt + 15) {
-				unit.posZ--
+				unit.posX++
 				unit.activityStartedAt = now
-				if (unit.posZ === 5) {
-					unit.activityId = ActivityId.ItemPickup1
+				if (unit.posX === 9) {
+					unit.activityId = ActivityId.ItemPickup
 					unit.activityMemory[0] = 0
 				}
 			}
 		},
 	}, {
-		numericId: ActivityId.ItemPickup1,
-		shaderId: ShaderId.PickUpItem1,
+		numericId: ActivityId.ItemPickup,
+		shaderId: ShaderId.PickUpItem,
 		perform(game: GameState, unit: Unit) {
 			const now = game.currentTick
 			if (now === unit.activityStartedAt + 10) {

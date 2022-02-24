@@ -84,23 +84,23 @@ const pickUpItemShader = `
 ${vertexShaderSourceHead}
 	float usedSin = sin(activityDuration / PI / 1.0);
 	if (isMainBodyVertex && isTopVertex) {
-		pos.z -= usedSin * (pos.y + 0.05) * 0.8;
-		pos.y += usedSin * pos.z * 0.2;
+		pos.x += usedSin * (pos.y + 0.05) * 0.8;
+		pos.y -= usedSin * pos.x * 0.2;
 	}
 	if (isFaceVertex) {
-		pos.z -= usedSin * (pos.y + 1.1) * 0.35;
+		pos.x += usedSin * (pos.y + 1.1) * 0.35;
 		pos.y -= usedSin * pos.y * 0.45;
 	}
 	if (isMainBodyVertex && isMiddleVertex) {
-		pos.z -= usedSin * (pos.y + 0.01) * 1.6;
-		pos.y += usedSin * pos.z * 0.2;
+		pos.x += usedSin * (pos.y + 0.01) * 1.6;
+		pos.y -= usedSin * pos.x * 0.2;
 	}
 	if (isLeftArmVertex || isRightArmVertex) {
 		bool isPhaseOne = activityDuration < 5.0; 
 		if (isPhaseOne)
-			pos.z -= usedSin * (pos.y + (isBottomVertex ? 1.9 : (isMiddleVertex ? 0.85 : 0.4))) * 0.9;
+			pos.x += usedSin * (pos.y + (isBottomVertex ? 1.9 : (isMiddleVertex ? 0.85 : 0.4))) * 0.9;
 		else
-			pos.z -= sin(5.0 / PI / 1.0) * (pos.y + (isBottomVertex ? 1.9 : (isMiddleVertex ? 0.85 : 0.4))) * 0.9 - cos(activityDuration / PI / 1.0) * -0.5;
+			pos.x += sin(5.0 / PI / 1.0) * (pos.y + (isBottomVertex ? 1.9 : (isMiddleVertex ? 0.85 : 0.4))) * 0.9 - cos(activityDuration / PI / 1.0) * -0.5;
 		pos.y -= usedSin * 0.4;
 	}
 ${vertexShaderSourceTail}
@@ -116,9 +116,9 @@ ${vertexShaderSourceHead}
 if (isAnimatableElement && !isTopVertex) {
 	float additionalZOffset = computedSin2 * (isBottomVertex ? -0.18 : -0.06);
 	if (isLeftArmVertex)
-		pos.z += additionalZOffset;
+		pos.x -= additionalZOffset;
 	else if (isRightArmVertex)
-		pos.z -= additionalZOffset;
+		pos.x += additionalZOffset;
 }
 pos.y += computedSin1 * 0.02;
 ${vertexShaderSourceTail}
@@ -127,7 +127,7 @@ ${vertexShaderSourceTail}
 const idleHoldingItemShader = `
 ${vertexShaderSourceHead}
 if (isLeftArmVertex || isRightArmVertex) {
-	pos.z -= sin(5.0 / PI / 1.0) * (pos.y + (isBottomVertex ? 1.9 : (isMiddleVertex ? 0.85 : 0.4))) * 0.9 - cos(10.0 / PI / 1.0) * -0.5;
+	pos.x += sin(5.0 / PI / 1.0) * (pos.y + (isBottomVertex ? 1.9 : (isMiddleVertex ? 0.85 : 0.4))) * 0.9 - cos(10.0 / PI / 1.0) * -0.5;
 }
 pos.y += computedSin1 * 0.02;
 ${vertexShaderSourceTail}
@@ -138,11 +138,11 @@ ${vertexShaderSourceHead}
 if (isAnimatableElement && !isTopVertex) {
 	float additionalZOffset = sin(u_time * 20.0 / PI) * (isBottomVertex ? -0.2 : -0.1);
 	if (isLeftArmVertex || isRightLegVertex)
-		pos.z += additionalZOffset;
+		pos.x -= additionalZOffset;
 	else if (isRightArmVertex || isLeftLegVertex)
-		pos.z -= additionalZOffset;
+		pos.x += additionalZOffset;
 }
-worldPosition.z -= activityDuration / 15.0;
+worldPosition.x += activityDuration / 15.0;
 ${vertexShaderSourceTail}
 `
 
@@ -151,14 +151,14 @@ ${vertexShaderSourceHead}
 if (isAnimatableElement && !isTopVertex) {
 	float additionalZOffset = sin(u_time * 20.0 / PI) * (isBottomVertex ? -0.2 : -0.1);
 	if (isRightLegVertex)
-		pos.z += additionalZOffset;
+		pos.x -= additionalZOffset;
 	else if (isLeftLegVertex)
-		pos.z -= additionalZOffset;
+		pos.x += additionalZOffset;
 }
 if (isLeftArmVertex || isRightArmVertex) {
-	pos.z -= sin(5.0 / PI / 1.0) * (pos.y + (isBottomVertex ? 1.9 : (isMiddleVertex ? 0.85 : 0.4))) * 0.9 - cos(10.0 / PI / 1.0) * -0.5;
+	pos.x += sin(5.0 / PI / 1.0) * (pos.y + (isBottomVertex ? 1.9 : (isMiddleVertex ? 0.85 : 0.4))) * 0.9 - cos(10.0 / PI / 1.0) * -0.5;
 }
-worldPosition.z -= activityDuration / 15.0;
+worldPosition.x += activityDuration / 15.0;
 ${vertexShaderSourceTail}
 `
 
@@ -190,7 +190,7 @@ export const enum ShaderId {
 	Stationary,
 	Idle,
 	Walking,
-	PickUpItem1,
+	PickUpItem,
 	IdleHoldingItem,
 	WalkingHoldingItem,
 }
