@@ -47,16 +47,17 @@ export const convertWorldToMesh = (world: World) => {
 
 	const setVertexData = (vertexIndex: number,
 	                       colorValue: [number, number, number],
-	                       encodedNormal: number): number => {
+	                       encodedNormal: number,
+	                       forX: number, forY: number, forZ: number): number => {
 		let vertexStartIndex = vertexIndex * FLOATS_PER_VERTEX
 		const wasNeverUsed = vertexes[vertexStartIndex + 3]! === NO_COLOR_VALUE
 			&& vertexes[vertexStartIndex + 4]! === NO_COLOR_VALUE
 			&& vertexes[vertexStartIndex + 5]! === NO_COLOR_VALUE
 
+		const x = vertexes[vertexStartIndex]!
+		const y = vertexes[vertexStartIndex + 1]!
+		const z = vertexes[vertexStartIndex + 2]!
 		if (!wasNeverUsed) {
-			const x = vertexes[vertexStartIndex]!
-			const y = vertexes[vertexStartIndex + 1]!
-			const z = vertexes[vertexStartIndex + 2]!
 			const positionIndex = y * vertexesPerY + x * vertexesPerX + z
 			vertexIndex = forceAddVertex(positionIndex, x, y, z)
 			vertexStartIndex = vertexIndex * FLOATS_PER_VERTEX
@@ -64,7 +65,12 @@ export const convertWorldToMesh = (world: World) => {
 		vertexes[vertexStartIndex + 3] = colorValue[0]
 		vertexes[vertexStartIndex + 4] = colorValue[1]
 		vertexes[vertexStartIndex + 5] = colorValue[2]
-		vertexes[vertexStartIndex + 6] = encodedNormal
+		const ox = x - forX
+		const oy = y - forY
+		const oz = z - forZ
+		if (ox < 0 || oy < 0 || oz < 0 || ox > 1 || oy > 1 || oz > 1)
+			throw new Error(`Invalid offset ${ox} ${oy} ${oz}`)
+		vertexes[vertexStartIndex + 6] = encodedNormal | ((ox << 4 | oy << 2 | oz) << 8)
 		return vertexIndex
 	}
 
@@ -105,7 +111,7 @@ export const convertWorldToMesh = (world: World) => {
 				const color: [number, number, number] = [thisBlock.colorR, thisBlock.colorG, thisBlock.colorB]
 				if (needsTop) {
 					const topColor = randomizeColor(x, y, z, color)
-					e1 = setVertexData(e1, topColor, 0b011001)
+					e1 = setVertexData(e1, topColor, 0b011001, x, y, z)
 					indices.push(
 						e2, e3, e1,
 						e3, e4, e1,
@@ -113,7 +119,7 @@ export const convertWorldToMesh = (world: World) => {
 				}
 
 				// if (needsBottom) {
-				// 	e5 = setVertexData(e5, topColor, 0b010001)
+				// 	e5 = setVertexData(e5, topColor, 0b010001,x,y,z)
 				// 	elements.push(
 				// 		e7, e6, e5,
 				// 		e8, e7, e5,
@@ -122,7 +128,7 @@ export const convertWorldToMesh = (world: World) => {
 
 				const sideColor = randomizeColor(x, y, z, color)
 				if (needsPositiveX) {
-					e7 = setVertexData(e7, sideColor, 0b100101)
+					e7 = setVertexData(e7, sideColor, 0b100101, x, y, z)
 					indices.push(
 						e4, e3, e7,
 						e8, e4, e7,
@@ -130,7 +136,7 @@ export const convertWorldToMesh = (world: World) => {
 				}
 
 				if (needsNegativeX) {
-					e2 = setVertexData(e2, sideColor, 0b000101)
+					e2 = setVertexData(e2, sideColor, 0b000101, x, y, z)
 					indices.push(
 						e1, e5, e2,
 						e5, e6, e2,
@@ -138,7 +144,7 @@ export const convertWorldToMesh = (world: World) => {
 				}
 
 				if (needsPositiveZ) {
-					e3 = setVertexData(e3, sideColor, 0b010110)
+					e3 = setVertexData(e3, sideColor, 0b010110, x, y, z)
 					indices.push(
 						e2, e6, e3,
 						e6, e7, e3,
@@ -146,7 +152,7 @@ export const convertWorldToMesh = (world: World) => {
 				}
 
 				if (needsNegativeZ) {
-					e8 = setVertexData(e8, sideColor, 0b010100)
+					e8 = setVertexData(e8, sideColor, 0b010100, x, y, z)
 					indices.push(
 						e1, e4, e8,
 						e5, e1, e8,

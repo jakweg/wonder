@@ -51,12 +51,17 @@ in float a_flags;
 flat out vec4 v_color;
 uniform mat4 u_globalMatrix;
 void main() {
-	uint tmp = uint(a_position.x) << (12) | uint(a_position.z);
+	uint a = uint(a_flags);
+	uint offsets = a >> 8U;
+	uint ox = ((offsets >> 4U) & 3U);
+	uint oy = ((offsets >> 2U) & 3U);
+	uint oz = ((offsets      ) & 3U);
+	uint tmp = (uint(a_position.x) - ox) << (12) | (uint(a_position.z) - oz);
 	
 	uint r = (tmp >> 16U) & 255U;
 	uint g = (tmp >>  8U) & 255U;
 	uint b = (tmp       ) & 255U;
-	v_color = vec4(r, g, b, 0) / 255.0;
+	v_color = vec4(r, g, b, a & 255U) / 255.0;
     gl_Position = (u_globalMatrix * vec4(a_position, 1));
 }
 `

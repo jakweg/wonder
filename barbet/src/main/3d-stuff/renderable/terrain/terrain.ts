@@ -108,7 +108,7 @@ export const createNewTerrainRenderable = (renderer: MainRenderer,
 			gl.drawElements(gl.TRIANGLES, trianglesToRender, gl.UNSIGNED_INT, 0)
 		},
 
-		getBlockByMouseCoords(ctx: RenderContext, mouseX: number, mouseY: number): { x: number, z: number } | null {
+		getBlockByMouseCoords(ctx: RenderContext, mouseX: number, mouseY: number): { x: number, z: number, normals: [number, number, number] } | null {
 			if (needsMeshRefresh) refreshMesh()
 			const {gl, camera} = ctx
 			gl.bindFramebuffer(gl.FRAMEBUFFER, fb)
@@ -126,14 +126,19 @@ export const createNewTerrainRenderable = (renderer: MainRenderer,
 			gl.readPixels(mouseX / MOUSE_PICKER_RESOLUTION_DIVISOR | 0, mouseY / MOUSE_PICKER_RESOLUTION_DIVISOR | 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, readPixelsBuffer, 0)
 			gl.bindFramebuffer(gl.FRAMEBUFFER, null)
 
-			const tmp = ((readPixelsBuffer[0]! << 24) | (readPixelsBuffer[1]! << 16) | (readPixelsBuffer[2]! << 8) | readPixelsBuffer[3]!) >>> 8
+			const tmp = ((readPixelsBuffer[0]! << 24) | (readPixelsBuffer[1]! << 16) | (readPixelsBuffer[2]! << 8)) >> 8
 			if (tmp === 0) {
 				// hit nothing
 				return null
 			}
-			const x = (tmp >> 12) & 0b1111_1111_1111
-			const z = tmp & 0b1111_1111_1111
-			return {x, z}
+			let x = (tmp >> 12) & 0b1111_1111_1111
+			let z = tmp & 0b1111_1111_1111
+
+			const normals = readPixelsBuffer[3]! & 0b111111
+			const nx = ((normals >> 4) & 0b11) - 1
+			const ny = ((normals >> 2) & 0b11) - 1
+			const nz = ((normals >> 0) & 0b11) - 1
+			return {x, z, normals: [nx, ny, nz]}
 		},
 	}
 }
