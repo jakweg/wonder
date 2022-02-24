@@ -1,4 +1,10 @@
-import { PIConstantHeader, PrecisionHeader, RotationMatrix, VersionHeader } from '../../shader/common'
+import {
+	PIConstantHeader,
+	PrecisionHeader,
+	RotationMatrix,
+	RotationVectorsDeclaration,
+	VersionHeader,
+} from '../../shader/common'
 import { buildShaderColorArray } from './unit-color'
 
 export const MASK_PROVOKING = 0b1 << 6
@@ -25,9 +31,11 @@ export const FLAG_PART_RIGHT_LEG = MASK_PART_ANY_LEG | FLAG_PART_RIGHT
 const vertexShaderSourceHead = `${VersionHeader()}
 ${PrecisionHeader()}
 ${PIConstantHeader()}
+${RotationVectorsDeclaration()}
 in vec3 a_modelPosition;
 in vec3 a_worldPosition;
 in float a_colorPaletteId;
+in float a_unitRotation;
 in float a_flags;
 in float a_activityStartTick;
 flat out int v_colorPaletteId;
@@ -50,6 +58,7 @@ void main() {
 		v_colorPaletteId = (isProvokingTop ? (int(a_colorPaletteId) * 9 + 3) : int(a_colorPaletteId) * 9);
 	}
 	
+	int unitRotationAsInt = int(a_unitRotation);
 	vec3 pos = a_modelPosition;
 	bool isMainBodyVertex = (flagsAsInt & ${MASK_BODY_PART}) == ${FLAG_PART_MAIN_BODY};
 	bool isFaceVertex = (flagsAsInt & ${MASK_BODY_PART}) == ${FLAG_PART_FACE};
@@ -70,7 +79,7 @@ void main() {
 const vertexShaderSourceTail = `
 	pos *= vec3(0.7, 0.7, 0.7);	
     v_currentPosition = pos + worldPosition;
-    float a = 0.0 * PI / 4.0;
+    float a = a_unitRotation * PI / 4.0;
     mat4 rotation = ${RotationMatrix('a')};
     v_normal = (rotation * vec4(v_normal, 1.0)).xyz;
 	vec4 posRotated = rotation * vec4(pos, 1);
@@ -142,7 +151,7 @@ if (isAnimatableElement && !isTopVertex) {
 	else if (isRightArmVertex || isLeftLegVertex)
 		pos.x += additionalZOffset;
 }
-worldPosition.x += activityDuration / 15.0;
+worldPosition += rotationVectors[unitRotationAsInt] * activityDuration / 15.0;
 ${vertexShaderSourceTail}
 `
 
@@ -158,7 +167,7 @@ if (isAnimatableElement && !isTopVertex) {
 if (isLeftArmVertex || isRightArmVertex) {
 	pos.x += sin(5.0 / PI / 1.0) * (pos.y + (isBottomVertex ? 1.9 : (isMiddleVertex ? 0.85 : 0.4))) * 0.9 - cos(10.0 / PI / 1.0) * -0.5;
 }
-worldPosition.x += activityDuration / 15.0;
+worldPosition += rotationVectors[unitRotationAsInt] * activityDuration / 15.0;
 ${vertexShaderSourceTail}
 `
 
@@ -184,7 +193,13 @@ void main() {
 `
 
 export type Uniforms = 'time' | 'projection' | 'view' | 'lightPosition' | 'gameTick'
-export type Attributes = 'modelPosition' | 'worldPosition' | 'flags' | 'colorPaletteId' | 'activityStartTick'
+export type Attributes =
+	'modelPosition'
+	| 'worldPosition'
+	| 'flags'
+	| 'colorPaletteId'
+	| 'activityStartTick'
+	| 'unitRotation'
 
 export const enum ShaderId {
 	Stationary,

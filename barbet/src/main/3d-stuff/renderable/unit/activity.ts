@@ -1,5 +1,5 @@
 import { GameState, Unit } from '../../game-state/game-state'
-import { freezeAndValidateOptionsList } from '../../shader/common'
+import { freezeAndValidateOptionsList, getChangeInXByRotation, getChangeInZByRotation } from '../../shader/common'
 import { ShaderId } from './unit-shaders'
 
 export enum ActivityId {
@@ -74,7 +74,7 @@ export const allActivities: ActivityType[] = [
 			if (now === unit.activityStartedAt + 50) {
 				unit.activityMemory[0] = 0
 				unit.activityStartedAt = now
-				// unit.activityId = ActivityId.WalkingHoldingItem
+				unit.activityId = ActivityId.WalkingHoldingItem
 			}
 		},
 	}, {
@@ -83,9 +83,17 @@ export const allActivities: ActivityType[] = [
 		perform(game: GameState, unit: Unit) {
 			const now = game.currentTick
 			if (now === unit.activityStartedAt + 15) {
-				unit.posZ--
+				unit.posX += getChangeInXByRotation(unit.rotation)
+				unit.posZ += getChangeInZByRotation(unit.rotation)
+				if (unit.posX % 5 === 0 && unit.posZ % 3 === 0) {
+					unit.rotation += 2
+					unit.rotation %= 8
+				}
+
 				unit.activityStartedAt = now
 				unit.activityId = ActivityId.WalkingHoldingItem
+
+				console.log({x: unit.posX, y: unit.posZ})
 			}
 		},
 	},

@@ -22,7 +22,7 @@ export class Camera {
 			aspect,
 			0.1, 5000)
 
-		const eye = vec3.fromValues(-2.1, 4, -3.0001)
+		const eye = vec3.fromValues(2.1, 4, -3.0001)
 		const center = vec3.fromValues(0, 0, 0)
 		const viewMatrix = mat4.lookAt(
 			mat4.create(),

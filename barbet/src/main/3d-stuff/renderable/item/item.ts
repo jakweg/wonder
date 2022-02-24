@@ -77,7 +77,7 @@ export const createNewItemRenderable = (renderer: MainRenderer,
 				let unitData: UnitData = UnitData.Default
 				if (unit.activityId === ActivityId.WalkingHoldingItem)
 					unitData = (unitData & ~UnitData.MaskMoving) | UnitData.Moving
-				unitData = (unitData & ~UnitData.MaskRotation) | 0
+				unitData = (unitData & ~UnitData.MaskRotation) | unit.rotation
 
 
 				gl.uniform1i(itemInHandProgram.uniforms.unitData, unitData)

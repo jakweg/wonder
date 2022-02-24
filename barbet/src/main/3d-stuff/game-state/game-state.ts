@@ -10,6 +10,7 @@ export interface Unit {
 	posY: number
 	posZ: number
 	color: UnitColorPaletteId
+	rotation: number
 	activityId: ActivityId
 	activityStartedAt: number
 	activityMemory: Float32Array
@@ -41,7 +42,7 @@ export class GameState {
 	                 color: UnitColorPaletteId): void {
 		this._units.push({
 			posX: atX, posY: 2, posZ: atZ,
-			color: color,
+			color: color, rotation: 0,
 			activityId: IDLE.numericId,
 			activityStartedAt: this._currentTick,
 			activityMemory: new Float32Array(10),

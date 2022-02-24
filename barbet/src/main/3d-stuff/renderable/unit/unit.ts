@@ -33,9 +33,10 @@ export const createNewUnitRenderable = (renderer: MainRenderer,
 
 
 		unitDataBuffer.bind()
-		program.enableAttribute(program.attributes.worldPosition, 3, true, 5 * floatSize, 0, 1)
-		program.enableAttribute(program.attributes.colorPaletteId, 1, true, 5 * floatSize, 3 * floatSize, 1)
-		program.enableAttribute(program.attributes.activityStartTick, 1, true, 5 * floatSize, 4 * floatSize, 1)
+		program.enableAttribute(program.attributes.worldPosition, 3, true, 6 * floatSize, 0, 1)
+		program.enableAttribute(program.attributes.colorPaletteId, 1, true, 6 * floatSize, 3 * floatSize, 1)
+		program.enableAttribute(program.attributes.activityStartTick, 1, true, 6 * floatSize, 4 * floatSize, 1)
+		program.enableAttribute(program.attributes.unitRotation, 1, true, 6 * floatSize, 5 * floatSize, 1)
 
 		programs.push(program)
 	}
@@ -56,7 +57,7 @@ export const createNewUnitRenderable = (renderer: MainRenderer,
 				program.use()
 				const unitData = []
 
-				unitData.push(unit.posX, unit.posY, unit.posZ, unit.color, unit.activityStartedAt)
+				unitData.push(unit.posX, unit.posY, unit.posZ, unit.color, unit.activityStartedAt, unit.rotation)
 				unitDataBuffer.setContent(new Float32Array(unitData))
 
 

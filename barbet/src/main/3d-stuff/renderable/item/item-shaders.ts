@@ -1,4 +1,10 @@
-import { PIConstantHeader, PrecisionHeader, RotationMatrix, VersionHeader } from '../../shader/common'
+import {
+	PIConstantHeader,
+	PrecisionHeader,
+	RotationMatrix,
+	RotationVectorsDeclaration,
+	VersionHeader,
+} from '../../shader/common'
 
 export const enum UnitData {
 	MaskRotation = 0b111 << 0,
@@ -35,6 +41,7 @@ void main() {
 export const inHandVertexShader = `${VersionHeader()}
 ${PrecisionHeader()}
 ${PIConstantHeader()}
+${RotationVectorsDeclaration()}
 in vec3 a_modelPosition;
 in float a_flags;
 flat out vec3 v_color;
@@ -47,11 +54,13 @@ uniform mat4 u_projection;
 uniform mat4 u_view;
 uniform float u_time;
 uniform float u_gameTick;
+
 void main() {
 	int flagsAsInt = int(a_flags);
 	v_normal = vec3(ivec3(((flagsAsInt >> 4) & 3) - 1, ((flagsAsInt >> 2) & 3) - 1, (flagsAsInt & 3) - 1));
 	bool moving = (u_unitData & ${UnitData.MaskMoving}) == ${UnitData.Moving};
-    float a = float(u_unitData & ${UnitData.MaskRotation}) * PI / 4.0;
+	int rotationIndex = u_unitData & ${UnitData.MaskRotation};
+    float a = float(rotationIndex) * PI / 4.0;
     mat4 rotation = ${RotationMatrix('a')};
 	
 	v_color = vec3(1,0,0);
@@ -60,7 +69,7 @@ void main() {
 	float activityDuration = u_gameTick - u_activityStartTick;
 	
 	pos = (rotation * vec4(vec3(0.6, 0.75, 0.0) + pos, 1.0)).xyz + vec3(0.5, 0, 0.5);
-	pos += u_unitPosition;
+	pos += u_unitPosition + (moving ? (rotationVectors[rotationIndex] * activityDuration / 15.0) : vec3(0,0,0));
     v_currentPosition = pos;
     gl_Position = u_projection * u_view * vec4(pos, 1);
     gl_PointSize = 10.0;
