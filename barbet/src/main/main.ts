@@ -97,11 +97,10 @@ const mouseEventListener = (event: MouseEvent) => {
 	if (!ctx) return
 	const block = terrain.getBlockByMouseCoords(ctx, event.offsetX, 720 - event.offsetY)
 	if (block === null) return
-	const top = world.getHighestBlockHeight(block.x, block.z)
 	if (event.button === 0)
-		world.setBlock(block.x, top + 1, block.z, BlockId.Gravel)
+		world.setBlock(block.x + block.normals[0]!, block.y + block.normals[1]!, block.z + block.normals[2]!, BlockId.Gravel)
 	else
-		world.setBlock(block.x, top, block.z, BlockId.Air)
+		world.setBlock(block.x, block.y, block.z, BlockId.Air)
 	terrain.requestRebuildMesh()
 }
 canvas.addEventListener('click', mouseEventListener)
