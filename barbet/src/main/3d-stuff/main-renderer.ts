@@ -78,6 +78,8 @@ export class MainRenderer {
 
 		gl.cullFace(gl.BACK)
 		gl.enable(gl.CULL_FACE)
+
+		gl.viewport(0, 0, 1280, 720)
 	}
 
 	public renderFunction: RenderFunction = () => void 0

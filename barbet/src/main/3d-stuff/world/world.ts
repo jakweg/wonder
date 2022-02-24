@@ -40,8 +40,21 @@ export class World {
 		this.rawBlockData[y * this.size.blocksPerY + x * this.size.sizeX + z] = blockId
 	}
 
+	public getHighestBlockHeight(x: number, z: number): number {
+		this.validateCoords(x, 0, z)
+		const blocksPerY = this.size.blocksPerY
+		const sizeX = this.size.sizeX
+		for (let y = this.size.sizeY - 1; y >= 0; y--) {
+			if (this.rawBlockData[y * blocksPerY + x * sizeX + z] !== AIR_ID)
+				return y
+		}
+		return -1
+	}
+
 	private validateCoords(x: number, y: number, z: number) {
-		if (x < 0 || x >= this.size.sizeX || y < 0 || y >= this.size.sizeY || z < 0 || z >= this.size.sizeZ)
+		if (x < 0 || x >= this.size.sizeX || (x | 0) !== x
+			|| y < 0 || y >= this.size.sizeY || (y | 0) !== y
+			|| z < 0 || z >= this.size.sizeZ || (z | 0) !== z)
 			throw new Error(`Invalid coords ${x} ${y} ${z}`)
 	}
 }

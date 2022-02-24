@@ -1,3 +1,4 @@
+import SeededRandom from '../../util/seeded-random'
 import { AIR_ID, allBlocks, BlockId } from './block'
 import { World } from './world'
 
@@ -7,8 +8,9 @@ const NO_FLAGS_VALUE = 0
 
 const FLOATS_PER_VERTEX = 7
 
-const randomizeColor = (color: [number, number, number]): [number, number, number] => {
-	const r = Math.random() * 0.03 - 0.015
+const randomizeColor = (x: number, y: number, z: number,
+                        color: [number, number, number]): [number, number, number] => {
+	const r = SeededRandom.fromSeed(x * 1231.1242412 + y * 42412.123141 ^ z * 911019204.09235).next() * 0.02 - 0.01
 	return [color[0]! + r, color[1]! + r, color[2]! + r]
 }
 
@@ -43,9 +45,9 @@ export const convertWorldToMesh = (world: World) => {
 		return elementIndex
 	}
 
-	const setColor = (vertexIndex: number,
-	                  colorValue: [number, number, number],
-	                  encodedNormal: number): number => {
+	const setVertexData = (vertexIndex: number,
+	                       colorValue: [number, number, number],
+	                       encodedNormal: number): number => {
 		let vertexStartIndex = vertexIndex * FLOATS_PER_VERTEX
 		const wasNeverUsed = vertexes[vertexStartIndex + 3]! === NO_COLOR_VALUE
 			&& vertexes[vertexStartIndex + 4]! === NO_COLOR_VALUE
@@ -102,8 +104,8 @@ export const convertWorldToMesh = (world: World) => {
 				const thisBlock = allBlocks[thisBlockId]!
 				const color: [number, number, number] = [thisBlock.colorR, thisBlock.colorG, thisBlock.colorB]
 				if (needsTop) {
-					const topColor = randomizeColor(color)
-					e1 = setColor(e1, topColor, 0b011001)
+					const topColor = randomizeColor(x, y, z, color)
+					e1 = setVertexData(e1, topColor, 0b011001)
 					indices.push(
 						e2, e3, e1,
 						e3, e4, e1,
@@ -111,16 +113,16 @@ export const convertWorldToMesh = (world: World) => {
 				}
 
 				// if (needsBottom) {
-				// 	e5 = setColor(e5, topColor, 0b010001)
+				// 	e5 = setVertexData(e5, topColor, 0b010001)
 				// 	elements.push(
 				// 		e7, e6, e5,
 				// 		e8, e7, e5,
 				// 	)
 				// }
 
-				const sideColor = randomizeColor(color)
+				const sideColor = randomizeColor(x, y, z, color)
 				if (needsPositiveX) {
-					e7 = setColor(e7, sideColor, 0b100101)
+					e7 = setVertexData(e7, sideColor, 0b100101)
 					indices.push(
 						e4, e3, e7,
 						e8, e4, e7,
@@ -128,7 +130,7 @@ export const convertWorldToMesh = (world: World) => {
 				}
 
 				if (needsNegativeX) {
-					e2 = setColor(e2, sideColor, 0b000101)
+					e2 = setVertexData(e2, sideColor, 0b000101)
 					indices.push(
 						e1, e5, e2,
 						e5, e6, e2,
@@ -136,7 +138,7 @@ export const convertWorldToMesh = (world: World) => {
 				}
 
 				if (needsPositiveZ) {
-					e3 = setColor(e3, sideColor, 0b010110)
+					e3 = setVertexData(e3, sideColor, 0b010110)
 					indices.push(
 						e2, e6, e3,
 						e6, e7, e3,
@@ -144,7 +146,7 @@ export const convertWorldToMesh = (world: World) => {
 				}
 
 				if (needsNegativeZ) {
-					e8 = setColor(e8, sideColor, 0b010100)
+					e8 = setVertexData(e8, sideColor, 0b010100)
 					indices.push(
 						e1, e4, e8,
 						e5, e1, e8,

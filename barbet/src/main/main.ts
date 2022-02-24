@@ -64,6 +64,7 @@ document.getElementById('input-ticksPerSecond')
 		}
 	})
 
+let lastContext: RenderContext | null = null
 renderer.renderFunction = (gl, dt) => {
 	const now = performance.now()
 
@@ -74,6 +75,7 @@ renderer.renderFunction = (gl, dt) => {
 		gameTickEstimation: updater.estimateCurrentGameTickTime(),
 		secondsSinceFirstRender: fixedTime ?? (now - firstRenderTime) / 1000,
 	}
+	lastContext = ctx
 	moveCameraByKeys(camera, dt)
 	camera.updateMatrixIfNeeded()
 	Object.freeze(ctx)
@@ -88,6 +90,22 @@ renderer.renderFunction = (gl, dt) => {
 	unit.render(ctx)
 	items.render(ctx)
 }
+
+const mouseEventListener = (event: MouseEvent) => {
+	event.preventDefault()
+	const ctx = lastContext
+	if (!ctx) return
+	const block = terrain.getBlockByMouseCoords(ctx, event.offsetX, 720 - event.offsetY)
+	if (block === null) return
+	const top = world.getHighestBlockHeight(block.x, block.z)
+	if (event.button === 0)
+		world.setBlock(block.x, top + 1, block.z, BlockId.Gravel)
+	else
+		world.setBlock(block.x, top, block.z, BlockId.Air)
+	terrain.requestRebuildMesh()
+}
+canvas.addEventListener('click', mouseEventListener)
+canvas.addEventListener('contextmenu', mouseEventListener)
 
 renderer.beforeRenderFunction = (secondsSinceLastFrame) => secondsSinceLastFrame > 0.5 || document.hasFocus()
 renderer.beginRendering()

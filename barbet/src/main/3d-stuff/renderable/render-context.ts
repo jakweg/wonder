@@ -7,7 +7,3 @@ export interface RenderContext {
 	readonly secondsSinceFirstRender: number
 	readonly sunPosition: vec3
 }
-
-export interface Renderable {
-	render(ctx: RenderContext): void
-}
