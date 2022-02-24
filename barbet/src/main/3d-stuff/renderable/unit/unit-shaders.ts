@@ -1,4 +1,4 @@
-import { PrecisionHeader, VersionHeader } from '../../shader/common'
+import { PIConstantHeader, PrecisionHeader, RotationMatrix, VersionHeader } from '../../shader/common'
 import { buildShaderColorArray } from './unit-color'
 
 export const MASK_PROVOKING = 0b1 << 6
@@ -24,6 +24,7 @@ export const FLAG_PART_RIGHT_LEG = MASK_PART_ANY_LEG | FLAG_PART_RIGHT
 
 const vertexShaderSourceHead = `${VersionHeader()}
 ${PrecisionHeader()}
+${PIConstantHeader()}
 in vec3 a_modelPosition;
 in vec3 a_worldPosition;
 in float a_colorPaletteId;
@@ -36,7 +37,6 @@ uniform mat4 u_projection;
 uniform mat4 u_view;
 uniform float u_time;
 uniform float u_gameTick;
-const float PI = 3.14159;
 
 void main() {
 	vec3 worldPosition = a_worldPosition;
@@ -70,8 +70,8 @@ void main() {
 const vertexShaderSourceTail = `
 	pos *= vec3(0.7, 0.7, 0.7);	
     v_currentPosition = pos + worldPosition;
-    float a = 0.0;
-    mat4 rotation = mat4(cos(a), 0, -sin(a), 0, 0, 1, 0, 0, sin(a), 0, cos(a), 0, 0, 0, 0, 1);
+    float a = 0.0 * PI / 4.0;
+    mat4 rotation = ${RotationMatrix('a')};
     v_normal = (rotation * vec4(v_normal, 1.0)).xyz;
 	vec4 posRotated = rotation * vec4(pos, 1);
 	posRotated += vec4(0.5, 1.1, 0.5, 0.0) + vec4(worldPosition, 0.0);

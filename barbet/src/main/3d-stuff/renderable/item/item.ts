@@ -12,6 +12,7 @@ import {
 	itemFragmentShaderSource,
 	onGroundVertexShader,
 	Uniforms,
+	UnitData,
 } from './item-shaders'
 
 export const createNewItemRenderable = (renderer: MainRenderer,
@@ -72,7 +73,14 @@ export const createNewItemRenderable = (renderer: MainRenderer,
 				gl.uniformMatrix4fv(itemInHandProgram.uniforms.view, false, toGl(camera.viewMatrix))
 				gl.uniform1f(itemInHandProgram.uniforms.time, ctx.secondsSinceFirstRender)
 				gl.uniform1f(itemInHandProgram.uniforms.activityStartTick, unit.activityStartedAt)
-				gl.uniform1i(itemInHandProgram.uniforms.moving, unit.activityId === ActivityId.WalkingHoldingItem ? 1 : 0)
+
+				let unitData: UnitData = UnitData.Default
+				if (unit.activityId === ActivityId.WalkingHoldingItem)
+					unitData = (unitData & ~UnitData.MaskMoving) | UnitData.Moving
+				unitData = (unitData & ~UnitData.MaskRotation) | 2
+
+
+				gl.uniform1i(itemInHandProgram.uniforms.unitData, unitData)
 				gl.uniform1f(itemInHandProgram.uniforms.gameTick, ctx.gameTickEstimation)
 				gl.uniform3fv(itemInHandProgram.uniforms.lightPosition, toGl(add(clone(ctx.sunPosition), ctx.sunPosition, fromValues(0, -400, 0))))
 

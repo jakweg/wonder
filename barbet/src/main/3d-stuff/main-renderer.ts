@@ -94,7 +94,10 @@ export class MainRenderer {
 		gl.shaderSource(shader, source)
 		gl.compileShader(shader)
 		if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-			console.error(gl.getShaderInfoLog(shader))
+			if (DEBUG) {
+				console.error(source)
+				console.error(gl.getShaderInfoLog(shader))
+			}
 			gl.deleteShader(shader)
 			throw new Error('Shader compilation failed')
 		}

@@ -74,7 +74,7 @@ export const allActivities: ActivityType[] = [
 			if (now === unit.activityStartedAt + 50) {
 				unit.activityMemory[0] = 0
 				unit.activityStartedAt = now
-				unit.activityId = ActivityId.WalkingHoldingItem
+				// unit.activityId = ActivityId.WalkingHoldingItem
 			}
 		},
 	}, {

@@ -4,6 +4,10 @@ export const VersionHeader = () => `#version 300 es`
 
 export const PrecisionHeader = () => `precision mediump float;`
 
+export const PIConstantHeader = () => `const float PI = 3.141592653589;`
+
+export const RotationMatrix = (angleVariableName: string) => `mat4(cos(${angleVariableName}), 0, -sin(${angleVariableName}), 0, 0, 1, 0, 0, sin(${angleVariableName}), 0, cos(${angleVariableName}), 0, 0, 0, 0, 1)`
+
 export const createProgramFromNewShaders = <A, U>(renderer: MainRenderer,
                                                   vertexSource: string,
                                                   fragmentSource: string): GlProgram<A, U> => {
