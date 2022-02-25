@@ -1,6 +1,7 @@
 import { GameState } from './3d-stuff/game-state/game-state'
 import { StateUpdater } from './3d-stuff/game-state/state-updater'
 import { MainRenderer } from './3d-stuff/main-renderer'
+import { createPicker, MousePickableType } from './3d-stuff/mouse-picker'
 import { createNewItemRenderable } from './3d-stuff/renderable/item/item'
 import { RenderContext } from './3d-stuff/renderable/render-context'
 import { createNewTerrainRenderable } from './3d-stuff/renderable/terrain/terrain'
@@ -45,6 +46,7 @@ state.spawnUnit(8, 6, UnitColorPaletteId.LightOrange)
 
 const unit = createNewUnitRenderable(renderer, state)
 const items = createNewItemRenderable(renderer, state)
+const mousePicker = createPicker(renderer.rawContext, [terrain.renderForMousePicker, unit.renderForMousePicker])
 
 const sunPosition = vec3.fromValues(-500, 500, -500)
 
@@ -95,13 +97,22 @@ const mouseEventListener = (event: MouseEvent) => {
 	event.preventDefault()
 	const ctx = lastContext
 	if (!ctx) return
-	const block = terrain.getBlockByMouseCoords(ctx, event.offsetX, 720 - event.offsetY)
-	if (block === null) return
-	if (event.button === 0)
-		world.setBlock(block.x + block.normals[0]!, block.y + block.normals[1]!, block.z + block.normals[2]!, BlockId.Gravel)
-	else
-		world.setBlock(block.x, block.y, block.z, BlockId.Air)
-	terrain.requestRebuildMesh()
+
+	const result = mousePicker.pick(ctx, event.offsetX, 720 - event.offsetY)
+	if (result.pickedType === MousePickableType.Terrain) {
+		if (event.button === 0)
+			world.setBlock(result.x + result.normals[0]!, result.y + result.normals[1]!, result.z + result.normals[2]!, BlockId.Snow)
+		else
+			world.setBlock(result.x, result.y, result.z, BlockId.Air)
+		terrain.requestRebuildMesh()
+	} else if (result.pickedType === MousePickableType.Unit) {
+		const id = result.numericId
+		const unit = state.allUnits.find(e => e.numericId === id)
+		if (unit) {
+			unit.color++
+			unit.color %= 3
+		}
+	}
 }
 canvas.addEventListener('click', mouseEventListener)
 canvas.addEventListener('contextmenu', mouseEventListener)

@@ -1,3 +1,4 @@
+import { MousePickableType } from '../../mouse-picker'
 import {
 	PIConstantHeader,
 	PrecisionHeader,
@@ -127,8 +128,8 @@ void main() {
 	if (forMousePicker) parts.push(`
 	uint intId = uint(a_unitId);
 	uint fractionalId = uint((a_unitId - float(intId)) * 256.0);
-	v_color0 = vec4((intId >> 8U) & 255U, intId & 255U, fractionalId & 255U, 1.0);
-	v_color1 = vec3(0.0,0.0,0.0);
+	v_color0 = vec4((intId >> 8U) & 255U, intId & 255U, fractionalId & 255U, 1.0) / 255.0;
+	v_color1 = vec3(0.0, 0.0, ${MousePickableType.Unit}) / 255.0;
 	`)
 
 	parts.push(`

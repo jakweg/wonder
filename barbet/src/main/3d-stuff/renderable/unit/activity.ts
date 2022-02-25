@@ -92,8 +92,6 @@ export const allActivities: ActivityType[] = [
 
 				unit.activityStartedAt = now
 				unit.activityId = ActivityId.WalkingHoldingItem
-
-				console.log({x: unit.posX, y: unit.posZ})
 			}
 		},
 	},

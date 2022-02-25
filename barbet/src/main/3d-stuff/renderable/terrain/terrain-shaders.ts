@@ -1,3 +1,4 @@
+import { MousePickableType } from '../../mouse-picker'
 import { PrecisionHeader, VersionHeader } from '../../shader/common'
 
 export const vertexShaderSource = `${VersionHeader()}
@@ -62,7 +63,7 @@ void main() {
 	uint z = uint(a_position.z) - oz;
 	
 	v_color0 = vec4((x >> 8U) & 255U, x & 255U, (z >> 8U) & 255U, z & 255U) / 255.0;
-	v_color1 = vec3((y >> 8U) & 255U, y & 255U, uint(a_flags) & 255U) / 255.0;
+	v_color1 = vec3(y & 255U, uint(a_flags) & 255U, ${MousePickableType.Terrain}) / 255.0;
     gl_Position = (u_globalMatrix * vec4(a_position, 1));
 }
 `
