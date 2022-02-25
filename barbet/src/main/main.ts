@@ -43,6 +43,7 @@ const state = GameState.createNew()
 const updater = StateUpdater.createNew(state, 20)
 updater.start()
 state.spawnUnit(8, 6, UnitColorPaletteId.LightOrange)
+state.spawnUnit(4, 6, UnitColorPaletteId.LightOrange)
 
 const unit = createNewUnitRenderable(renderer, state)
 const items = createNewItemRenderable(renderer, state)
@@ -100,17 +101,26 @@ const mouseEventListener = (event: MouseEvent) => {
 
 	const result = mousePicker.pick(ctx, event.offsetX, 720 - event.offsetY)
 	if (result.pickedType === MousePickableType.Terrain) {
-		if (event.button === 0)
-			world.setBlock(result.x + result.normals[0]!, result.y + result.normals[1]!, result.z + result.normals[2]!, BlockId.Snow)
-		else
-			world.setBlock(result.x, result.y, result.z, BlockId.Air)
-		terrain.requestRebuildMesh()
+		// if (event.button === 0)
+		// 	world.setBlock(result.x + result.normals[0]!, result.y + result.normals[1]!, result.z + result.normals[2]!, BlockId.Snow)
+		// else
+		// 	world.setBlock(result.x, result.y, result.z, BlockId.Air)
+		// terrain.requestRebuildMesh()
+		state.allUnits
+			.filter(e => e.color === UnitColorPaletteId.DarkBlue)
+			.forEach(unit => {
+				unit.interrupt[0] = 1
+				unit.interrupt[1] = result.x
+				unit.interrupt[2] = result.z
+			})
 	} else if (result.pickedType === MousePickableType.Unit) {
 		const id = result.numericId
 		const unit = state.allUnits.find(e => e.numericId === id)
 		if (unit) {
-			unit.color++
-			unit.color %= 3
+			if (unit.color === UnitColorPaletteId.DarkBlue)
+				unit.color = UnitColorPaletteId.GreenOrange
+			else
+				unit.color = UnitColorPaletteId.DarkBlue
 		}
 	}
 }

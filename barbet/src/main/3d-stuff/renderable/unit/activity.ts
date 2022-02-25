@@ -1,10 +1,14 @@
+import activityIdle from '../../game-state/activities/idle'
+import activityWalking from '../../game-state/activities/walking'
+import activityWalkingByPathRoot from '../../game-state/activities/walking-by-path-root'
 import { GameState, Unit } from '../../game-state/game-state'
-import { freezeAndValidateOptionsList, getChangeInXByRotation, getChangeInZByRotation } from '../../shader/common'
+import { freezeAndValidateOptionsList } from '../../shader/common'
 import { ShaderId } from './unit-shaders'
 
 export enum ActivityId {
 	None,
 	Idle,
+	WalkingByPathRoot,
 	Walking,
 	ItemPickup,
 	IdleHoldingItem,
@@ -27,74 +31,26 @@ export const allActivities: ActivityType[] = [
 		shaderId: ShaderId.Stationary,
 		perform(_: GameState, __: Unit) {
 		},
-	}, {
-		numericId: ActivityId.Idle,
-		shaderId: ShaderId.Idle,
-		perform(game: GameState, unit: Unit) {
-			// unit.activityStartedAt = game.currentTick
-			const counter = unit.activityMemory[0]!
-			if (counter === 0) {
-				unit.activityId = ActivityId.Walking
-				unit.activityStartedAt = game.currentTick
-			} else {
-				unit.activityMemory[0] = counter + 1
-			}
-		},
-	}, {
-		numericId: ActivityId.Walking,
-		shaderId: ShaderId.Walking,
-		perform(game: GameState, unit: Unit) {
-			const now = game.currentTick
-			if (now === unit.activityStartedAt + 15) {
-				unit.posX++
-				unit.activityStartedAt = now
-				if (unit.posX === 9) {
-					unit.activityId = ActivityId.ItemPickup
-					unit.activityMemory[0] = 0
-				}
-			}
-		},
-	}, {
-		numericId: ActivityId.ItemPickup,
-		shaderId: ShaderId.PickUpItem,
-		perform(game: GameState, unit: Unit) {
-			const now = game.currentTick
-			if (now === unit.activityStartedAt + 10) {
-				unit.activityMemory[0] = 0
-				unit.activityStartedAt = now
-				unit.activityId = ActivityId.IdleHoldingItem
-				unit.heldItem = {type: 0}
-			}
-		},
-	}, {
-		numericId: ActivityId.IdleHoldingItem,
-		shaderId: ShaderId.IdleHoldingItem,
-		perform(game: GameState, unit: Unit) {
-			const now = game.currentTick
-			if (now === unit.activityStartedAt + 50) {
-				unit.activityMemory[0] = 0
-				unit.activityStartedAt = now
-				unit.activityId = ActivityId.WalkingHoldingItem
-			}
-		},
-	}, {
-		numericId: ActivityId.WalkingHoldingItem,
-		shaderId: ShaderId.WalkingHoldingItem,
-		perform(game: GameState, unit: Unit) {
-			const now = game.currentTick
-			if (now === unit.activityStartedAt + 15) {
-				unit.posX += getChangeInXByRotation(unit.rotation)
-				unit.posZ += getChangeInZByRotation(unit.rotation)
-				if (unit.posX % 5 === 0 && unit.posZ % 3 === 0) {
-					unit.rotation += 2
-					unit.rotation %= 8
-				}
-
-				unit.activityStartedAt = now
-				unit.activityId = ActivityId.WalkingHoldingItem
-			}
-		},
 	},
+	activityIdle,
+	activityWalkingByPathRoot,
+	activityWalking,
+	// {
+	// 	numericId: ActivityId.ItemPickup,
+	// 	shaderId: ShaderId.PickUpItem,
+	// 	perform(game: GameState, unit: Unit) {
+	// 	},
+	// }, {
+	// 	numericId: ActivityId.IdleHoldingItem,
+	// 	shaderId: ShaderId.IdleHoldingItem,
+	// 	perform(game: GameState, unit: Unit) {
+	// 	},
+	// }, {
+	// 	numericId: ActivityId.WalkingHoldingItem,
+	// 	shaderId: ShaderId.WalkingHoldingItem,
+	// 	perform(game: GameState, unit: Unit) {
+	// 	},
+	// },
 ]
 
 freezeAndValidateOptionsList(allActivities)
@@ -105,4 +61,3 @@ export const requireActivity = (id: ActivityId): ActivityType => {
 	return activity
 }
 
-export const IDLE = allActivities[ActivityId.Idle]!
