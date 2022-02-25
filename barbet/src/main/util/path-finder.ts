@@ -85,34 +85,41 @@ export const findPathDirectionsExact = (sx: number, sy: number,
 	const fCostComparator = (o1: Node, o2: Node) => o1.costF < o2.costF
 
 	const openNodes: SortedList<Node> = new SortedList<Node>(fCostComparator)
-	const closedNodes: SortedList<Node> = new SortedList<Node>(fCostComparator)
+	const closedNodes: Set<number> = new Set<number>()
 
+	const calculateSetKey = (x: number, y: number): number => x << 16 | y
 
 	const executeWithWalkableNeighboursNotInClosed = (x: number, y: number, callback: (n: Node) => void) => {
-		x--
-		if (tester(x, y) && !closedNodes.has(n => x === n.x && y === n.y))
-			callback(createNode(x, y, Direction.NegativeX))
-		y--
-		if (tester(x, y) && !closedNodes.has(n => x === n.x && y === n.y))
-			callback(createNode(x, y, Direction.NegativeXNegativeZ))
-		x++
-		if (tester(x, y) && !closedNodes.has(n => x === n.x && y === n.y))
-			callback(createNode(x, y, Direction.NegativeZ))
-		x++
-		if (tester(x, y) && !closedNodes.has(n => x === n.x && y === n.y))
-			callback(createNode(x, y, Direction.PositiveXNegativeZ))
-		y++
-		if (tester(x, y) && !closedNodes.has(n => x === n.x && y === n.y))
-			callback(createNode(x, y, Direction.PositiveX))
-		y++
-		if (tester(x, y) && !closedNodes.has(n => x === n.x && y === n.y))
-			callback(createNode(x, y, Direction.PositiveXPositiveZ))
-		x--
-		if (tester(x, y) && !closedNodes.has(n => x === n.x && y === n.y))
-			callback(createNode(x, y, Direction.PositiveZ))
-		x--
-		if (tester(x, y) && !closedNodes.has(n => x === n.x && y === n.y))
-			callback(createNode(x, y, Direction.NegativeXPositiveZ))
+		const walkable1 = tester(x - 1, y)
+		const walkable2 = tester(x, y - 1)
+		const walkable3 = tester(x + 1, y)
+		const walkable4 = tester(x, y + 1)
+
+		if (walkable1 && !closedNodes.has(calculateSetKey(x - 1, y)))
+			callback(createNode(x - 1, y, Direction.NegativeX))
+
+		if (walkable2 && !closedNodes.has(calculateSetKey(x, y - 1)))
+			callback(createNode(x, y - 1, Direction.NegativeZ))
+
+		if (walkable3 && !closedNodes.has(calculateSetKey(x + 1, y)))
+			callback(createNode(x + 1, y, Direction.PositiveX))
+
+		if (walkable4 && !closedNodes.has(calculateSetKey(x, y + 1)))
+			callback(createNode(x, y + 1, Direction.PositiveZ))
+
+
+		if (walkable1 && walkable2 && tester(x - 1, y - 1) && !closedNodes.has(calculateSetKey(x - 1, y - 1)))
+			callback(createNode(x - 1, y - 1, Direction.NegativeXNegativeZ))
+
+		if (walkable1 && walkable4 && tester(x - 1, y + 1) && !closedNodes.has(calculateSetKey(x - 1, y + 1)))
+			callback(createNode(x - 1, y + 1, Direction.NegativeXPositiveZ))
+
+		if (walkable3 && walkable2 && tester(x + 1, y - 1) && !closedNodes.has(calculateSetKey(x + 1, y - 1)))
+			callback(createNode(x + 1, y - 1, Direction.PositiveXNegativeZ))
+
+		if (walkable3 && walkable4 && tester(x + 1, y + 1) && !closedNodes.has(calculateSetKey(x + 1, y + 1)))
+			callback(createNode(x + 1, y + 1, Direction.PositiveXPositiveZ))
+
 	}
 
 	openNodes.add(createNode(sx, sy))
@@ -123,7 +130,6 @@ export const findPathDirectionsExact = (sx: number, sy: number,
 			// unable to find path :/
 			return null
 		}
-		closedNodes.add(current)
 
 		if (current.x === dx && current.y === dy) {
 			// found path!
@@ -136,6 +142,8 @@ export const findPathDirectionsExact = (sx: number, sy: number,
 			stack.shift()
 			return stack
 		}
+
+		closedNodes.add(calculateSetKey(current.x, current.y))
 
 		executeWithWalkableNeighboursNotInClosed(current.x, current.y, (neighbour) => {
 			if (!openNodes.has(e => e.x === neighbour.x && e.y === neighbour.y)) {

@@ -14,18 +14,6 @@ export class SortedList<T> {
 		this.list.push(obj)
 	}
 
-	size(): number {
-		return this.list.length
-	}
-
-	getFirst(): T | undefined {
-		return this.list[0]
-	}
-
-	getRawList(): T[] {
-		return this.list
-	}
-
 	has(check: (obj: T) => boolean): boolean {
 		return !!this.list.find(check)
 	}

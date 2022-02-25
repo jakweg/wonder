@@ -5,6 +5,16 @@ import { getChangeInXByRotation, getChangeInZByRotation } from '../../shader/com
 import { GameState, Unit } from '../game-state'
 import activityWalkingByPathRoot from './walking-by-path-root'
 
+const standardWalkingDuration = 5
+const crossWalkingDuration = (standardWalkingDuration * Math.SQRT2) | 0
+export const walkingDurationByDirection: number[] = [
+	standardWalkingDuration, crossWalkingDuration,
+	standardWalkingDuration, crossWalkingDuration,
+	standardWalkingDuration, crossWalkingDuration,
+	standardWalkingDuration, crossWalkingDuration,
+]
+Object.freeze(walkingDurationByDirection)
+
 const activityWalking = {
 	numericId: ActivityId.Walking,
 	shaderId: ShaderId.Walking,
@@ -30,7 +40,7 @@ const activityWalking = {
 		unit.rotation = direction
 		unit.activityMemoryPointer += 2
 		unit.activityMemory[unit.activityMemoryPointer - 1] = direction
-		unit.activityMemory[unit.activityMemoryPointer - 2] = game.currentTick + 15
+		unit.activityMemory[unit.activityMemoryPointer - 2] = game.currentTick + walkingDurationByDirection[direction]!
 	},
 }
 

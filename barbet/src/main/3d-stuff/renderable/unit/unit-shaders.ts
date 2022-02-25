@@ -5,6 +5,7 @@ import {
 	RotationMatrix,
 	RotationVectorsDeclaration,
 	VersionHeader,
+	WalkingDurationsByRotation,
 } from '../../shader/common'
 import { buildShaderColorArray } from './unit-color'
 
@@ -31,7 +32,11 @@ export const FLAG_PART_RIGHT_LEG = MASK_PART_ANY_LEG | FLAG_PART_RIGHT
 
 export const constructUnitVertexShaderSource = (transformations: string,
                                                 forMousePicker: boolean): string => {
-	const parts: string[] = [VersionHeader(), PrecisionHeader(), PIConstantHeader(), RotationVectorsDeclaration()]
+	const parts: string[] = [VersionHeader(),
+		PrecisionHeader(),
+		PIConstantHeader(),
+		RotationVectorsDeclaration(),
+		WalkingDurationsByRotation()]
 
 	parts.push(`
 in vec3 a_modelPosition;
@@ -189,7 +194,7 @@ if (isAnimatableElement && !isTopVertex) {
 	else if (isRightArmVertex || isLeftLegVertex)
 		pos.x += additionalZOffset;
 }
-worldPosition += rotationVectors[unitRotationAsInt] * activityDuration / 15.0;
+worldPosition += rotationVectors[unitRotationAsInt] * activityDuration / walkingDurations[unitRotationAsInt];
 `
 
 const walkingHoldingItem = `
@@ -203,7 +208,7 @@ if (isAnimatableElement && !isTopVertex) {
 if (isLeftArmVertex || isRightArmVertex) {
 	pos.x += sin(5.0 / PI / 1.0) * (pos.y + (isBottomVertex ? 1.9 : (isMiddleVertex ? 0.85 : 0.4))) * 0.9 - cos(10.0 / PI / 1.0) * -0.5;
 }
-worldPosition += rotationVectors[unitRotationAsInt] * activityDuration / 15.0;
+worldPosition += rotationVectors[unitRotationAsInt] * activityDuration / walkingDurations[unitRotationAsInt];
 `
 
 export const standardFragmentShaderSource = `${VersionHeader()}

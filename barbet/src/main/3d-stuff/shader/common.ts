@@ -1,3 +1,4 @@
+import { walkingDurationByDirection } from '../game-state/activities/walking'
 import { GlProgram, MainRenderer } from '../main-renderer'
 
 export const VersionHeader = () => `#version 300 es`
@@ -7,6 +8,8 @@ export const PrecisionHeader = () => `precision mediump float;`
 export const PIConstantHeader = () => `const float PI = 3.141592653589;`
 
 export const RotationVectorsDeclaration = () => `const vec3 rotationVectors[8] = vec3[8](vec3(1.0, 0.0, 0.0), vec3(1.0, 0.0, -1.0), vec3(0.0, 0.0, -1.0), vec3(-1.0, 0.0, -1.0), vec3(-1.0, 0.0, 0.0), vec3(-1.0, 0.0, 1.0), vec3(0.0, 0.0, 1.0), vec3(1.0, 0.0, 1.0));`
+
+export const WalkingDurationsByRotation = () => `const float walkingDurations[8] = float[8](${walkingDurationByDirection.map(e => e.toFixed(8)).join(',')});`
 
 export const RotationMatrix = (angleVariableName: string) => `mat4(cos(${angleVariableName}), 0, -sin(${angleVariableName}), 0, 0, 1, 0, 0, sin(${angleVariableName}), 0, cos(${angleVariableName}), 0, 0, 0, 0, 1)`
 
