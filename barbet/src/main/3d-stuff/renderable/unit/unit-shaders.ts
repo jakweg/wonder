@@ -28,36 +28,52 @@ export const FLAG_PART_RIGHT_ARM = MASK_PART_ANY_ARM | FLAG_PART_RIGHT
 export const FLAG_PART_LEFT_LEG = MASK_PART_ANY_LEG | FLAG_PART_LEFT
 export const FLAG_PART_RIGHT_LEG = MASK_PART_ANY_LEG | FLAG_PART_RIGHT
 
-const vertexShaderSourceHead = `${VersionHeader()}
-${PrecisionHeader()}
-${PIConstantHeader()}
-${RotationVectorsDeclaration()}
+export const constructUnitVertexShaderSource = (transformations: string,
+                                                forMousePicker: boolean): string => {
+	const parts: string[] = [VersionHeader(), PrecisionHeader(), PIConstantHeader(), RotationVectorsDeclaration()]
+
+	parts.push(`
 in vec3 a_modelPosition;
 in vec3 a_worldPosition;
-in float a_colorPaletteId;
 in float a_unitRotation;
 in float a_flags;
 in float a_activityStartTick;
-flat out int v_colorPaletteId;
-flat out vec3 v_normal; 
-flat out vec3 v_currentPosition; 
-uniform mat4 u_projection;
-uniform mat4 u_view;
 uniform float u_time;
 uniform float u_gameTick;
+`)
+	if (forMousePicker) parts.push(`
+uniform mat4 u_combinedMatrix;
+flat out vec4 v_color0;
+flat out vec3 v_color1;
+in float a_unitId;
+`)
+	else parts.push(`
+uniform mat4 u_projection;
+uniform mat4 u_view;
+in float a_colorPaletteId;
+flat out vec3 v_currentPosition;
+flat out int v_colorPaletteId;
+flat out vec3 v_normal;
+`)
 
+
+	parts.push(`
 void main() {
 	vec3 worldPosition = a_worldPosition;
 	int flagsAsInt = int(a_flags);
+`)
+	if (!forMousePicker)
+		parts.push(`
 	v_normal = vec3(ivec3(((flagsAsInt >> 4) & 3) - 1, ((flagsAsInt >> 2) & 3) - 1, (flagsAsInt & 3) - 1));
-	
 	if ((flagsAsInt & ${MASK_BODY_PART}) == ${FLAG_PART_FACE}) {
 		v_colorPaletteId = int(a_colorPaletteId) * 9 + 6;
 	} else {
 		bool isProvokingTop = (flagsAsInt & ${MASK_PROVOKING}) == ${FLAG_PROVOKING_TOP};
 		v_colorPaletteId = (isProvokingTop ? (int(a_colorPaletteId) * 9 + 3) : int(a_colorPaletteId) * 9);
 	}
-	
+	`)
+
+	parts.push(`
 	int unitRotationAsInt = int(a_unitRotation);
 	vec3 pos = a_modelPosition;
 	bool isMainBodyVertex = (flagsAsInt & ${MASK_BODY_PART}) == ${FLAG_PART_MAIN_BODY};
@@ -71,26 +87,58 @@ void main() {
 	bool isLeftLegVertex = (flagsAsInt & ${MASK_BODY_PART}) == ${FLAG_PART_LEFT_LEG};
 	bool isRightLegVertex = (flagsAsInt & ${MASK_BODY_PART}) == ${FLAG_PART_RIGHT_LEG};
 	float activityDuration = u_gameTick - a_activityStartTick;
-	
+
 	float computedSin1 = sin(u_time);
 	float computedSin2 = sin(u_time * 2.0);
 	float computedSin5 = sin(u_time * 5.0);
-`
-const vertexShaderSourceTail = `
-	pos *= vec3(0.7, 0.7, 0.7);	
-    v_currentPosition = pos + worldPosition;
+		`)
+
+	parts.push(transformations)
+
+	parts.push(`
+	pos *= vec3(0.7, 0.7, 0.7);
+	`)
+
+	if (!forMousePicker)
+		parts.push(`
+	v_currentPosition = pos + worldPosition;
+	`)
+
+	parts.push(`
     float a = a_unitRotation * PI / 4.0;
     mat4 rotation = ${RotationMatrix('a')};
-    v_normal = (rotation * vec4(v_normal, 1.0)).xyz;
+    `)
+
+	if (!forMousePicker)
+		parts.push(`
+	v_normal = (rotation * vec4(v_normal, 1.0)).xyz;
+	`)
+
+	parts.push(`
 	vec4 posRotated = rotation * vec4(pos, 1);
 	posRotated += vec4(0.5, 1.1, 0.5, 0.0) + vec4(worldPosition, 0.0);
-    gl_Position = u_projection * u_view * posRotated;
     gl_PointSize = 10.0;
-}
-`
+    `)
+	if (forMousePicker)
+		parts.push(`gl_Position = u_combinedMatrix * posRotated;`)
+	else
+		parts.push(`gl_Position = u_projection * u_view * posRotated;`)
 
-const pickUpItemShader = `
-${vertexShaderSourceHead}
+	if (forMousePicker) parts.push(`
+	uint intId = uint(a_unitId);
+	uint fractionalId = uint((a_unitId - float(intId)) * 256.0);
+	v_color0 = vec4((intId >> 8U) & 255U, intId & 255U, fractionalId & 255U, 1.0);
+	v_color1 = vec3(0.0,0.0,0.0);
+	`)
+
+	parts.push(`
+}
+`)
+
+	return parts.join('\n')
+}
+
+const pickUpItem = `
 	float usedSin = sin(activityDuration / PI / 1.0);
 	if (isMainBodyVertex && isTopVertex) {
 		pos.x += usedSin * (pos.y + 0.05) * 0.8;
@@ -112,16 +160,9 @@ ${vertexShaderSourceHead}
 			pos.x += sin(5.0 / PI / 1.0) * (pos.y + (isBottomVertex ? 1.9 : (isMiddleVertex ? 0.85 : 0.4))) * 0.9 - cos(activityDuration / PI / 1.0) * -0.5;
 		pos.y -= usedSin * 0.4;
 	}
-${vertexShaderSourceTail}
 `
 
-const stationaryShader = `
-${vertexShaderSourceHead}
-${vertexShaderSourceTail}
-`
-
-const idleShader = `
-${vertexShaderSourceHead}
+const idle = `
 if (isAnimatableElement && !isTopVertex) {
 	float additionalZOffset = computedSin2 * (isBottomVertex ? -0.18 : -0.06);
 	if (isLeftArmVertex)
@@ -130,20 +171,16 @@ if (isAnimatableElement && !isTopVertex) {
 		pos.x += additionalZOffset;
 }
 pos.y += computedSin1 * 0.02;
-${vertexShaderSourceTail}
 `
 
-const idleHoldingItemShader = `
-${vertexShaderSourceHead}
+const idleHoldingItem = `
 if (isLeftArmVertex || isRightArmVertex) {
 	pos.x += sin(5.0 / PI / 1.0) * (pos.y + (isBottomVertex ? 1.9 : (isMiddleVertex ? 0.85 : 0.4))) * 0.9 - cos(10.0 / PI / 1.0) * -0.5;
 }
 pos.y += computedSin1 * 0.02;
-${vertexShaderSourceTail}
 `
 
-const walkingShader = `
-${vertexShaderSourceHead}
+const walking = `
 if (isAnimatableElement && !isTopVertex) {
 	float additionalZOffset = sin(u_time * 20.0 / PI) * (isBottomVertex ? -0.2 : -0.1);
 	if (isLeftArmVertex || isRightLegVertex)
@@ -152,11 +189,9 @@ if (isAnimatableElement && !isTopVertex) {
 		pos.x += additionalZOffset;
 }
 worldPosition += rotationVectors[unitRotationAsInt] * activityDuration / 15.0;
-${vertexShaderSourceTail}
 `
 
-const walkingHoldingItemShader = `
-${vertexShaderSourceHead}
+const walkingHoldingItem = `
 if (isAnimatableElement && !isTopVertex) {
 	float additionalZOffset = sin(u_time * 20.0 / PI) * (isBottomVertex ? -0.2 : -0.1);
 	if (isRightLegVertex)
@@ -168,10 +203,9 @@ if (isLeftArmVertex || isRightArmVertex) {
 	pos.x += sin(5.0 / PI / 1.0) * (pos.y + (isBottomVertex ? 1.9 : (isMiddleVertex ? 0.85 : 0.4))) * 0.9 - cos(10.0 / PI / 1.0) * -0.5;
 }
 worldPosition += rotationVectors[unitRotationAsInt] * activityDuration / 15.0;
-${vertexShaderSourceTail}
 `
 
-export const fragmentShaderSource = `${VersionHeader()}
+export const standardFragmentShaderSource = `${VersionHeader()}
 ${PrecisionHeader()}
 out vec4 finalColor;
 flat in int v_colorPaletteId;
@@ -186,17 +220,28 @@ void main() {
 	float diffuse = max(sqrt(dot(v_normal, lightDirection)), ambientLight);
 	vec3 color = vec3(unitColors[v_colorPaletteId], unitColors[v_colorPaletteId + 1], unitColors[v_colorPaletteId + 2]);
 	finalColor = vec4(color * diffuse, 1);
-	// if (!gl_FrontFacing) {
-	// 	finalColor = vec4(sin(u_time * 4.0) * 0.5 + 0.5, 0, cos(u_time * 3.0) * 0.5 + 0.5, 1);
-	// }
 }
 `
 
-export type Uniforms = 'time' | 'projection' | 'view' | 'lightPosition' | 'gameTick'
+export const pickViaMouseFragmentShader = `${VersionHeader()}
+${PrecisionHeader()}
+layout(location = 0) out vec4 finalColor0;
+layout(location = 1) out vec3 finalColor1;
+flat in vec4 v_color0;
+flat in vec3 v_color1;
+void main() {
+	finalColor0 = v_color0;
+	finalColor1 = v_color1;
+}
+`
+
+
+export type Uniforms = 'time' | 'projection' | 'view' | 'lightPosition' | 'gameTick' | 'combinedMatrix'
 export type Attributes =
 	'modelPosition'
 	| 'worldPosition'
 	| 'flags'
+	| 'unitId'
 	| 'colorPaletteId'
 	| 'activityStartTick'
 	| 'unitRotation'
@@ -210,13 +255,13 @@ export const enum ShaderId {
 	WalkingHoldingItem,
 }
 
-export const allShaderSources = [
-	stationaryShader,
-	idleShader,
-	walkingShader,
-	pickUpItemShader,
-	idleHoldingItemShader,
-	walkingHoldingItemShader,
+const sources = [
+	``,
+	idle,
+	walking,
+	pickUpItem,
+	idleHoldingItem,
+	walkingHoldingItem,
 ]
 
-Object.freeze(allShaderSources)
+export const shaderTransformationSources = Object.freeze(sources)

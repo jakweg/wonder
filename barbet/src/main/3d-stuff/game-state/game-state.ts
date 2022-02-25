@@ -6,6 +6,7 @@ export interface HeldItem {
 }
 
 export interface Unit {
+	numericId: number
 	posX: number
 	posY: number
 	posZ: number
@@ -19,6 +20,7 @@ export interface Unit {
 
 export class GameState {
 	private readonly _units: Unit[] = []
+	private nextUnitId: number = 1
 
 	private constructor() {
 	}
@@ -41,6 +43,7 @@ export class GameState {
 	                 atZ: number,
 	                 color: UnitColorPaletteId): void {
 		this._units.push({
+			numericId: this.nextUnitId++,
 			posX: atX, posY: 2, posZ: atZ,
 			color: color, rotation: 0,
 			activityId: IDLE.numericId,

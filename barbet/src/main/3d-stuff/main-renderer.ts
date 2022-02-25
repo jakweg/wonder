@@ -153,6 +153,10 @@ export class MainRenderer {
 		return new VertexArray(gl, array)
 	}
 
+	public unbindVAO() {
+		this.gl.bindVertexArray(null)
+	}
+
 	public beginRendering() {
 		if (this.nextFrameRequest !== 0) return
 
