@@ -1,4 +1,5 @@
 import { Direction, findPathDirectionsExact } from '../../util/path-finder'
+import { World } from '../world/world'
 import { GameState } from './game-state'
 
 interface PathRequest {
@@ -20,11 +21,11 @@ export class PathFinder {
 	private readonly pathQueue: PathRequest[] = []
 	private nextPathRequestId: number = 0
 
-	private constructor() {
+	private constructor(private readonly world: World) {
 	}
 
-	public static createNewQueue() {
-		return new PathFinder()
+	public static createNewQueue(world: World) {
+		return new PathFinder(world)
 	}
 
 	public tick(game: GameState) {
@@ -37,7 +38,10 @@ export class PathFinder {
 		}
 
 		for (const req of this.pathQueue) {
-			const directions = findPathDirectionsExact(req.fromX, req.fromZ, req.toX, req.toZ, () => true)
+			const directions = findPathDirectionsExact(req.fromX, req.fromZ, req.toX, req.toZ,
+				(x, z) => {
+					return this.world.getHighestBlockHeight(x, z) === 1
+				})
 			let object
 			if (directions == null)
 				object = {

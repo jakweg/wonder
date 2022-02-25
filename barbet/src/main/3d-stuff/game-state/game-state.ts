@@ -42,8 +42,8 @@ export class GameState {
 		return [...this._units]
 	}
 
-	public static createNew(): GameState {
-		return new GameState(PathFinder.createNewQueue())
+	public static createNew(pathFinder: PathFinder): GameState {
+		return new GameState(pathFinder)
 	}
 
 	public spawnUnit(atX: number,

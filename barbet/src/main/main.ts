@@ -1,4 +1,6 @@
+import { interruptRequestWalk } from './3d-stuff/game-state/activities/interrupt'
 import { GameState } from './3d-stuff/game-state/game-state'
+import { PathFinder } from './3d-stuff/game-state/path-finder'
 import { StateUpdater } from './3d-stuff/game-state/state-updater'
 import { MainRenderer } from './3d-stuff/main-renderer'
 import { createPicker, MousePickableType } from './3d-stuff/mouse-picker'
@@ -37,9 +39,10 @@ world.setBlock(7, 2, 14, BlockId.Stone)
 world.setBlock(7, 3, 14, BlockId.Stone)
 world.setBlock(6, 2, 13, BlockId.Stone)
 world.setBlock(6, 3, 13, BlockId.Stone)
+world.recalculateHeightIndex()
 
 const terrain = createNewTerrainRenderable(renderer, world)
-const state = GameState.createNew()
+const state = GameState.createNew(PathFinder.createNewQueue(world))
 const updater = StateUpdater.createNew(state, 20)
 updater.start()
 state.spawnUnit(8, 6, UnitColorPaletteId.LightOrange)
@@ -106,13 +109,18 @@ const mouseEventListener = (event: MouseEvent) => {
 		// else
 		// 	world.setBlock(result.x, result.y, result.z, BlockId.Air)
 		// terrain.requestRebuildMesh()
-		state.allUnits
-			.filter(e => e.color === UnitColorPaletteId.DarkBlue)
-			.forEach(unit => {
-				unit.interrupt[0] = 1
-				unit.interrupt[1] = result.x
-				unit.interrupt[2] = result.z
+		const units = state.allUnits.filter(e => e.color === UnitColorPaletteId.DarkBlue)
+		if (units.length > 0) {
+			units.forEach(unit => {
+				interruptRequestWalk(unit, result.x, result.z)
 			})
+		} else {
+			if (event.button === 0)
+				world.setBlock(result.x + result.normals[0]!, result.y + result.normals[1]!, result.z + result.normals[2]!, BlockId.Snow)
+			else
+				world.setBlock(result.x, result.y, result.z, BlockId.Air)
+			terrain.requestRebuildMesh()
+		}
 	} else if (result.pickedType === MousePickableType.Unit) {
 		const id = result.numericId
 		const unit = state.allUnits.find(e => e.numericId === id)
