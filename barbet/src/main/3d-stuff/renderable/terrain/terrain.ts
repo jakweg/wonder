@@ -93,6 +93,7 @@ export const createNewTerrainRenderable = (renderer: MainRenderer,
 	let trianglesToRender = 0 | 0
 	let needsMeshRefresh = true
 	const refreshMesh = () => {
+		vao.bind()
 		const mesh = convertWorldToMesh(world)
 		vertexBuffer.setContent(mesh.vertexes)
 		indicesBuffer.setContent(mesh.indices)
