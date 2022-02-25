@@ -10,6 +10,7 @@ export class Camera {
 
 	private constructor(public readonly perspectiveMatrix: mat4,
 	                    public readonly viewMatrix: mat4,
+	                    public readonly combinedMatrix: mat4,
 	                    public readonly eye: vec3,
 	                    public readonly center: vec3) {
 	}
@@ -30,13 +31,16 @@ export class Camera {
 			center,
 			universalUpVector)
 
-		return new Camera(perspectiveMatrix, viewMatrix, eye, center)
+		const combined = mat4.multiply(mat4.create(), perspectiveMatrix, viewMatrix)
+
+		return new Camera(perspectiveMatrix, viewMatrix, combined, eye, center)
 	}
 
 	public updateMatrixIfNeeded(): void {
 		if (this.lastRegisteredEyeChangeId === this.lastEyeChangeId) return
 		this.lastRegisteredEyeChangeId = this.lastEyeChangeId
 		mat4.lookAt(this.viewMatrix, this.eye, this.center, universalUpVector)
+		mat4.multiply(this.combinedMatrix, this.perspectiveMatrix, this.viewMatrix)
 	}
 
 	public moveCamera(x: number, y: number, z: number): void {

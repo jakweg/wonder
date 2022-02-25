@@ -1,15 +1,14 @@
 import { toGl } from '../../../util/matrix/common'
-import * as mat4 from '../../../util/matrix/mat4'
 import { add, clone, fromValues } from '../../../util/matrix/vec3'
 import { GameState } from '../../game-state/game-state'
 import { GlProgram, GPUBuffer, MainRenderer } from '../../main-renderer'
+import { pickViaMouseDefaultFragmentShader } from '../../shader/common'
 import { RenderContext } from '../render-context'
 import { requireActivity } from './activity'
 import { buildUnitModel } from './unit-model'
 import {
 	Attributes,
 	constructUnitVertexShaderSource,
-	pickViaMouseFragmentShader,
 	shaderTransformationSources,
 	standardFragmentShaderSource,
 	Uniforms,
@@ -61,7 +60,7 @@ function prepareMousePickerPrograms(renderer: MainRenderer, modelBuffer: GPUBuff
 	vao.bind()
 	modelElementsBuffer.bind()
 
-	const fragmentShader = renderer.createShader(false, pickViaMouseFragmentShader)
+	const fragmentShader = renderer.createShader(false, pickViaMouseDefaultFragmentShader)
 	const programs: GlProgram<Attributes, Uniforms>[] = []
 	for (const transformSource of shaderTransformationSources) {
 		const source = constructUnitVertexShaderSource(transformSource, true)
@@ -125,7 +124,7 @@ export const createNewUnitRenderable = (renderer: MainRenderer,
 		},
 
 		renderForMousePicker(ctx: RenderContext) {
-			const {gl, camera, gameTickEstimation} = ctx
+			const {gl, gameTickEstimation, camera: {combinedMatrix}} = ctx
 			const {programs, vao} = mouse
 			vao.bind()
 			modelBuffer.bind()
@@ -143,8 +142,7 @@ export const createNewUnitRenderable = (renderer: MainRenderer,
 				unitDataBuffer.setContent(new Float32Array(unitData))
 
 
-				const combined = mat4.multiply(mat4.create(), camera.perspectiveMatrix, camera.viewMatrix)
-				gl.uniformMatrix4fv(program.uniforms.combinedMatrix, false, toGl(combined))
+				gl.uniformMatrix4fv(program.uniforms.combinedMatrix, false, toGl(combinedMatrix))
 				gl.uniform1f(program.uniforms.gameTick, gameTickEstimation)
 				gl.uniform1f(program.uniforms.time, ctx.secondsSinceFirstRender)
 				gl.uniform3fv(program.uniforms.lightPosition, toGl(add(clone(ctx.sunPosition), ctx.sunPosition, fromValues(0, -10, -400))))

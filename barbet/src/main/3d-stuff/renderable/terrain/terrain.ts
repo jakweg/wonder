@@ -1,7 +1,6 @@
 import { toGl } from '../../../util/matrix/common'
-import * as mat4 from '../../../util/matrix/mat4'
 import { GPUBuffer, MainRenderer } from '../../main-renderer'
-import { createProgramFromNewShaders } from '../../shader/common'
+import { createProgramFromNewShaders, pickViaMouseDefaultFragmentShader } from '../../shader/common'
 import { World } from '../../world/world'
 import { convertWorldToMesh } from '../../world/world-to-mesh-converter'
 import { RenderContext } from '../render-context'
@@ -10,14 +9,13 @@ import {
 	fragmentShaderSource,
 	MousePickerAttributes,
 	MousePickerUniforms,
-	pickViaMouseFragmentShader,
 	pickViaMouseVertexShaderSource,
 	Uniforms,
 	vertexShaderSource,
 } from './terrain-shaders'
 
 function setUpMousePicker(renderer: MainRenderer, vertexBuffer: GPUBuffer, indicesBuffer: GPUBuffer) {
-	const mouseProgram = createProgramFromNewShaders<MousePickerAttributes, MousePickerUniforms>(renderer, pickViaMouseVertexShaderSource, pickViaMouseFragmentShader)
+	const mouseProgram = createProgramFromNewShaders<MousePickerAttributes, MousePickerUniforms>(renderer, pickViaMouseVertexShaderSource, pickViaMouseDefaultFragmentShader)
 	const mouseVao = renderer.createVAO()
 	mouseVao.bind()
 	vertexBuffer.bind()
@@ -83,12 +81,12 @@ export const createNewTerrainRenderable = (renderer: MainRenderer,
 		},
 		renderForMousePicker(ctx: RenderContext) {
 			if (needsMeshRefresh) refreshMesh()
-			const {gl, camera} = ctx
+			const {gl, camera: {combinedMatrix}} = ctx
 
 			mouseVao.bind()
 			mouseProgram.use()
 
-			gl.uniformMatrix4fv(mouseProgram.uniforms.globalMatrix, false, toGl(mat4.multiply(mat4.create(), camera.perspectiveMatrix, camera.viewMatrix)))
+			gl.uniformMatrix4fv(mouseProgram.uniforms.combinedMatrix, false, toGl(combinedMatrix))
 			gl.uniform1f(mouseProgram.uniforms.time, ctx.secondsSinceFirstRender)
 
 			gl.drawElements(gl.TRIANGLES, trianglesToRender, gl.UNSIGNED_INT, 0)

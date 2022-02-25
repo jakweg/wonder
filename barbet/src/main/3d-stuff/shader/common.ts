@@ -53,3 +53,15 @@ export const freezeAndValidateOptionsList = <T>(list: T[],
 			throw new Error(`Object has invalid index property: expected ${i}, but got ${index}, object: ${JSON.stringify(item)}`)
 	}
 }
+
+export const pickViaMouseDefaultFragmentShader = `${VersionHeader()}
+${PrecisionHeader()}
+layout(location = 0) out vec4 finalColor0;
+layout(location = 1) out vec3 finalColor1;
+flat in vec4 v_color0;
+flat in vec3 v_color1;
+void main() {
+	finalColor0 = v_color0;
+	finalColor1 = v_color1;
+}
+`

@@ -51,7 +51,7 @@ in vec3 a_position;
 in float a_flags;
 flat out vec4 v_color0;
 flat out vec3 v_color1;
-uniform mat4 u_globalMatrix;
+uniform mat4 u_combinedMatrix;
 void main() {
 	uint a = uint(a_flags);
 	uint offsets = a >> 8U;
@@ -64,19 +64,7 @@ void main() {
 	
 	v_color0 = vec4((x >> 8U) & 255U, x & 255U, (z >> 8U) & 255U, z & 255U) / 255.0;
 	v_color1 = vec3(y & 255U, uint(a_flags) & 255U, ${MousePickableType.Terrain}) / 255.0;
-    gl_Position = (u_globalMatrix * vec4(a_position, 1));
-}
-`
-
-export const pickViaMouseFragmentShader = `${VersionHeader()}
-${PrecisionHeader()}
-layout(location = 0) out vec4 finalColor0;
-layout(location = 1) out vec3 finalColor1;
-flat in vec4 v_color0;
-flat in vec3 v_color1;
-void main() {
-	finalColor0 = v_color0;
-	finalColor1 = v_color1;
+    gl_Position = (u_combinedMatrix * vec4(a_position, 1));
 }
 `
 
@@ -84,4 +72,4 @@ export type Uniforms = 'time' | 'projection' | 'view' | 'lightPosition'
 export type Attributes = 'position' | 'color' | 'flags'
 
 export type MousePickerAttributes = 'position' | 'flags'
-export type MousePickerUniforms = 'time' | 'globalMatrix'
+export type MousePickerUniforms = 'time' | 'combinedMatrix'
