@@ -1,6 +1,7 @@
 import { Direction } from '../../util/direction'
 import { ActivityId, requireActivity } from '../renderable/unit/activity'
 import { UnitColorPaletteId } from '../renderable/unit/unit-color'
+import { World } from '../world/world'
 import activityIdle from './activities/idle'
 import { PathFinder } from './path-finder'
 
@@ -30,7 +31,8 @@ export class GameState {
 	private readonly _units: Unit[] = []
 	private nextUnitId: number = 1
 
-	private constructor(public readonly pathFinder: PathFinder) {
+	private constructor(public readonly world: World,
+	                    public readonly pathFinder: PathFinder) {
 	}
 
 	private _currentTick: number = 0
@@ -43,8 +45,10 @@ export class GameState {
 		return [...this._units]
 	}
 
-	public static createNew(pathFinder: PathFinder): GameState {
-		return new GameState(pathFinder)
+	public static createNew(
+		world: World,
+		pathFinder: PathFinder): GameState {
+		return new GameState(world, pathFinder)
 	}
 
 	public spawnUnit(atX: number,

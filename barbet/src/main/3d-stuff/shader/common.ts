@@ -38,7 +38,9 @@ export const getChangeInZByRotation = (rotation: number): number => {
 
 export const createProgramFromNewShaders = <A, U>(renderer: MainRenderer,
                                                   vertexSource: string,
-                                                  fragmentSource: string): GlProgram<A, U> => {
+                                                  fragmentSource: string)
+// @ts-ignore
+	: GlProgram<A, U> => {
 	const vert = renderer.createShader(true, vertexSource)
 	const frag = renderer.createShader(false, fragmentSource)
 	return renderer.createProgram<A, U>(vert, frag)

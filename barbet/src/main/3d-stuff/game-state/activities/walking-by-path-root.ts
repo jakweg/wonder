@@ -11,6 +11,14 @@ const enum Status {
 	GotPath
 }
 
+const enum MemoryField {
+	NextPathDirectionIndex,
+	PathRequestId,
+	Status,
+	DestinationX,
+	DestinationZ,
+}
+
 const MEMORY_USED_SIZE = 5
 
 const activityWalkingByPathRoot = {
@@ -20,8 +28,8 @@ const activityWalkingByPathRoot = {
 		const memory = unit.activityMemory
 		const pointer = unit.activityMemoryPointer
 
-		const status: Status = memory[pointer - 3]!
-		const requestId = memory[pointer - 2]!
+		const status: Status = memory[pointer - MemoryField.Status]!
+		const requestId = memory[pointer - MemoryField.PathRequestId]!
 		const path = game.pathFinder.getComputedPath(requestId)
 
 		switch (status) {
@@ -29,27 +37,29 @@ const activityWalkingByPathRoot = {
 				if (path === undefined) return
 				if (!path.found || path.directions.length === 0) break
 
-				memory[pointer - 3] = Status.GotPath
-				memory[pointer - 1] = 1
-				activityWalking.startWalking(game, unit, path.directions[0]!)
+				memory[pointer - MemoryField.Status] = Status.GotPath
+				memory[pointer - MemoryField.NextPathDirectionIndex] = 1
+				activityWalking.tryToContinueWalking(game, unit, path.directions[0]!)
 				return
 
 			case Status.GotPath:
 				if (unit.interrupt[0]! as InterruptType === InterruptType.None) {
-					if (path === undefined) {
-						// Path was forgotten
-						const dx = memory[pointer - 4]!
-						const dy = memory[pointer - 5]!
-						unit.rotation &= ~Direction.FlagMergeWithPrevious
-						unit.activityMemoryPointer -= MEMORY_USED_SIZE
-						activityWalkingByPathRoot.setup(game, unit, dx, dy)
-						return
+					if (path !== undefined) {
+						const directionIndex = memory[pointer - MemoryField.NextPathDirectionIndex]++
+						if (directionIndex < path.directions.length) {
+							const canWalkSuccessfully = activityWalking.tryToContinueWalking(game, unit, path.directions[directionIndex]!)
+							if (canWalkSuccessfully)
+								return
+						}
 					}
-					const directionIndex = memory[pointer - 1]++
-					if (directionIndex < path.directions.length) {
-						activityWalking.continueWalking(game, unit, path.directions[directionIndex]!)
-						return
-					}
+
+					// Path was forgotten or obstacle got in the way
+					const dx = memory[pointer - MemoryField.DestinationX]!
+					const dy = memory[pointer - MemoryField.DestinationZ]!
+					unit.rotation &= ~Direction.FlagMergeWithPrevious
+					unit.activityMemoryPointer -= MEMORY_USED_SIZE
+					activityWalkingByPathRoot.setup(game, unit, dx, dy)
+					return
 				}
 				break
 		}
@@ -65,10 +75,11 @@ const activityWalkingByPathRoot = {
 		const memory = unit.activityMemory
 		const pointer = unit.activityMemoryPointer + MEMORY_USED_SIZE
 		unit.activityMemoryPointer = pointer
-		memory[pointer - 2] = game.pathFinder.requestPath(unit.posX, unit.posZ, x, z)
-		memory[pointer - 3] = Status.WaitingForPath
-		memory[pointer - 4] = x
-		memory[pointer - 5] = z
+
+		memory[pointer - MemoryField.PathRequestId] = game.pathFinder.requestPath(unit.posX, unit.posZ, x, z)
+		memory[pointer - MemoryField.Status] = Status.WaitingForPath
+		memory[pointer - MemoryField.DestinationX] = x
+		memory[pointer - MemoryField.DestinationZ] = z
 	},
 }
 

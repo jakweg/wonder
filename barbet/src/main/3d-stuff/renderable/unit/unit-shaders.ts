@@ -202,7 +202,7 @@ if (isAnimatableElement && !isTopVertex) {
 	else if (isRightArmVertex || isLeftLegVertex)
 		pos.x += additionalZOffset;
 }
-worldPosition += rotationVectors[unitRotationAsInt] * activityDuration / walkingDurations[unitRotationAsInt];
+worldPosition += rotationVectors[unitRotationAsInt] * (activityDuration / walkingDurations[unitRotationAsInt]) - rotationVectors[unitRotationAsInt];
 `
 
 const walkingHoldingItem = `
@@ -216,7 +216,7 @@ if (isAnimatableElement && !isTopVertex) {
 if (isLeftArmVertex || isRightArmVertex) {
 	pos.x += sin(5.0 / PI / 1.0) * (pos.y + (isBottomVertex ? 1.9 : (isMiddleVertex ? 0.85 : 0.4))) * 0.9 - cos(10.0 / PI / 1.0) * -0.5;
 }
-worldPosition += rotationVectors[unitRotationAsInt] * activityDuration / walkingDurations[unitRotationAsInt];
+worldPosition += rotationVectors[unitRotationAsInt] * (1.0 - activityDuration) / walkingDurations[unitRotationAsInt] - rotationVectors[unitRotationAsInt];;
 `
 
 export const standardFragmentShaderSource = `${VersionHeader()}

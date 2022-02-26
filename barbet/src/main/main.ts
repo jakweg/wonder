@@ -42,7 +42,7 @@ world.setBlock(6, 3, 13, BlockId.Stone)
 world.recalculateHeightIndex()
 
 const terrain = createNewTerrainRenderable(renderer, world)
-const state = GameState.createNew(PathFinder.createNewQueue(world))
+const state = GameState.createNew(world, PathFinder.createNewQueue(world))
 const updater = StateUpdater.createNew(state, 20)
 updater.start()
 state.spawnUnit(8, 6, UnitColorPaletteId.LightOrange)

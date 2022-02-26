@@ -15,32 +15,42 @@ export const walkingDurationByDirection: number[] = [
 ]
 Object.freeze(walkingDurationByDirection)
 
+const enum MemoryField {
+	WalkingFinishTick,
+	WalkingDirection,
+}
+
+const MEMORY_USED_SIZE = 2
+
 const activityWalking = {
 	numericId: ActivityId.Walking,
 	shaderId: ShaderId.Walking,
 	perform(game: GameState, unit: Unit) {
 		const now = game.currentTick
-		if (now === unit.activityMemory[unit.activityMemoryPointer - 2]!) {
-			const direction = unit.activityMemory[unit.activityMemoryPointer - 1]!
-			unit.posX += getChangeInXByRotation(direction)
-			unit.posZ += getChangeInZByRotation(direction)
-
-			unit.activityMemoryPointer -= 2
+		if (now === unit.activityMemory[unit.activityMemoryPointer - MemoryField.WalkingFinishTick]!) {
+			unit.activityMemoryPointer -= MEMORY_USED_SIZE
 			unit.activityId = ActivityId.WalkingByPathRoot
 			activityWalkingByPathRoot.perform(game, unit)
 		}
 	},
-	startWalking(game: GameState, unit: Unit, direction: Direction) {
-		unit.activityStartedAt = game.currentTick
-		this.continueWalking(game, unit, direction)
-	},
-	continueWalking(game: GameState, unit: Unit, direction: Direction) {
+	tryToContinueWalking(game: GameState, unit: Unit, direction: Direction): boolean {
+		const dx = unit.posX + getChangeInXByRotation(direction)
+		const dz = unit.posZ + getChangeInZByRotation(direction)
+		if (unit.posY !== game.world.getHighestBlockHeight(dx, dz) + 1)
+			return false
+
+		unit.posX = dx
+		unit.posZ = dz
+
+		const now = game.currentTick
 		unit.activityId = ActivityId.Walking
-		unit.activityStartedAt = game.currentTick
+		unit.activityStartedAt = now
 		unit.rotation = Direction.FlagMergeWithPrevious | ((unit.rotation & Direction.MaskCurrentRotation) << 3) | direction
-		unit.activityMemoryPointer += 2
-		unit.activityMemory[unit.activityMemoryPointer - 1] = direction
-		unit.activityMemory[unit.activityMemoryPointer - 2] = game.currentTick + walkingDurationByDirection[direction]!
+		unit.activityMemoryPointer += MEMORY_USED_SIZE
+		const memory = unit.activityMemory
+		memory[unit.activityMemoryPointer - MemoryField.WalkingDirection] = direction
+		memory[unit.activityMemoryPointer - MemoryField.WalkingFinishTick] = now + walkingDurationByDirection[direction]!
+		return true
 	},
 }
 
