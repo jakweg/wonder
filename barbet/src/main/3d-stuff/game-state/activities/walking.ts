@@ -15,13 +15,6 @@ export const walkingDurationByDirection: number[] = [
 ]
 Object.freeze(walkingDurationByDirection)
 
-const enum MemoryField {
-	WalkingFinishTick,
-	WalkingDirection,
-}
-
-const MEMORY_USED_SIZE = 2
-
 export const walkingVertexTransformationsSource = (options: UnitShaderCreationOptions) => `
 if (isAnimatableElement && !isTopVertex) {
 	float additionalZOffset = sin(u_time * 20.0 / PI) * (isBottomVertex ? -0.2 : -0.1);
@@ -37,6 +30,13 @@ if (isLeftArmVertex || isRightArmVertex) {
 ` : ''}
 worldPosition += rotationVectors[unitRotationAsInt] * (activityDuration / walkingDurations[unitRotationAsInt]) - rotationVectors[unitRotationAsInt];
 `
+
+const enum MemoryField {
+	WalkingFinishTick,
+	WalkingDirection,
+}
+
+const MEMORY_USED_SIZE = 2
 
 const activityWalking = {
 	numericId: ActivityId.Walking,

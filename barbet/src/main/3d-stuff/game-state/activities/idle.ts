@@ -2,7 +2,8 @@ import { ActivityId } from '../../renderable/unit/activity'
 import { ShaderId, UnitShaderCreationOptions } from '../../renderable/unit/unit-shaders'
 import { GameState, Unit } from '../game-state'
 import { InterruptType } from './interrupt'
-import pathFinderAwaiting from './walking-by-path-root'
+import activityItemPickupRoot from './item-pickup-root'
+import activityWalkingRoot from './walking-by-path-root'
 
 const activityIdle = {
 	numericId: ActivityId.Idle,
@@ -12,10 +13,21 @@ const activityIdle = {
 		if (interrupt === InterruptType.None) return
 		unit.interrupt[0] = InterruptType.None
 
-		if (interrupt === InterruptType.WalkRequest) {
-			const x = unit.interrupt[1]!
-			const y = unit.interrupt[2]!
-			pathFinderAwaiting.setup(game, unit, x, y)
+		switch (interrupt) {
+			case InterruptType.Walk: {
+				const x = unit.interrupt[1]!
+				const y = unit.interrupt[2]!
+				activityWalkingRoot.setup(game, unit, ActivityId.Idle, x, y)
+				break
+			}
+			case InterruptType.ItemPickUp: {
+				const x = unit.interrupt[1]!
+				const y = unit.interrupt[2]!
+				activityItemPickupRoot.setup(game, unit, ActivityId.Idle, x, y)
+				break
+			}
+			default:
+				throw new Error(`Invalid interrupt ${interrupt}`)
 		}
 	},
 	setup(game: GameState, unit: Unit) {
@@ -26,7 +38,6 @@ const activityIdle = {
 }
 export default activityIdle
 
-export const foo = 'dupa'
 export const idleVertexTransformationsSource = (options: UnitShaderCreationOptions) => {
 	const tmp: string[] = []
 	if (options.holdingItem) {

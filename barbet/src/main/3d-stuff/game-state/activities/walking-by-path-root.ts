@@ -2,7 +2,6 @@ import { Direction } from '../../../util/direction'
 import { ActivityId } from '../../renderable/unit/activity'
 import { ShaderId } from '../../renderable/unit/unit-shaders'
 import { GameState, Unit } from '../game-state'
-import activityIdle from './idle'
 import { InterruptType } from './interrupt'
 import activityWalking from './walking'
 
@@ -12,6 +11,7 @@ const enum Status {
 }
 
 const enum MemoryField {
+	ReturnToActivity,
 	NextPathDirectionIndex,
 	PathRequestId,
 	Status,
@@ -19,7 +19,7 @@ const enum MemoryField {
 	DestinationZ,
 }
 
-const MEMORY_USED_SIZE = 5
+const MEMORY_USED_SIZE = 6
 
 const activityWalkingByPathRoot = {
 	numericId: ActivityId.WalkingByPathRoot,
@@ -54,28 +54,31 @@ const activityWalkingByPathRoot = {
 					}
 
 					// Path was forgotten or obstacle got in the way
+					const returnTo = memory[pointer - MemoryField.ReturnToActivity]!
 					const dx = memory[pointer - MemoryField.DestinationX]!
 					const dy = memory[pointer - MemoryField.DestinationZ]!
 					unit.rotation &= ~Direction.FlagMergeWithPrevious
 					unit.activityMemoryPointer -= MEMORY_USED_SIZE
-					activityWalkingByPathRoot.setup(game, unit, dx, dy)
+					activityWalkingByPathRoot.setup(game, unit, returnTo, dx, dy)
 					return
 				}
 				break
 		}
 
 		// finished path
+		const returnToActivity: ActivityId = memory[pointer - MemoryField.ReturnToActivity]!
 		unit.rotation &= ~Direction.FlagMergeWithPrevious
 		unit.activityMemoryPointer -= MEMORY_USED_SIZE
-		activityIdle.setup(game, unit)
+		unit.activityId = returnToActivity
 	},
-	setup(game: GameState, unit: Unit, x: number, z: number) {
+	setup(game: GameState, unit: Unit, returnTo: ActivityId, x: number, z: number) {
 		unit.activityStartedAt = game.currentTick
 		unit.activityId = ActivityId.WalkingByPathRoot
-		const memory = unit.activityMemory
-		const pointer = unit.activityMemoryPointer + MEMORY_USED_SIZE
-		unit.activityMemoryPointer = pointer
 
+		const memory = unit.activityMemory
+		const pointer = unit.activityMemoryPointer = unit.activityMemoryPointer + MEMORY_USED_SIZE
+
+		memory[pointer - MemoryField.ReturnToActivity] = returnTo
 		memory[pointer - MemoryField.PathRequestId] = game.pathFinder.requestPath(unit.posX, unit.posZ, x, z)
 		memory[pointer - MemoryField.Status] = Status.WaitingForPath
 		memory[pointer - MemoryField.DestinationX] = x

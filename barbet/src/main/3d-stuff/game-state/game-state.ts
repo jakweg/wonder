@@ -9,7 +9,7 @@ export interface HeldItem {
 	type: number
 }
 
-export const ACTIVITY_MEMORY_SIZE = 10
+export const ACTIVITY_MEMORY_SIZE = 20
 
 export interface Unit {
 	numericId: number
