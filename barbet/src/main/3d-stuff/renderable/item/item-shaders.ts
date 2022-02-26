@@ -1,9 +1,11 @@
+import { Direction } from '../../../util/direction'
 import {
 	PIConstantHeader,
 	PrecisionHeader,
 	RotationMatrix,
 	RotationVectorsDeclaration,
 	VersionHeader,
+	WalkingDurationsByRotation,
 } from '../../shader/common'
 
 export const enum UnitData {
@@ -42,6 +44,7 @@ export const inHandVertexShader = `${VersionHeader()}
 ${PrecisionHeader()}
 ${PIConstantHeader()}
 ${RotationVectorsDeclaration()}
+${WalkingDurationsByRotation()}
 in vec3 a_modelPosition;
 in float a_flags;
 flat out vec3 v_color;
@@ -59,17 +62,25 @@ void main() {
 	int flagsAsInt = int(a_flags);
 	v_normal = vec3(ivec3(((flagsAsInt >> 4) & 3) - 1, ((flagsAsInt >> 2) & 3) - 1, (flagsAsInt & 3) - 1));
 	bool moving = (u_unitData & ${UnitData.MaskMoving}) == ${UnitData.Moving};
-	int rotationIndex = u_unitData & ${UnitData.MaskRotation};
-    float a = float(rotationIndex) * PI / 4.0;
+	int tmpIRotation = int(u_unitData & ${UnitData.MaskRotation});
+	int unitRotationAsInt = tmpIRotation & ${Direction.MaskCurrentRotation};
+	bool mergeRotations = ((tmpIRotation & ${Direction.MaskMergePrevious}) == ${Direction.FlagMergeWithPrevious});
+	int unitPreviousRotation = (mergeRotations ? ((tmpIRotation & ${Direction.MaskPreviousRotation}) >> 3) : (unitRotationAsInt));
+
+	float activityDuration = u_gameTick - u_activityStartTick;
+    
+	float rotationProgress = activityDuration / 5.0;
+	float a = (rotationProgress > 1.0 || !mergeRotations) ? float(unitRotationAsInt) : mix(float(unitPreviousRotation + 8 * ((unitRotationAsInt - unitPreviousRotation) / 4)), float(unitRotationAsInt), rotationProgress);
+	
+    a *= PI / 4.0;
     mat4 rotation = ${RotationMatrix('a')};
 	
 	v_color = vec3(1,0,0);
 	vec3 pos = a_modelPosition;
 	pos *= vec3(0.6);
-	float activityDuration = u_gameTick - u_activityStartTick;
 	
 	pos = (rotation * vec4(vec3(0.6, 0.75, 0.0) + pos, 1.0)).xyz + vec3(0.5, 0, 0.5);
-	pos += u_unitPosition + (moving ? (rotationVectors[rotationIndex] * activityDuration / 15.0) : vec3(0,0,0));
+	pos += u_unitPosition + (moving ? (rotationVectors[unitRotationAsInt] * (activityDuration / walkingDurations[unitRotationAsInt]) - rotationVectors[unitRotationAsInt]) : vec3(0,0,0));
     v_currentPosition = pos;
     gl_Position = u_projection * u_view * vec4(pos, 1);
     gl_PointSize = 10.0;

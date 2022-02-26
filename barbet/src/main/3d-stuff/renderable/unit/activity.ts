@@ -10,9 +10,6 @@ export enum ActivityId {
 	Idle,
 	WalkingByPathRoot,
 	Walking,
-	ItemPickup,
-	IdleHoldingItem,
-	WalkingHoldingItem,
 }
 
 export interface ActivityType {
@@ -35,22 +32,6 @@ export const allActivities: ActivityType[] = [
 	activityIdle,
 	activityWalkingByPathRoot,
 	activityWalking,
-	// {
-	// 	numericId: ActivityId.ItemPickup,
-	// 	shaderId: ShaderId.PickUpItem,
-	// 	perform(game: GameState, unit: Unit) {
-	// 	},
-	// }, {
-	// 	numericId: ActivityId.IdleHoldingItem,
-	// 	shaderId: ShaderId.IdleHoldingItem,
-	// 	perform(game: GameState, unit: Unit) {
-	// 	},
-	// }, {
-	// 	numericId: ActivityId.WalkingHoldingItem,
-	// 	shaderId: ShaderId.WalkingHoldingItem,
-	// 	perform(game: GameState, unit: Unit) {
-	// 	},
-	// },
 ]
 
 freezeAndValidateOptionsList(allActivities)

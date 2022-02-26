@@ -66,7 +66,7 @@ export const createNewItemRenderable = (renderer: MainRenderer,
 			itemInHandProgram.use()
 			for (const unit of game.allUnits) {
 				const item = unit.heldItem
-				if (item === null) return
+				if (item === null) continue
 
 				gl.uniform3f(itemInHandProgram.uniforms.unitPosition, unit.posX, unit.posY, unit.posZ)
 				gl.uniformMatrix4fv(itemInHandProgram.uniforms.projection, false, toGl(camera.perspectiveMatrix))
@@ -75,7 +75,7 @@ export const createNewItemRenderable = (renderer: MainRenderer,
 				gl.uniform1f(itemInHandProgram.uniforms.activityStartTick, unit.activityStartedAt)
 
 				let unitData: UnitData = UnitData.Default
-				if (unit.activityId === ActivityId.WalkingHoldingItem)
+				if (unit.activityId === ActivityId.Walking)
 					unitData = (unitData & ~UnitData.MaskMoving) | UnitData.Moving
 				unitData = (unitData & ~UnitData.MaskRotation) | unit.rotation
 

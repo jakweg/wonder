@@ -27,58 +27,40 @@ function createBuffersForModelMesh(renderer: MainRenderer) {
 	return {trianglesToRender, modelBuffer, modelElementsBuffer}
 }
 
-function prepareStandardPrograms(renderer: MainRenderer, modelBuffer: GPUBuffer, modelElementsBuffer: GPUBuffer, unitDataBuffer: GPUBuffer) {
+function preparePrograms(renderer: MainRenderer, modelBuffer: GPUBuffer, modelElementsBuffer: GPUBuffer, unitDataBuffer: GPUBuffer) {
 	const vao = renderer.createVAO()
 	vao.bind()
 	modelElementsBuffer.bind()
 
-	const fragmentShader = renderer.createShader(false, standardFragmentShaderSource)
+	const standardFragmentShader = renderer.createShader(false, standardFragmentShaderSource)
+	const mouseFragmentShader = renderer.createShader(false, pickViaMouseDefaultFragmentShader)
 	const programs: GlProgram<Attributes, Uniforms>[] = []
-	for (const transformSource of shaderTransformationSources) {
-		const source = constructUnitVertexShaderSource(transformSource, false)
-		const vertexShader = renderer.createShader(true, source)
-		const program = renderer.createProgram<Attributes, Uniforms>(vertexShader, fragmentShader)
+	const variants = [
+		{forMousePicker: false, holdingItem: false}, {forMousePicker: false, holdingItem: true},
+		{forMousePicker: true, holdingItem: true}, {forMousePicker: true, holdingItem: true},
+	]
 
-		modelBuffer.bind()
-		program.enableAttribute(program.attributes.modelPosition, 3, true, 7 * 4, 0, 0)
-		program.enableAttribute(program.attributes.flags, 1, true, 7 * 4, 6 * 4, 0)
+	for (const transformSource of shaderTransformationSources()) {
+		for (const options of variants) {
+			const source = constructUnitVertexShaderSource(transformSource(options), options)
+			const vertexShader = renderer.createShader(true, source)
+			const program = renderer.createProgram<Attributes, Uniforms>(vertexShader,
+				options.forMousePicker ? mouseFragmentShader : standardFragmentShader)
 
-
-		unitDataBuffer.bind()
-		program.enableAttribute(program.attributes.worldPosition, 3, true, 6 * 4, 0, 1)
-		program.enableAttribute(program.attributes.colorPaletteId, 1, true, 6 * 4, 3 * 4, 1)
-		program.enableAttribute(program.attributes.activityStartTick, 1, true, 6 * 4, 4 * 4, 1)
-		program.enableAttribute(program.attributes.unitRotation, 1, true, 6 * 4, 5 * 4, 1)
-
-		programs.push(program)
-	}
-	return {programs, vao}
-}
-
-function prepareMousePickerPrograms(renderer: MainRenderer, modelBuffer: GPUBuffer, modelElementsBuffer: GPUBuffer, unitDataBuffer: GPUBuffer) {
-	const vao = renderer.createVAO()
-	vao.bind()
-	modelElementsBuffer.bind()
-
-	const fragmentShader = renderer.createShader(false, pickViaMouseDefaultFragmentShader)
-	const programs: GlProgram<Attributes, Uniforms>[] = []
-	for (const transformSource of shaderTransformationSources) {
-		const source = constructUnitVertexShaderSource(transformSource, true)
-		const vertexShader = renderer.createShader(true, source)
-		const program = renderer.createProgram<Attributes, Uniforms>(vertexShader, fragmentShader)
-
-		modelBuffer.bind()
-		program.enableAttribute(program.attributes.modelPosition, 3, true, 7 * 4, 0, 0)
-		program.enableAttribute(program.attributes.flags, 1, true, 7 * 4, 6 * 4, 0)
+			modelBuffer.bind()
+			program.enableAttribute(program.attributes.modelPosition, 3, true, 7 * 4, 0, 0)
+			program.enableAttribute(program.attributes.flags, 1, true, 7 * 4, 6 * 4, 0)
 
 
-		unitDataBuffer.bind()
-		program.enableAttribute(program.attributes.worldPosition, 3, true, 6 * 4, 0, 1)
-		program.enableAttribute(program.attributes.unitId, 1, true, 6 * 4, 3 * 4, 1)
-		program.enableAttribute(program.attributes.activityStartTick, 1, true, 6 * 4, 4 * 4, 1)
-		program.enableAttribute(program.attributes.unitRotation, 1, true, 6 * 4, 5 * 4, 1)
+			unitDataBuffer.bind()
+			program.enableAttribute(program.attributes.worldPosition, 3, true, 6 * 4, 0, 1)
+			program.enableAttribute(program.attributes.unitId, 1, true, 6 * 4, 3 * 4, 1)
+			program.enableAttribute(program.attributes.colorPaletteId, 1, true, 6 * 4, 3 * 4, 1)
+			program.enableAttribute(program.attributes.activityStartTick, 1, true, 6 * 4, 4 * 4, 1)
+			program.enableAttribute(program.attributes.unitRotation, 1, true, 6 * 4, 5 * 4, 1)
 
-		programs.push(program)
+			programs.push(program)
+		}
 	}
 	return {programs, vao}
 }
@@ -89,20 +71,17 @@ export const createNewUnitRenderable = (renderer: MainRenderer,
 
 	const unitDataBuffer = renderer.createBuffer(true, false)
 
-	const standard = prepareStandardPrograms(renderer, modelBuffer, modelElementsBuffer, unitDataBuffer)
-
-	const mouse = prepareMousePickerPrograms(renderer, modelBuffer, modelElementsBuffer, unitDataBuffer)
+	const {programs, vao} = preparePrograms(renderer, modelBuffer, modelElementsBuffer, unitDataBuffer)
 
 	return {
 		render(ctx: RenderContext) {
 			const {gl, camera, gameTickEstimation} = ctx
-			const {programs, vao} = standard
 			vao.bind()
 			modelBuffer.bind()
 
 			for (const unit of game.allUnits) {
 				const activity = requireActivity(unit.activityId)
-				const program = programs[activity.shaderId]
+				const program = programs[activity.shaderId * 4 + (unit.heldItem ? 1 : 0)]
 				if (program == null)
 					throw new Error(`Invalid unit program id ${activity.shaderId}`)
 
@@ -125,13 +104,12 @@ export const createNewUnitRenderable = (renderer: MainRenderer,
 
 		renderForMousePicker(ctx: RenderContext) {
 			const {gl, gameTickEstimation, camera: {combinedMatrix}} = ctx
-			const {programs, vao} = mouse
 			vao.bind()
 			modelBuffer.bind()
 
 			for (const unit of game.allUnits) {
 				const activity = requireActivity(unit.activityId)
-				const program = programs[activity.shaderId]
+				const program = programs[activity.shaderId * 4 + (unit.heldItem ? 1 : 0) + 2]
 				if (program == null)
 					throw new Error(`Invalid unit program id ${activity.shaderId}`)
 
@@ -145,7 +123,6 @@ export const createNewUnitRenderable = (renderer: MainRenderer,
 				gl.uniformMatrix4fv(program.uniforms.combinedMatrix, false, toGl(combinedMatrix))
 				gl.uniform1f(program.uniforms.gameTick, gameTickEstimation)
 				gl.uniform1f(program.uniforms.time, ctx.secondsSinceFirstRender)
-				gl.uniform3fv(program.uniforms.lightPosition, toGl(add(clone(ctx.sunPosition), ctx.sunPosition, fromValues(0, -10, -400))))
 
 				gl.drawElementsInstanced(gl.TRIANGLES, trianglesToRender, gl.UNSIGNED_SHORT, 0, 1)
 			}

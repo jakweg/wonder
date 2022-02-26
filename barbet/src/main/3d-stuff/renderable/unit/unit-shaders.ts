@@ -1,4 +1,6 @@
 import { Direction } from '../../../util/direction'
+import { idleVertexTransformationsSource } from '../../game-state/activities/idle'
+import { walkingVertexTransformationsSource } from '../../game-state/activities/walking'
 import { MousePickableType } from '../../mouse-picker'
 import {
 	PIConstantHeader,
@@ -32,7 +34,7 @@ export const FLAG_PART_LEFT_LEG = MASK_PART_ANY_LEG | FLAG_PART_LEFT
 export const FLAG_PART_RIGHT_LEG = MASK_PART_ANY_LEG | FLAG_PART_RIGHT
 
 export const constructUnitVertexShaderSource = (transformations: string,
-                                                forMousePicker: boolean): string => {
+                                                {forMousePicker}: UnitShaderCreationOptions): string => {
 	const parts: string[] = [VersionHeader(),
 		PrecisionHeader(),
 		PIConstantHeader(),
@@ -152,72 +154,6 @@ void main() {
 	return parts.join('\n')
 }
 
-const pickUpItem = `
-	float usedSin = sin(activityDuration / PI / 1.0);
-	if (isMainBodyVertex && isTopVertex) {
-		pos.x += usedSin * (pos.y + 0.05) * 0.8;
-		pos.y -= usedSin * pos.x * 0.2;
-	}
-	if (isFaceVertex) {
-		pos.x += usedSin * (pos.y + 1.1) * 0.35;
-		pos.y -= usedSin * pos.y * 0.45;
-	}
-	if (isMainBodyVertex && isMiddleVertex) {
-		pos.x += usedSin * (pos.y + 0.01) * 1.6;
-		pos.y -= usedSin * pos.x * 0.2;
-	}
-	if (isLeftArmVertex || isRightArmVertex) {
-		bool isPhaseOne = activityDuration < 5.0; 
-		if (isPhaseOne)
-			pos.x += usedSin * (pos.y + (isBottomVertex ? 1.9 : (isMiddleVertex ? 0.85 : 0.4))) * 0.9;
-		else
-			pos.x += sin(5.0 / PI / 1.0) * (pos.y + (isBottomVertex ? 1.9 : (isMiddleVertex ? 0.85 : 0.4))) * 0.9 - cos(activityDuration / PI / 1.0) * -0.5;
-		pos.y -= usedSin * 0.4;
-	}
-`
-
-const idle = `
-if (isAnimatableElement && !isTopVertex) {
-	float additionalZOffset = computedSin2 * (isBottomVertex ? -0.18 : -0.06);
-	if (isLeftArmVertex)
-		pos.x -= additionalZOffset;
-	else if (isRightArmVertex)
-		pos.x += additionalZOffset;
-}
-pos.y += computedSin1 * 0.02;
-`
-
-const idleHoldingItem = `
-if (isLeftArmVertex || isRightArmVertex) {
-	pos.x += sin(5.0 / PI / 1.0) * (pos.y + (isBottomVertex ? 1.9 : (isMiddleVertex ? 0.85 : 0.4))) * 0.9 - cos(10.0 / PI / 1.0) * -0.5;
-}
-pos.y += computedSin1 * 0.02;
-`
-
-const walking = `
-if (isAnimatableElement && !isTopVertex) {
-	float additionalZOffset = sin(u_time * 20.0 / PI) * (isBottomVertex ? -0.2 : -0.1);
-	if (isLeftArmVertex || isRightLegVertex)
-		pos.x -= additionalZOffset;
-	else if (isRightArmVertex || isLeftLegVertex)
-		pos.x += additionalZOffset;
-}
-worldPosition += rotationVectors[unitRotationAsInt] * (activityDuration / walkingDurations[unitRotationAsInt]) - rotationVectors[unitRotationAsInt];
-`
-
-const walkingHoldingItem = `
-if (isAnimatableElement && !isTopVertex) {
-	float additionalZOffset = sin(u_time * 20.0 / PI) * (isBottomVertex ? -0.2 : -0.1);
-	if (isRightLegVertex)
-		pos.x -= additionalZOffset;
-	else if (isLeftLegVertex)
-		pos.x += additionalZOffset;
-}
-if (isLeftArmVertex || isRightArmVertex) {
-	pos.x += sin(5.0 / PI / 1.0) * (pos.y + (isBottomVertex ? 1.9 : (isMiddleVertex ? 0.85 : 0.4))) * 0.9 - cos(10.0 / PI / 1.0) * -0.5;
-}
-worldPosition += rotationVectors[unitRotationAsInt] * (1.0 - activityDuration) / walkingDurations[unitRotationAsInt] - rotationVectors[unitRotationAsInt];;
-`
 
 export const standardFragmentShaderSource = `${VersionHeader()}
 ${PrecisionHeader()}
@@ -252,18 +188,15 @@ export const enum ShaderId {
 	Stationary,
 	Idle,
 	Walking,
-	PickUpItem,
-	IdleHoldingItem,
-	WalkingHoldingItem,
 }
 
-const sources = [
-	``,
-	idle,
-	walking,
-	pickUpItem,
-	idleHoldingItem,
-	walkingHoldingItem,
-]
+export interface UnitShaderCreationOptions {
+	readonly forMousePicker: boolean
+	readonly holdingItem: boolean
+}
 
-export const shaderTransformationSources = Object.freeze(sources)
+export const shaderTransformationSources = (): readonly ((options: UnitShaderCreationOptions) => string)[] => [
+	() => ``,
+	idleVertexTransformationsSource,
+	walkingVertexTransformationsSource,
+]

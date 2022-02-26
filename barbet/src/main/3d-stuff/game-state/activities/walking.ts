@@ -1,6 +1,6 @@
 import { Direction } from '../../../util/direction'
 import { ActivityId } from '../../renderable/unit/activity'
-import { ShaderId } from '../../renderable/unit/unit-shaders'
+import { ShaderId, UnitShaderCreationOptions } from '../../renderable/unit/unit-shaders'
 import { getChangeInXByRotation, getChangeInZByRotation } from '../../shader/common'
 import { GameState, Unit } from '../game-state'
 import activityWalkingByPathRoot from './walking-by-path-root'
@@ -21,6 +21,22 @@ const enum MemoryField {
 }
 
 const MEMORY_USED_SIZE = 2
+
+export const walkingVertexTransformationsSource = (options: UnitShaderCreationOptions) => `
+if (isAnimatableElement && !isTopVertex) {
+	float additionalZOffset = sin(u_time * 20.0 / PI) * (isBottomVertex ? -0.2 : -0.1);
+	if (isRightLegVertex ${options.holdingItem ? '' : ` || isLeftArmVertex`})
+		pos.x -= additionalZOffset;
+	else if (isLeftLegVertex ${options.holdingItem ? '' : ` || isRightArmVertex`})
+		pos.x += additionalZOffset;
+}
+${options.holdingItem ? `
+if (isLeftArmVertex || isRightArmVertex) {
+	pos.x += sin(5.0 / PI / 1.0) * (pos.y + (isBottomVertex ? 1.9 : (isMiddleVertex ? 0.85 : 0.4))) * 0.9 - cos(10.0 / PI / 1.0) * -0.5;
+}
+` : ''}
+worldPosition += rotationVectors[unitRotationAsInt] * (activityDuration / walkingDurations[unitRotationAsInt]) - rotationVectors[unitRotationAsInt];
+`
 
 const activityWalking = {
 	numericId: ActivityId.Walking,

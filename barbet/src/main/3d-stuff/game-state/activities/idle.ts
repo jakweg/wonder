@@ -1,5 +1,5 @@
 import { ActivityId } from '../../renderable/unit/activity'
-import { ShaderId } from '../../renderable/unit/unit-shaders'
+import { ShaderId, UnitShaderCreationOptions } from '../../renderable/unit/unit-shaders'
 import { GameState, Unit } from '../game-state'
 import { InterruptType } from './interrupt'
 import pathFinderAwaiting from './walking-by-path-root'
@@ -25,3 +25,30 @@ const activityIdle = {
 	},
 }
 export default activityIdle
+
+export const foo = 'dupa'
+export const idleVertexTransformationsSource = (options: UnitShaderCreationOptions) => {
+	const tmp: string[] = []
+	if (options.holdingItem) {
+		tmp.push(`
+if (isLeftArmVertex || isRightArmVertex) {
+	pos.x += sin(5.0 / PI / 1.0) * (pos.y + (isBottomVertex ? 1.9 : (isMiddleVertex ? 0.85 : 0.4))) * 0.9 - cos(10.0 / PI / 1.0) * -0.5;
+}
+`)
+	} else {
+		tmp.push(`
+if (isAnimatableElement && !isTopVertex) {
+	float additionalZOffset = computedSin2 * (isBottomVertex ? -0.18 : -0.06);
+	if (isLeftArmVertex)
+		pos.x -= additionalZOffset;
+	else if (isRightArmVertex)
+		pos.x += additionalZOffset;
+}
+`)
+	}
+
+	tmp.push(`
+pos.y += computedSin1 * 0.02;
+`)
+	return tmp.join('\n')
+}

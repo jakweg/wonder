@@ -129,6 +129,7 @@ const mouseEventListener = (event: MouseEvent) => {
 				unit.color = UnitColorPaletteId.GreenOrange
 			else
 				unit.color = UnitColorPaletteId.DarkBlue
+			unit.heldItem = event.button === 0 ? null : {type: 0}
 		}
 	}
 }
