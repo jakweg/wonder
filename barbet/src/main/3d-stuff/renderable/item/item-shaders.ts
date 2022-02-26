@@ -7,10 +7,10 @@ import {
 } from '../../shader/common'
 
 export const enum UnitData {
-	MaskRotation = 0b111 << 0,
-	MaskMoving = 0b1 << 3,
-	Moving = 1 << 3,
-	Default = 0b0_000,
+	MaskRotation = 0b1111111 << 0,
+	MaskMoving = 0b1 << 7,
+	Moving = 1 << 7,
+	Default = 0,
 }
 
 export const onGroundVertexShader = `${VersionHeader()}

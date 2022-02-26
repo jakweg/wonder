@@ -1,3 +1,4 @@
+import { Direction } from '../../../util/direction'
 import { MousePickableType } from '../../mouse-picker'
 import {
 	PIConstantHeader,
@@ -80,7 +81,11 @@ void main() {
 	`)
 
 	parts.push(`
-	int unitRotationAsInt = int(a_unitRotation);
+	int tmpIRotation = int(a_unitRotation);
+	int unitRotationAsInt = tmpIRotation & ${Direction.MaskCurrentRotation};
+	bool mergeRotations = ((tmpIRotation & ${Direction.MaskMergePrevious}) == ${Direction.FlagMergeWithPrevious});
+	int unitPreviousRotation = (mergeRotations ? ((tmpIRotation & ${Direction.MaskPreviousRotation}) >> 3) : (unitRotationAsInt));
+	
 	vec3 pos = a_modelPosition;
 	bool isMainBodyVertex = (flagsAsInt & ${MASK_BODY_PART}) == ${FLAG_PART_MAIN_BODY};
 	bool isFaceVertex = (flagsAsInt & ${MASK_BODY_PART}) == ${FLAG_PART_FACE};
@@ -111,7 +116,10 @@ void main() {
 	`)
 
 	parts.push(`
-    float a = a_unitRotation * PI / 4.0;
+	float rotationProgress = activityDuration / 5.0;
+	float a = (rotationProgress > 1.0 || !mergeRotations) ? float(unitRotationAsInt) : mix(float(unitPreviousRotation + 8 * ((unitRotationAsInt - unitPreviousRotation) / 4)), float(unitRotationAsInt), rotationProgress);
+	
+    a *= PI / 4.0;
     mat4 rotation = ${RotationMatrix('a')};
     `)
 

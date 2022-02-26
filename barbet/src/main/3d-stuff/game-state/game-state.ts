@@ -1,3 +1,4 @@
+import { Direction } from '../../util/direction'
 import { ActivityId, requireActivity } from '../renderable/unit/activity'
 import { UnitColorPaletteId } from '../renderable/unit/unit-color'
 import activityIdle from './activities/idle'
@@ -15,7 +16,7 @@ export interface Unit {
 	posY: number
 	posZ: number
 	color: UnitColorPaletteId
-	rotation: number
+	rotation: Direction
 	activityId: ActivityId
 	activityStartedAt: number
 	activityMemory: Float32Array
@@ -53,7 +54,7 @@ export class GameState {
 		const unit: Unit = {
 			numericId: this.nextUnitId++,
 			posX: atX, posY: 2, posZ: atZ,
-			color: color, rotation: 0,
+			color: color, rotation: Direction.PositiveX,
 			activityId: defaultActivity.numericId,
 			activityStartedAt: this._currentTick,
 			activityMemory: new Float32Array(ACTIVITY_MEMORY_SIZE),

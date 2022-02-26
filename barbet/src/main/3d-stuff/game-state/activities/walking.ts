@@ -1,11 +1,11 @@
-import { Direction } from '../../../util/path-finder'
+import { Direction } from '../../../util/direction'
 import { ActivityId } from '../../renderable/unit/activity'
 import { ShaderId } from '../../renderable/unit/unit-shaders'
 import { getChangeInXByRotation, getChangeInZByRotation } from '../../shader/common'
 import { GameState, Unit } from '../game-state'
 import activityWalkingByPathRoot from './walking-by-path-root'
 
-const standardWalkingDuration = 5
+const standardWalkingDuration = 15
 const crossWalkingDuration = (standardWalkingDuration * Math.SQRT2) | 0
 export const walkingDurationByDirection: number[] = [
 	standardWalkingDuration, crossWalkingDuration,
@@ -37,7 +37,7 @@ const activityWalking = {
 	continueWalking(game: GameState, unit: Unit, direction: Direction) {
 		unit.activityId = ActivityId.Walking
 		unit.activityStartedAt = game.currentTick
-		unit.rotation = direction
+		unit.rotation = Direction.FlagMergeWithPrevious | ((unit.rotation & Direction.MaskCurrentRotation) << 3) | direction
 		unit.activityMemoryPointer += 2
 		unit.activityMemory[unit.activityMemoryPointer - 1] = direction
 		unit.activityMemory[unit.activityMemoryPointer - 2] = game.currentTick + walkingDurationByDirection[direction]!

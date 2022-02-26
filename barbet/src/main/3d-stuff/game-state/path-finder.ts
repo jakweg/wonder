@@ -1,4 +1,5 @@
-import { Direction, findPathDirectionsExact } from '../../util/path-finder'
+import { Direction } from '../../util/direction'
+import { findPathDirectionsExact } from '../../util/path-finder'
 import { World } from '../world/world'
 import { GameState } from './game-state'
 

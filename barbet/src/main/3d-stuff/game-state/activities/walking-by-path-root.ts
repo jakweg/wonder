@@ -1,3 +1,4 @@
+import { Direction } from '../../../util/direction'
 import { ActivityId } from '../../renderable/unit/activity'
 import { ShaderId } from '../../renderable/unit/unit-shaders'
 import { GameState, Unit } from '../game-state'
@@ -46,6 +47,7 @@ const activityWalkingByPathRoot = {
 		}
 
 		// finished path
+		unit.rotation &= ~Direction.FlagMergeWithPrevious
 		unit.activityMemoryPointer -= MEMORY_USED_SIZE
 		activityIdle.setup(game, unit)
 	},

@@ -1,3 +1,4 @@
+import { Direction } from './direction'
 import SortedList from './sorted-list'
 
 
@@ -14,17 +15,6 @@ export type WalkableTester = ((x: number, y: number) => boolean)
 export interface Position {
 	x: number
 	y: number
-}
-
-export const enum Direction {
-	PositiveX,
-	PositiveXNegativeZ,
-	NegativeZ,
-	NegativeXNegativeZ,
-	NegativeX,
-	NegativeXPositiveZ,
-	PositiveZ,
-	PositiveXPositiveZ,
 }
 
 interface Node extends Position {
