@@ -11,7 +11,7 @@ const enum Status {
 	GotPath
 }
 
-const MEMORY_USED_SIZE = 3
+const MEMORY_USED_SIZE = 5
 
 const activityWalkingByPathRoot = {
 	numericId: ActivityId.WalkingByPathRoot,
@@ -36,7 +36,15 @@ const activityWalkingByPathRoot = {
 
 			case Status.GotPath:
 				if (unit.interrupt[0]! as InterruptType === InterruptType.None) {
-					if (path === undefined) throw new Error('Path was forgotten :(')
+					if (path === undefined) {
+						// Path was forgotten
+						const dx = memory[pointer - 4]!
+						const dy = memory[pointer - 5]!
+						unit.rotation &= ~Direction.FlagMergeWithPrevious
+						unit.activityMemoryPointer -= MEMORY_USED_SIZE
+						activityWalkingByPathRoot.setup(game, unit, dx, dy)
+						return
+					}
 					const directionIndex = memory[pointer - 1]++
 					if (directionIndex < path.directions.length) {
 						activityWalking.continueWalking(game, unit, path.directions[directionIndex]!)
@@ -55,10 +63,12 @@ const activityWalkingByPathRoot = {
 		unit.activityStartedAt = game.currentTick
 		unit.activityId = ActivityId.WalkingByPathRoot
 		const memory = unit.activityMemory
-		const pointer = unit.activityMemoryPointer + 3
+		const pointer = unit.activityMemoryPointer + MEMORY_USED_SIZE
 		unit.activityMemoryPointer = pointer
 		memory[pointer - 2] = game.pathFinder.requestPath(unit.posX, unit.posZ, x, z)
 		memory[pointer - 3] = Status.WaitingForPath
+		memory[pointer - 4] = x
+		memory[pointer - 5] = z
 	},
 }
 
