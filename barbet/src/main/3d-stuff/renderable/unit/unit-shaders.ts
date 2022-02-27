@@ -58,8 +58,7 @@ flat out vec3 v_color1;
 in float a_unitId;
 `)
 	else parts.push(`
-uniform mat4 u_projection;
-uniform mat4 u_view;
+uniform mat4 u_combinedMatrix;
 in float a_colorPaletteId;
 flat out vec3 v_currentPosition;
 flat out int v_colorPaletteId;
@@ -104,7 +103,6 @@ void main() {
 
 	float computedSin1 = sin(u_time);
 	float computedSin2 = sin(u_time * 2.0);
-	float computedSin5 = sin(u_time * 5.0);
 		`)
 
 	parts.push(transformations)
@@ -136,10 +134,8 @@ void main() {
 	posRotated += vec4(0.5, 1.1, 0.5, 0.0) + vec4(worldPosition, 0.0);
     gl_PointSize = 10.0;
     `)
-	if (forMousePicker)
-		parts.push(`gl_Position = u_combinedMatrix * posRotated;`)
-	else
-		parts.push(`gl_Position = u_projection * u_view * posRotated;`)
+
+	parts.push(`gl_Position = u_combinedMatrix * posRotated;`)
 
 	if (forMousePicker) parts.push(`
 	uint intId = uint(a_unitId);
@@ -175,7 +171,7 @@ void main() {
 `
 
 
-export type Uniforms = 'time' | 'projection' | 'view' | 'lightPosition' | 'gameTick' | 'combinedMatrix'
+export type Uniforms = 'time' | 'combinedMatrix' | 'lightPosition' | 'gameTick'
 export type Attributes =
 	'modelPosition'
 	| 'worldPosition'

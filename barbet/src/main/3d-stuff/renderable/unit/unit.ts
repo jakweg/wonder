@@ -90,7 +90,7 @@ export const createNewUnitRenderable = (renderer: MainRenderer,
 
 	return {
 		render(ctx: RenderContext) {
-			const {gl, camera, gameTickEstimation} = ctx
+			const {gl, camera: {combinedMatrix}, gameTickEstimation} = ctx
 			vao.bind()
 			modelBuffer.bind()
 
@@ -107,8 +107,7 @@ export const createNewUnitRenderable = (renderer: MainRenderer,
 				unitDataBuffer.setContent(new Float32Array(unitData))
 
 
-				gl.uniformMatrix4fv(program.uniforms.projection, false, toGl(camera.perspectiveMatrix))
-				gl.uniformMatrix4fv(program.uniforms.view, false, toGl(camera.viewMatrix))
+				gl.uniformMatrix4fv(program.uniforms.combinedMatrix, false, toGl(combinedMatrix))
 				gl.uniform1f(program.uniforms.time, ctx.secondsSinceFirstRender)
 				gl.uniform1f(program.uniforms.gameTick, gameTickEstimation)
 				gl.uniform3fv(program.uniforms.lightPosition, toGl(add(clone(ctx.sunPosition), ctx.sunPosition, fromValues(0, -10, -400))))

@@ -55,8 +55,7 @@ export const createNewItemRenderable = (renderer: MainRenderer,
 			if (game.allUnits[0]?.heldItem === null) {
 				program.use()
 
-				gl.uniformMatrix4fv(program.uniforms.projection, false, toGl(camera.perspectiveMatrix))
-				gl.uniformMatrix4fv(program.uniforms.view, false, toGl(camera.viewMatrix))
+				gl.uniformMatrix4fv(program.uniforms.combinedMatrix, false, toGl(camera.combinedMatrix))
 				gl.uniform1f(program.uniforms.time, ctx.secondsSinceFirstRender)
 				gl.uniform3fv(program.uniforms.lightPosition, toGl(add(clone(ctx.sunPosition), ctx.sunPosition, fromValues(0, -400, 0))))
 
@@ -69,8 +68,7 @@ export const createNewItemRenderable = (renderer: MainRenderer,
 				if (item === null) continue
 
 				gl.uniform3f(itemInHandProgram.uniforms.unitPosition, unit.posX, unit.posY, unit.posZ)
-				gl.uniformMatrix4fv(itemInHandProgram.uniforms.projection, false, toGl(camera.perspectiveMatrix))
-				gl.uniformMatrix4fv(itemInHandProgram.uniforms.view, false, toGl(camera.viewMatrix))
+				gl.uniformMatrix4fv(itemInHandProgram.uniforms.combinedMatrix, false, toGl(camera.combinedMatrix))
 				gl.uniform1f(itemInHandProgram.uniforms.time, ctx.secondsSinceFirstRender)
 				gl.uniform1f(itemInHandProgram.uniforms.activityStartTick, unit.activityStartedAt)
 

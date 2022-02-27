@@ -23,8 +23,7 @@ in float a_flags;
 flat out vec3 v_color;
 flat out vec3 v_normal; 
 flat out vec3 v_currentPosition;
-uniform mat4 u_projection;
-uniform mat4 u_view;
+uniform mat4 u_combinedMatrix;
 uniform float u_time;
 void main() {
 	int flagsAsInt = int(a_flags);
@@ -35,7 +34,7 @@ void main() {
 	pos *= vec3(0.6);
 	pos += vec3(0.5, 0.5, 0.5) + a_worldPosition;	
     v_currentPosition = pos;
-    gl_Position = u_projection * u_view * vec4(pos, 1);
+    gl_Position = u_combinedMatrix * vec4(pos, 1);
     gl_PointSize = 10.0;
 }
 `
@@ -53,8 +52,7 @@ flat out vec3 v_currentPosition;
 uniform vec3 u_unitPosition;
 uniform float u_activityStartTick;
 uniform int u_unitData;
-uniform mat4 u_projection;
-uniform mat4 u_view;
+uniform mat4 u_combinedMatrix;
 uniform float u_time;
 uniform float u_gameTick;
 
@@ -82,7 +80,7 @@ void main() {
 	pos = (rotation * vec4(vec3(0.6, 0.75, 0.0) + pos, 1.0)).xyz + vec3(0.5, 0, 0.5);
 	pos += u_unitPosition + (moving ? (rotationVectors[unitRotationAsInt] * (activityDuration / walkingDurations[unitRotationAsInt]) - rotationVectors[unitRotationAsInt]) : vec3(0,0,0));
     v_currentPosition = pos;
-    gl_Position = u_projection * u_view * vec4(pos, 1);
+    gl_Position = u_combinedMatrix * vec4(pos, 1);
     gl_PointSize = 10.0;
 }
 `
@@ -105,8 +103,7 @@ void main() {
 
 export type Uniforms =
 	'time'
-	| 'projection'
-	| 'view'
+	| 'combinedMatrix'
 	| 'lightPosition'
 	| 'unitPosition'
 	| 'gameTick'
