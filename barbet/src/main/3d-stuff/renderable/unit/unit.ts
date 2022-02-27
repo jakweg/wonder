@@ -40,12 +40,27 @@ function preparePrograms(renderer: MainRenderer, modelBuffer: GPUBuffer, modelEl
 		{forMousePicker: true, holdingItem: true}, {forMousePicker: true, holdingItem: true},
 	]
 
+	const sourceToShaderMap = new Map<string, WebGLShader>()
+	const sourceToProgramMap = new Map<string, GlProgram<Attributes, Uniforms>>()
+
 	for (const transformSource of shaderTransformationSources()) {
 		for (const options of variants) {
 			const source = constructUnitVertexShaderSource(transformSource(options), options)
-			const vertexShader = renderer.createShader(true, source)
-			const program = renderer.createProgram<Attributes, Uniforms>(vertexShader,
-				options.forMousePicker ? mouseFragmentShader : standardFragmentShader)
+
+
+			let program = sourceToProgramMap.get(source)
+			if (program === undefined) {
+				let vertexShader = sourceToShaderMap.get(source)
+				if (vertexShader === undefined) {
+					vertexShader = renderer.createShader(true, source)
+					sourceToShaderMap.set(source, vertexShader)
+				}
+
+				program = renderer.createProgram<Attributes, Uniforms>(vertexShader,
+					options.forMousePicker ? mouseFragmentShader : standardFragmentShader)
+				sourceToProgramMap.set(source, program)
+			}
+
 
 			modelBuffer.bind()
 			program.enableAttribute(program.attributes.modelPosition, 3, true, 7 * 4, 0, 0)
