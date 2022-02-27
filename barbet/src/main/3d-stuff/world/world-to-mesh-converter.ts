@@ -10,8 +10,11 @@ const FLOATS_PER_VERTEX = 7
 
 const randomizeColor = (x: number, y: number, z: number,
                         color: [number, number, number]): [number, number, number] => {
-	const r = SeededRandom.fromSeed(x * 1231.1242412 + y * 42412.123141 ^ z * 911019204.09235).next() * 0.02 - 0.01
-	return [color[0]! + r, color[1]! + r, color[2]! + r]
+	const r = SeededRandom.singleRandom(x * 1231.1242412 + y * 42412.123141 ^ z * 911019204.09235) * 0.02 - 0.01
+	color[0] += r
+	color[1] += r
+	color[2] += r
+	return color
 }
 
 export const convertWorldToMesh = (world: World) => {
@@ -110,7 +113,7 @@ export const convertWorldToMesh = (world: World) => {
 				const thisBlock = allBlocks[thisBlockId]!
 				const color: [number, number, number] = [thisBlock.colorR, thisBlock.colorG, thisBlock.colorB]
 				if (needsTop) {
-					const topColor = randomizeColor(x, y, z, color)
+					const topColor = randomizeColor(x, y, z, [...color])
 					e1 = setVertexData(e1, topColor, 0b011001, x, y, z)
 					indices.push(
 						e2, e3, e1,
