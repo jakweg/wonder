@@ -20,7 +20,7 @@ export interface Unit {
 	rotation: Direction
 	activityId: ActivityId
 	activityStartedAt: number
-	activityMemory: Float32Array
+	activityMemory: Int32Array
 	activityMemoryPointer: number
 	interrupt: Int32Array
 	heldItem: HeldItem | null
@@ -61,7 +61,7 @@ export class GameState {
 			color: color, rotation: Direction.PositiveX,
 			activityId: defaultActivity.numericId,
 			activityStartedAt: this._currentTick,
-			activityMemory: new Float32Array(ACTIVITY_MEMORY_SIZE),
+			activityMemory: new Int32Array(ACTIVITY_MEMORY_SIZE),
 			activityMemoryPointer: 0,
 			heldItem: null,
 			interrupt: new Int32Array(4),

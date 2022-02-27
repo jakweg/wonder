@@ -1,4 +1,3 @@
-import { Direction } from '../../util/direction'
 import { findPathDirectionsExact } from '../../util/path-finder'
 import { World } from '../world/world'
 import { GameState } from './game-state'
@@ -14,7 +13,7 @@ interface PathRequest {
 interface PathResult {
 	computedAt: number
 	found: boolean
-	directions: Direction[]
+	directions: Uint8Array
 }
 
 export class PathFinder {
@@ -48,12 +47,12 @@ export class PathFinder {
 				object = {
 					computedAt: now,
 					found: false,
-					directions: [],
+					directions: new Uint8Array(0),
 				}
 			else object = {
 				computedAt: now,
 				found: true,
-				directions: directions,
+				directions: new Uint8Array(directions),
 			}
 			this.readyPaths.set(req.id, object)
 		}
