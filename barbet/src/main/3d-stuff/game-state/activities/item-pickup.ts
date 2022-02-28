@@ -1,5 +1,6 @@
 import { ActivityId } from '../../renderable/unit/activity'
 import { ShaderId } from '../../renderable/unit/unit-shaders'
+import { ItemType } from '../../world/item'
 import { GameState, Unit } from '../game-state'
 import activityItemPickupRoot from './item-pickup-root'
 
@@ -45,7 +46,7 @@ const activityItemPickup = {
 		const finishAt = memory[pointer - MemoryField.WalkingFinishTick]!
 		if (game.currentTick !== finishAt) return
 
-		unit.heldItem = {type: 0}
+		unit.heldItem = ItemType.Box
 		unit.activityMemoryPointer -= MEMORY_USED_SIZE
 		activityItemPickupRoot.onPickedUp(game, unit)
 	},

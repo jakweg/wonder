@@ -1,15 +1,18 @@
-import { interruptRequestWalk } from './3d-stuff/game-state/activities/interrupt'
+import { interruptRequestItemPickUp } from './3d-stuff/game-state/activities/interrupt'
 import { GameState } from './3d-stuff/game-state/game-state'
+import { GroundItemsIndex } from './3d-stuff/game-state/ground-items-index'
 import { PathFinder } from './3d-stuff/game-state/path-finder'
 import { StateUpdater } from './3d-stuff/game-state/state-updater'
 import { MainRenderer } from './3d-stuff/main-renderer'
 import { createPicker, MousePickableType } from './3d-stuff/mouse-picker'
-import { createNewItemRenderable } from './3d-stuff/renderable/item/item'
+import createHeldItemRenderable from './3d-stuff/renderable/held-item/held-item'
+import createNewItemOnGroundRenderable from './3d-stuff/renderable/item-on-ground/item-on-ground'
 import { RenderContext } from './3d-stuff/renderable/render-context'
 import { createNewTerrainRenderable } from './3d-stuff/renderable/terrain/terrain'
 import { createNewUnitRenderable } from './3d-stuff/renderable/unit/unit'
 import { UnitColorPaletteId } from './3d-stuff/renderable/unit/unit-color'
 import { BlockId } from './3d-stuff/world/block'
+import { ItemType } from './3d-stuff/world/item'
 import { World } from './3d-stuff/world/world'
 import { Camera } from './camera'
 import KEYBOARD from './keyboard-controller'
@@ -42,14 +45,18 @@ world.setBlock(6, 3, 13, BlockId.Stone)
 world.recalculateHeightIndex()
 
 const terrain = createNewTerrainRenderable(renderer, world)
-const state = GameState.createNew(world, PathFinder.createNewQueue(world))
+const itemsOnGround = GroundItemsIndex.createNew(world.size)
+itemsOnGround.setItem(5, 9, 1)
+itemsOnGround.setItem(6, 9, 1)
+const state = GameState.createNew(world, itemsOnGround, PathFinder.createNewQueue(world))
 const updater = StateUpdater.createNew(state, 20)
 updater.start()
 state.spawnUnit(8, 6, UnitColorPaletteId.LightOrange)
 state.spawnUnit(4, 6, UnitColorPaletteId.LightOrange)
 
 const unit = createNewUnitRenderable(renderer, state)
-const items = createNewItemRenderable(renderer, state)
+const items = createHeldItemRenderable(renderer, state)
+const groundItems = createNewItemOnGroundRenderable(renderer, state)
 const mousePicker = createPicker(renderer.rawContext, [terrain.renderForMousePicker, unit.renderForMousePicker])
 
 const sunPosition = vec3.fromValues(-500, 500, -500)
@@ -95,6 +102,7 @@ renderer.renderFunction = (gl, dt) => {
 	terrain.render(ctx)
 	unit.render(ctx)
 	items.render(ctx)
+	groundItems.render(ctx)
 }
 
 const mouseEventListener = (event: MouseEvent) => {
@@ -129,7 +137,7 @@ const mouseEventListener = (event: MouseEvent) => {
 				unit.color = UnitColorPaletteId.GreenOrange
 			else
 				unit.color = UnitColorPaletteId.DarkBlue
-			unit.heldItem = event.button === 0 ? null : {type: 0}
+			unit.heldItem = event.button === 0 ? ItemType.None : ItemType.Box
 		}
 	}
 }

@@ -1,13 +1,12 @@
 import { Direction } from '../../util/direction'
 import { ActivityId, requireActivity } from '../renderable/unit/activity'
 import { UnitColorPaletteId } from '../renderable/unit/unit-color'
+import { ItemType } from '../world/item'
 import { World } from '../world/world'
 import activityIdle from './activities/idle'
+import { GroundItemsIndex } from './ground-items-index'
 import { PathFinder } from './path-finder'
 
-export interface HeldItem {
-	type: number
-}
 
 export const ACTIVITY_MEMORY_SIZE = 20
 
@@ -23,7 +22,7 @@ export interface Unit {
 	activityMemory: Int32Array
 	activityMemoryPointer: number
 	interrupt: Int32Array
-	heldItem: HeldItem | null
+	heldItem: ItemType
 }
 
 export class GameState {
@@ -32,6 +31,7 @@ export class GameState {
 	private nextUnitId: number = 1
 
 	private constructor(public readonly world: World,
+	                    public readonly groundItems: GroundItemsIndex,
 	                    public readonly pathFinder: PathFinder) {
 	}
 
@@ -47,8 +47,9 @@ export class GameState {
 
 	public static createNew(
 		world: World,
+		groundItems: GroundItemsIndex,
 		pathFinder: PathFinder): GameState {
-		return new GameState(world, pathFinder)
+		return new GameState(world, groundItems, pathFinder)
 	}
 
 	public spawnUnit(atX: number,
@@ -63,7 +64,7 @@ export class GameState {
 			activityStartedAt: this._currentTick,
 			activityMemory: new Int32Array(ACTIVITY_MEMORY_SIZE),
 			activityMemoryPointer: 0,
-			heldItem: null,
+			heldItem: ItemType.None,
 			interrupt: new Int32Array(4),
 		}
 		defaultActivity.setup(this, unit)

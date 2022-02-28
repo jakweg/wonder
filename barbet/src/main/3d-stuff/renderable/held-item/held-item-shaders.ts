@@ -15,30 +15,6 @@ export const enum UnitData {
 	Default = 0,
 }
 
-export const onGroundVertexShader = `${VersionHeader()}
-${PrecisionHeader()}
-in vec3 a_modelPosition;
-in vec3 a_worldPosition;
-in float a_flags;
-flat out vec3 v_color;
-flat out vec3 v_normal; 
-flat out vec3 v_currentPosition;
-uniform mat4 u_combinedMatrix;
-uniform float u_time;
-void main() {
-	int flagsAsInt = int(a_flags);
-	v_normal = vec3(ivec3(((flagsAsInt >> 4) & 3) - 1, ((flagsAsInt >> 2) & 3) - 1, (flagsAsInt & 3) - 1));
-	
-	v_color = vec3(1,0,0);
-	vec3 pos = a_modelPosition;
-	pos *= vec3(0.6);
-	pos += vec3(0.5, 0.5, 0.5) + a_worldPosition;	
-    v_currentPosition = pos;
-    gl_Position = u_combinedMatrix * vec4(pos, 1);
-    gl_PointSize = 10.0;
-}
-`
-
 export const inHandVertexShader = `${VersionHeader()}
 ${PrecisionHeader()}
 ${PIConstantHeader()}
@@ -53,7 +29,6 @@ uniform vec3 u_unitPosition;
 uniform float u_activityStartTick;
 uniform int u_unitData;
 uniform mat4 u_combinedMatrix;
-uniform float u_time;
 uniform float u_gameTick;
 
 void main() {
@@ -91,7 +66,6 @@ out vec4 finalColor;
 flat in vec3 v_color;
 flat in vec3 v_normal;
 flat in vec3 v_currentPosition;
-uniform float u_time;
 uniform vec3 u_lightPosition;
 const float ambientLight = 0.5;
 void main() {
@@ -109,4 +83,4 @@ export type Uniforms =
 	| 'gameTick'
 	| 'activityStartTick'
 	| 'unitData'
-export type Attributes = 'worldPosition' | 'modelPosition' | 'flags'
+export type Attributes = 'modelPosition' | 'flags'

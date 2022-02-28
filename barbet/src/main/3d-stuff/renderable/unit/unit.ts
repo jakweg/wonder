@@ -3,6 +3,7 @@ import { add, clone, fromValues } from '../../../util/matrix/vec3'
 import { GameState } from '../../game-state/game-state'
 import { GlProgram, GPUBuffer, MainRenderer } from '../../main-renderer'
 import { pickViaMouseDefaultFragmentShader } from '../../shader/common'
+import { ItemType } from '../../world/item'
 import { RenderContext } from '../render-context'
 import { requireActivity } from './activity'
 import { buildUnitModel } from './unit-model'
@@ -96,7 +97,7 @@ export const createNewUnitRenderable = (renderer: MainRenderer,
 
 			for (const unit of game.allUnits) {
 				const activity = requireActivity(unit.activityId)
-				const program = programs[activity.shaderId * 4 + (unit.heldItem ? 1 : 0)]
+				const program = programs[activity.shaderId * 4 + (unit.heldItem !== ItemType.None ? 1 : 0)]
 				if (program == null)
 					throw new Error(`Invalid unit program id ${activity.shaderId}`)
 
@@ -123,7 +124,7 @@ export const createNewUnitRenderable = (renderer: MainRenderer,
 
 			for (const unit of game.allUnits) {
 				const activity = requireActivity(unit.activityId)
-				const program = programs[activity.shaderId * 4 + (unit.heldItem ? 1 : 0) + 2]
+				const program = programs[activity.shaderId * 4 + (unit.heldItem !== ItemType.None ? 1 : 0) + 2]
 				if (program == null)
 					throw new Error(`Invalid unit program id ${activity.shaderId}`)
 
