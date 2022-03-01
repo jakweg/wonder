@@ -1,3 +1,4 @@
+import { Direction, getChangeInXByRotation, getChangeInZByRotation } from '../../../util/direction'
 import { ActivityId } from '../../renderable/unit/activity'
 import { ShaderId } from '../../renderable/unit/unit-shaders'
 import { ItemType } from '../../world/item'
@@ -31,10 +32,11 @@ if (isLeftArmVertex || isRightArmVertex) {
 `
 
 const enum MemoryField {
-	WalkingFinishTick
+	ActivityFinishTick,
+	Direction,
 }
 
-const MEMORY_USED_SIZE = 1
+const MEMORY_USED_SIZE = 2
 
 const activityItemPickup = {
 	numericId: ActivityId.ItemPickUp,
@@ -43,22 +45,31 @@ const activityItemPickup = {
 		const memory = unit.activityMemory
 		const pointer = unit.activityMemoryPointer
 
-		const finishAt = memory[pointer - MemoryField.WalkingFinishTick]!
+		const finishAt = memory[pointer - MemoryField.ActivityFinishTick]!
 		if (game.currentTick !== finishAt) return
+		const direction = memory[pointer - MemoryField.Direction]! as Direction
 
-		unit.heldItem = ItemType.Box
+		const itemX = unit.posX + getChangeInXByRotation(direction)
+		const itemZ = unit.posZ + getChangeInZByRotation(direction)
+
+		unit.heldItem = game.groundItems.getItem(itemX, itemZ)
+		game.groundItems.setItem(itemX, itemZ, ItemType.None)
+
+		unit.rotation &= ~Direction.MaskMergePrevious
 		unit.activityMemoryPointer -= MEMORY_USED_SIZE
 		activityItemPickupRoot.onPickedUp(game, unit)
 	},
-	setup(game: GameState, unit: Unit) {
+	setup(game: GameState, unit: Unit, direction: Direction) {
 		const now = game.currentTick
 		const memory = unit.activityMemory
 		const pointer = unit.activityMemoryPointer = unit.activityMemoryPointer + MEMORY_USED_SIZE
 
+		unit.rotation = Direction.FlagMergeWithPrevious | ((unit.rotation & Direction.MaskCurrentRotation) << 3) | direction
 		unit.activityId = ActivityId.ItemPickUp
 		unit.activityStartedAt = now
 
-		memory[pointer - MemoryField.WalkingFinishTick] = now + pickUpItemActivityDuration
+		memory[pointer - MemoryField.ActivityFinishTick] = now + pickUpItemActivityDuration
+		memory[pointer - MemoryField.Direction] = direction
 	},
 }
 

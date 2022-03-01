@@ -22,6 +22,11 @@ export class GroundItemsIndex {
 		this.lastDataChangeId++
 	}
 
+	public getItem(x: number, z: number): ItemType {
+		this.validateCoords(x, z)
+		return this.rawItemData[z * this.sizeX + x]! as ItemType
+	}
+
 	private validateCoords(x: number, z: number): void {
 		if (x < 0 || x >= this.sizeX || (x | 0) !== x
 			|| z < 0 || z >= this.sizeZ || (z | 0) !== z)

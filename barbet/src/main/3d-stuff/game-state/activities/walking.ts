@@ -1,7 +1,6 @@
-import { Direction } from '../../../util/direction'
+import { Direction, getChangeInXByRotation, getChangeInZByRotation } from '../../../util/direction'
 import { ActivityId } from '../../renderable/unit/activity'
 import { ShaderId, UnitShaderCreationOptions } from '../../renderable/unit/unit-shaders'
-import { getChangeInXByRotation, getChangeInZByRotation } from '../../shader/common'
 import { GameState, Unit } from '../game-state'
 import activityWalkingByPathRoot from './walking-by-path-root'
 

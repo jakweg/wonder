@@ -13,29 +13,6 @@ export const WalkingDurationsByRotation = () => `const float walkingDurations[8]
 
 export const RotationMatrix = (angleVariableName: string) => `mat4(cos(${angleVariableName}), 0, -sin(${angleVariableName}), 0, 0, 1, 0, 0, sin(${angleVariableName}), 0, cos(${angleVariableName}), 0, 0, 0, 0, 1)`
 
-const rotationChanges = [
-	[1, 0],
-	[1, -1],
-	[0, -1],
-	[-1, -1],
-	[-1, 0],
-	[-1, 1],
-	[0, 1],
-	[1, 1],
-]
-export const getChangeInXByRotation = (rotation: number): number => {
-	const value = rotationChanges[rotation]
-	if (value === undefined)
-		throw new Error(`Invalid rotation given ${rotation}`)
-	return value[0]!
-}
-export const getChangeInZByRotation = (rotation: number): number => {
-	const value = rotationChanges[rotation]
-	if (value === undefined)
-		throw new Error(`Invalid rotation given ${rotation}`)
-	return value[1]!
-}
-
 export const createProgramFromNewShaders = <A, U>(renderer: MainRenderer,
                                                   vertexSource: string,
                                                   fragmentSource: string)

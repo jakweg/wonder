@@ -1,4 +1,4 @@
-import { findPathDirectionsExact } from '../../util/path-finder'
+import { findPathDirectionsExperimental } from '../../util/path-finder'
 import { World } from '../world/world'
 import { GameState } from './game-state'
 
@@ -38,10 +38,13 @@ export class PathFinder {
 		}
 
 		for (const req of this.pathQueue) {
-			const directions = findPathDirectionsExact(req.fromX, req.fromZ, req.toX, req.toZ,
-				(x, z) => {
-					return this.world.getHighestBlockHeight(x, z) === 1
-				})
+			const tester = (x: number, z: number) => this.world.getHighestBlockHeight(x, z) === 1
+
+
+			// const directions = findPathDirectionsExact(req.fromX, req.fromZ, req.toX, req.toZ, tester)
+			const directions = findPathDirectionsExperimental(req.fromX, req.fromZ, req.toX, req.toZ, 1, tester)
+
+
 			let object
 			if (directions == null)
 				object = {

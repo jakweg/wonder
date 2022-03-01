@@ -1,5 +1,6 @@
 import { ActivityId } from '../../renderable/unit/activity'
 import { ShaderId, UnitShaderCreationOptions } from '../../renderable/unit/unit-shaders'
+import { ItemType } from '../../world/item'
 import { GameState, Unit } from '../game-state'
 import { InterruptType } from './interrupt'
 import activityItemPickupRoot from './item-pickup-root'
@@ -23,7 +24,7 @@ const activityIdle = {
 			case InterruptType.ItemPickUp: {
 				const x = unit.interrupt[1]!
 				const y = unit.interrupt[2]!
-				activityItemPickupRoot.setup(game, unit, ActivityId.Idle, x, y)
+				activityItemPickupRoot.setup(game, unit, ActivityId.Idle, x, y, ItemType.Box)
 				break
 			}
 			default:
