@@ -1,8 +1,8 @@
 import { toGl } from '../../../util/matrix/common'
 import { GPUBuffer, MainRenderer } from '../../main-renderer'
 import { createProgramFromNewShaders, pickViaMouseDefaultFragmentShader } from '../../shader/common'
-import { World } from '../../world/world'
-import { convertWorldToMesh } from '../../world/world-to-mesh-converter'
+import { World, WORLD_CHUNK_SIZE } from '../../world/world'
+import { buildChunkMesh, combineMeshes, Mesh } from '../../world/world-to-mesh-converter'
 import { RenderContext } from '../render-context'
 import {
 	Attributes,
@@ -53,12 +53,33 @@ export const createNewTerrainRenderable = (renderer: MainRenderer,
 
 	let trianglesToRender = 0 | 0
 	let lastMeshRecreationId = -1
+	const chunksX = world.size.chunksSizeX
+	const chunksZ = world.size.chunksSizeZ
+	const meshes: Mesh[] = new Array(chunksX * chunksZ)
+	const lastMeshModificationIds: Uint16Array = new Uint16Array(chunksX * chunksZ)
+	lastMeshModificationIds.fill(-1)
+
 	const rebuildMeshIfNeeded = () => {
-		vao.bind()
-		const mesh = convertWorldToMesh(world)
-		vertexBuffer.setContent(mesh.vertexes)
-		indicesBuffer.setContent(mesh.indices)
-		trianglesToRender = (mesh.indices.byteLength / mesh.indices.BYTES_PER_ELEMENT) | 0
+		let counter = 0
+		renderer.unbindVAO()
+		if (lastMeshRecreationId === world.lastChangeId) return
+		let chunkIndex = 0
+		for (let j = 0; j < chunksZ; j++) {
+			for (let i = 0; i < chunksX; i++) {
+				const modificationId = world.chunkModificationIds[chunkIndex]!
+				if (lastMeshModificationIds[chunkIndex] !== modificationId) {
+					lastMeshModificationIds[chunkIndex] = modificationId
+					meshes[chunkIndex] = buildChunkMesh(world, i, j, WORLD_CHUNK_SIZE)
+					counter++
+				}
+				chunkIndex++
+			}
+		}
+
+		const combinedMesh: Mesh = combineMeshes(meshes)
+		vertexBuffer.setContent(combinedMesh.vertexes)
+		indicesBuffer.setContent(combinedMesh.indices)
+		trianglesToRender = (combinedMesh.indices.byteLength / combinedMesh.indices.BYTES_PER_ELEMENT) | 0
 		lastMeshRecreationId = world.lastChangeId
 	}
 

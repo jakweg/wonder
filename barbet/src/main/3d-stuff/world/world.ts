@@ -1,5 +1,7 @@
 import { AIR_ID, BlockId } from './block'
 
+export const WORLD_CHUNK_SIZE = 32
+
 export interface WorldSize {
 	readonly sizeX: number,
 	readonly sizeY: number,
@@ -9,6 +11,8 @@ export interface WorldSize {
 export interface ComputedWorldSize extends WorldSize {
 	readonly totalBlocks: number
 	readonly blocksPerY: number
+	readonly chunksSizeX: number
+	readonly chunksSizeZ: number
 }
 
 export class World {
@@ -18,6 +22,7 @@ export class World {
 		public readonly size: ComputedWorldSize,
 		public readonly rawBlockData: Uint8Array,
 		public readonly rawHeightData: Uint8ClampedArray,
+		public readonly chunkModificationIds: Uint16Array,
 	) {
 	}
 
@@ -27,8 +32,10 @@ export class World {
 	                          fillWith: BlockId = AIR_ID): World {
 		const blocksPerY = sizeX * sizeZ
 		const totalBlocks = sizeY * blocksPerY
+		const chunksSizeX = Math.ceil(sizeX / WORLD_CHUNK_SIZE)
+		const chunksSizeZ = Math.ceil(sizeZ / WORLD_CHUNK_SIZE)
 
-		const size = {sizeX, sizeY, sizeZ, totalBlocks, blocksPerY}
+		const size = {sizeX, sizeY, sizeZ, totalBlocks, blocksPerY, chunksSizeX, chunksSizeZ}
 		const blockData = new Uint8Array(totalBlocks)
 		const heightData = new Uint8ClampedArray(blocksPerY)
 
@@ -38,7 +45,9 @@ export class World {
 			heightData.fill(sizeY - 1)
 		}
 
-		return new World(size, blockData, heightData)
+		const chunkModificationIds = new Uint16Array(chunksSizeX * chunksSizeZ)
+
+		return new World(size, blockData, heightData, chunkModificationIds)
 	}
 
 	public setBlock(x: number, y: number, z: number, blockId: BlockId) {
@@ -58,7 +67,19 @@ export class World {
 				}
 				this.rawHeightData[z * sizeX + x]! = top
 			}
+
 		this.lastChangeId++
+		this.chunkModificationIds[((z / WORLD_CHUNK_SIZE) | 0) * this.size.chunksSizeX + (x / WORLD_CHUNK_SIZE | 0)]++
+		// notify nearby chunks if affected
+		this.chunkModificationIds[(((z - 1) / WORLD_CHUNK_SIZE) | 0) * this.size.chunksSizeX + (x / WORLD_CHUNK_SIZE | 0)]++
+		this.chunkModificationIds[(((z + 1) / WORLD_CHUNK_SIZE) | 0) * this.size.chunksSizeX + (x / WORLD_CHUNK_SIZE | 0)]++
+		this.chunkModificationIds[((z / WORLD_CHUNK_SIZE) | 0) * this.size.chunksSizeX + ((x - 1) / WORLD_CHUNK_SIZE | 0)]++
+		this.chunkModificationIds[((z / WORLD_CHUNK_SIZE) | 0) * this.size.chunksSizeX + ((x + 1) / WORLD_CHUNK_SIZE | 0)]++
+	}
+
+	public getLastChunkModificationId(x: number, z: number): number {
+		this.validateChunkCoords(x, z)
+		return this.chunkModificationIds[z * this.size.chunksSizeX + x]!
 	}
 
 	public recalculateHeightIndex(): void {
@@ -87,5 +108,11 @@ export class World {
 			|| y < 0 || y >= this.size.sizeY || (y | 0) !== y
 			|| z < 0 || z >= this.size.sizeZ || (z | 0) !== z)
 			throw new Error(`Invalid coords ${x} ${y} ${z}`)
+	}
+
+	private validateChunkCoords(x: number, z: number) {
+		if (x < 0 || x >= this.size.chunksSizeX || (x | 0) !== x
+			|| z < 0 || z >= this.size.chunksSizeZ || (z | 0) !== z)
+			throw new Error(`Invalid coords ${x} ${z}`)
 	}
 }

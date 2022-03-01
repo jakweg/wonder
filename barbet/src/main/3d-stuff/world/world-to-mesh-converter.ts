@@ -17,11 +17,16 @@ const randomizeColor = (x: number, y: number, z: number,
 	return color
 }
 
-export const convertWorldToMesh = (world: World) => {
+export interface Mesh {
+	vertexes: Float32Array,
+	indices: Uint32Array,
+}
+
+export const buildChunkMesh = (world: World, chunkX: number, chunkZ: number, chunkSize: number): Mesh => {
 	const {sizeX, sizeY, sizeZ} = world.size
 	const worldData = world.rawBlockData
 
-	const vertexIndexes = new Uint32Array((sizeX + 1) * (sizeY + 1) * (sizeZ + 1))
+	const vertexIndexes = new Uint32Array((chunkSize + 1) * (sizeY + 1) * (chunkSize + 1))
 	vertexIndexes.fill(NO_ELEMENT_INDEX_MARKER)
 	console.assert(vertexIndexes[0] === NO_ELEMENT_INDEX_MARKER)
 
@@ -30,17 +35,19 @@ export const convertWorldToMesh = (world: World) => {
 
 	let addedVertexesCounter = 0
 
-	const vertexesPerY = (sizeX + 1) * (sizeZ + 1)
+	const vertexesPerY = (chunkSize + 1) * (chunkSize + 1)
 
-	const vertexesPerX = (sizeZ + 1)
+	const vertexesPerX = (chunkSize + 1)
 	const forceAddVertex = (positionIndex: number, x: number, y: number, z: number): number => {
 		vertexes.push(x, y, z, NO_COLOR_VALUE, NO_COLOR_VALUE, NO_COLOR_VALUE, NO_FLAGS_VALUE)
 		vertexIndexes[positionIndex] = addedVertexesCounter
 		return addedVertexesCounter++
 	}
 
+	const startX = chunkX * chunkSize
+	const startZ = chunkZ * chunkSize
 	const addVertexIfNotExists = (x: number, y: number, z: number): number => {
-		const positionIndex = y * vertexesPerY + x * vertexesPerX + z
+		const positionIndex = y * vertexesPerY + (x - startX) * vertexesPerX + (z - startZ)
 		const elementIndex = vertexIndexes[positionIndex]!
 		if (elementIndex === NO_ELEMENT_INDEX_MARKER) {
 			return forceAddVertex(positionIndex, x, y, z)
@@ -61,13 +68,14 @@ export const convertWorldToMesh = (world: World) => {
 		const y = vertexes[vertexStartIndex + 1]!
 		const z = vertexes[vertexStartIndex + 2]!
 		if (!wasNeverUsed) {
-			const positionIndex = y * vertexesPerY + x * vertexesPerX + z
+			const positionIndex = y * vertexesPerY + (x - startX) * vertexesPerX + (z - startZ)
 			vertexIndex = forceAddVertex(positionIndex, x, y, z)
 			vertexStartIndex = vertexIndex * FLOATS_PER_VERTEX
 		}
 		vertexes[vertexStartIndex + 3] = colorValue[0]
 		vertexes[vertexStartIndex + 4] = colorValue[1]
 		vertexes[vertexStartIndex + 5] = colorValue[2]
+
 		const ox = x - forX
 		const oy = y - forY
 		const oz = z - forZ
@@ -78,8 +86,8 @@ export const convertWorldToMesh = (world: World) => {
 	}
 
 	for (let y = 0; y < sizeY; y++) {
-		for (let z = 0; z < sizeZ; z++) {
-			for (let x = 0; x < sizeX; x++) {
+		for (let z = chunkZ * chunkSize, mz = Math.min((chunkZ + 1) * chunkSize, sizeZ); z < mz; z++) {
+			for (let x = chunkX * chunkSize, mx = Math.min((chunkX + 1) * chunkSize, sizeX); x < mx; x++) {
 				const thisBlockId = worldData[y * sizeX * sizeZ + x * sizeZ + z]! as BlockId
 				if (thisBlockId === AIR_ID) continue
 
@@ -165,6 +173,24 @@ export const convertWorldToMesh = (world: World) => {
 		}
 	}
 
+
+	return {
+		vertexes: new Float32Array(vertexes),
+		indices: new Uint32Array(indices),
+	}
+}
+
+export const combineMeshes = (meshes: Mesh[]): Mesh => {
+	const vertexes = []
+	const indices = []
+	for (const mesh of meshes) {
+		const vertexesBeforeCount = vertexes.length / FLOATS_PER_VERTEX | 0
+		for (const v of mesh.vertexes)
+			vertexes.push(v)
+
+		for (const v of mesh.indices)
+			indices.push(v + vertexesBeforeCount)
+	}
 
 	return {
 		vertexes: new Float32Array(vertexes),
