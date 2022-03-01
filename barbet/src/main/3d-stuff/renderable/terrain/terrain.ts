@@ -52,22 +52,19 @@ export const createNewTerrainRenderable = (renderer: MainRenderer,
 
 
 	let trianglesToRender = 0 | 0
-	let needsMeshRefresh = true
-	const refreshMesh = () => {
+	let lastMeshRecreationId = -1
+	const rebuildMeshIfNeeded = () => {
 		vao.bind()
 		const mesh = convertWorldToMesh(world)
 		vertexBuffer.setContent(mesh.vertexes)
 		indicesBuffer.setContent(mesh.indices)
 		trianglesToRender = (mesh.indices.byteLength / mesh.indices.BYTES_PER_ELEMENT) | 0
-		needsMeshRefresh = false
+		lastMeshRecreationId = world.lastChangeId
 	}
 
 	return {
-		requestRebuildMesh() {
-			needsMeshRefresh = true
-		},
 		render(ctx: RenderContext) {
-			if (needsMeshRefresh) refreshMesh()
+			rebuildMeshIfNeeded()
 			const {gl, camera} = ctx
 			vao.bind()
 			program.use()
@@ -80,7 +77,7 @@ export const createNewTerrainRenderable = (renderer: MainRenderer,
 			gl.drawElements(gl.TRIANGLES, trianglesToRender, gl.UNSIGNED_INT, 0)
 		},
 		renderForMousePicker(ctx: RenderContext) {
-			if (needsMeshRefresh) refreshMesh()
+			rebuildMeshIfNeeded()
 			const {gl, camera: {combinedMatrix}} = ctx
 
 			mouseVao.bind()

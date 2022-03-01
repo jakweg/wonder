@@ -12,6 +12,8 @@ export interface ComputedWorldSize extends WorldSize {
 }
 
 export class World {
+	public lastChangeId: number = 0
+
 	private constructor(
 		public readonly size: ComputedWorldSize,
 		public readonly rawBlockData: Uint8Array,
@@ -56,6 +58,7 @@ export class World {
 				}
 				this.rawHeightData[z * sizeX + x]! = top
 			}
+		this.lastChangeId++
 	}
 
 	public recalculateHeightIndex(): void {

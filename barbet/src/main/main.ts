@@ -52,7 +52,7 @@ const state = GameState.createNew(world, itemsOnGround, PathFinder.createNewQueu
 const updater = StateUpdater.createNew(state, 20)
 updater.start()
 state.spawnUnit(8, 6, UnitColorPaletteId.LightOrange)
-state.spawnUnit(4, 6, UnitColorPaletteId.LightOrange)
+// state.spawnUnit(4, 6, UnitColorPaletteId.LightOrange)
 
 const unit = createNewUnitRenderable(renderer, state)
 const items = createHeldItemRenderable(renderer, state)
@@ -116,7 +116,6 @@ const mouseEventListener = (event: MouseEvent) => {
 		// 	world.setBlock(result.x + result.normals[0]!, result.y + result.normals[1]!, result.z + result.normals[2]!, BlockId.Snow)
 		// else
 		// 	world.setBlock(result.x, result.y, result.z, BlockId.Air)
-		// terrain.requestRebuildMesh()
 		const units = state.allUnits.filter(e => e.color === UnitColorPaletteId.DarkBlue)
 		if (units.length > 0) {
 			if (itemsOnGround.getItem(result.x, result.z) !== ItemType.None)
@@ -130,7 +129,6 @@ const mouseEventListener = (event: MouseEvent) => {
 				itemsOnGround.setItem(result.x, result.z, ItemType.Box)
 			else
 				world.setBlock(result.x, result.y, result.z, BlockId.Air)
-			terrain.requestRebuildMesh()
 		}
 	} else if (result.pickedType === MousePickableType.Unit) {
 		const id = result.numericId
