@@ -1,3 +1,4 @@
+import { ItemType } from '../../world/item'
 import { Unit } from '../game-state'
 
 export const enum InterruptType {
@@ -10,7 +11,7 @@ export const enum InterruptType {
 	 */
 	Walk,
 	/**
-	 * Player requested the unit to pick up item, data is x, z of tile where the item is located
+	 * Player requested the unit to pick up item, data is x, z of tile where the item is located and item type
 	 */
 	ItemPickUp,
 }
@@ -21,8 +22,9 @@ export const interruptRequestWalk = (unit: Unit, x: number, z: number) => {
 	unit.interrupt[2] = z
 }
 
-export const interruptRequestItemPickUp = (unit: Unit, x: number, z: number) => {
+export const interruptRequestItemPickUp = (unit: Unit, x: number, z: number, type: ItemType) => {
 	unit.interrupt[0] = InterruptType.ItemPickUp
 	unit.interrupt[1] = x
 	unit.interrupt[2] = z
+	unit.interrupt[3] = type
 }

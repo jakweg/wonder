@@ -1,4 +1,4 @@
-import { findPathDirectionsExperimental } from '../../util/path-finder'
+import { findPathDirectionsToArea } from '../../util/path-finder'
 import { World } from '../world/world'
 import { GameState } from './game-state'
 
@@ -8,6 +8,7 @@ interface PathRequest {
 	fromZ: number
 	toX: number
 	toZ: number
+	areaSize: number
 }
 
 interface PathResult {
@@ -37,13 +38,10 @@ export class PathFinder {
 				this.readyPaths.delete(id)
 		}
 
+		const tester = (x: number, z: number) => this.world.getHighestBlockHeight(x, z) === 1
 		for (const req of this.pathQueue) {
-			const tester = (x: number, z: number) => this.world.getHighestBlockHeight(x, z) === 1
 
-
-			// const directions = findPathDirectionsExact(req.fromX, req.fromZ, req.toX, req.toZ, tester)
-			const directions = findPathDirectionsExperimental(req.fromX, req.fromZ, req.toX, req.toZ, 1, tester)
-
+			const directions = findPathDirectionsToArea(req.fromX, req.fromZ, req.toX, req.toZ, req.areaSize, tester)
 
 			let object
 			if (directions == null)
@@ -67,8 +65,9 @@ export class PathFinder {
 	}
 
 	public requestPath(fromX: number, fromZ: number,
-	                   toX: number, toZ: number): number {
-		const req: PathRequest = {fromX, fromZ, toX, toZ, id: this.nextPathRequestId++}
+	                   toX: number, toZ: number,
+	                   areaSize: number): number {
+		const req: PathRequest = {areaSize, fromX, fromZ, toX, toZ, id: this.nextPathRequestId++}
 		this.pathQueue.push(req)
 		return req.id
 	}

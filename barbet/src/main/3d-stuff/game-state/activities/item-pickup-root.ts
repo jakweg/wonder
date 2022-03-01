@@ -62,7 +62,7 @@ const activityItemPickupRoot = {
 		memory[pointer - MemoryField.DestinationZ] = z
 		memory[pointer - MemoryField.RequestedItemType] = type
 
-		walkingByPathRoot.setup(game, unit, ActivityId.ItemPickUpRoot, x, z)
+		walkingByPathRoot.setup(game, unit, ActivityId.ItemPickUpRoot, x, z, 1)
 	},
 }
 

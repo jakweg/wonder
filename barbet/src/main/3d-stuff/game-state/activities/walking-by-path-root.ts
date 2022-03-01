@@ -17,9 +17,10 @@ const enum MemoryField {
 	Status,
 	DestinationX,
 	DestinationZ,
+	DestinationAreaSize,
 }
 
-const MEMORY_USED_SIZE = 6
+const MEMORY_USED_SIZE = 7
 
 const activityWalkingByPathRoot = {
 	numericId: ActivityId.WalkingByPathRoot,
@@ -57,9 +58,10 @@ const activityWalkingByPathRoot = {
 					const returnTo = memory[pointer - MemoryField.ReturnToActivity]!
 					const dx = memory[pointer - MemoryField.DestinationX]!
 					const dy = memory[pointer - MemoryField.DestinationZ]!
+					const areaSize = memory[pointer - MemoryField.DestinationAreaSize]!
 					unit.rotation &= ~Direction.FlagMergeWithPrevious
 					unit.activityMemoryPointer -= MEMORY_USED_SIZE
-					activityWalkingByPathRoot.setup(game, unit, returnTo, dx, dy)
+					activityWalkingByPathRoot.setup(game, unit, returnTo, dx, dy, areaSize)
 					return
 				}
 				break
@@ -71,7 +73,8 @@ const activityWalkingByPathRoot = {
 		unit.activityMemoryPointer -= MEMORY_USED_SIZE
 		unit.activityId = returnToActivity
 	},
-	setup(game: GameState, unit: Unit, returnTo: ActivityId, x: number, z: number) {
+	setup(game: GameState, unit: Unit, returnTo: ActivityId,
+	      x: number, z: number, areaSize: number) {
 		unit.activityStartedAt = game.currentTick
 		unit.activityId = ActivityId.WalkingByPathRoot
 
@@ -79,10 +82,11 @@ const activityWalkingByPathRoot = {
 		const pointer = unit.activityMemoryPointer = unit.activityMemoryPointer + MEMORY_USED_SIZE
 
 		memory[pointer - MemoryField.ReturnToActivity] = returnTo
-		memory[pointer - MemoryField.PathRequestId] = game.pathFinder.requestPath(unit.posX, unit.posZ, x, z)
+		memory[pointer - MemoryField.PathRequestId] = game.pathFinder.requestPath(unit.posX, unit.posZ, x, z, areaSize)
 		memory[pointer - MemoryField.Status] = Status.WaitingForPath
 		memory[pointer - MemoryField.DestinationX] = x
 		memory[pointer - MemoryField.DestinationZ] = z
+		memory[pointer - MemoryField.DestinationAreaSize] = areaSize
 	},
 }
 

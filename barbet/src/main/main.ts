@@ -1,4 +1,4 @@
-import { interruptRequestItemPickUp } from './3d-stuff/game-state/activities/interrupt'
+import { interruptRequestItemPickUp, interruptRequestWalk } from './3d-stuff/game-state/activities/interrupt'
 import { GameState } from './3d-stuff/game-state/game-state'
 import { GroundItemsIndex } from './3d-stuff/game-state/ground-items-index'
 import { PathFinder } from './3d-stuff/game-state/path-finder'
@@ -119,12 +119,15 @@ const mouseEventListener = (event: MouseEvent) => {
 		// terrain.requestRebuildMesh()
 		const units = state.allUnits.filter(e => e.color === UnitColorPaletteId.DarkBlue)
 		if (units.length > 0) {
-			units.forEach(unit => {
-				interruptRequestWalk(unit, result.x, result.z)
-			})
+			if (itemsOnGround.getItem(result.x, result.z) !== ItemType.None)
+				units.forEach(unit => interruptRequestItemPickUp(unit, result.x, result.z, ItemType.Box))
+			else
+				units.forEach(unit => interruptRequestWalk(unit, result.x, result.z))
+
 		} else {
 			if (event.button === 0)
-				world.setBlock(result.x + result.normals[0]!, result.y + result.normals[1]!, result.z + result.normals[2]!, BlockId.Snow)
+				// world.setBlock(result.x + result.normals[0]!, result.y + result.normals[1]!, result.z + result.normals[2]!, BlockId.Snow)
+				itemsOnGround.setItem(result.x, result.z, ItemType.Box)
 			else
 				world.setBlock(result.x, result.y, result.z, BlockId.Air)
 			terrain.requestRebuildMesh()

@@ -18,13 +18,14 @@ const activityIdle = {
 			case InterruptType.Walk: {
 				const x = unit.interrupt[1]!
 				const y = unit.interrupt[2]!
-				activityWalkingRoot.setup(game, unit, ActivityId.Idle, x, y)
+				activityWalkingRoot.setup(game, unit, ActivityId.Idle, x, y, 0)
 				break
 			}
 			case InterruptType.ItemPickUp: {
 				const x = unit.interrupt[1]!
 				const y = unit.interrupt[2]!
-				activityItemPickupRoot.setup(game, unit, ActivityId.Idle, x, y, ItemType.Box)
+				const type = unit.interrupt[3]! as ItemType
+				activityItemPickupRoot.setup(game, unit, ActivityId.Idle, x, y, type)
 				break
 			}
 			default:
