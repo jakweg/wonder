@@ -1,4 +1,5 @@
 import activityIdle from './3d-stuff/game-state/activities/idle'
+import { interruptRequestItemPickUp, interruptRequestWalk } from './3d-stuff/game-state/activities/interrupt'
 import { GameState } from './3d-stuff/game-state/game-state'
 import { GroundItemsIndex } from './3d-stuff/game-state/ground-items-index'
 import { PathFinder } from './3d-stuff/game-state/path-finder'
@@ -126,24 +127,25 @@ const mouseEventListener = (event: MouseEvent) => {
 
 	const result = mousePicker.pick(ctx, event.offsetX, 720 - event.offsetY)
 	if (result.pickedType === MousePickableType.Terrain) {
-		// if (event.button === 0)
-		// 	world.setBlock(result.x + result.normals[0]!, result.y + result.normals[1]!, result.z + result.normals[2]!, BlockId.Snow)
-		// else
-		// 	world.setBlock(result.x, result.y, result.z, BlockId.Air)
-		// const units = state.allUnits.filter(e => e.color === UnitColorPaletteId.DarkBlue) // TODO interrupts
-		// if (units.length > 0) {
-		// 	if (itemsOnGround.getItem(result.x, result.z) !== ItemType.None)
-		// 		units.forEach(unit => interruptRequestItemPickUp(unit, result.x, result.z, ItemType.Box))
-		// 	else
-		// 		units.forEach(unit => interruptRequestWalk(unit, result.x, result.z))
-		//
-		// } else {
-		// 	if (event.button === 0)
-		// 		// world.setBlock(result.x + result.normals[0]!, result.y + result.normals[1]!, result.z + result.normals[2]!, BlockId.Snow)
-		// 		itemsOnGround.setItem(result.x, result.z, ItemType.Box)
-		// 	else
-		// 		world.setBlock(result.x, result.y, result.z, BlockId.Air)
-		// }
+		let wasAny = false
+		if (itemsOnGround.getItem(result.x, result.z) !== ItemType.None)
+			for (const record of state.units.iterate(UnitTraits.Interruptible)) {
+				wasAny = true
+				interruptRequestItemPickUp(unitsContainer, record, result.x, result.z, ItemType.Box)
+			}
+		else
+			for (const record of state.units.iterate(UnitTraits.Interruptible)) {
+				wasAny = true
+				interruptRequestWalk(unitsContainer, record, result.x, result.z)
+			}
+
+		if (!wasAny) {
+			if (event.button === 0)
+				// world.setBlock(result.x + result.normals[0]!, result.y + result.normals[1]!, result.z + result.normals[2]!, BlockId.Snow)
+				itemsOnGround.setItem(result.x, result.z, ItemType.Box)
+			else
+				world.setBlock(result.x, result.y, result.z, BlockId.Air)
+		}
 	} else if (result.pickedType === MousePickableType.Unit) {
 		const id = result.numericId
 		for (const record of state.units.iterate(UnitTraits.Drawable | UnitTraits.ItemHoldable)) {

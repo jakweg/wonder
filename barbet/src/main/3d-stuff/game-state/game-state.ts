@@ -1,7 +1,4 @@
-import { Direction } from '../../util/direction'
-import { ActivityId, requireActivity } from '../renderable/unit/activity'
-import { UnitColorPaletteId } from '../renderable/unit/unit-color'
-import { ItemType } from '../world/item'
+import { requireActivity } from '../renderable/unit/activity'
 import { World } from '../world/world'
 import { GroundItemsIndex } from './ground-items-index'
 import { PathFinder } from './path-finder'
@@ -9,22 +6,6 @@ import UnitsContainer from './units/units-container'
 
 
 export const ACTIVITY_MEMORY_SIZE = 20
-
-/** @deprecated */
-export interface Unit {
-	numericId: number
-	posX: number
-	posY: number
-	posZ: number
-	color: UnitColorPaletteId
-	rotation: Direction
-	activityId: ActivityId
-	activityStartedAt: number
-	activityMemory: Int32Array
-	activityMemoryPointer: number
-	interrupt: Int32Array
-	heldItem: ItemType
-}
 
 export class GameState {
 	private isRunningLogic: boolean = false

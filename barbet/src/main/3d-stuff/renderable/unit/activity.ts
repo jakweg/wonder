@@ -40,7 +40,7 @@ export const allActivities: ActivityType[] = [
 	activityItemPickupRoot,
 	activityItemPickup,
 ]
-
+console.log(allActivities)
 freezeAndValidateOptionsList(allActivities)
 export const requireActivity = (id: ActivityId): ActivityType => {
 	const activity = allActivities[id]

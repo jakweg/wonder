@@ -1,5 +1,5 @@
 import { ItemType } from '../../world/item'
-import { Unit } from '../game-state'
+import UnitsContainer, { DataOffsetInterruptible, UnitTraitIndicesRecord, UnitTraits } from '../units/units-container'
 
 export const enum InterruptType {
 	/**
@@ -16,15 +16,23 @@ export const enum InterruptType {
 	ItemPickUp,
 }
 
-export const interruptRequestWalk = (unit: Unit, x: number, z: number) => {
-	unit.interrupt[0] = InterruptType.Walk
-	unit.interrupt[1] = x
-	unit.interrupt[2] = z
+export const interruptRequestWalk = (container: UnitsContainer, unit: UnitTraitIndicesRecord, x: number, z: number) => {
+	if ((unit.thisTraits & UnitTraits.Interruptible) !== UnitTraits.Interruptible)
+		throw new Error('missing trait')
+
+	const memory = container.interruptibles.rawData
+	memory[unit.interruptible + DataOffsetInterruptible.InterruptType] = InterruptType.Walk
+	memory[unit.interruptible + DataOffsetInterruptible.ValueA] = x
+	memory[unit.interruptible + DataOffsetInterruptible.ValueB] = z
 }
 
-export const interruptRequestItemPickUp = (unit: Unit, x: number, z: number, type: ItemType) => {
-	unit.interrupt[0] = InterruptType.ItemPickUp
-	unit.interrupt[1] = x
-	unit.interrupt[2] = z
-	unit.interrupt[3] = type
+export const interruptRequestItemPickUp = (container: UnitsContainer, unit: UnitTraitIndicesRecord, x: number, z: number, type: ItemType) => {
+	if ((unit.thisTraits & UnitTraits.Interruptible) !== UnitTraits.Interruptible)
+		throw new Error('missing trait')
+
+	const memory = container.interruptibles.rawData
+	memory[unit.interruptible + DataOffsetInterruptible.InterruptType] = InterruptType.ItemPickUp
+	memory[unit.interruptible + DataOffsetInterruptible.ValueA] = x
+	memory[unit.interruptible + DataOffsetInterruptible.ValueB] = z
+	memory[unit.interruptible + DataOffsetInterruptible.ValueC] = type
 }

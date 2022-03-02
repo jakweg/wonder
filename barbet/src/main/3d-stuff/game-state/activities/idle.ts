@@ -1,34 +1,46 @@
 import { ActivityId } from '../../renderable/unit/activity'
 import { ShaderId, UnitShaderCreationOptions } from '../../renderable/unit/unit-shaders'
+import { ItemType } from '../../world/item'
 import { GameState } from '../game-state'
-import { DataOffsetWithActivity, UnitTraitIndicesRecord } from '../units/units-container'
+import {
+	DataOffsetInterruptible,
+	DataOffsetWithActivity,
+	UnitTraitIndicesRecord,
+	UnitTraits,
+} from '../units/units-container'
+import { InterruptType } from './interrupt'
+import activityItemPickupRoot from './item-pickup-root'
+import walkingByPathRoot from './walking-by-path-root'
 
 const activityIdle = {
 	numericId: ActivityId.Idle,
 	shaderId: ShaderId.Idle,
 	perform(game: GameState, unit: UnitTraitIndicesRecord) {
-		// TODO interruption support
-		// const interrupt = unit.interrupt[0]! as InterruptType
-		// if (interrupt === InterruptType.None) return
-		// unit.interrupt[0] = InterruptType.None
-		//
-		// switch (interrupt) {
-		// 	case InterruptType.Walk: {
-		// 		const x = unit.interrupt[1]!
-		// 		const y = unit.interrupt[2]!
-		// 		activityWalkingRoot.setup(game, unit, ActivityId.Idle, x, y, 0)
-		// 		break
-		// 	}
-		// 	case InterruptType.ItemPickUp: {
-		// 		const x = unit.interrupt[1]!
-		// 		const y = unit.interrupt[2]!
-		// 		const type = unit.interrupt[3]! as ItemType
-		// 		activityItemPickupRoot.setup(game, unit, ActivityId.Idle, x, y, type)
-		// 		break
-		// 	}
-		// 	default:
-		// 		throw new Error(`Invalid interrupt ${interrupt}`)
-		// }
+		if ((unit.thisTraits & UnitTraits.Interruptible) !== UnitTraits.Interruptible)
+			return
+
+		const memory = game.units.interruptibles.rawData
+		const interrupt = memory[unit.interruptible + DataOffsetInterruptible.InterruptType]! as InterruptType
+		if (interrupt === InterruptType.None) return
+		memory[unit.interruptible + DataOffsetInterruptible.InterruptType]! = InterruptType.None
+
+		switch (interrupt) {
+			case InterruptType.Walk: {
+				const x = memory[unit.interruptible + DataOffsetInterruptible.ValueA]!
+				const y = memory[unit.interruptible + DataOffsetInterruptible.ValueB]!
+				walkingByPathRoot.setup(game, unit, ActivityId.Idle, x, y, 0)
+				break
+			}
+			case InterruptType.ItemPickUp: {
+				const x = memory[unit.interruptible + DataOffsetInterruptible.ValueA]!
+				const y = memory[unit.interruptible + DataOffsetInterruptible.ValueB]!
+				const type = memory[unit.interruptible + DataOffsetInterruptible.ValueC]! as ItemType
+				activityItemPickupRoot.setup(game, unit, ActivityId.Idle, x, y, type)
+				break
+			}
+			default:
+				throw new Error(`Invalid interrupt ${interrupt}`)
+		}
 	},
 	setup(game: GameState, unit: UnitTraitIndicesRecord) {
 		const withActivitiesMemory = game.units.withActivities.rawData

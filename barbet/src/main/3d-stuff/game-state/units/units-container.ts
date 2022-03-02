@@ -2,10 +2,9 @@ import { Direction } from '../../../util/direction'
 import { ActivityId } from '../../renderable/unit/activity'
 import { UnitColorPaletteId } from '../../renderable/unit/unit-color'
 import { ItemType } from '../../world/item'
+import { InterruptType } from '../activities/interrupt'
 import { ACTIVITY_MEMORY_SIZE } from '../game-state'
 import { DataStore } from './data-store'
-
-export type UnitId = number
 
 export const enum UnitTraits {
 	Alive = 1 << 31,
@@ -47,6 +46,14 @@ export const enum DataOffsetItemHoldable {
 	SIZE,
 }
 
+export const enum DataOffsetInterruptible {
+	InterruptType,
+	ValueA,
+	ValueB,
+	ValueC,
+	SIZE,
+}
+
 export interface UnitTraitIndicesRecord {
 	thisId: number
 	thisTraits: number
@@ -56,6 +63,7 @@ export interface UnitTraitIndicesRecord {
 	withActivity: number
 	activityMemory: number
 	itemHoldable: number
+	interruptible: number
 }
 
 class UnitsContainer {
@@ -65,6 +73,7 @@ class UnitsContainer {
 	public readonly withActivities = DataStore.createInt32(DataOffsetWithActivity.SIZE)
 	public readonly activitiesMemory = DataStore.createInt32(ACTIVITY_MEMORY_SIZE)
 	public readonly itemHoldables = DataStore.createInt32(DataOffsetItemHoldable.SIZE)
+	public readonly interruptibles = DataStore.createInt32(DataOffsetInterruptible.SIZE)
 	private nextUnitId: number = 1
 
 	public static createEmptyContainer() {
@@ -84,6 +93,7 @@ class UnitsContainer {
 			withActivity: (traits & UnitTraits.WithActivity) === UnitTraits.WithActivity ? this.withActivities.pushBack() : NO_INDEX,
 			activityMemory: (traits & UnitTraits.WithActivity) === UnitTraits.WithActivity ? this.activitiesMemory.pushBack() : NO_INDEX,
 			itemHoldable: (traits & UnitTraits.ItemHoldable) === UnitTraits.ItemHoldable ? this.itemHoldables.pushBack() : NO_INDEX,
+			interruptible: (traits & UnitTraits.Interruptible) === UnitTraits.Interruptible ? this.interruptibles.pushBack() : NO_INDEX,
 		}
 
 		let index = record.idIndex
@@ -130,6 +140,12 @@ class UnitsContainer {
 			data[index + DataOffsetItemHoldable.ItemId] = ItemType.None
 		}
 
+		index = record.interruptible
+		if (index !== NO_INDEX) {
+			const data = this.interruptibles.rawData
+			data[index + DataOffsetInterruptible.InterruptType] = InterruptType.None
+		}
+
 		return record
 	}
 
@@ -143,6 +159,7 @@ class UnitsContainer {
 			withActivity: 0,
 			activityMemory: 0,
 			itemHoldable: 0,
+			interruptible: 0,
 		}
 
 		const rawData = this.ids.rawData
@@ -162,6 +179,7 @@ class UnitsContainer {
 			if ((traits & UnitTraits.WithActivity) === UnitTraits.WithActivity) record.withActivity += DataOffsetWithActivity.SIZE
 			if ((traits & UnitTraits.WithActivity) === UnitTraits.WithActivity) record.activityMemory += ACTIVITY_MEMORY_SIZE
 			if ((traits & UnitTraits.ItemHoldable) === UnitTraits.ItemHoldable) record.itemHoldable += DataOffsetItemHoldable.SIZE
+			if ((traits & UnitTraits.Interruptible) === UnitTraits.Interruptible) record.interruptible += DataOffsetInterruptible.SIZE
 		}
 	}
 }
