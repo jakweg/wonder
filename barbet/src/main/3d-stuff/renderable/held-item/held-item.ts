@@ -1,5 +1,6 @@
 import { toGl } from '../../../util/matrix/common'
 import { add, clone, fromValues } from '../../../util/matrix/vec3'
+import { iterateOverEntitiesHoldingItems } from '../../game-state/entities/queries'
 import {
 	DataOffsetDrawables,
 	DataOffsetItemHoldable,
@@ -52,8 +53,7 @@ const createHeldItemRenderable = (renderer: MainRenderer,
 			const withActivities = game.entities.withActivities.rawData
 			const itemHoldables = game.entities.itemHoldables.rawData
 
-			for (const record of game.entities.iterate(EntityTrait.ItemHoldable | EntityTrait.Drawable | EntityTrait.Position)) {
-
+			for (const record of iterateOverEntitiesHoldingItems(game.entities)) {
 				const type = itemHoldables[record.itemHoldable + DataOffsetItemHoldable.ItemId]! as ItemType
 
 				if (type === ItemType.None)

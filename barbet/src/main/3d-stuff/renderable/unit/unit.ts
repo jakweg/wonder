@@ -1,5 +1,6 @@
 import { toGl } from '../../../util/matrix/common'
 import { add, clone, fromValues } from '../../../util/matrix/vec3'
+import { iterateOverDrawableEntities } from '../../game-state/entities/queries'
 import {
 	DataOffsetDrawables,
 	DataOffsetItemHoldable,
@@ -102,12 +103,13 @@ export const createNewUnitRenderable = (renderer: MainRenderer,
 		vao.bind()
 		modelBuffer.bind()
 
-		const positions = game.entities.positions.rawData
-		const drawables = game.entities.drawables.rawData
-		const withActivities = game.entities.withActivities.rawData
-		const itemHoldables = game.entities.itemHoldables.rawData
+		const container = game.entities
+		const positions = container.positions.rawData
+		const drawables = container.drawables.rawData
+		const withActivities = container.withActivities.rawData
+		const itemHoldables = container.itemHoldables.rawData
 
-		for (const record of game.entities.iterate(EntityTrait.Drawable | EntityTrait.Position)) {
+		for (const record of iterateOverDrawableEntities(container)) {
 
 			const unitX = positions[record.position + DataOffsetPositions.PositionX]!
 			const unitY = positions[record.position + DataOffsetPositions.PositionY]!

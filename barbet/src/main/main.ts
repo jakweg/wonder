@@ -1,6 +1,7 @@
 import activityIdle from './3d-stuff/game-state/activities/idle'
 import { interruptRequestItemPickUp, interruptRequestWalk } from './3d-stuff/game-state/activities/interrupt'
 import EntityContainer from './3d-stuff/game-state/entities/entity-container'
+import { getEntityById_drawableItem, iterateOverAllSelectedEntities } from './3d-stuff/game-state/entities/queries'
 import {
 	DataOffsetDrawables,
 	DataOffsetItemHoldable,
@@ -129,15 +130,16 @@ const mouseEventListener = (event: MouseEvent) => {
 	const result = mousePicker.pick(ctx, event.offsetX, 720 - event.offsetY)
 	if (result.pickedType === MousePickableType.Terrain) {
 		let wasAny = false
-		if (itemsOnGround.getItem(result.x, result.z) !== ItemType.None)
-			for (const record of state.entities.iterate(EntityTrait.Interruptible | EntityTrait.Drawable)) {
+		const entities = iterateOverAllSelectedEntities(entityContainer)
+		if (itemsOnGround.getItem(result.x, result.z) !== ItemType.None) {
+			for (const record of entities) {
 				if (entityContainer.drawables.rawData[record.drawable + DataOffsetDrawables.ColorPaletteId] !== UnitColorPaletteId.DarkBlue)
 					continue
 				wasAny = true
 				interruptRequestItemPickUp(entityContainer, record, result.x, result.z, ItemType.Box)
 			}
-		else
-			for (const record of state.entities.iterate(EntityTrait.Interruptible | EntityTrait.Drawable)) {
+		} else
+			for (const record of entities) {
 				if (entityContainer.drawables.rawData[record.drawable + DataOffsetDrawables.ColorPaletteId] !== UnitColorPaletteId.DarkBlue)
 					continue
 				wasAny = true
@@ -153,8 +155,8 @@ const mouseEventListener = (event: MouseEvent) => {
 		}
 	} else if (result.pickedType === MousePickableType.Unit) {
 		const id = result.numericId
-		for (const record of state.entities.iterate(EntityTrait.Drawable | EntityTrait.ItemHoldable)) {
-			if (record.thisId !== id) continue
+		const record = getEntityById_drawableItem(entityContainer, id)
+		if (record !== null) {
 			{
 				const rawData = state.entities.drawables.rawData
 				let color = rawData[record.drawable + DataOffsetDrawables.ColorPaletteId]! as UnitColorPaletteId
@@ -167,7 +169,6 @@ const mouseEventListener = (event: MouseEvent) => {
 				item = (item === ItemType.Box) ? ItemType.None : ItemType.Box
 				rawData[record.itemHoldable + DataOffsetItemHoldable.ItemId] = item
 			}
-			break
 		}
 	}
 }

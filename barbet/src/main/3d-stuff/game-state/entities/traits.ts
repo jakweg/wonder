@@ -1,3 +1,10 @@
+import { Direction } from '../../../util/direction'
+import { ActivityId } from '../../renderable/unit/activity'
+import { UnitColorPaletteId } from '../../renderable/unit/unit-color'
+import { ItemType } from '../../world/item'
+import { InterruptType } from '../activities/interrupt'
+import EntityContainer, { ACTIVITY_MEMORY_SIZE } from './entity-container'
+
 export const enum EntityTrait {
 	Alive = 1 << 31,
 	Position = Alive | 1 << 0,
@@ -76,3 +83,50 @@ export const requireTrait = (all: EntityTrait, required: EntityTrait): void => {
 	if (!hasTrait(all, required))
 		throw new Error(`Missing trait ${required.toString(2)} got only ${all.toString(2)}`)
 }
+
+export const NO_INDEX = -1
+export const initializeTraitsOfNewEntity = (container: EntityContainer, record: EntityTraitIndicesRecord): void => {
+	let index
+	index = record.position
+	if (index !== NO_INDEX) {
+		const data = container.positions.rawData
+		data[index + DataOffsetPositions.PositionX] = 0
+		data[index + DataOffsetPositions.PositionY] = 0
+		data[index + DataOffsetPositions.PositionZ] = 0
+	}
+
+	index = record.drawable
+	if (index !== NO_INDEX) {
+		const data = container.drawables.rawData
+		data[index + DataOffsetDrawables.Rotation] = Direction.PositiveX
+		data[index + DataOffsetDrawables.ColorPaletteId] = UnitColorPaletteId.LightOrange
+	}
+
+	index = record.withActivity
+	if (index !== NO_INDEX) {
+		const data = container.withActivities.rawData
+		data[index + DataOffsetWithActivity.CurrentId] = ActivityId.None
+		data[index + DataOffsetWithActivity.StartTick] = 0
+		data[index + DataOffsetWithActivity.MemoryPointer] = 0
+	}
+
+	index = record.activityMemory
+	if (index !== NO_INDEX) {
+		const data = container.activitiesMemory.rawData
+		const value = 0x45 // 69
+		data.fill(value, index, index + ACTIVITY_MEMORY_SIZE)
+	}
+
+	index = record.itemHoldable
+	if (index !== NO_INDEX) {
+		const data = container.itemHoldables.rawData
+		data[index + DataOffsetItemHoldable.ItemId] = ItemType.None
+	}
+
+	index = record.interruptible
+	if (index !== NO_INDEX) {
+		const data = container.interruptibles.rawData
+		data[index + DataOffsetInterruptible.InterruptType] = InterruptType.None
+	}
+}
+

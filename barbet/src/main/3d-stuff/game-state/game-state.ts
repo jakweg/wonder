@@ -1,7 +1,8 @@
 import { ActivityId, requireActivity } from '../renderable/unit/activity'
 import { World } from '../world/world'
 import EntityContainer from './entities/entity-container'
-import { DataOffsetWithActivity, EntityTrait } from './entities/traits'
+import { iterateOverEntitiesWithActivity } from './entities/queries'
+import { DataOffsetWithActivity } from './entities/traits'
 import { GroundItemsIndex } from './ground-items-index'
 import { PathFinder } from './path-finder'
 
@@ -36,8 +37,9 @@ export class GameState {
 
 		this.pathFinder.tick(this)
 
-		const memory = this.entities.withActivities.rawData
-		for (const entity of this.entities.iterate(EntityTrait.WithActivity)) {
+		const container = this.entities
+		const memory = container.withActivities.rawData
+		for (const entity of iterateOverEntitiesWithActivity(container)) {
 			const currentActivity = memory[entity.withActivity + DataOffsetWithActivity.CurrentId]! as ActivityId
 
 			requireActivity(currentActivity).perform(this, entity)

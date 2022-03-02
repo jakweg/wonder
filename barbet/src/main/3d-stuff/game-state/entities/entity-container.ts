@@ -1,8 +1,3 @@
-import { Direction } from '../../../util/direction'
-import { ActivityId } from '../../renderable/unit/activity'
-import { UnitColorPaletteId } from '../../renderable/unit/unit-color'
-import { ItemType } from '../../world/item'
-import { InterruptType } from '../activities/interrupt'
 import { DataStore } from './data-store'
 import {
 	createEmptyTraitRecord,
@@ -15,6 +10,8 @@ import {
 	EntityTrait,
 	EntityTraitIndicesRecord,
 	hasTrait,
+	initializeTraitsOfNewEntity,
+	NO_INDEX,
 } from './traits'
 
 export const ACTIVITY_MEMORY_SIZE = 20
@@ -34,7 +31,6 @@ class EntityContainer {
 	}
 
 	public createEntity(traits: EntityTrait): EntityTraitIndicesRecord {
-		const NO_INDEX = -1
 		const unitId = this.nextEntityId++
 
 		const record: EntityTraitIndicesRecord = {
@@ -57,47 +53,7 @@ class EntityContainer {
 		}
 
 
-		index = record.position
-		if (index !== NO_INDEX) {
-			const data = this.positions.rawData
-			data[index + DataOffsetPositions.PositionX] = 0
-			data[index + DataOffsetPositions.PositionY] = 0
-			data[index + DataOffsetPositions.PositionZ] = 0
-		}
-
-		index = record.drawable
-		if (index !== NO_INDEX) {
-			const data = this.drawables.rawData
-			data[index + DataOffsetDrawables.Rotation] = Direction.PositiveX
-			data[index + DataOffsetDrawables.ColorPaletteId] = UnitColorPaletteId.LightOrange
-		}
-
-		index = record.withActivity
-		if (index !== NO_INDEX) {
-			const data = this.withActivities.rawData
-			data[index + DataOffsetWithActivity.CurrentId] = ActivityId.None
-			data[index + DataOffsetWithActivity.StartTick] = 0
-			data[index + DataOffsetWithActivity.MemoryPointer] = 0
-		}
-
-		index = record.activityMemory
-		if (index !== NO_INDEX) {
-			const data = this.activitiesMemory.rawData
-			const value = 0x45 // 69
-			data.fill(value, index, index + ACTIVITY_MEMORY_SIZE)
-		}
-
-		index = record.itemHoldable
-		if (index !== NO_INDEX) {
-			const data = this.itemHoldables.rawData
-			data[index + DataOffsetItemHoldable.ItemId] = ItemType.None
-		}
-
-		index = record.interruptible
-		if (index !== NO_INDEX) {
-			const data = this.interruptibles.rawData
-			data[index + DataOffsetInterruptible.InterruptType] = InterruptType.None
-		}
+		initializeTraitsOfNewEntity(this, record)
 
 		return record
 	}
