@@ -6,6 +6,7 @@ import { World } from '../world/world'
 import activityIdle from './activities/idle'
 import { GroundItemsIndex } from './ground-items-index'
 import { PathFinder } from './path-finder'
+import UnitsContainer from './units/units-container'
 
 
 export const ACTIVITY_MEMORY_SIZE = 20
@@ -32,6 +33,7 @@ export class GameState {
 
 	private constructor(public readonly world: World,
 	                    public readonly groundItems: GroundItemsIndex,
+	                    public readonly units: UnitsContainer,
 	                    public readonly pathFinder: PathFinder) {
 	}
 
@@ -41,6 +43,9 @@ export class GameState {
 		return this._currentTick | 0
 	}
 
+	/**
+	 * @deprecated
+	 */
 	public get allUnits(): Unit[] {
 		return [...this._units]
 	}
@@ -48,10 +53,14 @@ export class GameState {
 	public static createNew(
 		world: World,
 		groundItems: GroundItemsIndex,
+		units: UnitsContainer,
 		pathFinder: PathFinder): GameState {
-		return new GameState(world, groundItems, pathFinder)
+		return new GameState(world, groundItems, units, pathFinder)
 	}
 
+	/**
+	 * @deprecated
+	 */
 	public spawnUnit(atX: number,
 	                 atZ: number,
 	                 color: UnitColorPaletteId): void {

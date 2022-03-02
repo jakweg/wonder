@@ -1,4 +1,4 @@
-import boxItem from '../game-state/item/box'
+import boxItem from '../game-state/items/box'
 import { GPUBuffer, MainRenderer } from '../main-renderer'
 import { freezeAndValidateOptionsList } from '../shader/common'
 

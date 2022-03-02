@@ -3,6 +3,7 @@ import { GameState } from './3d-stuff/game-state/game-state'
 import { GroundItemsIndex } from './3d-stuff/game-state/ground-items-index'
 import { PathFinder } from './3d-stuff/game-state/path-finder'
 import { StateUpdater } from './3d-stuff/game-state/state-updater'
+import UnitsContainer, { DataOffsetPositions, UnitTraits } from './3d-stuff/game-state/units/units-container'
 import { MainRenderer } from './3d-stuff/main-renderer'
 import { createPicker, MousePickableType } from './3d-stuff/mouse-picker'
 import createHeldItemRenderable from './3d-stuff/renderable/held-item/held-item'
@@ -48,9 +49,18 @@ const terrain = createNewTerrainRenderable(renderer, world)
 const itemsOnGround = GroundItemsIndex.createNew(world.size)
 itemsOnGround.setItem(5, 9, 1)
 itemsOnGround.setItem(6, 9, 1)
-const state = GameState.createNew(world, itemsOnGround, PathFinder.createNewQueue(world))
+const unitsContainer = UnitsContainer.createEmptyContainer()
+const state = GameState.createNew(world, itemsOnGround, unitsContainer, PathFinder.createNewQueue(world))
 const updater = StateUpdater.createNew(state, 20)
 updater.start()
+
+{
+	const entity = unitsContainer.createEntity(UnitTraits.Position | UnitTraits.Drawable)
+	unitsContainer.positions.rawData[entity.position + DataOffsetPositions.PositionX] = 8
+	unitsContainer.positions.rawData[entity.position + DataOffsetPositions.PositionY] = 2
+	unitsContainer.positions.rawData[entity.position + DataOffsetPositions.PositionZ] = 6
+}
+
 state.spawnUnit(8, 6, UnitColorPaletteId.LightOrange)
 // state.spawnUnit(4, 6, UnitColorPaletteId.LightOrange)
 
@@ -58,7 +68,6 @@ const unit = createNewUnitRenderable(renderer, state)
 const items = createHeldItemRenderable(renderer, state)
 const groundItems = createNewItemOnGroundRenderable(renderer, state)
 const mousePicker = createPicker(renderer.rawContext, [terrain.renderForMousePicker, unit.renderForMousePicker])
-
 const sunPosition = vec3.fromValues(-500, 500, -500)
 
 const firstRenderTime = performance.now()
