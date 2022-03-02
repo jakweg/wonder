@@ -2,13 +2,13 @@ import { Direction, getRotationByChangeInCoords } from '../../../util/direction'
 import { ActivityId } from '../../renderable/unit/activity'
 import { ShaderId } from '../../renderable/unit/unit-shaders'
 import { ItemType } from '../../world/item'
-import { GameState } from '../game-state'
 import {
 	DataOffsetDrawables,
 	DataOffsetPositions,
 	DataOffsetWithActivity,
-	UnitTraitIndicesRecord,
-} from '../units/traits'
+	EntityTraitIndicesRecord,
+} from '../entities/traits'
+import { GameState } from '../game-state'
 import activityItemPickup from './item-pickup'
 import walkingByPathRoot from './walking-by-path-root'
 
@@ -23,16 +23,16 @@ const enum MemoryField {
 const activityItemPickupRoot = {
 	numericId: ActivityId.ItemPickUpRoot,
 	shaderId: ShaderId.Idle,
-	perform(game: GameState, unit: UnitTraitIndicesRecord) {
-		const withActivitiesMemory = game.units.withActivities.rawData
-		const memory = game.units.activitiesMemory.rawData
+	perform(game: GameState, unit: EntityTraitIndicesRecord) {
+		const withActivitiesMemory = game.entities.withActivities.rawData
+		const memory = game.entities.activitiesMemory.rawData
 		const pointer = withActivitiesMemory[unit.withActivity + DataOffsetWithActivity.MemoryPointer]!
 
 		const itemX = memory[pointer - MemoryField.DestinationX]!
 		const itemZ = memory[pointer - MemoryField.DestinationZ]!
 		const requestedType = memory[pointer - MemoryField.RequestedItemType]! as ItemType
 
-		const positionsData = game.units.positions.rawData
+		const positionsData = game.entities.positions.rawData
 		const unitX = positionsData[unit.position + DataOffsetPositions.PositionX]!
 		const unitZ = positionsData[unit.position + DataOffsetPositions.PositionZ]!
 
@@ -46,7 +46,7 @@ const activityItemPickupRoot = {
 
 				const rotation = (changeX !== 0 || changeZ !== 0)
 					? getRotationByChangeInCoords(changeX, changeZ)
-					: (game.units.drawables.rawData[unit.drawable + DataOffsetDrawables.Rotation]! & Direction.MaskCurrentRotation)
+					: (game.entities.drawables.rawData[unit.drawable + DataOffsetDrawables.Rotation]! & Direction.MaskCurrentRotation)
 				activityItemPickup.setup(game, unit, rotation)
 				return
 			}
@@ -56,21 +56,21 @@ const activityItemPickupRoot = {
 		withActivitiesMemory[unit.withActivity + DataOffsetWithActivity.CurrentId] = memory[pointer - MemoryField.ReturnTo]!
 		withActivitiesMemory[unit.withActivity + DataOffsetWithActivity.MemoryPointer] -= MemoryField.SIZE
 	},
-	onPickedUp(game: GameState, unit: UnitTraitIndicesRecord) {
+	onPickedUp(game: GameState, unit: EntityTraitIndicesRecord) {
 
-		const withActivitiesMemory = game.units.withActivities.rawData
-		const memory = game.units.activitiesMemory.rawData
+		const withActivitiesMemory = game.entities.withActivities.rawData
+		const memory = game.entities.activitiesMemory.rawData
 		const pointer = withActivitiesMemory[unit.withActivity + DataOffsetWithActivity.MemoryPointer]!
 
 		withActivitiesMemory[unit.withActivity + DataOffsetWithActivity.CurrentId] = memory[pointer - MemoryField.ReturnTo]!
 		withActivitiesMemory[unit.withActivity + DataOffsetWithActivity.MemoryPointer] -= MemoryField.SIZE
 	},
-	setup(game: GameState, unit: UnitTraitIndicesRecord, returnTo: ActivityId, x: number, z: number, type: ItemType) {
+	setup(game: GameState, unit: EntityTraitIndicesRecord, returnTo: ActivityId, x: number, z: number, type: ItemType) {
 		if (type === ItemType.None)
 			throw new Error('Request of pick up none item')
 
-		const withActivitiesMemory = game.units.withActivities.rawData
-		const memory = game.units.activitiesMemory.rawData
+		const withActivitiesMemory = game.entities.withActivities.rawData
+		const memory = game.entities.activitiesMemory.rawData
 		const pointer = (withActivitiesMemory[unit.withActivity + DataOffsetWithActivity.MemoryPointer] += MemoryField.SIZE)
 
 		withActivitiesMemory[unit.withActivity + DataOffsetWithActivity.CurrentId] = ActivityId.ItemPickUpRoot

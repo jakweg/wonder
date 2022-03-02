@@ -4,8 +4,8 @@ import activityItemPickup from '../../game-state/activities/item-pickup'
 import activityItemPickupRoot from '../../game-state/activities/item-pickup-root'
 import activityWalking from '../../game-state/activities/walking'
 import activityWalkingByPathRoot from '../../game-state/activities/walking-by-path-root'
+import { EntityTraitIndicesRecord } from '../../game-state/entities/traits'
 import { GameState } from '../../game-state/game-state'
-import { UnitTraitIndicesRecord } from '../../game-state/units/traits'
 import { ShaderId } from './unit-shaders'
 
 export enum ActivityId {
@@ -23,7 +23,7 @@ export interface ActivityType {
 
 	readonly shaderId: ShaderId
 
-	perform(game: GameState, unit: UnitTraitIndicesRecord): void
+	perform(game: GameState, unit: EntityTraitIndicesRecord): void
 }
 
 

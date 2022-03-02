@@ -1,14 +1,14 @@
 import { ActivityId } from '../../renderable/unit/activity'
 import { ShaderId, UnitShaderCreationOptions } from '../../renderable/unit/unit-shaders'
 import { ItemType } from '../../world/item'
-import { GameState } from '../game-state'
 import {
 	DataOffsetInterruptible,
 	DataOffsetWithActivity,
+	EntityTrait,
+	EntityTraitIndicesRecord,
 	requireTrait,
-	UnitTraitIndicesRecord,
-	UnitTraits,
-} from '../units/traits'
+} from '../entities/traits'
+import { GameState } from '../game-state'
 import { InterruptType } from './interrupt'
 import activityItemPickupRoot from './item-pickup-root'
 import walkingByPathRoot from './walking-by-path-root'
@@ -16,9 +16,9 @@ import walkingByPathRoot from './walking-by-path-root'
 const activityIdle = {
 	numericId: ActivityId.Idle,
 	shaderId: ShaderId.Idle,
-	perform(game: GameState, unit: UnitTraitIndicesRecord) {
+	perform(game: GameState, unit: EntityTraitIndicesRecord) {
 
-		const memory = game.units.interruptibles.rawData
+		const memory = game.entities.interruptibles.rawData
 		const interrupt = memory[unit.interruptible + DataOffsetInterruptible.InterruptType]! as InterruptType
 		if (interrupt === InterruptType.None) return
 
@@ -42,10 +42,10 @@ const activityIdle = {
 				throw new Error(`Invalid interrupt ${interrupt}`)
 		}
 	},
-	setup(game: GameState, unit: UnitTraitIndicesRecord) {
-		requireTrait(unit.thisTraits, UnitTraits.Interruptible)
+	setup(game: GameState, unit: EntityTraitIndicesRecord) {
+		requireTrait(unit.thisTraits, EntityTrait.Interruptible)
 
-		const withActivitiesMemory = game.units.withActivities.rawData
+		const withActivitiesMemory = game.entities.withActivities.rawData
 
 		withActivitiesMemory[unit.withActivity + DataOffsetWithActivity.CurrentId] = ActivityId.Idle
 		withActivitiesMemory[unit.withActivity + DataOffsetWithActivity.StartTick] = game.currentTick

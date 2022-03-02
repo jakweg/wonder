@@ -1,16 +1,16 @@
 import { Direction } from '../../../util/direction'
 import { ActivityId } from '../../renderable/unit/activity'
 import { ShaderId } from '../../renderable/unit/unit-shaders'
-import { GameState } from '../game-state'
 import {
 	DataOffsetDrawables,
 	DataOffsetInterruptible,
 	DataOffsetPositions,
 	DataOffsetWithActivity,
+	EntityTrait,
+	EntityTraitIndicesRecord,
 	requireTrait,
-	UnitTraitIndicesRecord,
-	UnitTraits,
-} from '../units/traits'
+} from '../entities/traits'
+import { GameState } from '../game-state'
 import { InterruptType } from './interrupt'
 import activityWalking from './walking'
 
@@ -33,9 +33,9 @@ const enum MemoryField {
 const activityWalkingByPathRoot = {
 	numericId: ActivityId.WalkingByPathRoot,
 	shaderId: ShaderId.Idle,
-	perform(game: GameState, unit: UnitTraitIndicesRecord) {
-		const memory = game.units.activitiesMemory.rawData
-		const withActivitiesMemory = game.units.withActivities.rawData
+	perform(game: GameState, unit: EntityTraitIndicesRecord) {
+		const memory = game.entities.activitiesMemory.rawData
+		const withActivitiesMemory = game.entities.withActivities.rawData
 		const pointer = unit.activityMemory + withActivitiesMemory[unit.withActivity + DataOffsetWithActivity.MemoryPointer]!
 
 		const status: Status = memory[pointer - MemoryField.Status]!
@@ -53,8 +53,8 @@ const activityWalkingByPathRoot = {
 				return
 
 			case Status.GotPath:
-				const canBeInterrupted = (unit.thisTraits & UnitTraits.Interruptible) === UnitTraits.Interruptible
-				const wasInterrupted = canBeInterrupted && game.units.interruptibles.rawData[unit.interruptible + DataOffsetInterruptible.InterruptType]! as InterruptType !== InterruptType.None
+				const canBeInterrupted = (unit.thisTraits & EntityTrait.Interruptible) === EntityTrait.Interruptible
+				const wasInterrupted = canBeInterrupted && game.entities.interruptibles.rawData[unit.interruptible + DataOffsetInterruptible.InterruptType]! as InterruptType !== InterruptType.None
 				if (!wasInterrupted) {
 					if (path !== undefined) {
 						const directionIndex = memory[pointer - MemoryField.NextPathDirectionIndex]++
@@ -72,8 +72,8 @@ const activityWalkingByPathRoot = {
 					const dy = memory[pointer - MemoryField.DestinationZ]!
 					const areaSize = memory[pointer - MemoryField.DestinationAreaSize]!
 
-					if ((unit.thisTraits & UnitTraits.Drawable) === UnitTraits.Drawable)
-						game.units.drawables.rawData[unit.drawable + DataOffsetDrawables.Rotation] &= ~Direction.FlagMergeWithPrevious
+					if ((unit.thisTraits & EntityTrait.Drawable) === EntityTrait.Drawable)
+						game.entities.drawables.rawData[unit.drawable + DataOffsetDrawables.Rotation] &= ~Direction.FlagMergeWithPrevious
 
 					withActivitiesMemory[unit.withActivity + DataOffsetWithActivity.MemoryPointer] -= MemoryField.SIZE
 					activityWalkingByPathRoot.setup(game, unit, returnTo, dx, dy, areaSize)
@@ -85,22 +85,22 @@ const activityWalkingByPathRoot = {
 		// finished path
 		const returnToActivity: ActivityId = memory[pointer - MemoryField.ReturnToActivity]!
 
-		if ((unit.thisTraits & UnitTraits.Drawable) === UnitTraits.Drawable)
-			game.units.drawables.rawData[unit.drawable + DataOffsetDrawables.Rotation] &= ~Direction.FlagMergeWithPrevious
+		if ((unit.thisTraits & EntityTrait.Drawable) === EntityTrait.Drawable)
+			game.entities.drawables.rawData[unit.drawable + DataOffsetDrawables.Rotation] &= ~Direction.FlagMergeWithPrevious
 
 		withActivitiesMemory[unit.withActivity + DataOffsetWithActivity.CurrentId] = returnToActivity
 		withActivitiesMemory[unit.withActivity + DataOffsetWithActivity.MemoryPointer] -= MemoryField.SIZE
 	},
-	setup(game: GameState, unit: UnitTraitIndicesRecord, returnTo: ActivityId,
+	setup(game: GameState, unit: EntityTraitIndicesRecord, returnTo: ActivityId,
 	      x: number, z: number, areaSize: number) {
-		requireTrait(unit.thisTraits, UnitTraits.Position)
+		requireTrait(unit.thisTraits, EntityTrait.Position)
 
-		const positionData = game.units.positions.rawData
+		const positionData = game.entities.positions.rawData
 		const posX = positionData[unit.position + DataOffsetPositions.PositionX]!
 		const posZ = positionData[unit.position + DataOffsetPositions.PositionZ]!
 
-		const withActivitiesMemory = game.units.withActivities.rawData
-		const memory = game.units.activitiesMemory.rawData
+		const withActivitiesMemory = game.entities.withActivities.rawData
+		const memory = game.entities.activitiesMemory.rawData
 		const pointer = (withActivitiesMemory[unit.withActivity + DataOffsetWithActivity.MemoryPointer] += MemoryField.SIZE)
 
 		withActivitiesMemory[unit.withActivity + DataOffsetWithActivity.CurrentId] = ActivityId.WalkingByPathRoot

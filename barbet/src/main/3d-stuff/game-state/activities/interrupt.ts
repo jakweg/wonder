@@ -1,6 +1,6 @@
 import { ItemType } from '../../world/item'
-import { DataOffsetInterruptible, requireTrait, UnitTraitIndicesRecord, UnitTraits } from '../units/traits'
-import UnitsContainer from '../units/units-container'
+import EntityContainer from '../entities/entity-container'
+import { DataOffsetInterruptible, EntityTrait, EntityTraitIndicesRecord, requireTrait } from '../entities/traits'
 
 export const enum InterruptType {
 	/**
@@ -17,8 +17,8 @@ export const enum InterruptType {
 	ItemPickUp,
 }
 
-export const interruptRequestWalk = (container: UnitsContainer, unit: UnitTraitIndicesRecord, x: number, z: number) => {
-	requireTrait(unit.thisTraits, UnitTraits.Interruptible)
+export const interruptRequestWalk = (container: EntityContainer, unit: EntityTraitIndicesRecord, x: number, z: number) => {
+	requireTrait(unit.thisTraits, EntityTrait.Interruptible)
 
 	const memory = container.interruptibles.rawData
 	memory[unit.interruptible + DataOffsetInterruptible.InterruptType] = InterruptType.Walk
@@ -26,8 +26,8 @@ export const interruptRequestWalk = (container: UnitsContainer, unit: UnitTraitI
 	memory[unit.interruptible + DataOffsetInterruptible.ValueB] = z
 }
 
-export const interruptRequestItemPickUp = (container: UnitsContainer, unit: UnitTraitIndicesRecord, x: number, z: number, type: ItemType) => {
-	requireTrait(unit.thisTraits, UnitTraits.Interruptible)
+export const interruptRequestItemPickUp = (container: EntityContainer, unit: EntityTraitIndicesRecord, x: number, z: number, type: ItemType) => {
+	requireTrait(unit.thisTraits, EntityTrait.Interruptible)
 
 	const memory = container.interruptibles.rawData
 	memory[unit.interruptible + DataOffsetInterruptible.InterruptType] = InterruptType.ItemPickUp

@@ -1,16 +1,16 @@
 import activityIdle from './3d-stuff/game-state/activities/idle'
 import { interruptRequestItemPickUp, interruptRequestWalk } from './3d-stuff/game-state/activities/interrupt'
-import { GameState } from './3d-stuff/game-state/game-state'
-import { GroundItemsIndex } from './3d-stuff/game-state/ground-items-index'
-import { PathFinder } from './3d-stuff/game-state/path-finder'
-import { StateUpdater } from './3d-stuff/game-state/state-updater'
+import EntityContainer from './3d-stuff/game-state/entities/entity-container'
 import {
 	DataOffsetDrawables,
 	DataOffsetItemHoldable,
 	DataOffsetPositions,
-	UnitTraits,
-} from './3d-stuff/game-state/units/traits'
-import UnitsContainer from './3d-stuff/game-state/units/units-container'
+	EntityTrait,
+} from './3d-stuff/game-state/entities/traits'
+import { GameState } from './3d-stuff/game-state/game-state'
+import { GroundItemsIndex } from './3d-stuff/game-state/ground-items-index'
+import { PathFinder } from './3d-stuff/game-state/path-finder'
+import { StateUpdater } from './3d-stuff/game-state/state-updater'
 import { MainRenderer } from './3d-stuff/main-renderer'
 import { createPicker, MousePickableType } from './3d-stuff/mouse-picker'
 import createHeldItemRenderable from './3d-stuff/renderable/held-item/held-item'
@@ -56,17 +56,17 @@ const terrain = createNewTerrainRenderable(renderer, world)
 const itemsOnGround = GroundItemsIndex.createNew(world.size)
 itemsOnGround.setItem(5, 9, 1)
 itemsOnGround.setItem(6, 9, 1)
-const unitsContainer = UnitsContainer.createEmptyContainer()
-const state = GameState.createNew(world, itemsOnGround, unitsContainer, PathFinder.createNewQueue(world))
+const entityContainer = EntityContainer.createEmptyContainer()
+const state = GameState.createNew(world, itemsOnGround, entityContainer, PathFinder.createNewQueue(world))
 const updater = StateUpdater.createNew(state, 20)
 updater.start()
 
 {
-	const unitTraits = UnitTraits.Position | UnitTraits.Drawable | UnitTraits.ItemHoldable | UnitTraits.WithActivity | UnitTraits.Interruptible
-	const entity = unitsContainer.createEntity(unitTraits)
-	unitsContainer.positions.rawData[entity.position + DataOffsetPositions.PositionX] = 8
-	unitsContainer.positions.rawData[entity.position + DataOffsetPositions.PositionY] = 2
-	unitsContainer.positions.rawData[entity.position + DataOffsetPositions.PositionZ] = 6
+	const unitTraits = EntityTrait.Position | EntityTrait.Drawable | EntityTrait.ItemHoldable | EntityTrait.WithActivity | EntityTrait.Interruptible
+	const entity = entityContainer.createEntity(unitTraits)
+	entityContainer.positions.rawData[entity.position + DataOffsetPositions.PositionX] = 8
+	entityContainer.positions.rawData[entity.position + DataOffsetPositions.PositionY] = 2
+	entityContainer.positions.rawData[entity.position + DataOffsetPositions.PositionZ] = 6
 	activityIdle.setup(state, entity)
 }
 
@@ -130,18 +130,18 @@ const mouseEventListener = (event: MouseEvent) => {
 	if (result.pickedType === MousePickableType.Terrain) {
 		let wasAny = false
 		if (itemsOnGround.getItem(result.x, result.z) !== ItemType.None)
-			for (const record of state.units.iterate(UnitTraits.Interruptible | UnitTraits.Drawable)) {
-				if (unitsContainer.drawables.rawData[record.drawable + DataOffsetDrawables.ColorPaletteId] !== UnitColorPaletteId.DarkBlue)
+			for (const record of state.entities.iterate(EntityTrait.Interruptible | EntityTrait.Drawable)) {
+				if (entityContainer.drawables.rawData[record.drawable + DataOffsetDrawables.ColorPaletteId] !== UnitColorPaletteId.DarkBlue)
 					continue
 				wasAny = true
-				interruptRequestItemPickUp(unitsContainer, record, result.x, result.z, ItemType.Box)
+				interruptRequestItemPickUp(entityContainer, record, result.x, result.z, ItemType.Box)
 			}
 		else
-			for (const record of state.units.iterate(UnitTraits.Interruptible | UnitTraits.Drawable)) {
-				if (unitsContainer.drawables.rawData[record.drawable + DataOffsetDrawables.ColorPaletteId] !== UnitColorPaletteId.DarkBlue)
+			for (const record of state.entities.iterate(EntityTrait.Interruptible | EntityTrait.Drawable)) {
+				if (entityContainer.drawables.rawData[record.drawable + DataOffsetDrawables.ColorPaletteId] !== UnitColorPaletteId.DarkBlue)
 					continue
 				wasAny = true
-				interruptRequestWalk(unitsContainer, record, result.x, result.z)
+				interruptRequestWalk(entityContainer, record, result.x, result.z)
 			}
 
 		if (!wasAny) {
@@ -153,16 +153,16 @@ const mouseEventListener = (event: MouseEvent) => {
 		}
 	} else if (result.pickedType === MousePickableType.Unit) {
 		const id = result.numericId
-		for (const record of state.units.iterate(UnitTraits.Drawable | UnitTraits.ItemHoldable)) {
+		for (const record of state.entities.iterate(EntityTrait.Drawable | EntityTrait.ItemHoldable)) {
 			if (record.thisId !== id) continue
 			{
-				const rawData = state.units.drawables.rawData
+				const rawData = state.entities.drawables.rawData
 				let color = rawData[record.drawable + DataOffsetDrawables.ColorPaletteId]! as UnitColorPaletteId
 				color = (color === UnitColorPaletteId.DarkBlue) ? UnitColorPaletteId.GreenOrange : UnitColorPaletteId.DarkBlue
 				rawData[record.drawable + DataOffsetDrawables.ColorPaletteId] = color
 			}
 			if (event.button !== 0) {
-				const rawData = state.units.itemHoldables.rawData
+				const rawData = state.entities.itemHoldables.rawData
 				let item = rawData[record.itemHoldable + DataOffsetItemHoldable.ItemId]! as ItemType
 				item = (item === ItemType.Box) ? ItemType.None : ItemType.Box
 				rawData[record.itemHoldable + DataOffsetItemHoldable.ItemId] = item

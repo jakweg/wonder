@@ -1,15 +1,15 @@
 import { Direction, getChangeInXByRotation, getChangeInZByRotation } from '../../../util/direction'
 import { ActivityId } from '../../renderable/unit/activity'
 import { ShaderId, UnitShaderCreationOptions } from '../../renderable/unit/unit-shaders'
-import { GameState } from '../game-state'
 import {
 	DataOffsetDrawables,
 	DataOffsetPositions,
 	DataOffsetWithActivity,
+	EntityTrait,
+	EntityTraitIndicesRecord,
 	hasTrait,
-	UnitTraitIndicesRecord,
-	UnitTraits,
-} from '../units/traits'
+} from '../entities/traits'
+import { GameState } from '../game-state'
 import activityWalkingByPathRoot from './walking-by-path-root'
 
 const standardWalkingDuration = 15
@@ -47,10 +47,10 @@ const enum MemoryField {
 const activityWalking = {
 	numericId: ActivityId.Walking,
 	shaderId: ShaderId.Walking,
-	perform(game: GameState, unit: UnitTraitIndicesRecord) {
+	perform(game: GameState, unit: EntityTraitIndicesRecord) {
 		const now = game.currentTick
-		const withActivitiesMemory = game.units.withActivities.rawData
-		const activityMemory = game.units.activitiesMemory.rawData
+		const withActivitiesMemory = game.entities.withActivities.rawData
+		const activityMemory = game.entities.activitiesMemory.rawData
 		const pointer = withActivitiesMemory[unit.withActivity + DataOffsetWithActivity.MemoryPointer]!
 
 		if (now === activityMemory[pointer - MemoryField.WalkingFinishTick]!) {
@@ -59,8 +59,8 @@ const activityWalking = {
 			activityWalkingByPathRoot.perform(game, unit)
 		}
 	},
-	tryToContinueWalking(game: GameState, unit: UnitTraitIndicesRecord, direction: Direction): boolean {
-		const positionData = game.units.positions.rawData
+	tryToContinueWalking(game: GameState, unit: EntityTraitIndicesRecord, direction: Direction): boolean {
+		const positionData = game.entities.positions.rawData
 		const posX = positionData[unit.position + DataOffsetPositions.PositionX]!
 		const posY = positionData[unit.position + DataOffsetPositions.PositionY]!
 		const posZ = positionData[unit.position + DataOffsetPositions.PositionZ]!
@@ -76,8 +76,8 @@ const activityWalking = {
 
 		const now = game.currentTick
 
-		const withActivitiesMemory = game.units.withActivities.rawData
-		const memory = game.units.activitiesMemory.rawData
+		const withActivitiesMemory = game.entities.withActivities.rawData
+		const memory = game.entities.activitiesMemory.rawData
 		const pointer = (withActivitiesMemory[unit.withActivity + DataOffsetWithActivity.MemoryPointer] += MemoryField.SIZE)
 
 		withActivitiesMemory[unit.withActivity + DataOffsetWithActivity.CurrentId] = ActivityId.Walking
@@ -86,8 +86,8 @@ const activityWalking = {
 		memory[pointer - MemoryField.WalkingDirection] = direction
 		memory[pointer - MemoryField.WalkingFinishTick] = now + walkingDurationByDirection[direction]!
 
-		if (hasTrait(unit.thisTraits, UnitTraits.Drawable)) {
-			const data = game.units.drawables.rawData
+		if (hasTrait(unit.thisTraits, EntityTrait.Drawable)) {
+			const data = game.entities.drawables.rawData
 			const rotation = data[unit.drawable + DataOffsetDrawables.Rotation]!
 			data[unit.drawable + DataOffsetDrawables.Rotation] = Direction.FlagMergeWithPrevious | ((rotation & Direction.MaskCurrentRotation) << 3) | direction
 		}

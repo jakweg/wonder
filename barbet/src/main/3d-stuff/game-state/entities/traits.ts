@@ -1,4 +1,4 @@
-export const enum UnitTraits {
+export const enum EntityTrait {
 	Alive = 1 << 31,
 	Position = Alive | 1 << 0,
 	Drawable = Alive | Position | 1 << 1,
@@ -46,7 +46,7 @@ export const enum DataOffsetInterruptible {
 	SIZE,
 }
 
-export interface UnitTraitIndicesRecord {
+export interface EntityTraitIndicesRecord {
 	thisId: number
 	thisTraits: number
 	idIndex: number
@@ -58,7 +58,7 @@ export interface UnitTraitIndicesRecord {
 	interruptible: number
 }
 
-export const createEmptyTraitRecord = (): UnitTraitIndicesRecord => ({
+export const createEmptyTraitRecord = (): EntityTraitIndicesRecord => ({
 	thisId: 0,
 	thisTraits: 0,
 	idIndex: 0,
@@ -70,9 +70,9 @@ export const createEmptyTraitRecord = (): UnitTraitIndicesRecord => ({
 	interruptible: 0,
 })
 
-export const hasTrait = (all: UnitTraits, required: UnitTraits): boolean => (all & required) === required
+export const hasTrait = (all: EntityTrait, required: EntityTrait): boolean => (all & required) === required
 
-export const requireTrait = (all: UnitTraits, required: UnitTraits): void => {
+export const requireTrait = (all: EntityTrait, required: EntityTrait): void => {
 	if (!hasTrait(all, required))
 		throw new Error(`Missing trait ${required.toString(2)} got only ${all.toString(2)}`)
 }

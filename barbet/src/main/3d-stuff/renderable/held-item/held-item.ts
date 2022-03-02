@@ -1,13 +1,13 @@
 import { toGl } from '../../../util/matrix/common'
 import { add, clone, fromValues } from '../../../util/matrix/vec3'
-import { GameState } from '../../game-state/game-state'
 import {
 	DataOffsetDrawables,
 	DataOffsetItemHoldable,
 	DataOffsetPositions,
 	DataOffsetWithActivity,
-	UnitTraits,
-} from '../../game-state/units/traits'
+	EntityTrait,
+} from '../../game-state/entities/traits'
+import { GameState } from '../../game-state/game-state'
 import { MainRenderer } from '../../main-renderer'
 import { createProgramFromNewShaders } from '../../shader/common'
 import { allItems, ItemType } from '../../world/item'
@@ -47,12 +47,12 @@ const createHeldItemRenderable = (renderer: MainRenderer,
 			program.use()
 
 
-			const positions = game.units.positions.rawData
-			const drawables = game.units.drawables.rawData
-			const withActivities = game.units.withActivities.rawData
-			const itemHoldables = game.units.itemHoldables.rawData
+			const positions = game.entities.positions.rawData
+			const drawables = game.entities.drawables.rawData
+			const withActivities = game.entities.withActivities.rawData
+			const itemHoldables = game.entities.itemHoldables.rawData
 
-			for (const record of game.units.iterate(UnitTraits.ItemHoldable | UnitTraits.Drawable | UnitTraits.Position)) {
+			for (const record of game.entities.iterate(EntityTrait.ItemHoldable | EntityTrait.Drawable | EntityTrait.Position)) {
 
 				const type = itemHoldables[record.itemHoldable + DataOffsetItemHoldable.ItemId]! as ItemType
 
@@ -64,7 +64,7 @@ const createHeldItemRenderable = (renderer: MainRenderer,
 				const unitZ = positions[record.position + DataOffsetPositions.PositionZ]!
 
 
-				const hasActivity = (record.thisTraits & UnitTraits.WithActivity) === UnitTraits.WithActivity
+				const hasActivity = (record.thisTraits & EntityTrait.WithActivity) === EntityTrait.WithActivity
 				const activityId = hasActivity ? withActivities[record.withActivity + DataOffsetWithActivity.CurrentId]! : ActivityId.Idle
 				const activityStartTick = hasActivity ? withActivities[record.withActivity + DataOffsetWithActivity.StartTick]! : 0
 

@@ -3,7 +3,6 @@ import { ActivityId } from '../../renderable/unit/activity'
 import { UnitColorPaletteId } from '../../renderable/unit/unit-color'
 import { ItemType } from '../../world/item'
 import { InterruptType } from '../activities/interrupt'
-import { ACTIVITY_MEMORY_SIZE } from '../game-state'
 import { DataStore } from './data-store'
 import {
 	createEmptyTraitRecord,
@@ -13,12 +12,14 @@ import {
 	DataOffsetItemHoldable,
 	DataOffsetPositions,
 	DataOffsetWithActivity,
+	EntityTrait,
+	EntityTraitIndicesRecord,
 	hasTrait,
-	UnitTraitIndicesRecord,
-	UnitTraits,
 } from './traits'
 
-class UnitsContainer {
+export const ACTIVITY_MEMORY_SIZE = 20
+
+class EntityContainer {
 	public readonly ids = DataStore.createInt32(DataOffsetIds.SIZE)
 	public readonly positions = DataStore.createInt32(DataOffsetPositions.SIZE)
 	public readonly drawables = DataStore.createInt32(DataOffsetDrawables.SIZE)
@@ -26,26 +27,26 @@ class UnitsContainer {
 	public readonly activitiesMemory = DataStore.createInt32(ACTIVITY_MEMORY_SIZE)
 	public readonly itemHoldables = DataStore.createInt32(DataOffsetItemHoldable.SIZE)
 	public readonly interruptibles = DataStore.createInt32(DataOffsetInterruptible.SIZE)
-	private nextUnitId: number = 1
+	private nextEntityId: number = 1
 
 	public static createEmptyContainer() {
-		return new UnitsContainer()
+		return new EntityContainer()
 	}
 
-	public createEntity(traits: UnitTraits): UnitTraitIndicesRecord {
+	public createEntity(traits: EntityTrait): EntityTraitIndicesRecord {
 		const NO_INDEX = -1
-		const unitId = this.nextUnitId++
+		const unitId = this.nextEntityId++
 
-		const record: UnitTraitIndicesRecord = {
+		const record: EntityTraitIndicesRecord = {
 			thisId: unitId,
 			thisTraits: traits,
 			idIndex: this.ids.pushBack(),
-			position: hasTrait(traits, UnitTraits.Position) ? this.positions.pushBack() : NO_INDEX,
-			drawable: hasTrait(traits, UnitTraits.Drawable) ? this.drawables.pushBack() : NO_INDEX,
-			withActivity: hasTrait(traits, UnitTraits.WithActivity) ? this.withActivities.pushBack() : NO_INDEX,
-			activityMemory: hasTrait(traits, UnitTraits.WithActivity) ? this.activitiesMemory.pushBack() : NO_INDEX,
-			itemHoldable: hasTrait(traits, UnitTraits.ItemHoldable) ? this.itemHoldables.pushBack() : NO_INDEX,
-			interruptible: hasTrait(traits, UnitTraits.Interruptible) ? this.interruptibles.pushBack() : NO_INDEX,
+			position: hasTrait(traits, EntityTrait.Position) ? this.positions.pushBack() : NO_INDEX,
+			drawable: hasTrait(traits, EntityTrait.Drawable) ? this.drawables.pushBack() : NO_INDEX,
+			withActivity: hasTrait(traits, EntityTrait.WithActivity) ? this.withActivities.pushBack() : NO_INDEX,
+			activityMemory: hasTrait(traits, EntityTrait.WithActivity) ? this.activitiesMemory.pushBack() : NO_INDEX,
+			itemHoldable: hasTrait(traits, EntityTrait.ItemHoldable) ? this.itemHoldables.pushBack() : NO_INDEX,
+			interruptible: hasTrait(traits, EntityTrait.Interruptible) ? this.interruptibles.pushBack() : NO_INDEX,
 		}
 
 		let index = record.idIndex
@@ -101,7 +102,7 @@ class UnitsContainer {
 		return record
 	}
 
-	public* iterate(requiredTraits: UnitTraits): Generator<Readonly<UnitTraitIndicesRecord>> {
+	public* iterate(requiredTraits: EntityTrait): Generator<Readonly<EntityTraitIndicesRecord>> {
 		const record = createEmptyTraitRecord()
 
 		const rawData = this.ids.rawData
@@ -116,16 +117,16 @@ class UnitsContainer {
 				yield record
 			}
 
-			if (hasTrait(traits, UnitTraits.Position)) record.position += DataOffsetPositions.SIZE
-			if (hasTrait(traits, UnitTraits.Drawable)) record.drawable += DataOffsetDrawables.SIZE
-			if (hasTrait(traits, UnitTraits.WithActivity)) {
+			if (hasTrait(traits, EntityTrait.Position)) record.position += DataOffsetPositions.SIZE
+			if (hasTrait(traits, EntityTrait.Drawable)) record.drawable += DataOffsetDrawables.SIZE
+			if (hasTrait(traits, EntityTrait.WithActivity)) {
 				record.withActivity += DataOffsetWithActivity.SIZE
 				record.activityMemory += ACTIVITY_MEMORY_SIZE
 			}
-			if (hasTrait(traits, UnitTraits.ItemHoldable)) record.itemHoldable += DataOffsetItemHoldable.SIZE
-			if (hasTrait(traits, UnitTraits.Interruptible)) record.interruptible += DataOffsetInterruptible.SIZE
+			if (hasTrait(traits, EntityTrait.ItemHoldable)) record.itemHoldable += DataOffsetItemHoldable.SIZE
+			if (hasTrait(traits, EntityTrait.Interruptible)) record.interruptible += DataOffsetInterruptible.SIZE
 		}
 	}
 }
 
-export default UnitsContainer
+export default EntityContainer
