@@ -96,100 +96,65 @@ export const createNewUnitRenderable = (renderer: MainRenderer,
 
 	const {programs, vao} = preparePrograms(renderer, modelBuffer, modelElementsBuffer, unitDataBuffer)
 
+	const internalRender = (ctx: RenderContext, forMousePicker: boolean) => {
+
+		const {gl, camera: {combinedMatrix}, gameTickEstimation} = ctx
+		vao.bind()
+		modelBuffer.bind()
+
+		const positions = game.entities.positions.rawData
+		const drawables = game.entities.drawables.rawData
+		const withActivities = game.entities.withActivities.rawData
+		const itemHoldables = game.entities.itemHoldables.rawData
+
+		for (const record of game.entities.iterate(EntityTrait.Drawable | EntityTrait.Position)) {
+
+			const unitX = positions[record.position + DataOffsetPositions.PositionX]!
+			const unitY = positions[record.position + DataOffsetPositions.PositionY]!
+			const unitZ = positions[record.position + DataOffsetPositions.PositionZ]!
+
+			const hasItem = ((record.thisTraits & EntityTrait.ItemHoldable) === EntityTrait.ItemHoldable)
+				? (itemHoldables[record.itemHoldable + DataOffsetItemHoldable.ItemId] !== ItemType.None) : false
+
+
+			const hasActivity = (record.thisTraits & EntityTrait.WithActivity) === EntityTrait.WithActivity
+			const activityId = hasActivity ? withActivities[record.withActivity + DataOffsetWithActivity.CurrentId]! : ActivityId.Idle
+			const activityStartTick = hasActivity ? withActivities[record.withActivity + DataOffsetWithActivity.StartTick]! : 0
+
+			const activity = requireActivity(activityId)
+			const program = programs[activity.shaderId * 4 + (hasItem ? 1 : 0) + (forMousePicker ? 2 : 0)]!
+			if (program == null)
+				throw new Error(`Invalid unit program id ${activity.shaderId}`)
+
+			program.use()
+			const unitData = []
+
+			unitData.push(unitX, unitY, unitZ,
+				forMousePicker
+					? (record.thisId / 256)
+					: drawables[record.drawable + DataOffsetDrawables.ColorPaletteId]!,
+				activityStartTick,
+				drawables[record.drawable + DataOffsetDrawables.Rotation]!)
+
+			unitDataBuffer.setContent(new Float32Array(unitData))
+
+
+			gl.uniformMatrix4fv(program.uniforms.combinedMatrix, false, toGl(combinedMatrix))
+			gl.uniform1f(program.uniforms.time, ctx.secondsSinceFirstRender)
+			gl.uniform1f(program.uniforms.gameTick, gameTickEstimation)
+			gl.uniform3fv(program.uniforms.lightPosition, toGl(add(clone(ctx.sunPosition), ctx.sunPosition, fromValues(0, -10, -400))))
+
+			gl.drawElementsInstanced(gl.TRIANGLES, trianglesToRender, gl.UNSIGNED_SHORT, 0, 1)
+		}
+	}
+
 	return {
 		render(ctx: RenderContext) {
-			const {gl, camera: {combinedMatrix}, gameTickEstimation} = ctx
-			vao.bind()
-			modelBuffer.bind()
-
-			const positions = game.entities.positions.rawData
-			const drawables = game.entities.drawables.rawData
-			const withActivities = game.entities.withActivities.rawData
-			const itemHoldables = game.entities.itemHoldables.rawData
-
-			for (const record of game.entities.iterate(EntityTrait.Drawable | EntityTrait.Position)) {
-
-				const unitX = positions[record.position + DataOffsetPositions.PositionX]!
-				const unitY = positions[record.position + DataOffsetPositions.PositionY]!
-				const unitZ = positions[record.position + DataOffsetPositions.PositionZ]!
-
-				const hasItem = ((record.thisTraits & EntityTrait.ItemHoldable) === EntityTrait.ItemHoldable)
-					? (itemHoldables[record.itemHoldable + DataOffsetItemHoldable.ItemId] !== ItemType.None) : false
-
-
-				const hasActivity = (record.thisTraits & EntityTrait.WithActivity) === EntityTrait.WithActivity
-				const activityId = hasActivity ? withActivities[record.withActivity + DataOffsetWithActivity.CurrentId]! : ActivityId.Idle
-				const activityStartTick = hasActivity ? withActivities[record.withActivity + DataOffsetWithActivity.StartTick]! : 0
-
-				const activity = requireActivity(activityId)
-				const program = programs[activity.shaderId * 4 + (hasItem ? 1 : 0)]
-				if (program == null)
-					throw new Error(`Invalid unit program id ${activity.shaderId}`)
-
-				program.use()
-				const unitData = []
-
-				unitData.push(unitX, unitY, unitZ,
-					drawables[record.drawable + DataOffsetDrawables.ColorPaletteId]!,
-					activityStartTick,
-					drawables[record.drawable + DataOffsetDrawables.Rotation]!)
-
-				unitDataBuffer.setContent(new Float32Array(unitData))
-
-
-				gl.uniformMatrix4fv(program.uniforms.combinedMatrix, false, toGl(combinedMatrix))
-				gl.uniform1f(program.uniforms.time, ctx.secondsSinceFirstRender)
-				gl.uniform1f(program.uniforms.gameTick, gameTickEstimation)
-				gl.uniform3fv(program.uniforms.lightPosition, toGl(add(clone(ctx.sunPosition), ctx.sunPosition, fromValues(0, -10, -400))))
-
-				gl.drawElementsInstanced(gl.TRIANGLES, trianglesToRender, gl.UNSIGNED_SHORT, 0, 1)
-			}
+			internalRender(ctx, false)
 		},
 
 		renderForMousePicker(ctx: RenderContext) {
-			const {gl, gameTickEstimation, camera: {combinedMatrix}} = ctx
-			vao.bind()
-			modelBuffer.bind()
-
-			const positions = game.entities.positions.rawData
-			const drawables = game.entities.drawables.rawData
-			const withActivities = game.entities.withActivities.rawData
-			const itemHoldables = game.entities.itemHoldables.rawData
-
-			for (const record of game.entities.iterate(EntityTrait.Drawable | EntityTrait.Position)) {
-
-				const unitX = positions[record.position + DataOffsetPositions.PositionX]!
-				const unitY = positions[record.position + DataOffsetPositions.PositionY]!
-				const unitZ = positions[record.position + DataOffsetPositions.PositionZ]!
-
-				const hasItem = ((record.thisTraits & EntityTrait.ItemHoldable) === EntityTrait.ItemHoldable)
-					? (itemHoldables[record.itemHoldable + DataOffsetItemHoldable.ItemId] !== ItemType.None) : false
-
-				const hasActivity = (record.thisTraits & EntityTrait.WithActivity) === EntityTrait.WithActivity
-				const activityId = hasActivity ? withActivities[record.withActivity + DataOffsetWithActivity.CurrentId]! : ActivityId.Idle
-				const activityStartTick = hasActivity ? withActivities[record.withActivity + DataOffsetWithActivity.StartTick]! : 0
-
-				const activity = requireActivity(activityId)
-				const program = programs[activity.shaderId * 4 + (hasItem ? 1 : 0) + 2]
-				if (program == null)
-					throw new Error(`Invalid unit program id ${activity.shaderId}`)
-
-				program.use()
-				const unitData = []
-
-				unitData.push(unitX, unitY, unitZ,
-					record.thisId / 256, activityStartTick,
-					drawables[record.drawable + DataOffsetDrawables.Rotation]!)
-
-				unitDataBuffer.setContent(new Float32Array(unitData))
-
-
-				gl.uniformMatrix4fv(program.uniforms.combinedMatrix, false, toGl(combinedMatrix))
-				gl.uniform1f(program.uniforms.gameTick, gameTickEstimation)
-				gl.uniform1f(program.uniforms.time, ctx.secondsSinceFirstRender)
-
-				gl.drawElementsInstanced(gl.TRIANGLES, trianglesToRender, gl.UNSIGNED_SHORT, 0, 1)
-			}
+			internalRender(ctx, true)
 		},
 	}
 }
