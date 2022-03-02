@@ -7,7 +7,7 @@ import {
 	DataOffsetPositions,
 	DataOffsetWithActivity,
 	UnitTraits,
-} from '../../game-state/units/units-container'
+} from '../../game-state/units/traits'
 import { GlProgram, GPUBuffer, MainRenderer } from '../../main-renderer'
 import { pickViaMouseDefaultFragmentShader } from '../../shader/common'
 import { ItemType } from '../../world/item'

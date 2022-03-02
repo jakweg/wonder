@@ -1,7 +1,8 @@
-import { requireActivity } from '../renderable/unit/activity'
+import { ActivityId, requireActivity } from '../renderable/unit/activity'
 import { World } from '../world/world'
 import { GroundItemsIndex } from './ground-items-index'
 import { PathFinder } from './path-finder'
+import { DataOffsetWithActivity, UnitTraits } from './units/traits'
 import UnitsContainer from './units/units-container'
 
 
@@ -37,11 +38,13 @@ export class GameState {
 
 		this.pathFinder.tick(this)
 
-		for (const unit of [...this._units]) {
-			const activity = requireActivity(unit.activityId)
+		const memory = this.units.withActivities.rawData
+		for (const entity of this.units.iterate(UnitTraits.WithActivity)) {
+			const currentActivity = memory[entity.withActivity + DataOffsetWithActivity.CurrentId]! as ActivityId
 
-			// activity.perform(this, unit)
+			requireActivity(currentActivity).perform(this, entity)
 		}
+
 		this.isRunningLogic = false
 	}
 }

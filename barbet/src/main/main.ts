@@ -4,12 +4,13 @@ import { GameState } from './3d-stuff/game-state/game-state'
 import { GroundItemsIndex } from './3d-stuff/game-state/ground-items-index'
 import { PathFinder } from './3d-stuff/game-state/path-finder'
 import { StateUpdater } from './3d-stuff/game-state/state-updater'
-import UnitsContainer, {
+import {
 	DataOffsetDrawables,
 	DataOffsetItemHoldable,
 	DataOffsetPositions,
 	UnitTraits,
-} from './3d-stuff/game-state/units/units-container'
+} from './3d-stuff/game-state/units/traits'
+import UnitsContainer from './3d-stuff/game-state/units/units-container'
 import { MainRenderer } from './3d-stuff/main-renderer'
 import { createPicker, MousePickableType } from './3d-stuff/mouse-picker'
 import createHeldItemRenderable from './3d-stuff/renderable/held-item/held-item'
@@ -61,7 +62,7 @@ const updater = StateUpdater.createNew(state, 20)
 updater.start()
 
 {
-	const unitTraits = UnitTraits.Position | UnitTraits.Drawable | UnitTraits.ItemHoldable | UnitTraits.WithActivity
+	const unitTraits = UnitTraits.Position | UnitTraits.Drawable | UnitTraits.ItemHoldable | UnitTraits.WithActivity | UnitTraits.Interruptible
 	const entity = unitsContainer.createEntity(unitTraits)
 	unitsContainer.positions.rawData[entity.position + DataOffsetPositions.PositionX] = 8
 	unitsContainer.positions.rawData[entity.position + DataOffsetPositions.PositionY] = 2
@@ -129,12 +130,16 @@ const mouseEventListener = (event: MouseEvent) => {
 	if (result.pickedType === MousePickableType.Terrain) {
 		let wasAny = false
 		if (itemsOnGround.getItem(result.x, result.z) !== ItemType.None)
-			for (const record of state.units.iterate(UnitTraits.Interruptible)) {
+			for (const record of state.units.iterate(UnitTraits.Interruptible | UnitTraits.Drawable)) {
+				if (unitsContainer.drawables.rawData[record.drawable + DataOffsetDrawables.ColorPaletteId] !== UnitColorPaletteId.DarkBlue)
+					continue
 				wasAny = true
 				interruptRequestItemPickUp(unitsContainer, record, result.x, result.z, ItemType.Box)
 			}
 		else
-			for (const record of state.units.iterate(UnitTraits.Interruptible)) {
+			for (const record of state.units.iterate(UnitTraits.Interruptible | UnitTraits.Drawable)) {
+				if (unitsContainer.drawables.rawData[record.drawable + DataOffsetDrawables.ColorPaletteId] !== UnitColorPaletteId.DarkBlue)
+					continue
 				wasAny = true
 				interruptRequestWalk(unitsContainer, record, result.x, result.z)
 			}
@@ -156,7 +161,7 @@ const mouseEventListener = (event: MouseEvent) => {
 				color = (color === UnitColorPaletteId.DarkBlue) ? UnitColorPaletteId.GreenOrange : UnitColorPaletteId.DarkBlue
 				rawData[record.drawable + DataOffsetDrawables.ColorPaletteId] = color
 			}
-			{
+			if (event.button !== 0) {
 				const rawData = state.units.itemHoldables.rawData
 				let item = rawData[record.itemHoldable + DataOffsetItemHoldable.ItemId]! as ItemType
 				item = (item === ItemType.Box) ? ItemType.None : ItemType.Box

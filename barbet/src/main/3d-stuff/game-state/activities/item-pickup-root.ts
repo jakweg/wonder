@@ -8,7 +8,7 @@ import {
 	DataOffsetPositions,
 	DataOffsetWithActivity,
 	UnitTraitIndicesRecord,
-} from '../units/units-container'
+} from '../units/traits'
 import activityItemPickup from './item-pickup'
 import walkingByPathRoot from './walking-by-path-root'
 
@@ -17,9 +17,8 @@ const enum MemoryField {
 	DestinationX,
 	DestinationZ,
 	RequestedItemType,
+	SIZE,
 }
-
-const MEMORY_USED_SIZE = 4
 
 const activityItemPickupRoot = {
 	numericId: ActivityId.ItemPickUpRoot,
@@ -55,7 +54,7 @@ const activityItemPickupRoot = {
 
 		// path failed or item taken :(
 		withActivitiesMemory[unit.withActivity + DataOffsetWithActivity.CurrentId] = memory[pointer - MemoryField.ReturnTo]!
-		withActivitiesMemory[unit.withActivity + DataOffsetWithActivity.MemoryPointer] -= MEMORY_USED_SIZE
+		withActivitiesMemory[unit.withActivity + DataOffsetWithActivity.MemoryPointer] -= MemoryField.SIZE
 	},
 	onPickedUp(game: GameState, unit: UnitTraitIndicesRecord) {
 
@@ -64,7 +63,7 @@ const activityItemPickupRoot = {
 		const pointer = withActivitiesMemory[unit.withActivity + DataOffsetWithActivity.MemoryPointer]!
 
 		withActivitiesMemory[unit.withActivity + DataOffsetWithActivity.CurrentId] = memory[pointer - MemoryField.ReturnTo]!
-		withActivitiesMemory[unit.withActivity + DataOffsetWithActivity.MemoryPointer] -= MEMORY_USED_SIZE
+		withActivitiesMemory[unit.withActivity + DataOffsetWithActivity.MemoryPointer] -= MemoryField.SIZE
 	},
 	setup(game: GameState, unit: UnitTraitIndicesRecord, returnTo: ActivityId, x: number, z: number, type: ItemType) {
 		if (type === ItemType.None)
@@ -72,7 +71,7 @@ const activityItemPickupRoot = {
 
 		const withActivitiesMemory = game.units.withActivities.rawData
 		const memory = game.units.activitiesMemory.rawData
-		const pointer = (withActivitiesMemory[unit.withActivity + DataOffsetWithActivity.MemoryPointer] += MEMORY_USED_SIZE)
+		const pointer = (withActivitiesMemory[unit.withActivity + DataOffsetWithActivity.MemoryPointer] += MemoryField.SIZE)
 
 		withActivitiesMemory[unit.withActivity + DataOffsetWithActivity.CurrentId] = ActivityId.ItemPickUpRoot
 

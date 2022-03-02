@@ -5,7 +5,7 @@ import activityItemPickupRoot from '../../game-state/activities/item-pickup-root
 import activityWalking from '../../game-state/activities/walking'
 import activityWalkingByPathRoot from '../../game-state/activities/walking-by-path-root'
 import { GameState } from '../../game-state/game-state'
-import { UnitTraitIndicesRecord } from '../../game-state/units/units-container'
+import { UnitTraitIndicesRecord } from '../../game-state/units/traits'
 import { ShaderId } from './unit-shaders'
 
 export enum ActivityId {
@@ -27,22 +27,27 @@ export interface ActivityType {
 }
 
 
-export const allActivities: ActivityType[] = [
-	{
-		numericId: ActivityId.None,
-		shaderId: ShaderId.Stationary,
-		perform() {
-		},
-	},
-	activityIdle,
-	activityWalkingByPathRoot,
-	activityWalking,
-	activityItemPickupRoot,
-	activityItemPickup,
-]
-console.log(allActivities)
-freezeAndValidateOptionsList(allActivities)
+let lazyInitialized = false
+const allActivities: ActivityType[] = []
+
 export const requireActivity = (id: ActivityId): ActivityType => {
+	if (!lazyInitialized) {
+		lazyInitialized = true
+		allActivities.push(
+			{
+				numericId: ActivityId.None,
+				shaderId: ShaderId.Stationary,
+				perform() {
+				},
+			},
+			activityIdle,
+			activityWalkingByPathRoot,
+			activityWalking,
+			activityItemPickupRoot,
+			activityItemPickup,
+		)
+		freezeAndValidateOptionsList(allActivities)
+	}
 	const activity = allActivities[id]
 	if (activity == null)
 		throw new Error(`Invalid activity id ${id}`)

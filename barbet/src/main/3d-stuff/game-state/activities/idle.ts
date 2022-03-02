@@ -5,9 +5,10 @@ import { GameState } from '../game-state'
 import {
 	DataOffsetInterruptible,
 	DataOffsetWithActivity,
+	requireTrait,
 	UnitTraitIndicesRecord,
 	UnitTraits,
-} from '../units/units-container'
+} from '../units/traits'
 import { InterruptType } from './interrupt'
 import activityItemPickupRoot from './item-pickup-root'
 import walkingByPathRoot from './walking-by-path-root'
@@ -16,12 +17,11 @@ const activityIdle = {
 	numericId: ActivityId.Idle,
 	shaderId: ShaderId.Idle,
 	perform(game: GameState, unit: UnitTraitIndicesRecord) {
-		if ((unit.thisTraits & UnitTraits.Interruptible) !== UnitTraits.Interruptible)
-			return
 
 		const memory = game.units.interruptibles.rawData
 		const interrupt = memory[unit.interruptible + DataOffsetInterruptible.InterruptType]! as InterruptType
 		if (interrupt === InterruptType.None) return
+
 		memory[unit.interruptible + DataOffsetInterruptible.InterruptType]! = InterruptType.None
 
 		switch (interrupt) {
@@ -43,6 +43,8 @@ const activityIdle = {
 		}
 	},
 	setup(game: GameState, unit: UnitTraitIndicesRecord) {
+		requireTrait(unit.thisTraits, UnitTraits.Interruptible)
+
 		const withActivitiesMemory = game.units.withActivities.rawData
 
 		withActivitiesMemory[unit.withActivity + DataOffsetWithActivity.CurrentId] = ActivityId.Idle

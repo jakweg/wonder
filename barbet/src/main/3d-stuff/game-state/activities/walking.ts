@@ -6,9 +6,10 @@ import {
 	DataOffsetDrawables,
 	DataOffsetPositions,
 	DataOffsetWithActivity,
+	hasTrait,
 	UnitTraitIndicesRecord,
 	UnitTraits,
-} from '../units/units-container'
+} from '../units/traits'
 import activityWalkingByPathRoot from './walking-by-path-root'
 
 const standardWalkingDuration = 15
@@ -40,9 +41,8 @@ worldPosition += rotationVectors[unitRotationAsInt] * (activityDuration / walkin
 const enum MemoryField {
 	WalkingFinishTick,
 	WalkingDirection,
+	SIZE
 }
-
-const MEMORY_USED_SIZE = 2
 
 const activityWalking = {
 	numericId: ActivityId.Walking,
@@ -54,7 +54,7 @@ const activityWalking = {
 		const pointer = withActivitiesMemory[unit.withActivity + DataOffsetWithActivity.MemoryPointer]!
 
 		if (now === activityMemory[pointer - MemoryField.WalkingFinishTick]!) {
-			withActivitiesMemory[unit.withActivity + DataOffsetWithActivity.MemoryPointer] -= MEMORY_USED_SIZE
+			withActivitiesMemory[unit.withActivity + DataOffsetWithActivity.MemoryPointer] -= MemoryField.SIZE
 			withActivitiesMemory[unit.withActivity + DataOffsetWithActivity.CurrentId] = ActivityId.WalkingByPathRoot
 			activityWalkingByPathRoot.perform(game, unit)
 		}
@@ -78,7 +78,7 @@ const activityWalking = {
 
 		const withActivitiesMemory = game.units.withActivities.rawData
 		const memory = game.units.activitiesMemory.rawData
-		const pointer = (withActivitiesMemory[unit.withActivity + DataOffsetWithActivity.MemoryPointer] += MEMORY_USED_SIZE)
+		const pointer = (withActivitiesMemory[unit.withActivity + DataOffsetWithActivity.MemoryPointer] += MemoryField.SIZE)
 
 		withActivitiesMemory[unit.withActivity + DataOffsetWithActivity.CurrentId] = ActivityId.Walking
 		withActivitiesMemory[unit.withActivity + DataOffsetWithActivity.StartTick] = now
@@ -86,7 +86,7 @@ const activityWalking = {
 		memory[pointer - MemoryField.WalkingDirection] = direction
 		memory[pointer - MemoryField.WalkingFinishTick] = now + walkingDurationByDirection[direction]!
 
-		if ((unit.thisTraits & UnitTraits.Drawable) === UnitTraits.Drawable) {
+		if (hasTrait(unit.thisTraits, UnitTraits.Drawable)) {
 			const data = game.units.drawables.rawData
 			const rotation = data[unit.drawable + DataOffsetDrawables.Rotation]!
 			data[unit.drawable + DataOffsetDrawables.Rotation] = Direction.FlagMergeWithPrevious | ((rotation & Direction.MaskCurrentRotation) << 3) | direction

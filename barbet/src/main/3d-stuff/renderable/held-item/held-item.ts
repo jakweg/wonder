@@ -7,7 +7,7 @@ import {
 	DataOffsetPositions,
 	DataOffsetWithActivity,
 	UnitTraits,
-} from '../../game-state/units/units-container'
+} from '../../game-state/units/traits'
 import { MainRenderer } from '../../main-renderer'
 import { createProgramFromNewShaders } from '../../shader/common'
 import { allItems, ItemType } from '../../world/item'

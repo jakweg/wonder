@@ -5,66 +5,18 @@ import { ItemType } from '../../world/item'
 import { InterruptType } from '../activities/interrupt'
 import { ACTIVITY_MEMORY_SIZE } from '../game-state'
 import { DataStore } from './data-store'
-
-export const enum UnitTraits {
-	Alive = 1 << 31,
-	Position = Alive | 1 << 0,
-	Drawable = Alive | Position | 1 << 1,
-	Interruptible = Alive | 1 << 2,
-	WithActivity = Alive | 1 << 3,
-	ItemHoldable = Alive | 1 << 4
-}
-
-export const enum DataOffsetIds {
-	ID,
-	Traits,
-	SIZE,
-}
-
-export const enum DataOffsetPositions {
-	PositionX,
-	PositionY,
-	PositionZ,
-	SIZE,
-}
-
-export const enum DataOffsetDrawables {
-	ColorPaletteId,
-	Rotation,
-	SIZE,
-}
-
-export const enum DataOffsetWithActivity {
-	CurrentId,
-	StartTick,
-	MemoryPointer,
-	SIZE,
-}
-
-export const enum DataOffsetItemHoldable {
-	ItemId,
-	SIZE,
-}
-
-export const enum DataOffsetInterruptible {
-	InterruptType,
-	ValueA,
-	ValueB,
-	ValueC,
-	SIZE,
-}
-
-export interface UnitTraitIndicesRecord {
-	thisId: number
-	thisTraits: number
-	idIndex: number
-	position: number
-	drawable: number
-	withActivity: number
-	activityMemory: number
-	itemHoldable: number
-	interruptible: number
-}
+import {
+	createEmptyTraitRecord,
+	DataOffsetDrawables,
+	DataOffsetIds,
+	DataOffsetInterruptible,
+	DataOffsetItemHoldable,
+	DataOffsetPositions,
+	DataOffsetWithActivity,
+	hasTrait,
+	UnitTraitIndicesRecord,
+	UnitTraits,
+} from './traits'
 
 class UnitsContainer {
 	public readonly ids = DataStore.createInt32(DataOffsetIds.SIZE)
@@ -88,12 +40,12 @@ class UnitsContainer {
 			thisId: unitId,
 			thisTraits: traits,
 			idIndex: this.ids.pushBack(),
-			position: (traits & UnitTraits.Position) === UnitTraits.Position ? this.positions.pushBack() : NO_INDEX,
-			drawable: (traits & UnitTraits.Drawable) === UnitTraits.Drawable ? this.drawables.pushBack() : NO_INDEX,
-			withActivity: (traits & UnitTraits.WithActivity) === UnitTraits.WithActivity ? this.withActivities.pushBack() : NO_INDEX,
-			activityMemory: (traits & UnitTraits.WithActivity) === UnitTraits.WithActivity ? this.activitiesMemory.pushBack() : NO_INDEX,
-			itemHoldable: (traits & UnitTraits.ItemHoldable) === UnitTraits.ItemHoldable ? this.itemHoldables.pushBack() : NO_INDEX,
-			interruptible: (traits & UnitTraits.Interruptible) === UnitTraits.Interruptible ? this.interruptibles.pushBack() : NO_INDEX,
+			position: hasTrait(traits, UnitTraits.Position) ? this.positions.pushBack() : NO_INDEX,
+			drawable: hasTrait(traits, UnitTraits.Drawable) ? this.drawables.pushBack() : NO_INDEX,
+			withActivity: hasTrait(traits, UnitTraits.WithActivity) ? this.withActivities.pushBack() : NO_INDEX,
+			activityMemory: hasTrait(traits, UnitTraits.WithActivity) ? this.activitiesMemory.pushBack() : NO_INDEX,
+			itemHoldable: hasTrait(traits, UnitTraits.ItemHoldable) ? this.itemHoldables.pushBack() : NO_INDEX,
+			interruptible: hasTrait(traits, UnitTraits.Interruptible) ? this.interruptibles.pushBack() : NO_INDEX,
 		}
 
 		let index = record.idIndex
@@ -150,17 +102,7 @@ class UnitsContainer {
 	}
 
 	public* iterate(requiredTraits: UnitTraits): Generator<Readonly<UnitTraitIndicesRecord>> {
-		const record: UnitTraitIndicesRecord = {
-			thisId: 0,
-			thisTraits: 0,
-			idIndex: 0,
-			position: 0,
-			drawable: 0,
-			withActivity: 0,
-			activityMemory: 0,
-			itemHoldable: 0,
-			interruptible: 0,
-		}
+		const record = createEmptyTraitRecord()
 
 		const rawData = this.ids.rawData
 		for (let i = 0, l = this.ids.size; i < l; i++) {
@@ -174,12 +116,14 @@ class UnitsContainer {
 				yield record
 			}
 
-			if ((traits & UnitTraits.Position) === UnitTraits.Position) record.position += DataOffsetPositions.SIZE
-			if ((traits & UnitTraits.Drawable) === UnitTraits.Drawable) record.drawable += DataOffsetDrawables.SIZE
-			if ((traits & UnitTraits.WithActivity) === UnitTraits.WithActivity) record.withActivity += DataOffsetWithActivity.SIZE
-			if ((traits & UnitTraits.WithActivity) === UnitTraits.WithActivity) record.activityMemory += ACTIVITY_MEMORY_SIZE
-			if ((traits & UnitTraits.ItemHoldable) === UnitTraits.ItemHoldable) record.itemHoldable += DataOffsetItemHoldable.SIZE
-			if ((traits & UnitTraits.Interruptible) === UnitTraits.Interruptible) record.interruptible += DataOffsetInterruptible.SIZE
+			if (hasTrait(traits, UnitTraits.Position)) record.position += DataOffsetPositions.SIZE
+			if (hasTrait(traits, UnitTraits.Drawable)) record.drawable += DataOffsetDrawables.SIZE
+			if (hasTrait(traits, UnitTraits.WithActivity)) {
+				record.withActivity += DataOffsetWithActivity.SIZE
+				record.activityMemory += ACTIVITY_MEMORY_SIZE
+			}
+			if (hasTrait(traits, UnitTraits.ItemHoldable)) record.itemHoldable += DataOffsetItemHoldable.SIZE
+			if (hasTrait(traits, UnitTraits.Interruptible)) record.interruptible += DataOffsetInterruptible.SIZE
 		}
 	}
 }

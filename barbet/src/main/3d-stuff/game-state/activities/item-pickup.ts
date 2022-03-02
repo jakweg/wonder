@@ -8,9 +8,10 @@ import {
 	DataOffsetItemHoldable,
 	DataOffsetPositions,
 	DataOffsetWithActivity,
+	requireTrait,
 	UnitTraitIndicesRecord,
 	UnitTraits,
-} from '../units/units-container'
+} from '../units/traits'
 import activityItemPickupRoot from './item-pickup-root'
 
 const pickUpItemActivityDuration = 10
@@ -42,9 +43,8 @@ if (isLeftArmVertex || isRightArmVertex) {
 const enum MemoryField {
 	ActivityFinishTick,
 	Direction,
+	SIZE,
 }
-
-const MEMORY_USED_SIZE = 2
 
 const activityItemPickup = {
 	numericId: ActivityId.ItemPickUp,
@@ -70,17 +70,16 @@ const activityItemPickup = {
 
 		const drawablesData = game.units.drawables.rawData
 		drawablesData[unit.drawable + DataOffsetDrawables.Rotation] &= ~Direction.MaskMergePrevious
-		withActivitiesMemory[unit.withActivity + DataOffsetWithActivity.MemoryPointer] -= MEMORY_USED_SIZE
+		withActivitiesMemory[unit.withActivity + DataOffsetWithActivity.MemoryPointer] -= MemoryField.SIZE
 		activityItemPickupRoot.onPickedUp(game, unit)
 	},
 	setup(game: GameState, unit: UnitTraitIndicesRecord, direction: Direction) {
-		if ((unit.thisTraits & UnitTraits.ItemHoldable) !== UnitTraits.ItemHoldable)
-			throw new Error('Missing trait')
+		requireTrait(unit.thisTraits, UnitTraits.ItemHoldable)
 
 		const now = game.currentTick
 		const withActivitiesMemory = game.units.withActivities.rawData
 		const memory = game.units.activitiesMemory.rawData
-		const pointer = (withActivitiesMemory[unit.withActivity + DataOffsetWithActivity.MemoryPointer] += MEMORY_USED_SIZE)
+		const pointer = (withActivitiesMemory[unit.withActivity + DataOffsetWithActivity.MemoryPointer] += MemoryField.SIZE)
 
 		withActivitiesMemory[unit.withActivity + DataOffsetWithActivity.CurrentId] = ActivityId.ItemPickUp
 		withActivitiesMemory[unit.withActivity + DataOffsetWithActivity.StartTick] = now
