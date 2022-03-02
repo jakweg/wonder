@@ -3,7 +3,12 @@ import { GameState } from './3d-stuff/game-state/game-state'
 import { GroundItemsIndex } from './3d-stuff/game-state/ground-items-index'
 import { PathFinder } from './3d-stuff/game-state/path-finder'
 import { StateUpdater } from './3d-stuff/game-state/state-updater'
-import UnitsContainer, { DataOffsetPositions, UnitTraits } from './3d-stuff/game-state/units/units-container'
+import UnitsContainer, {
+	DataOffsetDrawables,
+	DataOffsetItemHoldable,
+	DataOffsetPositions,
+	UnitTraits,
+} from './3d-stuff/game-state/units/units-container'
 import { MainRenderer } from './3d-stuff/main-renderer'
 import { createPicker, MousePickableType } from './3d-stuff/mouse-picker'
 import createHeldItemRenderable from './3d-stuff/renderable/held-item/held-item'
@@ -55,7 +60,8 @@ const updater = StateUpdater.createNew(state, 20)
 updater.start()
 
 {
-	const entity = unitsContainer.createEntity(UnitTraits.Position | UnitTraits.Drawable)
+	const unitTraits = UnitTraits.Position | UnitTraits.Drawable | UnitTraits.ItemHoldable | UnitTraits.WithActivity
+	const entity = unitsContainer.createEntity(unitTraits)
 	unitsContainer.positions.rawData[entity.position + DataOffsetPositions.PositionX] = 8
 	unitsContainer.positions.rawData[entity.position + DataOffsetPositions.PositionY] = 2
 	unitsContainer.positions.rawData[entity.position + DataOffsetPositions.PositionZ] = 6
@@ -141,13 +147,21 @@ const mouseEventListener = (event: MouseEvent) => {
 		}
 	} else if (result.pickedType === MousePickableType.Unit) {
 		const id = result.numericId
-		const unit = state.allUnits.find(e => e.numericId === id)
-		if (unit) {
-			if (unit.color === UnitColorPaletteId.DarkBlue)
-				unit.color = UnitColorPaletteId.GreenOrange
-			else
-				unit.color = UnitColorPaletteId.DarkBlue
-			unit.heldItem = event.button === 0 ? ItemType.None : ItemType.Box
+		for (const record of state.units.iterate(UnitTraits.Drawable | UnitTraits.ItemHoldable)) {
+			if (record.thisId !== id) continue
+			{
+				const rawData = state.units.drawables.rawData
+				let color = rawData[record.drawable + DataOffsetDrawables.ColorPaletteId]! as UnitColorPaletteId
+				color = (color === UnitColorPaletteId.DarkBlue) ? UnitColorPaletteId.GreenOrange : UnitColorPaletteId.DarkBlue
+				rawData[record.drawable + DataOffsetDrawables.ColorPaletteId] = color
+			}
+			{
+				const rawData = state.units.itemHoldables.rawData
+				let item = rawData[record.itemHoldable + DataOffsetItemHoldable.ItemId]! as ItemType
+				item = (item === ItemType.Box) ? ItemType.None : ItemType.Box
+				rawData[record.itemHoldable + DataOffsetItemHoldable.ItemId] = item
+			}
+			break
 		}
 	}
 }

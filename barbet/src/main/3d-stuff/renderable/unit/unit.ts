@@ -1,9 +1,16 @@
 import { toGl } from '../../../util/matrix/common'
 import { add, clone, fromValues } from '../../../util/matrix/vec3'
 import { GameState } from '../../game-state/game-state'
-import { DataOffsetDrawables, DataOffsetPositions, UnitTraits } from '../../game-state/units/units-container'
+import {
+	DataOffsetDrawables,
+	DataOffsetItemHoldable,
+	DataOffsetPositions,
+	DataOffsetWithActivity,
+	UnitTraits,
+} from '../../game-state/units/units-container'
 import { GlProgram, GPUBuffer, MainRenderer } from '../../main-renderer'
 import { pickViaMouseDefaultFragmentShader } from '../../shader/common'
+import { ItemType } from '../../world/item'
 import { RenderContext } from '../render-context'
 import { ActivityId, requireActivity } from './activity'
 import { buildUnitModel } from './unit-model'
@@ -38,7 +45,7 @@ function preparePrograms(renderer: MainRenderer, modelBuffer: GPUBuffer, modelEl
 	const programs: GlProgram<Attributes, Uniforms>[] = []
 	const variants = [
 		{forMousePicker: false, holdingItem: false}, {forMousePicker: false, holdingItem: true},
-		{forMousePicker: true, holdingItem: true}, {forMousePicker: true, holdingItem: true},
+		{forMousePicker: true, holdingItem: false}, {forMousePicker: true, holdingItem: true},
 	]
 
 	const sourceToShaderMap = new Map<string, WebGLShader>()
@@ -97,22 +104,34 @@ export const createNewUnitRenderable = (renderer: MainRenderer,
 
 			const positions = game.units.positions.rawData
 			const drawables = game.units.drawables.rawData
+			const withActivities = game.units.withActivities.rawData
+			const itemHoldables = game.units.itemHoldables.rawData
 
 			for (const record of game.units.iterate(UnitTraits.Drawable | UnitTraits.Position)) {
 
-				const activity = requireActivity(ActivityId.Idle)
-				const program = programs[activity.shaderId * 4]
+				const unitX = positions[record.position + DataOffsetPositions.PositionX]!
+				const unitY = positions[record.position + DataOffsetPositions.PositionY]!
+				const unitZ = positions[record.position + DataOffsetPositions.PositionZ]!
+
+				const hasItem = ((record.thisTraits & UnitTraits.ItemHoldable) === UnitTraits.ItemHoldable)
+					? (itemHoldables[record.itemHoldable + DataOffsetItemHoldable.ItemId] !== ItemType.None) : false
+
+
+				const hasActivity = (record.thisTraits & UnitTraits.WithActivity) === UnitTraits.WithActivity
+				const activityId = hasActivity ? withActivities[record.withActivity + DataOffsetWithActivity.CurrentId]! : ActivityId.Idle
+				const activityStartTick = hasActivity ? withActivities[record.withActivity + DataOffsetWithActivity.StartTick]! : 0
+
+				const activity = requireActivity(activityId)
+				const program = programs[activity.shaderId * 4 + (hasItem ? 1 : 0)]
 				if (program == null)
 					throw new Error(`Invalid unit program id ${activity.shaderId}`)
 
 				program.use()
 				const unitData = []
 
-				unitData.push(positions[record.position + DataOffsetPositions.PositionX]!,
-					positions[record.position + DataOffsetPositions.PositionY]!,
-					positions[record.position + DataOffsetPositions.PositionZ]!,
+				unitData.push(unitX, unitY, unitZ,
 					drawables[record.drawable + DataOffsetDrawables.ColorPaletteId]!,
-					0,
+					activityStartTick,
 					drawables[record.drawable + DataOffsetDrawables.Rotation]!)
 
 				unitDataBuffer.setContent(new Float32Array(unitData))
@@ -125,53 +144,52 @@ export const createNewUnitRenderable = (renderer: MainRenderer,
 
 				gl.drawElementsInstanced(gl.TRIANGLES, trianglesToRender, gl.UNSIGNED_SHORT, 0, 1)
 			}
-
-			// for (const unit of game.allUnits) {
-			// 	const activity = requireActivity(unit.activityId)
-			// 	const program = programs[activity.shaderId * 4 + (unit.heldItem !== ItemType.None ? 1 : 0)]
-			// 	if (program == null)
-			// 		throw new Error(`Invalid unit program id ${activity.shaderId}`)
-			//
-			// 	program.use()
-			// 	const unitData = []
-			//
-			// 	unitData.push(unit.posX, unit.posY, unit.posZ, unit.color, unit.activityStartedAt, unit.rotation)
-			// 	unitDataBuffer.setContent(new Float32Array(unitData))
-			//
-			//
-			// 	gl.uniformMatrix4fv(program.uniforms.combinedMatrix, false, toGl(combinedMatrix))
-			// 	gl.uniform1f(program.uniforms.time, ctx.secondsSinceFirstRender)
-			// 	gl.uniform1f(program.uniforms.gameTick, gameTickEstimation)
-			// 	gl.uniform3fv(program.uniforms.lightPosition, toGl(add(clone(ctx.sunPosition), ctx.sunPosition, fromValues(0, -10, -400))))
-			//
-			// 	gl.drawElementsInstanced(gl.TRIANGLES, trianglesToRender, gl.UNSIGNED_SHORT, 0, 1)
-			// }
 		},
 
 		renderForMousePicker(ctx: RenderContext) {
-			// const {gl, gameTickEstimation, camera: {combinedMatrix}} = ctx
-			// vao.bind()
-			// modelBuffer.bind()
-			//
-			// for (const unit of game.allUnits) {
-			// 	const activity = requireActivity(unit.activityId)
-			// 	const program = programs[activity.shaderId * 4 + (unit.heldItem !== ItemType.None ? 1 : 0) + 2]
-			// 	if (program == null)
-			// 		throw new Error(`Invalid unit program id ${activity.shaderId}`)
-			//
-			// 	program.use()
-			// 	const unitData = []
-			//
-			// 	unitData.push(unit.posX, unit.posY, unit.posZ, unit.numericId / 256, unit.activityStartedAt, unit.rotation)
-			// 	unitDataBuffer.setContent(new Float32Array(unitData))
-			//
-			//
-			// 	gl.uniformMatrix4fv(program.uniforms.combinedMatrix, false, toGl(combinedMatrix))
-			// 	gl.uniform1f(program.uniforms.gameTick, gameTickEstimation)
-			// 	gl.uniform1f(program.uniforms.time, ctx.secondsSinceFirstRender)
-			//
-			// 	gl.drawElementsInstanced(gl.TRIANGLES, trianglesToRender, gl.UNSIGNED_SHORT, 0, 1)
-			// }
+			const {gl, gameTickEstimation, camera: {combinedMatrix}} = ctx
+			vao.bind()
+			modelBuffer.bind()
+
+			const positions = game.units.positions.rawData
+			const drawables = game.units.drawables.rawData
+			const withActivities = game.units.withActivities.rawData
+			const itemHoldables = game.units.itemHoldables.rawData
+
+			for (const record of game.units.iterate(UnitTraits.Drawable | UnitTraits.Position)) {
+
+				const unitX = positions[record.position + DataOffsetPositions.PositionX]!
+				const unitY = positions[record.position + DataOffsetPositions.PositionY]!
+				const unitZ = positions[record.position + DataOffsetPositions.PositionZ]!
+
+				const hasItem = ((record.thisTraits & UnitTraits.ItemHoldable) === UnitTraits.ItemHoldable)
+					? (itemHoldables[record.itemHoldable + DataOffsetItemHoldable.ItemId] !== ItemType.None) : false
+
+				const hasActivity = (record.thisTraits & UnitTraits.WithActivity) === UnitTraits.WithActivity
+				const activityId = hasActivity ? withActivities[record.withActivity + DataOffsetWithActivity.CurrentId]! : ActivityId.Idle
+				const activityStartTick = hasActivity ? withActivities[record.withActivity + DataOffsetWithActivity.StartTick]! : 0
+
+				const activity = requireActivity(activityId)
+				const program = programs[activity.shaderId * 4 + (hasItem ? 1 : 0) + 2]
+				if (program == null)
+					throw new Error(`Invalid unit program id ${activity.shaderId}`)
+
+				program.use()
+				const unitData = []
+
+				unitData.push(unitX, unitY, unitZ,
+					record.thisId / 256, activityStartTick,
+					drawables[record.drawable + DataOffsetDrawables.Rotation]!)
+
+				unitDataBuffer.setContent(new Float32Array(unitData))
+
+
+				gl.uniformMatrix4fv(program.uniforms.combinedMatrix, false, toGl(combinedMatrix))
+				gl.uniform1f(program.uniforms.gameTick, gameTickEstimation)
+				gl.uniform1f(program.uniforms.time, ctx.secondsSinceFirstRender)
+
+				gl.drawElementsInstanced(gl.TRIANGLES, trianglesToRender, gl.UNSIGNED_SHORT, 0, 1)
+			}
 		},
 	}
 }
