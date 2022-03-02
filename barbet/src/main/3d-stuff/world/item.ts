@@ -1,6 +1,6 @@
+import { freezeAndValidateOptionsList } from '../../util/common'
 import boxItem from '../game-state/items/box'
 import { GPUBuffer, MainRenderer } from '../main-renderer'
-import { freezeAndValidateOptionsList } from '../shader/common'
 
 export const enum ItemType {
 	None,

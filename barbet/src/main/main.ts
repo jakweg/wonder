@@ -1,4 +1,4 @@
-import { interruptRequestItemPickUp, interruptRequestWalk } from './3d-stuff/game-state/activities/interrupt'
+import activityIdle from './3d-stuff/game-state/activities/idle'
 import { GameState } from './3d-stuff/game-state/game-state'
 import { GroundItemsIndex } from './3d-stuff/game-state/ground-items-index'
 import { PathFinder } from './3d-stuff/game-state/path-finder'
@@ -65,10 +65,9 @@ updater.start()
 	unitsContainer.positions.rawData[entity.position + DataOffsetPositions.PositionX] = 8
 	unitsContainer.positions.rawData[entity.position + DataOffsetPositions.PositionY] = 2
 	unitsContainer.positions.rawData[entity.position + DataOffsetPositions.PositionZ] = 6
+	activityIdle.setup(state, entity)
 }
 
-state.spawnUnit(8, 6, UnitColorPaletteId.LightOrange)
-// state.spawnUnit(4, 6, UnitColorPaletteId.LightOrange)
 
 const unit = createNewUnitRenderable(renderer, state)
 const items = createHeldItemRenderable(renderer, state)
@@ -131,20 +130,20 @@ const mouseEventListener = (event: MouseEvent) => {
 		// 	world.setBlock(result.x + result.normals[0]!, result.y + result.normals[1]!, result.z + result.normals[2]!, BlockId.Snow)
 		// else
 		// 	world.setBlock(result.x, result.y, result.z, BlockId.Air)
-		const units = state.allUnits.filter(e => e.color === UnitColorPaletteId.DarkBlue)
-		if (units.length > 0) {
-			if (itemsOnGround.getItem(result.x, result.z) !== ItemType.None)
-				units.forEach(unit => interruptRequestItemPickUp(unit, result.x, result.z, ItemType.Box))
-			else
-				units.forEach(unit => interruptRequestWalk(unit, result.x, result.z))
-
-		} else {
-			if (event.button === 0)
-				// world.setBlock(result.x + result.normals[0]!, result.y + result.normals[1]!, result.z + result.normals[2]!, BlockId.Snow)
-				itemsOnGround.setItem(result.x, result.z, ItemType.Box)
-			else
-				world.setBlock(result.x, result.y, result.z, BlockId.Air)
-		}
+		// const units = state.allUnits.filter(e => e.color === UnitColorPaletteId.DarkBlue) // TODO interrupts
+		// if (units.length > 0) {
+		// 	if (itemsOnGround.getItem(result.x, result.z) !== ItemType.None)
+		// 		units.forEach(unit => interruptRequestItemPickUp(unit, result.x, result.z, ItemType.Box))
+		// 	else
+		// 		units.forEach(unit => interruptRequestWalk(unit, result.x, result.z))
+		//
+		// } else {
+		// 	if (event.button === 0)
+		// 		// world.setBlock(result.x + result.normals[0]!, result.y + result.normals[1]!, result.z + result.normals[2]!, BlockId.Snow)
+		// 		itemsOnGround.setItem(result.x, result.z, ItemType.Box)
+		// 	else
+		// 		world.setBlock(result.x, result.y, result.z, BlockId.Air)
+		// }
 	} else if (result.pickedType === MousePickableType.Unit) {
 		const id = result.numericId
 		for (const record of state.units.iterate(UnitTraits.Drawable | UnitTraits.ItemHoldable)) {
@@ -168,7 +167,7 @@ const mouseEventListener = (event: MouseEvent) => {
 canvas.addEventListener('click', mouseEventListener)
 canvas.addEventListener('contextmenu', mouseEventListener)
 
-renderer.beforeRenderFunction = (secondsSinceLastFrame) => secondsSinceLastFrame > 0.5 || document.hasFocus()
+renderer.beforeRenderFunction = (secondsSinceLastFrame) => document.hasFocus()
 renderer.beginRendering()
 
 const moveCameraByKeys = (camera: Camera, dt: number) => {

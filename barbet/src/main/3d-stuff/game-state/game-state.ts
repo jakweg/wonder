@@ -3,7 +3,6 @@ import { ActivityId, requireActivity } from '../renderable/unit/activity'
 import { UnitColorPaletteId } from '../renderable/unit/unit-color'
 import { ItemType } from '../world/item'
 import { World } from '../world/world'
-import activityIdle from './activities/idle'
 import { GroundItemsIndex } from './ground-items-index'
 import { PathFinder } from './path-finder'
 import UnitsContainer from './units/units-container'
@@ -11,6 +10,7 @@ import UnitsContainer from './units/units-container'
 
 export const ACTIVITY_MEMORY_SIZE = 20
 
+/** @deprecated */
 export interface Unit {
 	numericId: number
 	posX: number
@@ -28,8 +28,6 @@ export interface Unit {
 
 export class GameState {
 	private isRunningLogic: boolean = false
-	private readonly _units: Unit[] = []
-	private nextUnitId: number = 1
 
 	private constructor(public readonly world: World,
 	                    public readonly groundItems: GroundItemsIndex,
@@ -43,41 +41,12 @@ export class GameState {
 		return this._currentTick | 0
 	}
 
-	/**
-	 * @deprecated
-	 */
-	public get allUnits(): Unit[] {
-		return [...this._units]
-	}
-
 	public static createNew(
 		world: World,
 		groundItems: GroundItemsIndex,
 		units: UnitsContainer,
 		pathFinder: PathFinder): GameState {
 		return new GameState(world, groundItems, units, pathFinder)
-	}
-
-	/**
-	 * @deprecated
-	 */
-	public spawnUnit(atX: number,
-	                 atZ: number,
-	                 color: UnitColorPaletteId): void {
-		const defaultActivity = activityIdle
-		const unit: Unit = {
-			numericId: this.nextUnitId++,
-			posX: atX, posY: 2, posZ: atZ,
-			color: color, rotation: Direction.PositiveX,
-			activityId: defaultActivity.numericId,
-			activityStartedAt: this._currentTick,
-			activityMemory: new Int32Array(ACTIVITY_MEMORY_SIZE),
-			activityMemoryPointer: 0,
-			heldItem: ItemType.None,
-			interrupt: new Int32Array(4),
-		}
-		defaultActivity.setup(this, unit)
-		this._units.push(unit)
 	}
 
 	public advanceActivities() {
@@ -90,7 +59,7 @@ export class GameState {
 		for (const unit of [...this._units]) {
 			const activity = requireActivity(unit.activityId)
 
-			activity.perform(this, unit)
+			// activity.perform(this, unit)
 		}
 		this.isRunningLogic = false
 	}

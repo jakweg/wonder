@@ -2,7 +2,15 @@ import { Direction, getChangeInXByRotation, getChangeInZByRotation } from '../..
 import { ActivityId } from '../../renderable/unit/activity'
 import { ShaderId } from '../../renderable/unit/unit-shaders'
 import { ItemType } from '../../world/item'
-import { GameState, Unit } from '../game-state'
+import { GameState } from '../game-state'
+import {
+	DataOffsetDrawables,
+	DataOffsetItemHoldable,
+	DataOffsetPositions,
+	DataOffsetWithActivity,
+	UnitTraitIndicesRecord,
+	UnitTraits,
+} from '../units/units-container'
 import activityItemPickupRoot from './item-pickup-root'
 
 const pickUpItemActivityDuration = 10
@@ -41,32 +49,45 @@ const MEMORY_USED_SIZE = 2
 const activityItemPickup = {
 	numericId: ActivityId.ItemPickUp,
 	shaderId: ShaderId.PickUpItem,
-	perform(game: GameState, unit: Unit) {
-		const memory = unit.activityMemory
-		const pointer = unit.activityMemoryPointer
+	perform(game: GameState, unit: UnitTraitIndicesRecord) {
+		const withActivitiesMemory = game.units.withActivities.rawData
+		const memory = game.units.activitiesMemory.rawData
+		const pointer = withActivitiesMemory[unit.withActivity + DataOffsetWithActivity.MemoryPointer]!
 
 		const finishAt = memory[pointer - MemoryField.ActivityFinishTick]!
 		if (game.currentTick !== finishAt) return
 		const direction = memory[pointer - MemoryField.Direction]! as Direction
 
-		const itemX = unit.posX + getChangeInXByRotation(direction)
-		const itemZ = unit.posZ + getChangeInZByRotation(direction)
+		const positionsData = game.units.positions.rawData
+		const unitX = positionsData[unit.position + DataOffsetPositions.PositionX]!
+		const unitZ = positionsData[unit.position + DataOffsetPositions.PositionZ]!
 
-		unit.heldItem = game.groundItems.getItem(itemX, itemZ)
+		const itemX = unitX + getChangeInXByRotation(direction)
+		const itemZ = unitZ + getChangeInZByRotation(direction)
+
+		game.units.itemHoldables.rawData[unit.itemHoldable + DataOffsetItemHoldable.ItemId] = game.groundItems.getItem(itemX, itemZ)
 		game.groundItems.setItem(itemX, itemZ, ItemType.None)
 
-		unit.rotation &= ~Direction.MaskMergePrevious
-		unit.activityMemoryPointer -= MEMORY_USED_SIZE
+		const drawablesData = game.units.drawables.rawData
+		drawablesData[unit.drawable + DataOffsetDrawables.Rotation] &= ~Direction.MaskMergePrevious
+		withActivitiesMemory[unit.withActivity + DataOffsetWithActivity.MemoryPointer] -= MEMORY_USED_SIZE
 		activityItemPickupRoot.onPickedUp(game, unit)
 	},
-	setup(game: GameState, unit: Unit, direction: Direction) {
-		const now = game.currentTick
-		const memory = unit.activityMemory
-		const pointer = unit.activityMemoryPointer = unit.activityMemoryPointer + MEMORY_USED_SIZE
+	setup(game: GameState, unit: UnitTraitIndicesRecord, direction: Direction) {
+		if ((unit.thisTraits & UnitTraits.ItemHoldable) !== UnitTraits.ItemHoldable)
+			throw new Error('Missing trait')
 
-		unit.rotation = Direction.FlagMergeWithPrevious | ((unit.rotation & Direction.MaskCurrentRotation) << 3) | direction
-		unit.activityId = ActivityId.ItemPickUp
-		unit.activityStartedAt = now
+		const now = game.currentTick
+		const withActivitiesMemory = game.units.withActivities.rawData
+		const memory = game.units.activitiesMemory.rawData
+		const pointer = (withActivitiesMemory[unit.withActivity + DataOffsetWithActivity.MemoryPointer] += MEMORY_USED_SIZE)
+
+		withActivitiesMemory[unit.withActivity + DataOffsetWithActivity.CurrentId] = ActivityId.ItemPickUp
+		withActivitiesMemory[unit.withActivity + DataOffsetWithActivity.StartTick] = now
+
+		const drawablesData = game.units.drawables.rawData
+		const oldRotation = drawablesData[unit.drawable + DataOffsetDrawables.Rotation]!
+		drawablesData[unit.drawable + DataOffsetDrawables.Rotation] = Direction.FlagMergeWithPrevious | ((oldRotation & Direction.MaskCurrentRotation) << 3) | direction
 
 		memory[pointer - MemoryField.ActivityFinishTick] = now + pickUpItemActivityDuration
 		memory[pointer - MemoryField.Direction] = direction

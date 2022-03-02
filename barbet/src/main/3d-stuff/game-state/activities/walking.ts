@@ -1,7 +1,14 @@
 import { Direction, getChangeInXByRotation, getChangeInZByRotation } from '../../../util/direction'
 import { ActivityId } from '../../renderable/unit/activity'
 import { ShaderId, UnitShaderCreationOptions } from '../../renderable/unit/unit-shaders'
-import { GameState, Unit } from '../game-state'
+import { GameState } from '../game-state'
+import {
+	DataOffsetDrawables,
+	DataOffsetPositions,
+	DataOffsetWithActivity,
+	UnitTraitIndicesRecord,
+	UnitTraits,
+} from '../units/units-container'
 import activityWalkingByPathRoot from './walking-by-path-root'
 
 const standardWalkingDuration = 15
@@ -40,31 +47,51 @@ const MEMORY_USED_SIZE = 2
 const activityWalking = {
 	numericId: ActivityId.Walking,
 	shaderId: ShaderId.Walking,
-	perform(game: GameState, unit: Unit) {
+	perform(game: GameState, unit: UnitTraitIndicesRecord) {
 		const now = game.currentTick
-		if (now === unit.activityMemory[unit.activityMemoryPointer - MemoryField.WalkingFinishTick]!) {
-			unit.activityMemoryPointer -= MEMORY_USED_SIZE
-			unit.activityId = ActivityId.WalkingByPathRoot
+		const withActivitiesMemory = game.units.withActivities.rawData
+		const activityMemory = game.units.activitiesMemory.rawData
+		const pointer = withActivitiesMemory[unit.withActivity + DataOffsetWithActivity.MemoryPointer]!
+
+		if (now === activityMemory[pointer - MemoryField.WalkingFinishTick]!) {
+			withActivitiesMemory[unit.withActivity + DataOffsetWithActivity.MemoryPointer] -= MEMORY_USED_SIZE
+			withActivitiesMemory[unit.withActivity + DataOffsetWithActivity.CurrentId] = ActivityId.WalkingByPathRoot
 			activityWalkingByPathRoot.perform(game, unit)
 		}
 	},
-	tryToContinueWalking(game: GameState, unit: Unit, direction: Direction): boolean {
-		const dx = unit.posX + getChangeInXByRotation(direction)
-		const dz = unit.posZ + getChangeInZByRotation(direction)
-		if (unit.posY !== game.world.getHighestBlockHeight(dx, dz) + 1)
+	tryToContinueWalking(game: GameState, unit: UnitTraitIndicesRecord, direction: Direction): boolean {
+		const positionData = game.units.positions.rawData
+		const posX = positionData[unit.position + DataOffsetPositions.PositionX]!
+		const posY = positionData[unit.position + DataOffsetPositions.PositionY]!
+		const posZ = positionData[unit.position + DataOffsetPositions.PositionZ]!
+
+		const dx = posX + getChangeInXByRotation(direction)
+		const dz = posZ + getChangeInZByRotation(direction)
+		if (posY !== game.world.getHighestBlockHeight(dx, dz) + 1)
 			return false
 
-		unit.posX = dx
-		unit.posZ = dz
+		positionData[unit.position + DataOffsetPositions.PositionX] = dx
+		positionData[unit.position + DataOffsetPositions.PositionZ] = dz
+
 
 		const now = game.currentTick
-		unit.activityId = ActivityId.Walking
-		unit.activityStartedAt = now
-		unit.rotation = Direction.FlagMergeWithPrevious | ((unit.rotation & Direction.MaskCurrentRotation) << 3) | direction
-		unit.activityMemoryPointer += MEMORY_USED_SIZE
-		const memory = unit.activityMemory
-		memory[unit.activityMemoryPointer - MemoryField.WalkingDirection] = direction
-		memory[unit.activityMemoryPointer - MemoryField.WalkingFinishTick] = now + walkingDurationByDirection[direction]!
+
+		const withActivitiesMemory = game.units.withActivities.rawData
+		const memory = game.units.activitiesMemory.rawData
+		const pointer = (withActivitiesMemory[unit.withActivity + DataOffsetWithActivity.MemoryPointer] += MEMORY_USED_SIZE)
+
+		withActivitiesMemory[unit.withActivity + DataOffsetWithActivity.CurrentId] = ActivityId.Walking
+		withActivitiesMemory[unit.withActivity + DataOffsetWithActivity.StartTick] = now
+
+		memory[pointer - MemoryField.WalkingDirection] = direction
+		memory[pointer - MemoryField.WalkingFinishTick] = now + walkingDurationByDirection[direction]!
+
+		if ((unit.thisTraits & UnitTraits.Drawable) === UnitTraits.Drawable) {
+			const data = game.units.drawables.rawData
+			const rotation = data[unit.drawable + DataOffsetDrawables.Rotation]!
+			data[unit.drawable + DataOffsetDrawables.Rotation] = Direction.FlagMergeWithPrevious | ((rotation & Direction.MaskCurrentRotation) << 3) | direction
+		}
+
 		return true
 	},
 }

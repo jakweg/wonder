@@ -1,10 +1,11 @@
+import { freezeAndValidateOptionsList } from '../../../util/common'
 import activityIdle from '../../game-state/activities/idle'
 import activityItemPickup from '../../game-state/activities/item-pickup'
 import activityItemPickupRoot from '../../game-state/activities/item-pickup-root'
 import activityWalking from '../../game-state/activities/walking'
 import activityWalkingByPathRoot from '../../game-state/activities/walking-by-path-root'
-import { GameState, Unit } from '../../game-state/game-state'
-import { freezeAndValidateOptionsList } from '../../shader/common'
+import { GameState } from '../../game-state/game-state'
+import { UnitTraitIndicesRecord } from '../../game-state/units/units-container'
 import { ShaderId } from './unit-shaders'
 
 export enum ActivityId {
@@ -22,7 +23,7 @@ export interface ActivityType {
 
 	readonly shaderId: ShaderId
 
-	perform(game: GameState, unit: Unit): void
+	perform(game: GameState, unit: UnitTraitIndicesRecord): void
 }
 
 
@@ -30,7 +31,7 @@ export const allActivities: ActivityType[] = [
 	{
 		numericId: ActivityId.None,
 		shaderId: ShaderId.Stationary,
-		perform(_: GameState, __: Unit) {
+		perform() {
 		},
 	},
 	activityIdle,

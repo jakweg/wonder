@@ -112,7 +112,7 @@ class UnitsContainer {
 		index = record.withActivity
 		if (index !== NO_INDEX) {
 			const data = this.withActivities.rawData
-			data[index + DataOffsetWithActivity.CurrentId] = ActivityId.Idle
+			data[index + DataOffsetWithActivity.CurrentId] = ActivityId.None
 			data[index + DataOffsetWithActivity.StartTick] = 0
 			data[index + DataOffsetWithActivity.MemoryPointer] = 0
 		}

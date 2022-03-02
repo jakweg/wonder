@@ -1,4 +1,4 @@
-import { freezeAndValidateOptionsList } from '../shader/common'
+import { freezeAndValidateOptionsList } from '../../util/common'
 
 export const enum BlockId {
 	Air,
