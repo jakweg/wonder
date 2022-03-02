@@ -1,6 +1,13 @@
 import { toGl } from '../../../util/matrix/common'
 import { add, clone, fromValues } from '../../../util/matrix/vec3'
 import { GameState } from '../../game-state/game-state'
+import {
+	DataOffsetDrawables,
+	DataOffsetItemHoldable,
+	DataOffsetPositions,
+	DataOffsetWithActivity,
+	UnitTraits,
+} from '../../game-state/units/units-container'
 import { MainRenderer } from '../../main-renderer'
 import { createProgramFromNewShaders } from '../../shader/common'
 import { allItems, ItemType } from '../../world/item'
@@ -39,9 +46,31 @@ const createHeldItemRenderable = (renderer: MainRenderer,
 			vao.bind()
 			program.use()
 
-			for (const unit of game.allUnits) {
-				const type = unit.heldItem
-				if (type === ItemType.None) continue
+
+			const positions = game.units.positions.rawData
+			const drawables = game.units.drawables.rawData
+			const withActivities = game.units.withActivities.rawData
+			const itemHoldables = game.units.itemHoldables.rawData
+
+			for (const record of game.units.iterate(UnitTraits.ItemHoldable | UnitTraits.Drawable | UnitTraits.Position)) {
+
+				const type = itemHoldables[record.itemHoldable + DataOffsetItemHoldable.ItemId]! as ItemType
+
+				if (type === ItemType.None)
+					continue
+
+				const unitX = positions[record.position + DataOffsetPositions.PositionX]!
+				const unitY = positions[record.position + DataOffsetPositions.PositionY]!
+				const unitZ = positions[record.position + DataOffsetPositions.PositionZ]!
+
+
+				const hasActivity = (record.thisTraits & UnitTraits.WithActivity) === UnitTraits.WithActivity
+				const activityId = hasActivity ? withActivities[record.withActivity + DataOffsetWithActivity.CurrentId]! : ActivityId.Idle
+				const activityStartTick = hasActivity ? withActivities[record.withActivity + DataOffsetWithActivity.StartTick]! : 0
+
+				const rotation = drawables[record.drawable + DataOffsetDrawables.Rotation]!
+
+
 				const buffers = itemBuffers[type]
 				if (buffers == null)
 					throw new Error(`Invalid item id ${type}`)
@@ -52,14 +81,14 @@ const createHeldItemRenderable = (renderer: MainRenderer,
 
 
 				let unitData: UnitData = UnitData.Default
-				if (unit.activityId === ActivityId.Walking)
+				if (activityId === ActivityId.Walking)
 					unitData = (unitData & ~UnitData.MaskMoving) | UnitData.Moving
-				unitData = (unitData & ~UnitData.MaskRotation) | unit.rotation
+				unitData = (unitData & ~UnitData.MaskRotation) | rotation
 
 
-				gl.uniform3f(program.uniforms.unitPosition, unit.posX, unit.posY, unit.posZ)
+				gl.uniform3f(program.uniforms.unitPosition, unitX, unitY, unitZ)
 				gl.uniformMatrix4fv(program.uniforms.combinedMatrix, false, toGl(camera.combinedMatrix))
-				gl.uniform1f(program.uniforms.activityStartTick, unit.activityStartedAt)
+				gl.uniform1f(program.uniforms.activityStartTick, activityStartTick)
 				gl.uniform1i(program.uniforms.unitData, unitData)
 				gl.uniform1f(program.uniforms.gameTick, ctx.gameTickEstimation)
 				gl.uniform3fv(program.uniforms.lightPosition, toGl(add(clone(ctx.sunPosition), ctx.sunPosition, fromValues(0, -400, 0))))
