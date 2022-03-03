@@ -3,7 +3,9 @@ import { WorldSize } from '../world/world'
 
 
 export class GroundItemsIndex {
-	public lastDataChangeId: number = 0
+	public get lastDataChangeId(): number {
+		return this.rawItemData[0]!
+	}
 
 	private constructor(public readonly rawItemData: Uint8Array,
 	                    private readonly buffer: SharedArrayBuffer,
@@ -13,7 +15,7 @@ export class GroundItemsIndex {
 
 	public static createNew(size: WorldSize) {
 		const {sizeX, sizeZ} = size
-		const buffer = new SharedArrayBuffer(sizeX * sizeZ * Uint8Array.BYTES_PER_ELEMENT)
+		const buffer = new SharedArrayBuffer((sizeX * sizeZ + 1) * Uint8Array.BYTES_PER_ELEMENT)
 
 		const itemIds = new Uint8Array(buffer)
 		return new GroundItemsIndex(itemIds, buffer, sizeX, sizeZ)
@@ -41,13 +43,13 @@ export class GroundItemsIndex {
 
 	public setItem(x: number, z: number, type: ItemType): void {
 		this.validateCoords(x, z)
-		this.rawItemData[z * this.sizeX + x] = type
-		this.lastDataChangeId++
+		this.rawItemData[z * this.sizeX + x + 1] = type
+		this.rawItemData[0]++
 	}
 
 	public getItem(x: number, z: number): ItemType {
 		this.validateCoords(x, z)
-		return this.rawItemData[z * this.sizeX + x]! as ItemType
+		return this.rawItemData[z * this.sizeX + x + 1]! as ItemType
 	}
 
 	private validateCoords(x: number, z: number): void {

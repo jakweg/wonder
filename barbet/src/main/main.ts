@@ -1,12 +1,18 @@
+import { interruptRequestItemPickUp, interruptRequestWalk } from './3d-stuff/game-state/activities/interrupt'
+import { getEntityById_drawableItem, iterateOverAllSelectedEntities } from './3d-stuff/game-state/entities/queries'
+import { DataOffsetDrawables, DataOffsetItemHoldable } from './3d-stuff/game-state/entities/traits'
 import { GameState } from './3d-stuff/game-state/game-state'
 import { stateUpdaterFromReceived } from './3d-stuff/game-state/state-updater'
 import { MainRenderer } from './3d-stuff/main-renderer'
-import { createPicker } from './3d-stuff/mouse-picker'
+import { createPicker, MousePickableType } from './3d-stuff/mouse-picker'
 import createHeldItemRenderable from './3d-stuff/renderable/held-item/held-item'
 import createNewItemOnGroundRenderable from './3d-stuff/renderable/item-on-ground/item-on-ground'
 import { RenderContext } from './3d-stuff/renderable/render-context'
 import { createNewTerrainRenderable } from './3d-stuff/renderable/terrain/terrain'
 import { createNewUnitRenderable } from './3d-stuff/renderable/unit/unit'
+import { UnitColorPaletteId } from './3d-stuff/renderable/unit/unit-color'
+import { BlockId } from './3d-stuff/world/block'
+import { ItemType } from './3d-stuff/world/item'
 import { Camera } from './camera'
 import KEYBOARD from './keyboard-controller'
 import * as vec3 from './util/matrix/vec3'
@@ -89,58 +95,63 @@ renderer.renderFunction = async (gl, dt) => {
 	})
 }
 
-// const mouseEventListener = (event: MouseEvent) => {
-// 	event.preventDefault()
-// 	const ctx = lastContext
-// 	if (!ctx) return
-//
-// 	const result = mousePicker.pick(ctx, event.offsetX, 720 - event.offsetY)
-// 	if (result.pickedType === MousePickableType.Terrain) {
-// 		let wasAny = false
-// 		const entities = iterateOverAllSelectedEntities(entityContainer)
-// 		if (itemsOnGround.getItem(result.x, result.z) !== ItemType.None) {
-// 			for (const record of entities) {
-// 				if (entityContainer.drawables.rawData[record.drawable + DataOffsetDrawables.ColorPaletteId] !== UnitColorPaletteId.DarkBlue)
-// 					continue
-// 				wasAny = true
-// 				interruptRequestItemPickUp(entityContainer, record, result.x, result.z, ItemType.Box)
-// 			}
-// 		} else
-// 			for (const record of entities) {
-// 				if (entityContainer.drawables.rawData[record.drawable + DataOffsetDrawables.ColorPaletteId] !== UnitColorPaletteId.DarkBlue)
-// 					continue
-// 				wasAny = true
-// 				interruptRequestWalk(entityContainer, record, result.x, result.z)
-// 			}
-//
-// 		if (!wasAny) {
-// 			if (event.button === 0)
-// 				// world.setBlock(result.x + result.normals[0]!, result.y + result.normals[1]!, result.z + result.normals[2]!, BlockId.Snow)
-// 				itemsOnGround.setItem(result.x, result.z, ItemType.Box)
-// 			else
-// 				world.setBlock(result.x, result.y, result.z, BlockId.Air)
-// 		}
-// 	} else if (result.pickedType === MousePickableType.Unit) {
-// 		const id = result.numericId
-// 		const record = getEntityById_drawableItem(entityContainer, id)
-// 		if (record !== null) {
-// 			{
-// 				const rawData = state.entities.drawables.rawData
-// 				let color = rawData[record.drawable + DataOffsetDrawables.ColorPaletteId]! as UnitColorPaletteId
-// 				color = (color === UnitColorPaletteId.DarkBlue) ? UnitColorPaletteId.GreenOrange : UnitColorPaletteId.DarkBlue
-// 				rawData[record.drawable + DataOffsetDrawables.ColorPaletteId] = color
-// 			}
-// 			if (event.button !== 0) {
-// 				const rawData = state.entities.itemHoldables.rawData
-// 				let item = rawData[record.itemHoldable + DataOffsetItemHoldable.ItemId]! as ItemType
-// 				item = (item === ItemType.Box) ? ItemType.None : ItemType.Box
-// 				rawData[record.itemHoldable + DataOffsetItemHoldable.ItemId] = item
-// 			}
-// 		}
-// 	}
-// }
-// canvas.addEventListener('click', mouseEventListener)
-// canvas.addEventListener('contextmenu', mouseEventListener)
+const mouseEventListener = async (event: MouseEvent) => {
+	event.preventDefault()
+	const ctx = lastContext
+	if (!ctx) return
+	const nowStuff = stuff
+	if (nowStuff === null) return
+
+	await globalMutex.executeWithAcquiredAsync(Lock.Update, () => {
+		const entityContainer = nowStuff.state.entities
+		const result = nowStuff.mousePicker.pick(ctx, event.offsetX, 720 - event.offsetY)
+		if (result.pickedType === MousePickableType.Terrain) {
+			let wasAny = false
+			const entities = iterateOverAllSelectedEntities(entityContainer)
+			if (nowStuff.state.groundItems.getItem(result.x, result.z) !== ItemType.None) {
+				for (const record of entities) {
+					if (entityContainer.drawables.rawData[record.drawable + DataOffsetDrawables.ColorPaletteId] !== UnitColorPaletteId.DarkBlue)
+						continue
+					wasAny = true
+					interruptRequestItemPickUp(entityContainer, record, result.x, result.z, ItemType.Box)
+				}
+			} else
+				for (const record of entities) {
+					if (entityContainer.drawables.rawData[record.drawable + DataOffsetDrawables.ColorPaletteId] !== UnitColorPaletteId.DarkBlue)
+						continue
+					wasAny = true
+					interruptRequestWalk(entityContainer, record, result.x, result.z)
+				}
+
+			if (!wasAny) {
+				if (event.button === 0)
+					// world.setBlock(result.x + result.normals[0]!, result.y + result.normals[1]!, result.z + result.normals[2]!, BlockId.Snow)
+					nowStuff.state.groundItems.setItem(result.x, result.z, ItemType.Box)
+				else
+					nowStuff.state.world.setBlock(result.x, result.y, result.z, BlockId.Air)
+			}
+		} else if (result.pickedType === MousePickableType.Unit) {
+			const id = result.numericId
+			const record = getEntityById_drawableItem(entityContainer, id)
+			if (record !== null) {
+				{
+					const rawData = entityContainer.drawables.rawData
+					let color = rawData[record.drawable + DataOffsetDrawables.ColorPaletteId]! as UnitColorPaletteId
+					color = (color === UnitColorPaletteId.DarkBlue) ? UnitColorPaletteId.GreenOrange : UnitColorPaletteId.DarkBlue
+					rawData[record.drawable + DataOffsetDrawables.ColorPaletteId] = color
+				}
+				if (event.button !== 0) {
+					const rawData = entityContainer.itemHoldables.rawData
+					let item = rawData[record.itemHoldable + DataOffsetItemHoldable.ItemId]! as ItemType
+					item = (item === ItemType.Box) ? ItemType.None : ItemType.Box
+					rawData[record.itemHoldable + DataOffsetItemHoldable.ItemId] = item
+				}
+			}
+		}
+	})
+}
+canvas.addEventListener('click', mouseEventListener)
+canvas.addEventListener('contextmenu', mouseEventListener)
 
 renderer.beforeRenderFunction = (secondsSinceLastFrame) => document.hasFocus()
 renderer.beginRendering()
@@ -196,15 +207,13 @@ function recreateGameState(data: any, delay: number, connection: Connection) {
 	}
 }
 
-setTimeout(() => {
-	(async () => {
-		const controller = await UpdateWorkerController.spawnNew(globalMutex)
+(async () => {
+	const controller = await UpdateWorkerController.spawnNew(globalMutex)
 
-		setMessageHandler('game-snapshot-for-renderer', (data, c) => {
-			recreateGameState(data, controller.workerStartDelay, c)
-			stuff?.updater.start(20)
-		})
+	setMessageHandler('game-snapshot-for-renderer', (data, c) => {
+		recreateGameState(data, controller.workerStartDelay, c)
+		stuff?.updater.start(20)
+	})
 
-		controller.replier.send('create-game', undefined)
-	})()
-}, 5000)
+	controller.replier.send('create-game', undefined)
+})()

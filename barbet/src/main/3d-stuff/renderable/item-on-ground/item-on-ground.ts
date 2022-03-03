@@ -28,16 +28,16 @@ const createNewItemOnGroundRenderable = (renderer: MainRenderer,
 	const {vao, program, modelBuffer, modelElementsBuffer} = prepareRenderer(renderer)
 
 	let trianglesToRender = 0
-	let lastGroundDataChangeId = 0
+	let lastGroundDataChangeId = -1
 	const recreateMeshIfNeeded = () => {
 		if (lastGroundDataChangeId !== game.groundItems.lastDataChangeId) {
-			game.groundItems.lastDataChangeId = lastGroundDataChangeId
+			lastGroundDataChangeId = game.groundItems.lastDataChangeId
 			renderer.unbindVAO()
 
 			const vertexData: number[] = []
 			const elementsData: number[] = []
 
-			let fieldIndex = 0
+			let fieldIndex = 1
 			for (let z = 0, h = game.groundItems.sizeZ; z < h; z++) {
 				for (let x = 0, w = game.groundItems.sizeX; x < w; x++) {
 					const type = game.groundItems.rawItemData[fieldIndex++]! as ItemType
