@@ -16,18 +16,31 @@ import { globalMutex, setGlobalMutex } from './worker/worker-global-state'
 
 takeControlOverWorkerConnection()
 
-setMessageHandler('set-global-mutex', (data) => {
+let canvas: HTMLCanvasElement | null = null
+let gameSnapshot: unknown | null = null
+let parent: Connection
+let myDelay = 0
+let updateWorkerDelay = 0
+
+setMessageHandler('set-global-mutex', (data, connection) => {
 	setGlobalMutex(data.mutex)
+	parent = connection
 })
 
-console.log('Render loaded!')
 
 setMessageHandler('transfer-canvas', (data) => {
-	const canvas = data.canvas as HTMLCanvasElement
-	// const context = canvas.getContext('2d')!
-	// context.fillStyle = 'red'
-	// context.fillRect(500, 50, 50, 50)
-	setupWithCanvas(canvas)
+	if (canvas !== null)
+		throw new Error('Canvas is already not null')
+
+	canvas = data.canvas as HTMLCanvasElement
+	considerStartRendering()
+})
+
+setMessageHandler('set-worker-load-delays', ({update, render}) => {
+	updateWorkerDelay = update
+	myDelay = render
+	if (stuff !== null)
+		stuff.workerStartDelay = updateWorkerDelay - myDelay
 })
 
 
@@ -68,7 +81,7 @@ const setupWithCanvas = (canvas: HTMLCanvasElement) => {
 				gl,
 				camera,
 				sunPosition,
-				gameTickEstimation: nowStuff.updater.estimateCurrentGameTickTime(nowStuff.workerStartDelay),
+				gameTickEstimation: nowStuff.updater.estimateCurrentGameTickTime(updateWorkerDelay - myDelay),
 				secondsSinceFirstRender: (now - firstRenderTime) / 1000,
 			}
 			lastContext = ctx
@@ -111,7 +124,15 @@ function recreateGameState(data: any, delay: number, connection: Connection) {
 	}
 }
 
-setMessageHandler('game-snapshot-for-renderer', (data, c) => {
-	recreateGameState(data, 0, c)
-	stuff?.updater.start(20)
+function considerStartRendering() {
+	if (canvas !== null && gameSnapshot !== null) {
+		setupWithCanvas(canvas)
+		recreateGameState(gameSnapshot, updateWorkerDelay - myDelay, parent)
+		stuff?.updater.start(20)
+	}
+}
+
+setMessageHandler('game-snapshot-for-renderer', (data) => {
+	gameSnapshot = data
+	considerStartRendering()
 })

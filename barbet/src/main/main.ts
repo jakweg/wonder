@@ -115,7 +115,6 @@ canvas.height = 720;
 // 	camera.lastEyeChangeId++
 // }
 
-
 (async () => {
 	const renderWorker = await WorkerController.spawnNew('render-worker', 'render', globalMutex)
 	const canvasControl = (canvas as any).transferControlToOffscreen()
@@ -129,6 +128,11 @@ canvas.height = 720;
 	})
 
 	setMessageHandler('start-game', data => updateWorker.replier.send('start-game', data))
+
+	renderWorker.replier.send('set-worker-load-delays', {
+		render: renderWorker.workerStartDelay,
+		update: updateWorker.workerStartDelay,
+	})
 })()
 
 

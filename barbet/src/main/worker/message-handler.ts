@@ -4,6 +4,7 @@ export interface Message {
 	['set-global-mutex']: { mutex: unknown }
 	['create-game']: undefined
 	['start-game']: undefined
+	['set-worker-load-delays']: { update: number, render: number }
 	['game-snapshot-for-renderer']: { game: unknown, updater: unknown }
 	['transfer-canvas']: { canvas: unknown }
 }
