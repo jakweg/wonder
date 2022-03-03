@@ -1,4 +1,5 @@
 import { GameState } from './3d-stuff/game-state/game-state'
+import { stateUpdaterFromReceived } from './3d-stuff/game-state/state-updater'
 import { MainRenderer } from './3d-stuff/main-renderer'
 import { createPicker } from './3d-stuff/mouse-picker'
 import createHeldItemRenderable from './3d-stuff/renderable/held-item/held-item'
@@ -9,12 +10,11 @@ import { createNewUnitRenderable } from './3d-stuff/renderable/unit/unit'
 import { Camera } from './camera'
 import KEYBOARD from './keyboard-controller'
 import * as vec3 from './util/matrix/vec3'
-import Mutex, { Lock } from './util/mutex'
-import { setMessageHandler } from './worker/message-handler'
+import { Lock } from './util/mutex'
+import { Connection, setMessageHandler } from './worker/message-handler'
 import { UpdateWorkerController } from './worker/update-worker-controller'
+import { globalMutex } from './worker/worker-global-state'
 
-
-const mutex = Mutex.createNew()
 
 const canvas: HTMLCanvasElement = document.getElementById('main-canvas') as HTMLCanvasElement
 canvas.width = 1280
@@ -25,7 +25,9 @@ const camera = Camera.newPerspective(90, 1280 / 720)
 camera.moveCamera(9.5, 0, 7)
 
 interface GameFrontendStuff {
+	workerStartDelay: number,
 	state: GameState,
+	updater: ReturnType<typeof stateUpdaterFromReceived>
 	terrain: ReturnType<typeof createNewTerrainRenderable>,
 	units: ReturnType<typeof createNewUnitRenderable>
 	heldItems: ReturnType<typeof createHeldItemRenderable>,
@@ -53,18 +55,18 @@ document.getElementById('input-ticksPerSecond')
 		// }
 	})
 
-const thingsToRender: ((ctx: RenderContext) => void)[] = []
 let lastContext: RenderContext | null = null
 renderer.renderFunction = async (gl, dt) => {
-	await mutex.executeWithAcquiredAsync(Lock.Update, () => {
+	await globalMutex.executeWithAcquiredAsync(Lock.Update, () => {
 		const now = performance.now()
+		const nowStuff = stuff
+		if (nowStuff === null) return
 
 		const ctx: RenderContext = {
 			gl,
 			camera,
 			sunPosition,
-			// gameTickEstimation: updater.estimateCurrentGameTickTime(),
-			gameTickEstimation: 0,
+			gameTickEstimation: nowStuff.updater.estimateCurrentGameTickTime(nowStuff.workerStartDelay),
 			secondsSinceFirstRender: fixedTime ?? (now - firstRenderTime) / 1000,
 		}
 		lastContext = ctx
@@ -78,11 +80,6 @@ renderer.renderFunction = async (gl, dt) => {
 		sunPosition[0] = Math.cos(1) * r + 10
 		sunPosition[2] = Math.sin(1) * r + 10
 
-		for (const r of thingsToRender) {
-			r(ctx)
-		}
-		const nowStuff = stuff
-		if (nowStuff === null) return
 		nowStuff.terrain.render(ctx)
 		nowStuff.units.render(ctx)
 		nowStuff.heldItems.render(ctx)
@@ -182,25 +179,30 @@ const moveCameraByKeys = (camera: Camera, dt: number) => {
 }
 
 
-function recreateGameState(data: any) {
-	const state = GameState.forRenderer(data)
+function recreateGameState(data: any, delay: number, connection: Connection) {
+	const updater = stateUpdaterFromReceived(globalMutex, connection, data['updater'])
+	const state = GameState.forRenderer(data['game'])
 	const units = createNewUnitRenderable(renderer, state)
 	const terrain = createNewTerrainRenderable(renderer, state.world)
 	stuff = {
-		state,
+		state, updater,
 		terrain, units,
+		workerStartDelay: delay,
 		groundItems: createNewItemOnGroundRenderable(renderer, state),
 		heldItems: createHeldItemRenderable(renderer, state),
 		mousePicker: createPicker(renderer.rawContext, [terrain.renderForMousePicker, units.renderForMousePicker]),
 	}
 }
 
-(async () => {
-	const controller = await UpdateWorkerController.spawnNew(mutex)
+setTimeout(() => {
+	(async () => {
+		const controller = await UpdateWorkerController.spawnNew(globalMutex)
 
-	setMessageHandler('game-snapshot-for-renderer', data => {
-		recreateGameState(data['game'])
-	})
+		setMessageHandler('game-snapshot-for-renderer', (data, c) => {
+			recreateGameState(data, controller.workerStartDelay, c)
+			stuff?.updater.start(20)
+		})
 
-	controller.replier.send('create-game', undefined)
-})()
+		controller.replier.send('create-game', undefined)
+	})()
+}, 5000)

@@ -1,5 +1,5 @@
 import { GameState } from '../3d-stuff/game-state/game-state'
-import { StateUpdater } from '../3d-stuff/game-state/state-updater'
+import { createNewStateUpdater } from '../3d-stuff/game-state/state-updater'
 import Mutex from '../util/mutex'
 
 export let globalMutex: Mutex = Mutex.createNew()
@@ -21,9 +21,10 @@ export const requireGameState = () => {
 	return state
 }
 
-export let stateUpdater: StateUpdater | null = null
+type StateUpdater = ReturnType<typeof createNewStateUpdater>
+export let globalStateUpdater: StateUpdater | null = null
 export const setGlobalStateUpdater = (u: StateUpdater) => {
-	if (stateUpdater !== null)
+	if (globalStateUpdater !== null)
 		throw new Error('Updater is not null')
-	stateUpdater = u
+	globalStateUpdater = u
 }

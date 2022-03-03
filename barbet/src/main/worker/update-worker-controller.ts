@@ -4,11 +4,13 @@ import { Connection, createMessageHandler, Message, MessageType, setMessageHandl
 
 
 export class UpdateWorkerController {
-	private constructor(public readonly replier: Connection) {
+	private constructor(public readonly replier: Connection,
+	                    public readonly workerStartDelay: number) {
 	}
 
 	public static async spawnNew(mutex: Mutex) {
 		let replier: Connection | null = null
+		let delay = 0
 		await mutex.executeWithAcquiredAsync(Lock.Update, () => {
 			const scriptURL = `${JS_ROOT}/worker.js`
 
@@ -22,10 +24,13 @@ export class UpdateWorkerController {
 
 			worker.onmessage = createMessageHandler(replier)
 
-			return new Promise(resolve => {
-				setMessageHandler('connection-established', resolve)
+			return new Promise<void>(resolve => {
+				setMessageHandler('connection-established', ({now}) => {
+					delay = performance.now() - now
+					resolve()
+				})
 			}).then(() => replier?.send('set-global-mutex', {mutex: mutex.pass()}))
 		})
-		return new UpdateWorkerController(replier!)
+		return new UpdateWorkerController(replier!, delay)
 	}
 }

@@ -9,7 +9,7 @@ interface Additional extends Atomics {
 
 declare var Atomics: Additional
 
-const waitAsyncCompat = Atomics.waitAsync ?? ((typedArray: Int32Array, index: number, value: number): WaitAsyncResult => {
+export const waitAsyncCompat = Atomics.waitAsync ?? ((typedArray: Int32Array, index: number, value: number): WaitAsyncResult => {
 	const load = Atomics.load(typedArray, index)
 	if (load !== value)
 		return {async: false}
@@ -30,6 +30,7 @@ const waitAsyncCompat = Atomics.waitAsync ?? ((typedArray: Int32Array, index: nu
 
 export const enum Lock {
 	Update,
+	StateUpdaterStatus,
 	SIZE,
 }
 

@@ -1,99 +1,158 @@
+import Mutex, { Lock, waitAsyncCompat } from '../../util/mutex'
+import { Connection } from '../../worker/message-handler'
 import { GameState } from './game-state'
 
 type StopResult = 'stopped' | 'already-stopped'
 
-export class StateUpdater {
-	private _intervalId: number = 0
-	private _requestStartTime: number = 0
-	private _executedTicksCounter: number = 0
-	private _maxTicksToPerformAtOnce: number = 20
-	private _stopPromise: Promise<StopResult> | null = null
-	private _stopPromiseResolve: ((value: StopResult) => void) | null = null
-	private _lastTickFinishTime: number = 0
+export const enum Status {
+	Stopped,
+	RequestedStop,
+	RequestedTickRateChange,
+	Running,
+}
 
-	private constructor(private readonly _state: GameState,
-	                    private _expectedDelayBetweenTicks: number) {
-		this._executedTicksCounter = _state.currentTick
+export const enum MemoryField {
+	Status,
+	LastTickFinishTime,
+	TicksPerSecond,
+	ExecutedTicksCounter,
+	ExpectedDelayBetweenTicks,
+	SIZE,
+}
+
+export const stateUpdaterFromReceived = (mutex: Mutex,
+                                         connection: Connection,
+                                         data: any) => {
+	if (data?.type !== 'state-updater')
+		throw new Error('Invalid state updater')
+
+	const memory = new Int32Array(data.buffer)
+
+	return {
+		async start(ticksPerSecond: number): Promise<void> {
+			await mutex.executeWithAcquiredAsync(Lock.StateUpdaterStatus, () => {
+				if (Atomics.load(memory, MemoryField.Status) === Status.Stopped) {
+					Atomics.store(memory, MemoryField.TicksPerSecond, ticksPerSecond)
+					connection.send('start-game', undefined)
+				}
+			})
+		},
+		estimateCurrentGameTickTime(workerStartDelay: number): number {
+			const executedTicks = Atomics.load(memory, MemoryField.ExecutedTicksCounter)
+			if (Atomics.load(memory, MemoryField.Status) !== Status.Running)
+				return executedTicks
+
+			const now = performance.now()
+			const lastTickFinishTime = Atomics.load(memory, MemoryField.LastTickFinishTime) / 100
+			const delayBetweenTicks = Atomics.load(memory, MemoryField.ExpectedDelayBetweenTicks) / 1_000_000
+			const sinceLastTick = (now - workerStartDelay - lastTickFinishTime) / delayBetweenTicks
+
+			return executedTicks + sinceLastTick
+		},
+		stop(): Promise<StopResult> {
+			if (Atomics.load(memory, MemoryField.Status) === Status.Stopped)
+				return Promise.resolve('already-stopped')
+
+			Atomics.store(memory, MemoryField.Status, Status.RequestedStop)
+			const wait = waitAsyncCompat(memory, MemoryField.Status, Status.RequestedStop)
+			if (wait.async)
+				return wait.value.then(() => 'stopped')
+			else
+				return Promise.resolve('stopped')
+		},
+	}
+}
+
+export const createNewStateUpdater = (mutex: Mutex,
+                                      state: GameState) => {
+	let intervalId = 0
+	let expectedDelayBetweenTicks = 0
+	let requestStartTime = 0
+	let executedTicksCounter = 0
+	let maxTicksToPerformAtOnce = 20
+	let ticksPerSecond = 0
+
+	const buffer = new SharedArrayBuffer(MemoryField.SIZE * Int32Array.BYTES_PER_ELEMENT)
+	const memory = new Int32Array(buffer)
+	memory[MemoryField.Status] = Status.Stopped
+
+	const stopInstantly = () => {
+		clearInterval(intervalId)
+		memory[MemoryField.Status] = Status.Stopped
+		intervalId = 0
 	}
 
-	public get isStopRequested(): boolean {
-		return !!this._stopPromise
-	}
+	let lastTickTimeToSet = 0
 
-	public static createNew(state: GameState,
-	                        ticksPerSecond: number): StateUpdater {
-		return new StateUpdater(state, 1000 / ticksPerSecond)
-	}
-
-	public start(ticksPerSecond: number | undefined = undefined): void {
-		if (this._intervalId !== 0)
+	function start() {
+		if (intervalId !== 0)
 			return
 
-		clearInterval(this._intervalId)
+		ticksPerSecond = memory[MemoryField.TicksPerSecond]!
+		if (ticksPerSecond <= 0)
+			throw new Error('Invalid tps')
 
-		if (ticksPerSecond !== undefined) {
-			this._expectedDelayBetweenTicks = (1000 / ticksPerSecond)
+		mutex.executeWithAcquired(Lock.StateUpdaterStatus, () => {
+			memory[MemoryField.Status] = Status.Running
+		})
+
+		clearInterval(intervalId)
+
+
+		expectedDelayBetweenTicks = 1000 / ticksPerSecond
+		Atomics.store(memory, MemoryField.ExpectedDelayBetweenTicks, expectedDelayBetweenTicks * 1_000_000)
+
+		requestStartTime = performance.now() - executedTicksCounter - expectedDelayBetweenTicks
+		memory[MemoryField.LastTickFinishTime] = (requestStartTime + executedTicksCounter * expectedDelayBetweenTicks) * 10
+		intervalId = setInterval(handleTimer, expectedDelayBetweenTicks)
+	}
+
+	const handleStatus = () => {
+		Atomics.store(memory, MemoryField.LastTickFinishTime, lastTickTimeToSet)
+		Atomics.store(memory, MemoryField.ExecutedTicksCounter, executedTicksCounter)
+		const status = Atomics.load(memory, MemoryField.Status) as Status
+		if (status === Status.RequestedStop) {
+			Atomics.store(memory, MemoryField.Status, Status.Stopped)
+			stopInstantly()
+		} else if (status === Status.RequestedTickRateChange) {
+			stopInstantly()
+			start()
 		}
-
-		this._requestStartTime = performance.now() - this._executedTicksCounter * this._expectedDelayBetweenTicks
-		this._lastTickFinishTime = this._requestStartTime + this._executedTicksCounter * this._expectedDelayBetweenTicks
-		this._intervalId = setInterval(() => this.handleTimer(), this._expectedDelayBetweenTicks)
 	}
 
-	public stop(): Promise<StopResult> {
-		if (this._intervalId === 0)
-			return Promise.resolve('already-stopped')
-
-		if (this._stopPromise == null)
-			this._stopPromise = new Promise(resolve => this._stopPromiseResolve = resolve)
-
-		return this._stopPromise
-	}
-
-	public estimateCurrentGameTickTime(): number {
-		if (this._intervalId === 0) {
-			// game is stopped
-			return this._executedTicksCounter
-		}
+	const handleTimer = () => {
 		const now = performance.now()
-		const sinceLastTick = (now - this._lastTickFinishTime) / this._expectedDelayBetweenTicks
-		const allTicksTime = this._executedTicksCounter
+		const timeSinceStart = now - requestStartTime
+		const expectedExecutedTicks = (timeSinceStart / expectedDelayBetweenTicks) | 0
 
-		return allTicksTime + sinceLastTick
-	}
-
-	private stopInstantly() {
-		clearInterval(this._intervalId)
-		this._intervalId = 0
-	}
-
-	private handleTimer(): void {
-		const now = performance.now()
-		const timeSinceStart = now - this._requestStartTime
-		const expectedExecutedTicks = (timeSinceStart / this._expectedDelayBetweenTicks) | 0
-		const ticksToExecute = expectedExecutedTicks - this._executedTicksCounter
-
-		if (ticksToExecute > this._maxTicksToPerformAtOnce) {
-			this.stopInstantly()
+		const ticksToExecute = expectedExecutedTicks - executedTicksCounter
+		if (ticksToExecute > maxTicksToPerformAtOnce) {
+			stopInstantly()
 			throw new Error(`State updater stopped due to lag: missed ${ticksToExecute} ticks`)
 		}
 
 		for (let i = 0; i < ticksToExecute; i++) {
 			try {
-				this._state.advanceActivities()
-				this._executedTicksCounter++
+				state.advanceActivities()
+				executedTicksCounter++
 			} catch (e) {
-				this.stopInstantly()
+				stopInstantly()
 				throw e
 			}
-		}
-		this._lastTickFinishTime = performance.now()
 
-		const resolve = this._stopPromiseResolve
-		if (resolve != null) {
-			this._stopPromiseResolve = this._stopPromise = null
-			this.stopInstantly()
-			resolve('stopped')
 		}
+
+		lastTickTimeToSet = performance.now() * 100 | 0
+		mutex.executeWithAcquired(Lock.StateUpdaterStatus, handleStatus)
+	}
+
+	return {
+		start,
+		pass(): unknown {
+			return {
+				type: 'state-updater',
+				buffer,
+			}
+		},
 	}
 }

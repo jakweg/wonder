@@ -1,9 +1,10 @@
 export interface Message {
 	['error']: { message: string }
-	['connection-established']: undefined
+	['connection-established']: { now: number }
 	['set-global-mutex']: { mutex: unknown }
 	['create-game']: undefined
-	['game-snapshot-for-renderer']: { game: unknown }
+	['start-game']: undefined
+	['game-snapshot-for-renderer']: { game: unknown, updater: unknown }
 }
 
 export type MessageType = keyof Message

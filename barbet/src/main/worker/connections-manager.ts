@@ -11,5 +11,5 @@ export const takeControlOverWorkerConnection = () => {
 	if (hasControl) throw new Error()
 	hasControl = true
 	onmessage = createMessageHandler(replyPort)
-	replyPort.send('connection-established', undefined)
+	replyPort.send('connection-established', {now: performance.now()})
 }
