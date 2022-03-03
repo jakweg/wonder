@@ -21,7 +21,7 @@ const handler = async (request: Request): Promise<Response> => {
 		let contentType = undefined
 		const dotPosition = pathname.lastIndexOf('.')
 		if (dotPosition >= 0) {
-			const extension = pathname.substr(dotPosition + 1)
+			const extension = pathname.substring(dotPosition + 1)
 
 			contentType = extensionsToContentTypeMap[extension]
 		}
@@ -30,6 +30,7 @@ const handler = async (request: Request): Promise<Response> => {
 				'Content-Type': contentType ?? 'application/octet-stream',
 				'Cross-Origin-Opener-Policy': 'same-origin',
 				'Cross-Origin-Embedder-Policy': 'require-corp',
+				'Content-Security-Policy': `default-src 'self'`,
 			},
 		})
 	} catch (e) {
