@@ -1,4 +1,3 @@
-console.log(performance.now())
 import { createNewStateUpdater } from './3d-stuff/game-state/state-updater'
 import { takeControlOverWorkerConnection } from './worker/connections-manager'
 import { createEmptyGame } from './worker/example-state-creator'

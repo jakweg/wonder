@@ -29,17 +29,22 @@ export const stateUpdaterFromReceived = (mutex: Mutex,
 	const memory = new Int32Array(data.buffer)
 
 	return {
-		async start(ticksPerSecond: number): Promise<void> {
+		async start(ticksPerSecond?: number): Promise<void> {
 			await mutex.executeWithAcquiredAsync(Lock.StateUpdaterStatus, () => {
 				if (Atomics.load(memory, MemoryField.Status) === Status.Stopped) {
-					Atomics.store(memory, MemoryField.TicksPerSecond, ticksPerSecond)
+					if (ticksPerSecond !== undefined)
+						Atomics.store(memory, MemoryField.TicksPerSecond, ticksPerSecond)
 					connection.send('start-game', undefined)
 				}
 			})
 		},
+		async changeTickRate(ticksPerSecond: number): Promise<void> {
+			Atomics.store(memory, MemoryField.TicksPerSecond, ticksPerSecond)
+			Atomics.compareExchange(memory, MemoryField.Status, Status.Running, Status.RequestedTickRateChange)
+		},
 		estimateCurrentGameTickTime(workerStartDelay: number): number {
 			const executedTicks = Atomics.load(memory, MemoryField.ExecutedTicksCounter)
-			if (Atomics.load(memory, MemoryField.Status) !== Status.Running)
+			if (Atomics.load(memory, MemoryField.Status) === Status.Stopped)
 				return executedTicks
 
 			const now = performance.now()
@@ -92,18 +97,15 @@ export const createNewStateUpdater = (mutex: Mutex,
 		if (ticksPerSecond <= 0)
 			throw new Error('Invalid tps')
 
-		mutex.executeWithAcquired(Lock.StateUpdaterStatus, () => {
-			memory[MemoryField.Status] = Status.Running
-		})
-
 		clearInterval(intervalId)
 
 
 		expectedDelayBetweenTicks = 1000 / ticksPerSecond
 		Atomics.store(memory, MemoryField.ExpectedDelayBetweenTicks, expectedDelayBetweenTicks * 1_000_000)
 
-		requestStartTime = performance.now() - executedTicksCounter - expectedDelayBetweenTicks
+		requestStartTime = performance.now() - executedTicksCounter * expectedDelayBetweenTicks
 		memory[MemoryField.LastTickFinishTime] = (requestStartTime + executedTicksCounter * expectedDelayBetweenTicks) * 10
+		memory[MemoryField.Status] = Status.Running
 		intervalId = setInterval(handleTimer, expectedDelayBetweenTicks)
 	}
 
@@ -125,7 +127,12 @@ export const createNewStateUpdater = (mutex: Mutex,
 		const timeSinceStart = now - requestStartTime
 		const expectedExecutedTicks = (timeSinceStart / expectedDelayBetweenTicks) | 0
 
-		const ticksToExecute = expectedExecutedTicks - executedTicksCounter
+		const ticksToExecute = expectedExecutedTicks - executedTicksCounter | 0
+		if (ticksToExecute < 0) {
+			stopInstantly()
+			throw new Error(`negative ticks ${ticksToExecute}`)
+		}
+
 		if (ticksToExecute > maxTicksToPerformAtOnce) {
 			stopInstantly()
 			throw new Error(`State updater stopped due to lag: missed ${ticksToExecute} ticks`)

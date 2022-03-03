@@ -56,9 +56,7 @@ let speedToSet = 20
 document.getElementById('input-ticksPerSecond')
 	?.addEventListener('input', async (event) => {
 		speedToSet = +(event.target as HTMLInputElement).value
-		// if (await updater.stop() === 'stopped') {
-		// 	updater.start(speedToSet)
-		// }
+		stuff?.updater?.changeTickRate(speedToSet)
 	})
 
 let lastContext: RenderContext | null = null
@@ -181,11 +179,10 @@ const moveCameraByKeys = (camera: Camera, dt: number) => {
 		camera.moveCamera(0, speed, 0)
 	}
 	if (KEYBOARD.isPressed('KeyP')) {
-		// if (!updater.isStopRequested)
-		// 	updater.stop().then(r => r === 'stopped' && console.log('Paused'))
+		stuff?.updater.stop().then(r => r === 'stopped' && console.log('Paused'))
 	}
 	if (KEYBOARD.isPressed('KeyR')) {
-		// updater.start()
+		stuff?.updater.start()
 	}
 
 	camera.lastEyeChangeId++
