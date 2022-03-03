@@ -6,11 +6,12 @@ import createNewItemOnGroundRenderable from './3d-stuff/renderable/item-on-groun
 import { RenderContext } from './3d-stuff/renderable/render-context'
 import { createNewTerrainRenderable } from './3d-stuff/renderable/terrain/terrain'
 import { createNewUnitRenderable } from './3d-stuff/renderable/unit/unit'
-import { JS_ROOT } from './build-info'
 import { Camera } from './camera'
 import KEYBOARD from './keyboard-controller'
 import * as vec3 from './util/matrix/vec3'
 import Mutex, { Lock } from './util/mutex'
+import { setMessageHandler } from './worker/message-handler'
+import { UpdateWorkerController } from './worker/update-worker-controller'
 
 
 const mutex = Mutex.createNew()
@@ -182,7 +183,7 @@ const moveCameraByKeys = (camera: Camera, dt: number) => {
 
 
 function recreateGameState(data: any) {
-	const state = GameState.forRenderer(data.snapshot)
+	const state = GameState.forRenderer(data)
 	const units = createNewUnitRenderable(renderer, state)
 	const terrain = createNewTerrainRenderable(renderer, state.world)
 	stuff = {
@@ -194,14 +195,12 @@ function recreateGameState(data: any) {
 	}
 }
 
-mutex.executeWithAcquired(Lock.Update, () => {
-	const worker = new Worker(JS_ROOT + '/worker.js')
-	worker.onmessage = ({data}) => {
-		if (data.type === 'renderer-snapshot') {
-			recreateGameState(data)
-		} else throw new Error(`Unknown type ${data.type}`)
-	}
-	worker.postMessage({type: 'set-mutex', mutex: mutex.pass()})
-	worker.postMessage({type: 'create-game'})
-	worker.postMessage({type: 'resume-game'})
-})
+(async () => {
+	const controller = await UpdateWorkerController.spawnNew(mutex)
+
+	setMessageHandler('game-snapshot-for-renderer', data => {
+		recreateGameState(data['game'])
+	})
+
+	controller.replier.send('create-game', undefined)
+})()

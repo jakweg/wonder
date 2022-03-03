@@ -94,7 +94,7 @@ class Mutex {
 
 	public async executeWithAcquiredAsync(
 		lock: Lock,
-		func: () => void): Promise<void> {
+		func: (() => (void | Promise<void>))): Promise<void> {
 
 		const array = this.intArray
 		while (true) {
@@ -103,7 +103,7 @@ class Mutex {
 
 			if (oldValue === LockValue.Unlocked) {
 				try {
-					func()
+					await func()
 				} finally {
 					Atomics.store(array, lock, LockValue.Unlocked)
 					Atomics.notify(array, lock)
