@@ -1,36 +1,10 @@
 const DEFAULT_STORE_CAPACITY = 10
 const RESIZE_FACTOR = 1.5
 
-interface ArrayAllocator<T> {
+export interface ArrayAllocator<T> {
 	create(initialCapacity: number): T
 
 	resize(old: T, resizeTo: number): T
-}
-
-export const int32Allocator: ArrayAllocator<Int32Array> = {
-	create(initialCapacity: number): Int32Array {
-		return new Int32Array(initialCapacity)
-	},
-	resize(old: Int32Array, newSize: number): Int32Array {
-		const newArray = new Int32Array(newSize)
-		for (let i = 0, l = old.length; i < l; ++i)
-			newArray[i] = old[i]!
-
-		return newArray
-	},
-}
-
-export const float32Allocator: ArrayAllocator<Float32Array> = {
-	create(initialCapacity: number): Float32Array {
-		return new Float32Array(initialCapacity)
-	},
-	resize(old: Float32Array, newSize: number): Float32Array {
-		const newArray = new Float32Array(newSize)
-		for (let i = 0, l = old.length; i < l; ++i)
-			newArray[i] = old[i]!
-
-		return newArray
-	},
 }
 
 export class DataStore<T> {
@@ -38,9 +12,9 @@ export class DataStore<T> {
 	protected constructor(
 		private readonly allocator: ArrayAllocator<T>,
 		private readonly singleSize: number,
-		private capacity: number,
+		private _capacity: number,
 	) {
-		this._rawData = allocator.create(capacity * singleSize)
+		this._rawData = allocator.create(_capacity * singleSize)
 	}
 
 	private _size: number = 0
@@ -55,12 +29,17 @@ export class DataStore<T> {
 		return this._rawData
 	}
 
-	public static createInt32(singleSize: number) {
-		return new DataStore(int32Allocator, singleSize, DEFAULT_STORE_CAPACITY)
+	public get capacity(): number {
+		return this._capacity
 	}
 
-	public static createFloat32(singleSize: number) {
-		return new DataStore(float32Allocator, singleSize, DEFAULT_STORE_CAPACITY)
+	public static create<T>(allocator: ArrayAllocator<T>, singleSize: number) {
+		return new DataStore(allocator, singleSize, DEFAULT_STORE_CAPACITY)
+	}
+
+	public setSizeUnsafe(size: number, capacity: number): void {
+		this._size = size
+		this._capacity = capacity
 	}
 
 	public safeGetPointer(index: number): number {
@@ -72,9 +51,9 @@ export class DataStore<T> {
 
 	public pushBack(): number {
 		const oldIndex = this._size++
-		if (oldIndex === this.capacity) {
-			const newCapacity = Math.ceil(this.capacity * RESIZE_FACTOR) | 0
-			this.capacity = newCapacity
+		if (oldIndex === this._capacity) {
+			const newCapacity = Math.ceil(this._capacity * RESIZE_FACTOR) | 0
+			this._capacity = newCapacity
 			this._rawData = this.allocator.resize(this._rawData, newCapacity * this.singleSize | 0)
 		}
 		return oldIndex * this.singleSize

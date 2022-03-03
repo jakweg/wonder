@@ -47,7 +47,7 @@ const getAllAttributes = (gl: WebGL2RenderingContext, program: WebGLProgram) => 
 	return DEBUG ? {...mapped, names: allNames} : mapped
 }
 
-export type RenderFunction = (gl: WebGL2RenderingContext, secondsSinceLastFrame: number) => void
+export type RenderFunction = (gl: WebGL2RenderingContext, secondsSinceLastFrame: number) => void | Promise<void>
 export type BeforeRenderFunction = (secondsSinceLastFrame: number) => boolean
 
 
@@ -163,14 +163,14 @@ export class MainRenderer {
 		const gl = this.gl
 
 		let lastFrameTime = Date.now()
-		const render = () => {
+		const render = async () => {
 			const now = Date.now()
 			const elapsedSeconds = (now - lastFrameTime) / 1000
 			if (this.beforeRenderFunction(elapsedSeconds)) {
 				lastFrameTime = now
 				MainRenderer.setUpFrameBeforeRender(gl)
 
-				this.renderFunction(gl, elapsedSeconds)
+				await this.renderFunction(gl, elapsedSeconds)
 			}
 
 			// someone could cancel rendering in render callback

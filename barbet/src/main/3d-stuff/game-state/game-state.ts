@@ -1,3 +1,4 @@
+import Mutex, { Lock } from '../../util/mutex'
 import { ActivityId, requireActivity } from '../renderable/unit/activity'
 import { World } from '../world/world'
 import EntityContainer from './entities/entity-container'
@@ -13,7 +14,8 @@ export class GameState {
 	private constructor(public readonly world: World,
 	                    public readonly groundItems: GroundItemsIndex,
 	                    public readonly entities: EntityContainer,
-	                    public readonly pathFinder: PathFinder) {
+	                    public readonly pathFinder: PathFinder,
+	                    private readonly mutex: Mutex) {
 	}
 
 	private _currentTick: number = 0
@@ -26,8 +28,30 @@ export class GameState {
 		world: World,
 		groundItems: GroundItemsIndex,
 		entities: EntityContainer,
-		pathFinder: PathFinder): GameState {
-		return new GameState(world, groundItems, entities, pathFinder)
+		pathFinder: PathFinder,
+		mutex: Mutex): GameState {
+		return new GameState(world, groundItems, entities, pathFinder, mutex)
+	}
+
+	public static forRenderer(object: any): GameState {
+		if (object['type'] !== 'game-state') throw new Error('Invalid object')
+
+		return new GameState(
+			World.fromReceived(object['world']),
+			GroundItemsIndex.fromReceived(object['groundItems']),
+			EntityContainer.fromReceived(object['entities']),
+			null as unknown as PathFinder,
+			Mutex.fromReceived(object['mutex']))
+	}
+
+	public passForRenderer(): unknown {
+		return {
+			type: 'game-state',
+			mutex: this.mutex.pass(),
+			world: this.world.pass(),
+			groundItems: this.groundItems.pass(),
+			entities: this.entities.pass(),
+		}
 	}
 
 	public advanceActivities() {
@@ -38,12 +62,13 @@ export class GameState {
 		this.pathFinder.tick(this)
 
 		const container = this.entities
-		const memory = container.withActivities.rawData
-		for (const entity of iterateOverEntitiesWithActivity(container)) {
-			const currentActivity = memory[entity.withActivity + DataOffsetWithActivity.CurrentId]! as ActivityId
+		this.mutex.executeWithAcquired(Lock.Update, () => {
+			for (const entity of iterateOverEntitiesWithActivity(container)) {
+				const currentActivity = (container.withActivities.rawData)[entity.withActivity + DataOffsetWithActivity.CurrentId]! as ActivityId
 
-			requireActivity(currentActivity).perform(this, entity)
-		}
+				requireActivity(currentActivity).perform(this, entity)
+			}
+		})
 
 		this.isRunningLogic = false
 	}

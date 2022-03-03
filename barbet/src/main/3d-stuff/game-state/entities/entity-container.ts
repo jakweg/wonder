@@ -1,4 +1,4 @@
-import { DataStore } from './data-store'
+import { ArrayAllocator, DataStore } from './data-store'
 import {
 	createEmptyTraitRecord,
 	DataOffsetDrawables,
@@ -16,18 +16,109 @@ import {
 
 export const ACTIVITY_MEMORY_SIZE = 20
 
+interface ContainerAllocator<T> extends ArrayAllocator<T> {
+	readonly buffers: SharedArrayBuffer[]
+	reuseCounter: number
+	readonly notifyArraysChanged: (() => void)
+}
+
+const createInt32Allocator = (buffers: SharedArrayBuffer[],
+                              notify: (() => void)): ContainerAllocator<Int32Array> => ({
+	buffers: buffers,
+	reuseCounter: buffers.length,
+	notifyArraysChanged: notify,
+	create(initialCapacity: number): Int32Array {
+		let buffer
+		if (this.reuseCounter > 0) {
+			buffer = this.buffers[this.buffers.length - this.reuseCounter]!
+			this.reuseCounter--
+		} else {
+			buffer = new SharedArrayBuffer(initialCapacity * Int32Array.BYTES_PER_ELEMENT)
+			this.buffers.push(buffer)
+		}
+		return new Int32Array(buffer)
+	},
+	resize(oldArray: Int32Array, resizeTo: number): Int32Array {
+		const oldBuffer = oldArray.buffer
+
+		const newBuffer = new SharedArrayBuffer(resizeTo * Int32Array.BYTES_PER_ELEMENT)
+		const newArray = new Int32Array(newBuffer)
+		const buffers = this.buffers
+		for (let i = 0, l = buffers.length; i < l; i++) {
+			if (buffers[i] === oldBuffer) {
+				buffers[i] = newBuffer
+				break
+			}
+		}
+
+		for (let i = 0, l = oldArray.length; i < l; ++i)
+			newArray[i] = oldArray[i]!
+
+		return newArray
+	},
+})
+
 class EntityContainer {
-	public readonly ids = DataStore.createInt32(DataOffsetIds.SIZE)
-	public readonly positions = DataStore.createInt32(DataOffsetPositions.SIZE)
-	public readonly drawables = DataStore.createInt32(DataOffsetDrawables.SIZE)
-	public readonly withActivities = DataStore.createInt32(DataOffsetWithActivity.SIZE)
-	public readonly activitiesMemory = DataStore.createInt32(ACTIVITY_MEMORY_SIZE)
-	public readonly itemHoldables = DataStore.createInt32(DataOffsetItemHoldable.SIZE)
-	public readonly interruptibles = DataStore.createInt32(DataOffsetInterruptible.SIZE)
+	public buffersChanged: boolean = false
+	public readonly ids = DataStore.create(this.allocator, DataOffsetIds.SIZE)
+	public readonly positions = DataStore.create(this.allocator, DataOffsetPositions.SIZE)
+	public readonly drawables = DataStore.create(this.allocator, DataOffsetDrawables.SIZE)
+	public readonly withActivities = DataStore.create(this.allocator, DataOffsetWithActivity.SIZE)
+	public readonly activitiesMemory = DataStore.create(this.allocator, ACTIVITY_MEMORY_SIZE)
+	public readonly itemHoldables = DataStore.create(this.allocator, DataOffsetItemHoldable.SIZE)
+	public readonly interruptibles = DataStore.create(this.allocator, DataOffsetInterruptible.SIZE)
+
+	private allStores = Object.freeze([
+		this.ids,
+		this.positions,
+		this.drawables,
+		this.withActivities,
+		this.activitiesMemory,
+		this.itemHoldables,
+		this.interruptibles,
+	])
+
 	private nextEntityId: number = 1
 
+	constructor(
+		private readonly allocator: ContainerAllocator<Int32Array>,
+	) {
+	}
+
 	public static createEmptyContainer() {
-		return new EntityContainer()
+		let container: EntityContainer
+
+		const allocator = createInt32Allocator([],
+			() => container.buffersChanged = true)
+
+		return container = new EntityContainer(allocator)
+	}
+
+
+	public static fromReceived(object: any) {
+		if (object['type'] !== 'entity-container')
+			throw new Error('Invalid object')
+
+		let container: EntityContainer
+		const allocator = createInt32Allocator(object['buffers'],
+			() => container.buffersChanged = true)
+
+		const sizes = object['sizes']
+
+		container = new EntityContainer(allocator)
+		const stores = container.allStores
+		for (let i = 0, l = stores.length; i < l; i++) {
+			stores[i]!.setSizeUnsafe(sizes[i][0], sizes[i][1])
+		}
+		return container
+	}
+
+	public pass(): unknown {
+		return {
+			type: 'entity-container',
+			buffers: this.allocator.buffers,
+			sizes: this.allStores.map(s => [s.size, s.capacity]),
+		}
 	}
 
 	public createEntity(traits: EntityTrait): EntityTraitIndicesRecord {
@@ -83,6 +174,7 @@ class EntityContainer {
 			if (hasTrait(traits, EntityTrait.Interruptible)) record.interruptible += DataOffsetInterruptible.SIZE
 		}
 	}
+
 }
 
 export default EntityContainer

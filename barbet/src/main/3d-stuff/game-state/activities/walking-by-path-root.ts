@@ -83,6 +83,7 @@ const activityWalkingByPathRoot = {
 		}
 
 		// finished path
+
 		const returnToActivity: ActivityId = memory[pointer - MemoryField.ReturnToActivity]!
 
 		if ((unit.thisTraits & EntityTrait.Drawable) === EntityTrait.Drawable)

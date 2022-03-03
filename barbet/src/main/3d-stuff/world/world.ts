@@ -23,6 +23,7 @@ export class World {
 		public readonly rawBlockData: Uint8Array,
 		public readonly rawHeightData: Uint8ClampedArray,
 		public readonly chunkModificationIds: Uint16Array,
+		public readonly buffers: SharedArrayBuffer[],
 	) {
 	}
 
@@ -36,8 +37,15 @@ export class World {
 		const chunksSizeZ = Math.ceil(sizeZ / WORLD_CHUNK_SIZE)
 
 		const size = {sizeX, sizeY, sizeZ, totalBlocks, blocksPerY, chunksSizeX, chunksSizeZ}
-		const blockData = new Uint8Array(totalBlocks)
-		const heightData = new Uint8ClampedArray(blocksPerY)
+		const buffers = [
+			new SharedArrayBuffer(totalBlocks * Uint8Array.BYTES_PER_ELEMENT),
+			new SharedArrayBuffer(blocksPerY * Uint8ClampedArray.BYTES_PER_ELEMENT),
+			new SharedArrayBuffer(chunksSizeX * chunksSizeZ * Uint16Array.BYTES_PER_ELEMENT),
+		]
+
+
+		const blockData = new Uint8Array(buffers[0]!)
+		const heightData = new Uint8ClampedArray(buffers[1]!)
 
 		// by default all content is 0 so no need to reset that
 		if (fillWith !== 0) {
@@ -45,9 +53,29 @@ export class World {
 			heightData.fill(sizeY - 1)
 		}
 
-		const chunkModificationIds = new Uint16Array(chunksSizeX * chunksSizeZ)
+		const chunkModificationIds = new Uint16Array(buffers[2]!)
 
-		return new World(size, blockData, heightData, chunkModificationIds)
+		return new World(size, blockData, heightData, chunkModificationIds, buffers)
+	}
+
+	public static fromReceived(object: any) {
+		if (object['type'] !== 'world') throw new Error('Invalid world object')
+		const size = object['size'] as ComputedWorldSize
+		const buffers = object['buffers'] as SharedArrayBuffer[]
+
+		const blockData = new Uint8Array(buffers[0]!)
+		const heightData = new Uint8ClampedArray(buffers[1]!)
+		const chunkModificationIds = new Uint16Array(buffers[2]!)
+
+		return new World(size, blockData, heightData, chunkModificationIds, buffers)
+	}
+
+	public pass(): unknown {
+		return {
+			type: 'world',
+			size: this.size,
+			buffers: this.buffers,
+		}
 	}
 
 	public setBlock(x: number, y: number, z: number, blockId: BlockId) {
