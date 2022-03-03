@@ -1,7 +1,9 @@
+import { frontedVariablesBuffer, initFrontendVariableAndRegisterToWindow } from './util/frontend-variables'
 import { setMessageHandler } from './worker/message-handler'
 import { WorkerController } from './worker/worker-controller'
 import { globalMutex } from './worker/worker-global-state'
 
+initFrontendVariableAndRegisterToWindow()
 
 const canvas: HTMLCanvasElement = document.getElementById('main-canvas') as HTMLCanvasElement
 canvas.width = 1280
@@ -133,6 +135,7 @@ canvas.height = 720;
 		render: renderWorker.workerStartDelay,
 		update: updateWorker.workerStartDelay,
 	})
+	renderWorker.replier.send('frontend-variables', {buffer: frontedVariablesBuffer})
 })()
 
 

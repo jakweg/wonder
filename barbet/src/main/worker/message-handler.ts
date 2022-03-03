@@ -7,6 +7,7 @@ export interface Message {
 	['set-worker-load-delays']: { update: number, render: number }
 	['game-snapshot-for-renderer']: { game: unknown, updater: unknown }
 	['transfer-canvas']: { canvas: unknown }
+	['frontend-variables']: { buffer: SharedArrayBuffer }
 }
 
 export type MessageType = keyof Message

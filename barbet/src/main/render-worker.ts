@@ -8,6 +8,12 @@ import { RenderContext } from './3d-stuff/renderable/render-context'
 import { createNewTerrainRenderable } from './3d-stuff/renderable/terrain/terrain'
 import { createNewUnitRenderable } from './3d-stuff/renderable/unit/unit'
 import { Camera } from './camera'
+import {
+	AdditionalFrontedFlags,
+	frontedVariables,
+	FrontendVariable,
+	initFrontedVariablesFromReceived,
+} from './util/frontend-variables'
 import * as vec3 from './util/matrix/vec3'
 import { Lock } from './util/mutex'
 import { takeControlOverWorkerConnection } from './worker/connections-manager'
@@ -103,7 +109,9 @@ const setupWithCanvas = (canvas: HTMLCanvasElement) => {
 	}
 
 
-	renderer.beforeRenderFunction = (secondsSinceLastFrame) => true
+	renderer.beforeRenderFunction = (secondsSinceLastFrame) =>
+		(frontedVariables[FrontendVariable.AdditionalFlags]! & AdditionalFrontedFlags.WindowHasFocus) === AdditionalFrontedFlags.WindowHasFocus
+		|| secondsSinceLastFrame > 0.5
 	renderer.beginRendering()
 
 
@@ -135,4 +143,8 @@ function considerStartRendering() {
 setMessageHandler('game-snapshot-for-renderer', (data) => {
 	gameSnapshot = data
 	considerStartRendering()
+})
+
+setMessageHandler('frontend-variables', ({buffer}) => {
+	initFrontedVariablesFromReceived(buffer)
 })

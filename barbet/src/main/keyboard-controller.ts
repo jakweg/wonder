@@ -1,12 +1,33 @@
+import { FrontendVariable, PressedKey } from './util/frontend-variables'
+import { Lock } from './util/mutex'
+import { globalMutex } from './worker/worker-global-state'
+
+const defaultKeyMapping: { [key: string]: PressedKey } = {
+	'KeyW': PressedKey.Forward,
+	'ArrowUp': PressedKey.Forward,
+
+	'KeyS': PressedKey.Backward,
+	'ArrowDown': PressedKey.Backward,
+
+	'KeyA': PressedKey.Left,
+	'ArrowLeft': PressedKey.Left,
+
+	'KeyD': PressedKey.Right,
+	'ArrowRight': PressedKey.Right,
+
+	'ShiftLeft': PressedKey.Down,
+	'Space': PressedKey.Up,
+}
+
 class KeyboardController {
 	private pressedKeys: { [key: string]: boolean } = {}
 	private pressedCount: number = 0
 
-	private constructor() {
+	private constructor(private readonly frontedVariables: Int16Array) {
 	}
 
-	public static createNewAndRegisterToWindow(): KeyboardController {
-		const controller = new KeyboardController()
+	public static createNewAndRegisterToWindow(frontedVariables: Int16Array): KeyboardController {
+		const controller = new KeyboardController(frontedVariables)
 
 		document.addEventListener('keydown', ({code}) => controller.setKeyPressed(code, true))
 		document.addEventListener('keyup', ({code}) => controller.setKeyPressed(code, false))
@@ -20,6 +41,10 @@ class KeyboardController {
 		for (const code in keys)
 			keys[code] = false
 		this.pressedCount = 0
+		// noinspection JSIgnoredPromiseFromCall
+		globalMutex.executeWithAcquiredAsync(Lock.FrontedVariables, () => {
+			this.frontedVariables[FrontendVariable.PressedKeys] = PressedKey.None
+		})
 	}
 
 	public isAnyPressed(): boolean {
@@ -32,13 +57,25 @@ class KeyboardController {
 	}
 
 	private setKeyPressed(code: string, pressed: boolean): void {
-		if (this.pressedKeys[code] === pressed) return
-		this.pressedKeys[code] = pressed
+		const pressedKeys = this.pressedKeys
+		if (pressedKeys[code] === pressed) return
+		pressedKeys[code] = pressed
 		this.pressedCount += pressed ? 1 : -1
 		if (this.pressedCount < 0)
 			this.pressedCount = 0
+
+		const mapped = defaultKeyMapping[code] ?? PressedKey.None
+
+		if (mapped === PressedKey.None) return
+
+		// noinspection JSIgnoredPromiseFromCall
+		globalMutex.executeWithAcquiredAsync(Lock.FrontedVariables, () => {
+			if (pressed)
+				this.frontedVariables[FrontendVariable.PressedKeys] |= mapped
+			else
+				this.frontedVariables[FrontendVariable.PressedKeys] &= ~mapped
+		})
 	}
 }
 
-const KEYBOARD = KeyboardController.createNewAndRegisterToWindow()
-export default KEYBOARD
+export default KeyboardController

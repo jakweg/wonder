@@ -31,6 +31,7 @@ export const waitAsyncCompat = Atomics.waitAsync ?? ((typedArray: Int32Array, in
 export const enum Lock {
 	Update,
 	StateUpdaterStatus,
+	FrontedVariables,
 	SIZE,
 }
 
