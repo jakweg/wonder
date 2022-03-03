@@ -58,6 +58,8 @@ document.getElementById('input-ticksPerSecond')
 let lastContext: RenderContext | null = null
 renderer.renderFunction = async (gl, dt) => {
 	await globalMutex.executeWithAcquiredAsync(Lock.Update, () => {
+		renderer.renderStarted()
+
 		const now = performance.now()
 		const nowStuff = stuff
 		if (nowStuff === null) return

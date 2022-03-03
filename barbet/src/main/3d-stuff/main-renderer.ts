@@ -54,6 +54,7 @@ export type BeforeRenderFunction = (secondsSinceLastFrame: number) => boolean
 export class MainRenderer {
 	private nextFrameRequest: number = 0
 	private readonly allocatedResources: AllocatedResourceEntry[] = []
+	private lastFrameTime = 0
 
 	private constructor(
 		private readonly canvas: HTMLCanvasElement,
@@ -161,15 +162,12 @@ export class MainRenderer {
 		if (this.nextFrameRequest !== 0) return
 
 		const gl = this.gl
+		this.lastFrameTime = performance.now()
 
-		let lastFrameTime = Date.now()
 		const render = async () => {
-			const now = Date.now()
-			const elapsedSeconds = (now - lastFrameTime) / 1000
+			const now = performance.now()
+			const elapsedSeconds = (now - this.lastFrameTime) / 1000
 			if (this.beforeRenderFunction(elapsedSeconds)) {
-				lastFrameTime = now
-				MainRenderer.setUpFrameBeforeRender(gl)
-
 				await this.renderFunction(gl, elapsedSeconds)
 			}
 
@@ -204,6 +202,11 @@ export class MainRenderer {
 			}
 		}
 		this.allocatedResources.splice(0)
+	}
+
+	public renderStarted() {
+		this.lastFrameTime = performance.now()
+		MainRenderer.setUpFrameBeforeRender(this.gl)
 	}
 }
 
