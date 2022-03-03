@@ -9,26 +9,24 @@ interface Additional extends Atomics {
 
 declare var Atomics: Additional
 
-const waitAsyncCompat = Atomics.waitAsync
-// const waitAsyncCompat = Atomics.waitAsync ?? ((typedArray: Int32Array, index: number, value: number): WaitAsyncResult => {
-// 	const load = Atomics.load(typedArray, index)
-// 	if (load !== value)
-// 		return {async: false}
-//
-// 	return {
-// 		async: true,
-// 		value: new Promise(resolve => {
-// 			const interval = setInterval(() => {
-// 				console.log(interval)
-// 				const load = Atomics.load(typedArray, index)
-// 				if (load !== value) {
-// 					resolve('ok')
-// 					clearInterval(interval)
-// 				}
-// 			}, 5)
-// 		}),
-// 	}
-// })
+const waitAsyncCompat = Atomics.waitAsync ?? ((typedArray: Int32Array, index: number, value: number): WaitAsyncResult => {
+	const load = Atomics.load(typedArray, index)
+	if (load !== value)
+		return {async: false}
+
+	return {
+		async: true,
+		value: new Promise(resolve => {
+			const interval = setInterval(() => {
+				const load = Atomics.load(typedArray, index)
+				if (load !== value) {
+					resolve('ok')
+					clearInterval(interval)
+				}
+			}, 5)
+		}),
+	}
+})
 
 export const enum Lock {
 	Update,
