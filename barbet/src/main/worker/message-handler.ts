@@ -5,6 +5,7 @@ export interface Message {
 	['create-game']: undefined
 	['start-game']: undefined
 	['game-snapshot-for-renderer']: { game: unknown, updater: unknown }
+	['transfer-canvas']: { canvas: unknown }
 }
 
 export type MessageType = keyof Message
@@ -15,14 +16,14 @@ export interface CombinedMessage<T extends MessageType> {
 }
 
 const messageHandlers: { [key in MessageType]?: any } = {}
-export const setMessageHandler = <T extends MessageType>(type: T, callback: (data: Message[T], connection: Connection) => void) => {
-	if (messageHandlers[type as MessageType] !== undefined)
+export const setMessageHandler = <T extends MessageType>(type: T, callback: (data: Message[T], connection: Connection) => void, allowReassign: boolean = false) => {
+	if (!allowReassign && messageHandlers[type as MessageType] !== undefined)
 		throw new Error(`Reassign handler ${type}`)
 	messageHandlers[type as MessageType] = callback
 }
 
 export interface Connection {
-	send<T extends MessageType>(type: T, extra: Message[T]): void
+	send<T extends MessageType>(type: T, extra: Message[T], transferable?: Transferable[]): void
 }
 
 export const createMessageHandler = (connection: Connection) => (e: MessageEvent): void => {

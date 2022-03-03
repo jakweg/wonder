@@ -17,7 +17,7 @@ if (args.size > 0) {
 			_C_DEBUG: JSON.stringify(!buildForProduction),
 			_C_JS_ROOT: JSON.stringify(jsOutRoot),
 		},
-		entryPoints: [`src/main/main.ts`, `src/main/worker.ts`],
+		entryPoints: [`src/main/main.ts`, `src/main/update-worker.ts`, `src/main/render-worker.ts`],
 		bundle: true,
 		treeShaking: buildForProduction,
 		sourcemap: (buildForProduction ? false : 'inline') as 'inline',

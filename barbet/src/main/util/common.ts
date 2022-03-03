@@ -9,3 +9,5 @@ export const freezeAndValidateOptionsList = <T>(list: T[],
 			throw new Error(`Object has invalid index property: expected ${i}, but got ${index}, object: ${JSON.stringify(item)}`)
 	}
 }
+
+export const EMPTY_LIST: ReadonlyArray<any> = Object.freeze([])
