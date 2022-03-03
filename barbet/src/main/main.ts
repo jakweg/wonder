@@ -81,41 +81,7 @@ canvas.height = 720;
 // }
 // canvas.addEventListener('click', mouseEventListener)
 // canvas.addEventListener('contextmenu', mouseEventListener)
-//
-//
-// const moveCameraByKeys = (camera: Camera, dt: number) => {
-// 	if (!KEYBOARD.isAnyPressed()) return
-// 	const speed = dt * 1.2 * camera.eye[1]
-//
-// 	const front1 = vec3.subtract(vec3.create(), camera.center, camera.eye)
-// 	vec3.normalize(front1, front1)
-// 	if (KEYBOARD.isPressed('KeyW') || KEYBOARD.isPressed('ArrowUp')) {
-// 		camera.moveCamera(0, 0, speed)
-// 	}
-// 	if (KEYBOARD.isPressed('KeyS') || KEYBOARD.isPressed('ArrowDown')) {
-// 		camera.moveCamera(0, 0, -speed)
-// 	}
-// 	if (KEYBOARD.isPressed('KeyA') || KEYBOARD.isPressed('ArrowLeft')) {
-// 		camera.moveCamera(speed, 0, 0)
-// 	}
-// 	if (KEYBOARD.isPressed('KeyD') || KEYBOARD.isPressed('ArrowRight')) {
-// 		camera.moveCamera(-speed, 0, 0)
-// 	}
-// 	if (KEYBOARD.isPressed('ShiftLeft')) {
-// 		camera.moveCamera(0, -speed, 0)
-// 	}
-// 	if (KEYBOARD.isPressed('Space')) {
-// 		camera.moveCamera(0, speed, 0)
-// 	}
-// 	if (KEYBOARD.isPressed('KeyP')) {
-// 		stuff?.updater.stop().then(r => r === 'stopped' && console.log('Paused'))
-// 	}
-// 	if (KEYBOARD.isPressed('KeyR')) {
-// 		stuff?.updater.start()
-// 	}
-//
-// 	camera.lastEyeChangeId++
-// }
+
 
 (async () => {
 	const renderWorker = await WorkerController.spawnNew('render-worker', 'render', globalMutex)

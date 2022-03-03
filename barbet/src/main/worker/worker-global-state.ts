@@ -14,12 +14,6 @@ export const setGlobalGameState = (state: GameState) => {
 		throw new Error('Game is not null')
 	globalGameState = state
 }
-export const requireGameState = () => {
-	const state = globalGameState
-	if (state === null)
-		throw new Error('Game is null')
-	return state
-}
 
 type StateUpdater = ReturnType<typeof createNewStateUpdater>
 export let globalStateUpdater: StateUpdater | null = null
@@ -28,3 +22,6 @@ export const setGlobalStateUpdater = (u: StateUpdater) => {
 		throw new Error('Updater is not null')
 	globalStateUpdater = u
 }
+
+
+export let globalWorkerDelay = {difference: 0}
