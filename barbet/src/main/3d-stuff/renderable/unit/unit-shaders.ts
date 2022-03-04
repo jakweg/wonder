@@ -49,6 +49,7 @@ in float a_unitRotation;
 in float a_flags;
 in float a_activityStartTick;
 uniform float u_time;
+uniform float u_gameTime;
 uniform float u_gameTick;
 `)
 	if (forMousePicker) parts.push(`
@@ -171,7 +172,7 @@ void main() {
 `
 
 
-export type Uniforms = 'time' | 'combinedMatrix' | 'lightPosition' | 'gameTick'
+export type Uniforms = 'time' | 'gameTime' | 'gameTick' | 'combinedMatrix' | 'lightPosition'
 export type Attributes =
 	'modelPosition'
 	| 'worldPosition'

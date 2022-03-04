@@ -24,7 +24,7 @@ Object.freeze(walkingDurationByDirection)
 
 export const walkingVertexTransformationsSource = (options: UnitShaderCreationOptions) => `
 if (isAnimatableElement && !isTopVertex) {
-	float additionalZOffset = sin(u_time * 20.0 / PI) * (isBottomVertex ? -0.2 : -0.1);
+	float additionalZOffset = sin(u_gameTime * 20.0 / PI) * (isBottomVertex ? -0.2 : -0.1);
 	if (isRightLegVertex ${options.holdingItem ? '' : ` || isLeftArmVertex`})
 		pos.x -= additionalZOffset;
 	else if (isLeftLegVertex ${options.holdingItem ? '' : ` || isRightArmVertex`})

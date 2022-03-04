@@ -2,6 +2,8 @@ import Mutex, { Lock, waitAsyncCompat } from '../../util/mutex'
 import { Connection } from '../../worker/message-handler'
 import { GameState } from './game-state'
 
+export const STANDARD_GAME_TICK_RATE = 20
+
 type StopResult = 'stopped' | 'already-stopped'
 
 export const enum Status {
@@ -42,6 +44,9 @@ export const stateUpdaterFromReceived = (mutex: Mutex,
 		async changeTickRate(ticksPerSecond: number): Promise<void> {
 			Atomics.store(memory, MemoryField.TicksPerSecond, ticksPerSecond)
 			Atomics.compareExchange(memory, MemoryField.Status, Status.Running, Status.RequestedTickRateChange)
+		},
+		getTickRate(): number {
+			return Atomics.load(memory, MemoryField.TicksPerSecond)
 		},
 		estimateCurrentGameTickTime(workerStartDelay: number): number {
 			const executedTicks = Atomics.load(memory, MemoryField.ExecutedTicksCounter)

@@ -49,9 +49,10 @@ const considerStartRendering = () => {
 		decodedUpdater = stateUpdaterFromReceived(globalMutex, connectionWithParent, snapshot['updater'])
 
 		const gameTickEstimation = () => decodedUpdater!.estimateCurrentGameTickTime(globalWorkerDelay.difference)
+		const gameTickRate = () => decodedUpdater!.getTickRate()
 		const handleInputEvents = createInputReactor(decodedGame)
 
-		setupSceneRendering(canvas, decodedGame, gameTickEstimation, handleInputEvents)
+		setupSceneRendering(canvas, decodedGame, gameTickEstimation, gameTickRate, handleInputEvents)
 		// noinspection JSIgnoredPromiseFromCall
 		decodedUpdater?.start(20)
 	}

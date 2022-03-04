@@ -4,6 +4,7 @@ import * as vec3 from '../../util/matrix/vec3'
 import { Lock } from '../../util/mutex'
 import { globalMutex } from '../../worker/worker-global-state'
 import { GameState } from '../game-state/game-state'
+import { STANDARD_GAME_TICK_RATE } from '../game-state/state-updater'
 import { MainRenderer } from '../main-renderer'
 import { createPicker } from '../mouse-picker'
 import { createCombinedRenderable } from './combined-renderables'
@@ -12,6 +13,7 @@ export interface RenderContext {
 	readonly gl: WebGL2RenderingContext
 	readonly camera: Camera
 	readonly gameTickEstimation: number
+	readonly gameTime: number
 	readonly secondsSinceFirstRender: number
 	readonly sunPosition: vec3
 	readonly mousePicker: ReturnType<typeof createPicker>
@@ -20,6 +22,7 @@ export interface RenderContext {
 export const setupSceneRendering = (canvas: HTMLCanvasElement,
                                     state: GameState,
                                     gameTickEstimation: () => number,
+                                    gameTickRate: () => number,
                                     handleInputEvents: (dt: number, ctx: RenderContext) => Promise<void>) => {
 	const renderer = MainRenderer.fromHTMLCanvas(canvas)
 	const camera = Camera.newPerspective(90, 1280 / 720)
@@ -42,13 +45,15 @@ export const setupSceneRendering = (canvas: HTMLCanvasElement,
 			renderer.renderStarted()
 
 			const now = performance.now()
+			const secondsSinceFirstRender = (now - firstRenderTime) / 1000
 			const ctx: Readonly<RenderContext> = Object.freeze({
 				gl,
 				camera,
 				sunPosition,
 				gameTickEstimation: gameTickEstimation(),
-				secondsSinceFirstRender: (now - firstRenderTime) / 1000,
+				secondsSinceFirstRender: secondsSinceFirstRender,
 				mousePicker: combinedRenderable.mousePicker,
+				gameTime: secondsSinceFirstRender * gameTickRate() / STANDARD_GAME_TICK_RATE,
 			})
 			lastContext = ctx
 
