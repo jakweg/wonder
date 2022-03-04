@@ -2,12 +2,13 @@ import { Camera } from '../../camera'
 import { AdditionalFrontedFlags, frontedVariables, FrontendVariable } from '../../util/frontend-variables'
 import * as vec3 from '../../util/matrix/vec3'
 import { Lock } from '../../util/mutex'
-import { globalMutex } from '../../worker/worker-global-state'
+import { globalMutex, globalWorkerDelay } from '../../worker/worker-global-state'
 import { GameState } from '../game-state/game-state'
-import { STANDARD_GAME_TICK_RATE } from '../game-state/state-updater'
+import { STANDARD_GAME_TICK_RATE, StateUpdater } from '../game-state/state-updater'
 import { MainRenderer } from '../main-renderer'
 import { createPicker } from '../mouse-picker'
 import { createCombinedRenderable } from './combined-renderables'
+import createInputReactor from './input-reactor'
 
 export interface RenderContext {
 	readonly gl: WebGL2RenderingContext
@@ -69,3 +70,15 @@ export const setupSceneRendering = (canvas: HTMLCanvasElement,
 	}
 	renderer.beginRendering()
 }
+
+
+export const startRenderingGame = (canvas: HTMLCanvasElement, game: GameState, updater: StateUpdater) => {
+	const gameTickEstimation = () => updater.estimateCurrentGameTickTime(globalWorkerDelay.difference)
+	const gameTickRate = () => updater.getTickRate()
+	const handleInputEvents = createInputReactor(game)
+
+	setupSceneRendering(canvas, game, gameTickEstimation, gameTickRate, handleInputEvents)
+	// noinspection JSIgnoredPromiseFromCall
+	updater.start(20)
+}
+

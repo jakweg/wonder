@@ -1,4 +1,6 @@
+import { GameState } from './3d-stuff/game-state/game-state'
 import { StateUpdater, stateUpdaterFromReceived } from './3d-stuff/game-state/state-updater'
+import { startRenderingGame } from './3d-stuff/renderable/render-context'
 import {
 	bindFrontendVariablesToCanvas,
 	frontedVariablesBuffer,
@@ -6,7 +8,7 @@ import {
 } from './util/frontend-variables'
 import { setMessageHandler } from './worker/message-handler'
 import { WorkerController } from './worker/worker-controller'
-import { globalMutex } from './worker/worker-global-state'
+import { globalMutex, globalWorkerDelay } from './worker/worker-global-state'
 
 initFrontendVariableAndRegisterToWindow()
 
@@ -20,10 +22,10 @@ let speedToSet = +ticksInput.value
 ticksInput.addEventListener('input', async (event) => {
 	speedToSet = +(event.target as HTMLInputElement).value
 	updater?.changeTickRate(speedToSet)
-});
+})
 
 
-(async () => {
+async function startDoubleWorkerGame() {
 	const renderWorker = await WorkerController.spawnNew('render-worker', 'render', globalMutex)
 	const canvasControl = (canvas as any).transferControlToOffscreen()
 	renderWorker.replier.send('transfer-canvas', {canvas: canvasControl}, [canvasControl])
@@ -42,6 +44,34 @@ ticksInput.addEventListener('input', async (event) => {
 		update: updateWorker.workerStartDelay,
 	})
 	renderWorker.replier.send('frontend-variables', {buffer: frontedVariablesBuffer})
+}
+
+async function startSingleWorkerGame() {
+	let decodedGame: GameState | null = null
+
+	const updateWorker = await WorkerController.spawnNew('update-worker', 'update', globalMutex)
+	updateWorker.replier.send('create-game', undefined)
+	globalWorkerDelay.difference = updateWorker.workerStartDelay
+
+
+	setMessageHandler('game-snapshot-for-renderer', (data) => {
+		decodedGame = GameState.forRenderer(data.game)
+
+		updater = stateUpdaterFromReceived(globalMutex, data.updater)
+		updater.changeTickRate(speedToSet)
+
+		startRenderingGame(canvas, decodedGame, updater)
+		// noinspection JSIgnoredPromiseFromCall
+		updater.start(20)
+	})
+}
+
+(async () => {
+	const offscreenCanvasIsAvailable = !!((window as any).OffscreenCanvas)
+	if (offscreenCanvasIsAvailable)
+		await startDoubleWorkerGame()
+	else
+		await startSingleWorkerGame()
 })()
 
 

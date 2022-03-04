@@ -1,7 +1,6 @@
 import { GameState } from './3d-stuff/game-state/game-state'
 import { StateUpdater, stateUpdaterFromReceived } from './3d-stuff/game-state/state-updater'
-import createInputReactor from './3d-stuff/renderable/input-reactor'
-import { setupSceneRendering } from './3d-stuff/renderable/render-context'
+import { startRenderingGame } from './3d-stuff/renderable/render-context'
 import { initFrontedVariablesFromReceived } from './util/frontend-variables'
 import { takeControlOverWorkerConnection } from './worker/connections-manager'
 import { Connection, setMessageHandler } from './worker/message-handler'
@@ -48,11 +47,7 @@ const considerStartRendering = () => {
 		decodedGame = GameState.forRenderer(snapshot['game'])
 		decodedUpdater = stateUpdaterFromReceived(globalMutex, snapshot['updater'])
 
-		const gameTickEstimation = () => decodedUpdater!.estimateCurrentGameTickTime(globalWorkerDelay.difference)
-		const gameTickRate = () => decodedUpdater!.getTickRate()
-		const handleInputEvents = createInputReactor(decodedGame)
-
-		setupSceneRendering(canvas, decodedGame, gameTickEstimation, gameTickRate, handleInputEvents)
+		startRenderingGame(canvas, decodedGame, decodedUpdater)
 		// noinspection JSIgnoredPromiseFromCall
 		decodedUpdater?.start(20)
 	}
