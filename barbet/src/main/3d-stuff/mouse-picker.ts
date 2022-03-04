@@ -6,8 +6,9 @@ export const enum MousePickableType {
 	Unit,
 }
 
-const textureWidth = 1024
-const textureHeight = 1024
+const textureWidth = 600
+// noinspection JSSuspiciousNameCombination
+const textureHeight = textureWidth
 
 interface MousePickerNothingResult {
 	pickedType: MousePickableType.Nothing
@@ -76,13 +77,13 @@ export const createPicker = (gl: WebGL2RenderingContext,
 				renderer(ctx)
 			}
 
-			const readPixelsBuffer = new Uint8Array(7)
+			const readPixelsBuffer = new Uint8Array(8)
 			gl.readBuffer(gl.COLOR_ATTACHMENT0)
 			const pixelX = mouseX * textureWidth | 0
 			const pixelY = mouseY * textureHeight | 0
 			gl.readPixels(pixelX, pixelY, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, readPixelsBuffer, 0)
 			gl.readBuffer(gl.COLOR_ATTACHMENT1)
-			gl.readPixels(pixelX, pixelY, 1, 1, gl.RGB, gl.UNSIGNED_BYTE, readPixelsBuffer, 4)
+			gl.readPixels(pixelX, pixelY, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, readPixelsBuffer, 4)
 			gl.bindFramebuffer(gl.FRAMEBUFFER, null)
 
 			const type: MousePickableType = readPixelsBuffer[6]!
