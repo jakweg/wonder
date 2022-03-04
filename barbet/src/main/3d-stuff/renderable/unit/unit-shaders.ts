@@ -48,9 +48,7 @@ in vec3 a_worldPosition;
 in float a_unitRotation;
 in float a_flags;
 in float a_activityStartTick;
-uniform float u_time;
-uniform float u_gameTime;
-uniform float u_gameTick;
+uniform vec3 u_times; // time, gameTime, gameTick
 `)
 	if (forMousePicker) parts.push(`
 uniform mat4 u_combinedMatrix;
@@ -100,10 +98,7 @@ void main() {
 	bool isRightArmVertex = (flagsAsInt & ${MASK_BODY_PART}) == ${FLAG_PART_RIGHT_ARM};
 	bool isLeftLegVertex = (flagsAsInt & ${MASK_BODY_PART}) == ${FLAG_PART_LEFT_LEG};
 	bool isRightLegVertex = (flagsAsInt & ${MASK_BODY_PART}) == ${FLAG_PART_RIGHT_LEG};
-	float activityDuration = u_gameTick - a_activityStartTick;
-
-	float computedSin1 = sin(u_time);
-	float computedSin2 = sin(u_time * 2.0);
+	float activityDuration = u_times.z - a_activityStartTick;
 		`)
 
 	parts.push(transformations)
@@ -159,7 +154,6 @@ out vec4 finalColor;
 flat in int v_colorPaletteId;
 flat in vec3 v_normal;
 flat in vec3 v_currentPosition;
-uniform float u_time;
 uniform vec3 u_lightPosition;
 const float ambientLight = 0.5;
 ${buildShaderColorArray('unitColors')}
@@ -172,7 +166,7 @@ void main() {
 `
 
 
-export type Uniforms = 'time' | 'gameTime' | 'gameTick' | 'combinedMatrix' | 'lightPosition'
+export type Uniforms = 'times' | 'combinedMatrix' | 'lightPosition'
 export type Attributes =
 	'modelPosition'
 	| 'worldPosition'

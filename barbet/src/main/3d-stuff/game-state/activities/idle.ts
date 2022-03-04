@@ -65,7 +65,7 @@ if (isLeftArmVertex || isRightArmVertex) {
 	} else {
 		tmp.push(`
 if (isAnimatableElement && !isTopVertex) {
-	float additionalZOffset = computedSin2 * (isBottomVertex ? -0.18 : -0.06);
+	float additionalZOffset = sin(u_times.x * 2.0) * (isBottomVertex ? -0.18 : -0.06);
 	if (isLeftArmVertex)
 		pos.x -= additionalZOffset;
 	else if (isRightArmVertex)
@@ -75,7 +75,7 @@ if (isAnimatableElement && !isTopVertex) {
 	}
 
 	tmp.push(`
-pos.y += computedSin1 * 0.02;
+pos.y += sin(u_times.x) * 0.02;
 `)
 	return tmp.join('\n')
 }

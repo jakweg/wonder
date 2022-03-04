@@ -142,9 +142,7 @@ export const createNewUnitRenderable = (renderer: MainRenderer,
 
 
 			gl.uniformMatrix4fv(program.uniforms.combinedMatrix, false, toGl(combinedMatrix))
-			gl.uniform1f(program.uniforms.time, ctx.secondsSinceFirstRender)
-			gl.uniform1f(program.uniforms.gameTime, ctx.gameTime)
-			gl.uniform1f(program.uniforms.gameTick, gameTickEstimation)
+			gl.uniform3f(program.uniforms.times, ctx.secondsSinceFirstRender, ctx.gameTime, gameTickEstimation)
 			gl.uniform3fv(program.uniforms.lightPosition, toGl(add(clone(ctx.sunPosition), ctx.sunPosition, fromValues(0, -10, -400))))
 
 			gl.drawElementsInstanced(gl.TRIANGLES, trianglesToRender, gl.UNSIGNED_SHORT, 0, 1)
