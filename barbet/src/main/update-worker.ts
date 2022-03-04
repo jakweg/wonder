@@ -2,13 +2,7 @@ import { createNewStateUpdater } from './3d-stuff/game-state/state-updater'
 import { takeControlOverWorkerConnection } from './worker/connections-manager'
 import { createEmptyGame } from './worker/example-state-creator'
 import { setMessageHandler } from './worker/message-handler'
-import {
-	globalMutex,
-	globalStateUpdater,
-	setGlobalGameState,
-	setGlobalMutex,
-	setGlobalStateUpdater,
-} from './worker/worker-global-state'
+import { globalMutex, setGlobalGameState, setGlobalMutex, setGlobalStateUpdater } from './worker/worker-global-state'
 
 takeControlOverWorkerConnection()
 
@@ -28,8 +22,4 @@ setMessageHandler('create-game', (_, connection) => {
 		game: state.passForRenderer(),
 		updater: updater.pass(),
 	})
-})
-
-setMessageHandler('start-game', () => {
-	globalStateUpdater?.start()
 })

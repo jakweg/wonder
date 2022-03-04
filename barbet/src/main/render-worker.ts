@@ -46,7 +46,7 @@ const considerStartRendering = () => {
 	if (decodedGame === null && canvas !== null && gameSnapshot !== null) {
 		const snapshot = gameSnapshot as any
 		decodedGame = GameState.forRenderer(snapshot['game'])
-		decodedUpdater = stateUpdaterFromReceived(globalMutex, connectionWithParent, snapshot['updater'])
+		decodedUpdater = stateUpdaterFromReceived(globalMutex, snapshot['updater'])
 
 		const gameTickEstimation = () => decodedUpdater!.estimateCurrentGameTickTime(globalWorkerDelay.difference)
 		const gameTickRate = () => decodedUpdater!.getTickRate()

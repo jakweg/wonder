@@ -31,13 +31,11 @@ ticksInput.addEventListener('input', async (event) => {
 	const updateWorker = await WorkerController.spawnNew('update-worker', 'update', globalMutex)
 	updateWorker.replier.send('create-game', undefined)
 
-	setMessageHandler('game-snapshot-for-renderer', (data, connection) => {
-		updater = stateUpdaterFromReceived(globalMutex, connection, data.updater)
+	setMessageHandler('game-snapshot-for-renderer', (data) => {
+		updater = stateUpdaterFromReceived(globalMutex, data.updater)
 		updater.changeTickRate(speedToSet)
 		renderWorker.replier.send('game-snapshot-for-renderer', data)
 	})
-
-	setMessageHandler('start-game', data => updateWorker.replier.send('start-game', data))
 
 	renderWorker.replier.send('set-worker-load-delays', {
 		render: renderWorker.workerStartDelay,
