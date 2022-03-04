@@ -1,5 +1,5 @@
 import { GameState } from './3d-stuff/game-state/game-state'
-import { stateUpdaterFromReceived } from './3d-stuff/game-state/state-updater'
+import { StateUpdater, stateUpdaterFromReceived } from './3d-stuff/game-state/state-updater'
 import createInputReactor from './3d-stuff/renderable/input-reactor'
 import { setupSceneRendering } from './3d-stuff/renderable/render-context'
 import { initFrontedVariablesFromReceived } from './util/frontend-variables'
@@ -12,7 +12,7 @@ takeControlOverWorkerConnection()
 let canvas: HTMLCanvasElement | null = null
 let gameSnapshot: unknown | null = null
 let decodedGame: GameState | null = null
-let decodedUpdater: ReturnType<typeof stateUpdaterFromReceived> | null = null
+let decodedUpdater: StateUpdater | null = null
 let connectionWithParent: Connection
 
 setMessageHandler('set-global-mutex', (data, connection) => {

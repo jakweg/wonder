@@ -1,3 +1,4 @@
+import { StateUpdater, stateUpdaterFromReceived } from './3d-stuff/game-state/state-updater'
 import {
 	bindFrontendVariablesToCanvas,
 	frontedVariablesBuffer,
@@ -13,14 +14,15 @@ const canvas: HTMLCanvasElement = document.getElementById('main-canvas') as HTML
 canvas.width = 1280
 canvas.height = 720
 
-bindFrontendVariablesToCanvas(canvas);
+bindFrontendVariablesToCanvas(canvas)
 
-// let speedToSet = 20
-// document.getElementById('input-ticksPerSecond')
-// 	?.addEventListener('input', async (event) => {
-// 		speedToSet = +(event.target as HTMLInputElement).value
-// 		stuff?.updater?.changeTickRate(speedToSet)
-// 	})
+let updater: StateUpdater | null = null
+const ticksInput = document.getElementById('input-ticksPerSecond') as HTMLInputElement
+let speedToSet = +ticksInput.value
+ticksInput.addEventListener('input', async (event) => {
+	speedToSet = +(event.target as HTMLInputElement).value
+	updater?.changeTickRate(speedToSet)
+});
 
 
 (async () => {
@@ -31,7 +33,9 @@ bindFrontendVariablesToCanvas(canvas);
 	const updateWorker = await WorkerController.spawnNew('update-worker', 'update', globalMutex)
 	updateWorker.replier.send('create-game', undefined)
 
-	setMessageHandler('game-snapshot-for-renderer', (data) => {
+	setMessageHandler('game-snapshot-for-renderer', (data, connection) => {
+		updater = stateUpdaterFromReceived(globalMutex, connection, data.updater)
+		updater.changeTickRate(speedToSet)
 		renderWorker.replier.send('game-snapshot-for-renderer', data)
 	})
 

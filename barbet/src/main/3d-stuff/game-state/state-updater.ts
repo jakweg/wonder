@@ -20,6 +20,7 @@ export const enum MemoryField {
 	SIZE,
 }
 
+export type StateUpdater = ReturnType<typeof stateUpdaterFromReceived>
 export const stateUpdaterFromReceived = (mutex: Mutex,
                                          connection: Connection,
                                          data: any) => {
