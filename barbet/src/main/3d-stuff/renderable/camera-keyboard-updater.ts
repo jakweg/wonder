@@ -1,9 +1,7 @@
 import { Camera } from '../../camera'
 import { frontedVariables, FrontendVariable, PressedKey } from '../../util/frontend-variables'
-import { Lock } from '../../util/mutex'
-import { globalMutex } from '../../worker/worker-global-state'
 
-export const moveCameraByKeys = (camera: Camera, dt: number) => globalMutex.executeWithAcquired(Lock.FrontedVariables, () => {
+export const moveCameraByKeys = (camera: Camera, dt: number) => {
 	const keys = frontedVariables[FrontendVariable.PressedKeys]! as PressedKey
 	if (keys === PressedKey.None) return
 	const speed = dt * 1.2 * camera.eye[1]
@@ -28,4 +26,4 @@ export const moveCameraByKeys = (camera: Camera, dt: number) => globalMutex.exec
 	}
 
 	camera.lastEyeChangeId++
-})
+}

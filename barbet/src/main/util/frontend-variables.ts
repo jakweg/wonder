@@ -16,6 +16,7 @@ export const enum AdditionalFrontedFlags {
 	WindowHasFocus = 1 << 0,
 	LeftMouseButtonPressed = 1 << 1,
 	RightMouseButtonPressed = 1 << 2,
+	LastMouseButtonUnpressedWasRight = 1 << 3,
 }
 
 export const enum FrontendVariable {
@@ -23,6 +24,7 @@ export const enum FrontendVariable {
 	MouseCursorPositionX,
 	MouseCursorPositionY,
 	AdditionalFlags,
+	LastMouseClickId,
 	SIZE,
 }
 
@@ -54,4 +56,40 @@ export const initFrontendVariableAndRegisterToWindow = () => {
 	window.addEventListener('blur', updateWindowFocus)
 	window.addEventListener('focus', updateWindowFocus)
 	updateWindowFocus()
+}
+
+export const bindFrontendVariablesToCanvas = (canvas: HTMLCanvasElement) => {
+	const defaultMouseListener = async (event: MouseEvent) => {
+		event.preventDefault()
+		await globalMutex.executeWithAcquiredAsync(Lock.FrontedVariables, () => {
+			const isNowDown = event.type !== 'mouseup'
+			const buttonAsFlag = event.button === 0 ? AdditionalFrontedFlags.LeftMouseButtonPressed : AdditionalFrontedFlags.RightMouseButtonPressed
+
+			if (isNowDown)
+				frontedVariables[FrontendVariable.AdditionalFlags] |= buttonAsFlag
+			else {
+				const newFlags = (frontedVariables[FrontendVariable.AdditionalFlags]! & ~AdditionalFrontedFlags.LastMouseButtonUnpressedWasRight)
+				frontedVariables[FrontendVariable.AdditionalFlags] = newFlags & ~buttonAsFlag | (buttonAsFlag === AdditionalFrontedFlags.RightMouseButtonPressed ? AdditionalFrontedFlags.LastMouseButtonUnpressedWasRight : 0)
+				frontedVariables[FrontendVariable.LastMouseClickId]++
+			}
+
+			frontedVariables[FrontendVariable.MouseCursorPositionX] = event.offsetX
+			frontedVariables[FrontendVariable.MouseCursorPositionY] = 720 - event.offsetY
+		})
+	}
+	const leaveListener = () => globalMutex.executeWithAcquiredAsync(Lock.FrontedVariables, () => {
+		frontedVariables[FrontendVariable.AdditionalFlags] &= ~(AdditionalFrontedFlags.RightMouseButtonPressed | AdditionalFrontedFlags.LeftMouseButtonPressed)
+	})
+
+	canvas.addEventListener('mousedown', defaultMouseListener)
+	canvas.addEventListener('mouseup', defaultMouseListener)
+	canvas.addEventListener('contextmenu', defaultMouseListener)
+	canvas.addEventListener('mouseleave', leaveListener, {passive: true})
+
+	return () => {
+		canvas.removeEventListener('mousedown', defaultMouseListener)
+		canvas.removeEventListener('mouseup', defaultMouseListener)
+		canvas.removeEventListener('contextmenu', defaultMouseListener)
+		canvas.removeEventListener('mouseleave', leaveListener)
+	}
 }

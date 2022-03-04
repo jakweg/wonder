@@ -48,7 +48,7 @@ const getAllAttributes = (gl: WebGL2RenderingContext, program: WebGLProgram) => 
 }
 
 export type RenderFunction = (gl: WebGL2RenderingContext, secondsSinceLastFrame: number) => void | Promise<void>
-export type BeforeRenderFunction = (secondsSinceLastFrame: number) => boolean
+export type BeforeRenderFunction = (secondsSinceLastFrame: number) => boolean | Promise<boolean>
 
 
 export class MainRenderer {
@@ -57,7 +57,6 @@ export class MainRenderer {
 	private lastFrameTime = 0
 
 	private constructor(
-		private readonly canvas: HTMLCanvasElement,
 		private readonly gl: WebGL2RenderingContext,
 	) {
 	}
@@ -67,7 +66,7 @@ export class MainRenderer {
 	}
 
 	static fromHTMLCanvas(canvas: HTMLCanvasElement): MainRenderer {
-		return new MainRenderer(canvas, obtainWebGl2ContextFromCanvas(canvas))
+		return new MainRenderer(obtainWebGl2ContextFromCanvas(canvas))
 	}
 
 	private static setUpFrameBeforeRender(gl: WebGL2RenderingContext) {
@@ -167,7 +166,7 @@ export class MainRenderer {
 		const render = async () => {
 			const now = performance.now()
 			const elapsedSeconds = (now - this.lastFrameTime) / 1000
-			if (this.beforeRenderFunction(elapsedSeconds)) {
+			if ((await this.beforeRenderFunction(elapsedSeconds)) === true) {
 				await this.renderFunction(gl, elapsedSeconds)
 			}
 

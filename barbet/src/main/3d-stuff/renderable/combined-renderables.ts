@@ -22,9 +22,5 @@ export const createCombinedRenderable = (renderer: MainRenderer, state: GameStat
 			groundItems.render(ctx)
 			heldItems.render(ctx)
 		},
-		renderForMousePicker(ctx: RenderContext) {
-			terrain.renderForMousePicker(ctx)
-			units.renderForMousePicker(ctx)
-		},
 	}
 }
