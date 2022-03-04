@@ -25,6 +25,8 @@ export const enum FrontendVariable {
 	MouseCursorPositionY,
 	AdditionalFlags,
 	LastMouseClickId,
+	CanvasDrawingWidth,
+	CanvasDrawingHeight,
 	SIZE,
 }
 
@@ -58,7 +60,55 @@ export const initFrontendVariableAndRegisterToWindow = () => {
 	updateWindowFocus()
 }
 
+function observeCanvasSizes(canvas: HTMLCanvasElement) {
+	let timeoutId: number = 0
+	let frameId: number = 0
+	const lastSizes = {lastResizeTime: 0, width: 0, height: 0, pixelRatio: 0}
+	const checkSizesCallback = () => {
+		const width = canvas.clientWidth
+		const height = canvas.clientHeight
+		const pixelRatio = window.devicePixelRatio
+		if (width === lastSizes.width && height === lastSizes.height && pixelRatio === lastSizes.pixelRatio) {
+			const timeSinceLastResize = performance.now() - lastSizes.lastResizeTime
+			const nextCheckTimeout = (timeSinceLastResize > 20_000) ? 10_000 : timeSinceLastResize * 0.5
+			timeoutId = setTimeout(() => frameId = requestAnimationFrame(checkSizesCallback), nextCheckTimeout)
+			return
+		}
+
+		lastSizes.width = width
+		lastSizes.height = height
+		lastSizes.pixelRatio = pixelRatio
+		lastSizes.lastResizeTime = performance.now()
+
+		// noinspection JSIgnoredPromiseFromCall
+		globalMutex.executeWithAcquiredAsync(Lock.FrontedVariables, () => {
+			frontedVariables[FrontendVariable.CanvasDrawingWidth] = width * pixelRatio | 0
+			frontedVariables[FrontendVariable.CanvasDrawingHeight] = height * pixelRatio | 0
+
+			if (frameId !== -1)
+				frameId = requestAnimationFrame(checkSizesCallback)
+		})
+	}
+	checkSizesCallback()
+	const resizeCallback = () => {
+		if (frameId !== -1 && lastSizes.lastResizeTime + 50 < performance.now()) {
+			clearTimeout(timeoutId)
+			cancelAnimationFrame(frameId)
+			checkSizesCallback()
+		}
+	}
+	window.addEventListener('resize', resizeCallback, {passive: true})
+	return () => {
+		frameId = -1
+		clearTimeout(timeoutId)
+		cancelAnimationFrame(frameId)
+		window.removeEventListener('resize', resizeCallback)
+	}
+}
+
 export const bindFrontendVariablesToCanvas = (canvas: HTMLCanvasElement) => {
+	const unobserve = observeCanvasSizes(canvas)
+
 	const defaultMouseListener = async (event: MouseEvent) => {
 		event.preventDefault()
 		await globalMutex.executeWithAcquiredAsync(Lock.FrontedVariables, () => {
@@ -74,7 +124,7 @@ export const bindFrontendVariablesToCanvas = (canvas: HTMLCanvasElement) => {
 			}
 
 			frontedVariables[FrontendVariable.MouseCursorPositionX] = event.offsetX
-			frontedVariables[FrontendVariable.MouseCursorPositionY] = 720 - event.offsetY
+			frontedVariables[FrontendVariable.MouseCursorPositionY] = event.offsetY
 		})
 	}
 	const leaveListener = () => globalMutex.executeWithAcquiredAsync(Lock.FrontedVariables, () => {
@@ -87,6 +137,7 @@ export const bindFrontendVariablesToCanvas = (canvas: HTMLCanvasElement) => {
 	canvas.addEventListener('mouseleave', leaveListener, {passive: true})
 
 	return () => {
+		unobserve()
 		canvas.removeEventListener('mousedown', defaultMouseListener)
 		canvas.removeEventListener('mouseup', defaultMouseListener)
 		canvas.removeEventListener('contextmenu', defaultMouseListener)

@@ -11,8 +11,6 @@ import { globalMutex } from './worker/worker-global-state'
 initFrontendVariableAndRegisterToWindow()
 
 const canvas: HTMLCanvasElement = document.getElementById('main-canvas') as HTMLCanvasElement
-canvas.width = 1280
-canvas.height = 720
 
 bindFrontendVariablesToCanvas(canvas)
 

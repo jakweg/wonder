@@ -52,13 +52,17 @@ export type BeforeRenderFunction = (secondsSinceLastFrame: number) => boolean | 
 
 
 export class MainRenderer {
+	public width: number = 0
+	public height: number = 0
 	private nextFrameRequest: number = 0
 	private readonly allocatedResources: AllocatedResourceEntry[] = []
 	private lastFrameTime = 0
+	private lastWidth: number = -1
+	private lastHeight: number = -1
 
 	private constructor(
-		private readonly gl: WebGL2RenderingContext,
-	) {
+		private readonly canvas: HTMLCanvasElement,
+		private readonly gl: WebGL2RenderingContext) {
 	}
 
 	public get rawContext(): WebGL2RenderingContext {
@@ -66,20 +70,7 @@ export class MainRenderer {
 	}
 
 	static fromHTMLCanvas(canvas: HTMLCanvasElement): MainRenderer {
-		return new MainRenderer(obtainWebGl2ContextFromCanvas(canvas))
-	}
-
-	private static setUpFrameBeforeRender(gl: WebGL2RenderingContext) {
-		gl.clearColor(0.15, 0.15, 0.15, 1)
-		gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
-
-		gl.enable(gl.DEPTH_TEST)
-		gl.depthFunc(gl.LEQUAL)
-
-		gl.cullFace(gl.BACK)
-		gl.enable(gl.CULL_FACE)
-
-		gl.viewport(0, 0, 1280, 720)
+		return new MainRenderer(canvas, obtainWebGl2ContextFromCanvas(canvas))
 	}
 
 	public renderFunction: RenderFunction = () => void 0
@@ -205,7 +196,24 @@ export class MainRenderer {
 
 	public renderStarted() {
 		this.lastFrameTime = performance.now()
-		MainRenderer.setUpFrameBeforeRender(this.gl)
+		this.setUpFrameBeforeRender(this.gl)
+	}
+
+	private setUpFrameBeforeRender(gl: WebGL2RenderingContext) {
+		if (this.lastWidth !== this.width || this.lastHeight != this.height) {
+			this.canvas.width = this.lastWidth = this.width
+			this.canvas.height = this.lastHeight = this.height
+		}
+		gl.viewport(0, 0, this.width, this.height)
+
+		gl.clearColor(0.15, 0.15, 0.15, 1)
+		gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
+
+		gl.enable(gl.DEPTH_TEST)
+		gl.depthFunc(gl.LEQUAL)
+
+		gl.cullFace(gl.BACK)
+		gl.enable(gl.CULL_FACE)
 	}
 }
 

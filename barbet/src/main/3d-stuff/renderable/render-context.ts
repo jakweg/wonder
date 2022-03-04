@@ -23,9 +23,9 @@ export const setupSceneRendering = (canvas: HTMLCanvasElement,
                                     state: GameState,
                                     gameTickEstimation: () => number,
                                     gameTickRate: () => number,
-                                    handleInputEvents: (dt: number, ctx: RenderContext) => Promise<void>) => {
+                                    handleInputEvents: (dt: number, r: MainRenderer, ctx: RenderContext) => Promise<void>) => {
 	const renderer = MainRenderer.fromHTMLCanvas(canvas)
-	const camera = Camera.newPerspective(90, 1280 / 720)
+	const camera = Camera.newPerspective()
 	camera.moveCamera(9.5, 0, 7)
 
 	const sunPosition = vec3.fromValues(500, 1500, -500)
@@ -38,7 +38,7 @@ export const setupSceneRendering = (canvas: HTMLCanvasElement,
 
 	renderer.renderFunction = async (gl, dt) => {
 		if (lastContext !== null)
-			await handleInputEvents(dt, lastContext)
+			await handleInputEvents(dt, renderer, lastContext)
 		camera.updateMatrixIfNeeded()
 
 		await globalMutex.executeWithAcquiredAsync(Lock.Update, async () => {

@@ -5,6 +5,7 @@ import { interruptRequestItemPickUp, interruptRequestWalk } from '../game-state/
 import { getEntityById_drawableItem, iterateOverAllSelectedEntities } from '../game-state/entities/queries'
 import { DataOffsetDrawables, DataOffsetItemHoldable } from '../game-state/entities/traits'
 import { GameState } from '../game-state/game-state'
+import { MainRenderer } from '../main-renderer'
 import { MousePickableType } from '../mouse-picker'
 import { BlockId } from '../world/block'
 import { ItemType } from '../world/item'
@@ -24,8 +25,21 @@ const createInputReactor = (game: GameState) => {
 	let eventHappened: EventHappened = EventHappened.None
 	let mousePositionX: number = 0
 	let mousePositionY: number = 0
-	const handleInputsSecure = async (dt: number, ctx: RenderContext) => {
+	let lastWidth: number = 0
+	let lastHeight: number = 0
+	const handleInputsSecure = async (dt: number, renderer: MainRenderer, ctx: RenderContext) => {
 		await moveCameraByKeys(ctx.camera, dt)
+		{
+			const w = frontedVariables[FrontendVariable.CanvasDrawingWidth]!
+			const h = frontedVariables[FrontendVariable.CanvasDrawingHeight]!
+			if (lastWidth !== w || lastHeight !== h) {
+				lastWidth = w
+				lastHeight = h
+				ctx.camera.setAspectRatio(w / h)
+				renderer.width = w
+				renderer.height = h
+			}
+		}
 
 		if (lastClickId !== frontedVariables[FrontendVariable.LastMouseClickId]) {
 			lastClickId = frontedVariables[FrontendVariable.LastMouseClickId]!
@@ -35,14 +49,14 @@ const createInputReactor = (game: GameState) => {
 			eventHappened = right ? EventHappened.RightClick : EventHappened.LeftClick
 		}
 	}
-	return async (dt: number, ctx: RenderContext) => {
-		globalMutex.executeWithAcquired(Lock.FrontedVariables, () => handleInputsSecure(dt, ctx))
+	return async (dt: number, renderer: MainRenderer, ctx: RenderContext) => {
+		globalMutex.executeWithAcquired(Lock.FrontedVariables, () => handleInputsSecure(dt, renderer, ctx))
 		if (eventHappened !== EventHappened.None) {
 			const event = eventHappened
 			eventHappened = EventHappened.None
 			let pickResult = null as unknown as (ReturnType<typeof ctx.mousePicker.pick>)
 			globalMutex.executeWithAcquired(Lock.Update, () => {
-				pickResult = ctx.mousePicker.pick(ctx, mousePositionX, mousePositionY)
+				pickResult = ctx.mousePicker.pick(ctx, mousePositionX / renderer.width, (renderer.height - mousePositionY) / renderer.height)
 			})
 			if (pickResult !== null && pickResult.pickedType !== MousePickableType.Nothing) {
 				globalMutex.executeWithAcquired(Lock.Update, () => {

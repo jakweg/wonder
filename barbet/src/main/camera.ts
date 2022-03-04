@@ -1,7 +1,7 @@
-import { toRadian } from './util/matrix/common'
 import * as mat4 from './util/matrix/mat4'
 import * as vec3 from './util/matrix/vec3'
 
+const FOV = Math.PI / 2
 export const universalUpVector = vec3.fromValues(0, 1, 0)
 
 export class Camera {
@@ -15,13 +15,8 @@ export class Camera {
 	                    public readonly center: vec3) {
 	}
 
-	public static newPerspective(fovDegress: number,
-	                             aspect: number) {
-		const perspectiveMatrix = mat4.perspectiveNO(
-			mat4.create(),
-			toRadian(fovDegress),
-			aspect,
-			0.1, 5000)
+	public static newPerspective() {
+		const perspectiveMatrix = mat4.create()
 
 		const eye = vec3.fromValues(2.1, 4, -3.0001)
 		const center = vec3.fromValues(0, 0, 0)
@@ -34,6 +29,15 @@ export class Camera {
 		const combined = mat4.multiply(mat4.create(), perspectiveMatrix, viewMatrix)
 
 		return new Camera(perspectiveMatrix, viewMatrix, combined, eye, center)
+	}
+
+	public setAspectRatio(aspect: number): void {
+		mat4.perspectiveNO(
+			this.perspectiveMatrix,
+			FOV,
+			aspect,
+			0.1, 5000)
+		this.lastEyeChangeId++
 	}
 
 	public updateMatrixIfNeeded(): void {
