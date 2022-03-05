@@ -62,7 +62,7 @@ async function startSingleWorkerGame() {
 
 		startRenderingGame(canvas, decodedGame, updater)
 		// noinspection JSIgnoredPromiseFromCall
-		updater.start(20)
+		updater.start(speedToSet)
 	})
 }
 

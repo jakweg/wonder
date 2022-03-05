@@ -1,7 +1,7 @@
 import { Camera } from '../../camera'
 import { AdditionalFrontedFlags, frontedVariables, FrontendVariable } from '../../util/frontend-variables'
 import * as vec3 from '../../util/matrix/vec3'
-import { Lock } from '../../util/mutex'
+import { isInWorker, Lock } from '../../util/mutex'
 import { globalMutex, globalWorkerDelay } from '../../worker/worker-global-state'
 import { GameState } from '../game-state/game-state'
 import { STANDARD_GAME_TICK_RATE, StateUpdater } from '../game-state/state-updater'
@@ -42,24 +42,28 @@ export const setupSceneRendering = (canvas: HTMLCanvasElement,
 			await handleInputEvents(dt, renderer, lastContext)
 		camera.updateMatrixIfNeeded()
 
-		await globalMutex.executeWithAcquiredAsync(Lock.Update, async () => {
-			renderer.renderStarted()
+		if (isInWorker)
+			globalMutex.enter(Lock.Update)
+		else
+			await globalMutex.enterAsync(Lock.Update)
+		renderer.renderStarted()
 
-			const now = performance.now()
-			const secondsSinceFirstRender = (now - firstRenderTime) / 1000
-			const ctx: Readonly<RenderContext> = Object.freeze({
-				gl,
-				camera,
-				sunPosition,
-				gameTickEstimation: gameTickEstimation(),
-				secondsSinceFirstRender: secondsSinceFirstRender,
-				mousePicker: combinedRenderable.mousePicker,
-				gameTime: secondsSinceFirstRender * gameTickRate() / STANDARD_GAME_TICK_RATE,
-			})
-			lastContext = ctx
-
-			combinedRenderable.render(ctx)
+		const now = performance.now()
+		const secondsSinceFirstRender = (now - firstRenderTime) / 1000
+		const ctx: Readonly<RenderContext> = Object.freeze({
+			gl,
+			camera,
+			sunPosition,
+			gameTickEstimation: gameTickEstimation(),
+			secondsSinceFirstRender: secondsSinceFirstRender,
+			mousePicker: combinedRenderable.mousePicker,
+			gameTime: secondsSinceFirstRender * gameTickRate() / STANDARD_GAME_TICK_RATE,
 		})
+		lastContext = ctx
+
+		combinedRenderable.render(ctx)
+
+		globalMutex.unlock(Lock.Update)
 	}
 
 

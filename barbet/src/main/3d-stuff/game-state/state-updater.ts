@@ -1,5 +1,4 @@
-import Mutex, { Lock, waitAsyncCompat } from '../../util/mutex'
-import { globalMutex } from '../../worker/worker-global-state'
+import Mutex, { waitAsyncCompat } from '../../util/mutex'
 import { GameState } from './game-state'
 
 export const STANDARD_GAME_TICK_RATE = 20
@@ -32,15 +31,13 @@ export const stateUpdaterFromReceived = (mutex: Mutex,
 	const memory = new Int32Array(data.buffer)
 
 	return {
-		async start(ticksPerSecond?: number): Promise<void> {
-			await mutex.executeWithAcquiredAsync(Lock.StateUpdaterStatus, () => {
-				if (Atomics.load(memory, MemoryField.Status) === Status.Stopped) {
-					if (ticksPerSecond !== undefined)
-						Atomics.store(memory, MemoryField.TicksPerSecond, ticksPerSecond)
-					Atomics.store(memory, MemoryField.Status, Status.RequestedStart)
-					Atomics.notify(memory, MemoryField.Status)
-				}
-			})
+		start(ticksPerSecond?: number): void {
+			const changed = Status.Stopped === Atomics.compareExchange(memory, MemoryField.Status, Status.Stopped, Status.RequestedStart)
+			if (!changed) return
+
+			if (ticksPerSecond !== undefined)
+				Atomics.store(memory, MemoryField.TicksPerSecond, ticksPerSecond)
+			Atomics.notify(memory, MemoryField.Status)
 		},
 		async changeTickRate(ticksPerSecond: number): Promise<void> {
 			Atomics.store(memory, MemoryField.TicksPerSecond, ticksPerSecond)
@@ -88,23 +85,27 @@ export const createNewStateUpdater = (mutex: Mutex,
 	const memory = new Int32Array(buffer)
 	memory[MemoryField.Status] = Status.Stopped
 
-	const setupStartRequestMonitoring = async () => {
-		await (waitAsyncCompat(memory, MemoryField.Status, Status.Stopped) as any)?.value
-		const oldValue = Atomics.compareExchange(memory, MemoryField.Status, Status.RequestedStart, Status.Running)
-		if (oldValue !== Status.RequestedStart) {
-			throw new Error(`Expected requested stop value, but got ${oldValue}`)
-		}
-		await globalMutex.executeWithAcquiredAsync(Lock.StateUpdaterStatus, init)
-		return
+	let terminated = false
+	const setupStartRequestMonitoring = () => {
+		(async () => {
+			while (true) {
+				await waitAsyncCompat(memory, MemoryField.Status, Status.Stopped, 1.0).value
+				const oldValue = Atomics.compareExchange(memory, MemoryField.Status, Status.RequestedStart, Status.Running) as Status
+				if (oldValue === Status.Running) return
+
+				if (oldValue === Status.RequestedStart) {
+					init()
+					return
+				}
+			}
+		})()
 	}
-	// noinspection JSIgnoredPromiseFromCall
 	setupStartRequestMonitoring()
 
 	const stopInstantly = () => {
 		clearInterval(intervalId)
 		memory[MemoryField.Status] = Status.Stopped
 		intervalId = 0
-		// noinspection JSIgnoredPromiseFromCall
 		setupStartRequestMonitoring()
 	}
 
@@ -143,7 +144,10 @@ export const createNewStateUpdater = (mutex: Mutex,
 		}
 	}
 
-	const handleTimer = () => {
+	let isExecutingTimer = false
+	const handleTimer = async () => {
+		if (isExecutingTimer) return
+		isExecutingTimer = true
 		const now = performance.now()
 		const timeSinceStart = now - requestStartTime
 		const expectedExecutedTicks = (timeSinceStart / expectedDelayBetweenTicks) | 0
@@ -161,7 +165,7 @@ export const createNewStateUpdater = (mutex: Mutex,
 
 		for (let i = 0; i < ticksToExecute; i++) {
 			try {
-				state.advanceActivities()
+				await state.advanceActivities()
 				executedTicksCounter++
 			} catch (e) {
 				stopInstantly()
@@ -171,7 +175,8 @@ export const createNewStateUpdater = (mutex: Mutex,
 		}
 
 		lastTickTimeToSet = performance.now() * 100 | 0
-		mutex.executeWithAcquired(Lock.StateUpdaterStatus, handleStatus)
+		handleStatus()
+		isExecutingTimer = false
 	}
 
 	return {
@@ -180,6 +185,9 @@ export const createNewStateUpdater = (mutex: Mutex,
 				type: 'state-updater',
 				buffer,
 			}
+		},
+		terminate(): void {
+			terminated = true
 		},
 	}
 }

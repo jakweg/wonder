@@ -1,4 +1,4 @@
-import Mutex, { Lock } from '../../util/mutex'
+import Mutex, { isInWorker, Lock } from '../../util/mutex'
 import { ActivityId, requireActivity } from '../renderable/unit/activity'
 import { World } from '../world/world'
 import EntityContainer from './entities/entity-container'
@@ -54,7 +54,7 @@ export class GameState {
 		}
 	}
 
-	public advanceActivities() {
+	public async advanceActivities() {
 		if (this.isRunningLogic) throw new Error()
 		this.isRunningLogic = true
 		this._currentTick++
@@ -62,13 +62,18 @@ export class GameState {
 		this.pathFinder.tick(this)
 
 		const container = this.entities
-		this.mutex.executeWithAcquired(Lock.Update, () => {
-			for (const entity of iterateOverEntitiesWithActivity(container)) {
-				const currentActivity = (container.withActivities.rawData)[entity.withActivity + DataOffsetWithActivity.CurrentId]! as ActivityId
+		if (isInWorker)
+			this.mutex.enter(Lock.Update)
+		else
+			await this.mutex.enterAsync(Lock.Update)
 
-				requireActivity(currentActivity).perform(this, entity)
-			}
-		})
+		for (const entity of iterateOverEntitiesWithActivity(container)) {
+			const currentActivity = (container.withActivities.rawData)[entity.withActivity + DataOffsetWithActivity.CurrentId]! as ActivityId
+
+			requireActivity(currentActivity).perform(this, entity)
+		}
+
+		this.mutex.unlock(Lock.Update)
 
 		this.isRunningLogic = false
 	}

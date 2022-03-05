@@ -1,5 +1,5 @@
 import { AdditionalFrontedFlags, frontedVariables, FrontendVariable } from '../../util/frontend-variables'
-import { Lock } from '../../util/mutex'
+import { isInWorker, Lock } from '../../util/mutex'
 import { globalMutex } from '../../worker/worker-global-state'
 import { interruptRequestItemPickUp, interruptRequestWalk } from '../game-state/activities/interrupt'
 import { getEntityById_drawableItem, iterateOverAllSelectedEntities } from '../game-state/entities/queries'
@@ -27,8 +27,8 @@ const createInputReactor = (game: GameState) => {
 	let mousePositionY: number = 0
 	let lastWidth: number = 0
 	let lastHeight: number = 0
-	const handleInputsSecure = async (dt: number, renderer: MainRenderer, ctx: RenderContext) => {
-		await moveCameraByKeys(ctx.camera, dt)
+	const handleInputs = (dt: number, renderer: MainRenderer, ctx: RenderContext) => {
+		moveCameraByKeys(ctx.camera, dt)
 		{
 			const w = frontedVariables[FrontendVariable.CanvasDrawingWidth]!
 			const h = frontedVariables[FrontendVariable.CanvasDrawingHeight]!
@@ -50,64 +50,68 @@ const createInputReactor = (game: GameState) => {
 		}
 	}
 	return async (dt: number, renderer: MainRenderer, ctx: RenderContext) => {
-		globalMutex.executeWithAcquired(Lock.FrontedVariables, () => handleInputsSecure(dt, renderer, ctx))
-		if (eventHappened !== EventHappened.None) {
-			const event = eventHappened
-			eventHappened = EventHappened.None
-			let pickResult = null as unknown as (ReturnType<typeof ctx.mousePicker.pick>)
-			globalMutex.executeWithAcquired(Lock.Update, () => {
-				pickResult = ctx.mousePicker.pick(ctx, mousePositionX / renderer.width, (renderer.height - mousePositionY) / renderer.height)
-			})
-			if (pickResult !== null && pickResult.pickedType !== MousePickableType.Nothing) {
-				globalMutex.executeWithAcquired(Lock.Update, () => {
-					const entityContainer = game.entities
-					const result = pickResult
-					if (result.pickedType === MousePickableType.Terrain) {
-						let wasAny = false
-						const entities = iterateOverAllSelectedEntities(entityContainer)
-						if (game.groundItems.getItem(result.x, result.z) !== ItemType.None) {
-							for (const record of entities) {
-								if (entityContainer.drawables.rawData[record.drawable + DataOffsetDrawables.ColorPaletteId] !== UnitColorPaletteId.DarkBlue)
-									continue
-								wasAny = true
-								interruptRequestItemPickUp(entityContainer, record, result.x, result.z, ItemType.Box)
-							}
-						} else
-							for (const record of entities) {
-								if (entityContainer.drawables.rawData[record.drawable + DataOffsetDrawables.ColorPaletteId] !== UnitColorPaletteId.DarkBlue)
-									continue
-								wasAny = true
-								interruptRequestWalk(entityContainer, record, result.x, result.z)
-							}
+		handleInputs(dt, renderer, ctx)
 
-						if (!wasAny) {
-							if (event === EventHappened.LeftClick)
-								// world.setBlock(result.x + result.normals[0]!, result.y + result.normals[1]!, result.z + result.normals[2]!, BlockId.Snow)
-								game.groundItems.setItem(result.x, result.z, ItemType.Box)
-							else
-								game.world.setBlock(result.x, result.y, result.z, BlockId.Air)
-						}
-					} else if (result.pickedType === MousePickableType.Unit) {
-						const id = result.numericId
-						const record = getEntityById_drawableItem(entityContainer, id)
-						if (record !== null) {
-							{
-								const rawData = entityContainer.drawables.rawData
-								let color = rawData[record.drawable + DataOffsetDrawables.ColorPaletteId]! as UnitColorPaletteId
-								color = (color === UnitColorPaletteId.DarkBlue) ? UnitColorPaletteId.GreenOrange : UnitColorPaletteId.DarkBlue
-								rawData[record.drawable + DataOffsetDrawables.ColorPaletteId] = color
-							}
-							if (event === EventHappened.RightClick) {
-								const rawData = entityContainer.itemHoldables.rawData
-								let item = rawData[record.itemHoldable + DataOffsetItemHoldable.ItemId]! as ItemType
-								item = (item === ItemType.Box) ? ItemType.None : ItemType.Box
-								rawData[record.itemHoldable + DataOffsetItemHoldable.ItemId] = item
-							}
-						}
+		if (eventHappened === EventHappened.None) return
+
+		const event = eventHappened
+		eventHappened = EventHappened.None
+
+		if (isInWorker)
+			globalMutex.enter(Lock.Update)
+		else
+			await globalMutex.enterAsync(Lock.Update)
+
+		const pickResult = ctx.mousePicker.pick(ctx, mousePositionX / renderer.width, (renderer.height - mousePositionY) / renderer.height)
+		if (pickResult !== null && pickResult.pickedType !== MousePickableType.Nothing) {
+			const entityContainer = game.entities
+			const result = pickResult
+			if (result.pickedType === MousePickableType.Terrain) {
+				let wasAny = false
+				const entities = iterateOverAllSelectedEntities(entityContainer)
+				if (game.groundItems.getItem(result.x, result.z) !== ItemType.None) {
+					for (const record of entities) {
+						if (entityContainer.drawables.rawData[record.drawable + DataOffsetDrawables.ColorPaletteId] !== UnitColorPaletteId.DarkBlue)
+							continue
+						wasAny = true
+						interruptRequestItemPickUp(entityContainer, record, result.x, result.z, ItemType.Box)
 					}
-				})
+				} else
+					for (const record of entities) {
+						if (entityContainer.drawables.rawData[record.drawable + DataOffsetDrawables.ColorPaletteId] !== UnitColorPaletteId.DarkBlue)
+							continue
+						wasAny = true
+						interruptRequestWalk(entityContainer, record, result.x, result.z)
+					}
+
+				if (!wasAny) {
+					if (event === EventHappened.LeftClick)
+						// world.setBlock(result.x + result.normals[0]!, result.y + result.normals[1]!, result.z + result.normals[2]!, BlockId.Snow)
+						game.groundItems.setItem(result.x, result.z, ItemType.Box)
+					else
+						game.world.setBlock(result.x, result.y, result.z, BlockId.Air)
+				}
+			} else if (result.pickedType === MousePickableType.Unit) {
+				const id = result.numericId
+				const record = getEntityById_drawableItem(entityContainer, id)
+				if (record !== null) {
+					{
+						const rawData = entityContainer.drawables.rawData
+						let color = rawData[record.drawable + DataOffsetDrawables.ColorPaletteId]! as UnitColorPaletteId
+						color = (color === UnitColorPaletteId.DarkBlue) ? UnitColorPaletteId.GreenOrange : UnitColorPaletteId.DarkBlue
+						rawData[record.drawable + DataOffsetDrawables.ColorPaletteId] = color
+					}
+					if (event === EventHappened.RightClick) {
+						const rawData = entityContainer.itemHoldables.rawData
+						let item = rawData[record.itemHoldable + DataOffsetItemHoldable.ItemId]! as ItemType
+						item = (item === ItemType.Box) ? ItemType.None : ItemType.Box
+						rawData[record.itemHoldable + DataOffsetItemHoldable.ItemId] = item
+					}
+				}
 			}
 		}
+
+		globalMutex.unlock(Lock.Update)
 	}
 }
 

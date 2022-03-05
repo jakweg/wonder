@@ -2,7 +2,7 @@ import { Camera } from '../../camera'
 import { frontedVariables, FrontendVariable, PressedKey } from '../../util/frontend-variables'
 
 export const moveCameraByKeys = (camera: Camera, dt: number) => {
-	const keys = frontedVariables[FrontendVariable.PressedKeys]! as PressedKey
+	const keys = Atomics.load(frontedVariables, FrontendVariable.PressedKeys) as PressedKey
 	if (keys === PressedKey.None) return
 	const speed = dt * 1.2 * camera.eye[1]
 

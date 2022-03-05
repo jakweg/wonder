@@ -1,5 +1,5 @@
-type WaitAsyncResult = { async: false } | {
-	async: true
+type WaitAsyncResult = {
+	async: boolean
 	value: Promise<'ok' | 'not-equal' | 'timed-out'>
 }
 
@@ -9,29 +9,38 @@ interface Additional extends Atomics {
 
 declare var Atomics: Additional
 
-export const waitAsyncCompat = Atomics.waitAsync ?? ((typedArray: Int32Array, index: number, value: number): WaitAsyncResult => {
-	const load = Atomics.load(typedArray, index)
-	if (load !== value)
-		return {async: false}
+export const isInWorker = !location.reload
+const useNativeWaitAsync: boolean = !!Atomics.waitAsync
 
-	return {
-		async: true,
-		value: new Promise(resolve => {
-			const interval = setInterval(() => {
-				const load = Atomics.load(typedArray, index)
-				if (load !== value) {
-					resolve('ok')
-					clearInterval(interval)
-				}
-			}, 5)
-		}),
-	}
-})
+export const waitAsyncCompat = useNativeWaitAsync ?
+	Atomics.waitAsync : ((typedArray: Int32Array, index: number, value: number, timeout?: number): WaitAsyncResult => {
+		const load = Atomics.load(typedArray, index)
+		if (load !== value)
+			return {async: false, value: Promise.resolve('ok')}
+
+		const timeoutValue = timeout ?? Number.POSITIVE_INFINITY
+		const started = performance.now()
+		return {
+			async: true,
+			value: new Promise(resolve => {
+				const interval = setInterval(() => {
+					const load = Atomics.load(typedArray, index)
+					if (load !== value) {
+						resolve('ok')
+						clearInterval(interval)
+					}
+					if (timeoutValue < performance.now() - started) {
+						resolve('timed-out')
+						clearInterval(interval)
+					}
+				}, 5)
+			}),
+		}
+	})
+
 
 export const enum Lock {
 	Update,
-	StateUpdaterStatus,
-	FrontedVariables,
 	SIZE,
 }
 
@@ -72,49 +81,44 @@ class Mutex {
 		}
 	}
 
-	public executeWithAcquired(
-		lock: Lock,
-		func: () => void): void {
-
+	public enter(lock: Lock, timeout?: number): boolean {
 		const array = this.intArray
 		while (true) {
 			const oldValue = Atomics.compareExchange(array, lock,
 				LockValue.Unlocked, LockValue.Locked)! as LockValue
 
-			if (oldValue === LockValue.Unlocked) {
-				try {
-					func()
-				} finally {
-					Atomics.store(array, lock, LockValue.Unlocked)
-					Atomics.notify(array, lock)
-				}
-				return
+			if (oldValue === LockValue.Unlocked)
+				return true
+
+			if (Atomics.wait(array, lock, LockValue.Locked, timeout) === 'timed-out') {
+				throw new Error(`Lock timeout ${lock}`)
+				// return false
 			}
-			Atomics.wait(array, lock, LockValue.Locked)
 		}
 	}
 
-	public async executeWithAcquiredAsync(
-		lock: Lock,
-		func: (() => (void | Promise<void>))): Promise<void> {
+	public unlock(lock: Lock): void {
+		const array = this.intArray
+		Atomics.store(array, lock, LockValue.Unlocked)
+		Atomics.notify(array, lock)
+	}
 
+	public async enterAsync(lock: Lock, timeout?: number) {
 		const array = this.intArray
 		while (true) {
 			const oldValue = Atomics.compareExchange(array, lock,
 				LockValue.Unlocked, LockValue.Locked)! as LockValue
 
-			if (oldValue === LockValue.Unlocked) {
-				try {
-					await func()
-				} finally {
-					Atomics.store(array, lock, LockValue.Unlocked)
-					Atomics.notify(array, lock)
+			if (oldValue === LockValue.Unlocked)
+				return true
+
+			const wait = waitAsyncCompat(array, lock, LockValue.Locked, timeout)
+			if (wait.async) {
+				if (await wait.value === 'timed-out') {
+					throw new Error(`Lock timeout ${lock}`)
+					// return false
 				}
-				return
 			}
-			const wait = waitAsyncCompat(array, lock, LockValue.Locked)
-			if (wait.async)
-				await wait.value
 		}
 	}
 }

@@ -1,6 +1,4 @@
 import { FrontendVariable, PressedKey } from './util/frontend-variables'
-import { Lock } from './util/mutex'
-import { globalMutex } from './worker/worker-global-state'
 
 const defaultKeyMapping: { [key: string]: PressedKey } = {
 	'KeyW': PressedKey.Forward,
@@ -41,10 +39,7 @@ class KeyboardController {
 		for (const code in keys)
 			keys[code] = false
 		this.pressedCount = 0
-		// noinspection JSIgnoredPromiseFromCall
-		globalMutex.executeWithAcquiredAsync(Lock.FrontedVariables, () => {
-			this.frontedVariables[FrontendVariable.PressedKeys] = PressedKey.None
-		})
+		Atomics.store(this.frontedVariables, FrontendVariable.PressedKeys, PressedKey.None)
 	}
 
 	public isAnyPressed(): boolean {
@@ -68,13 +63,10 @@ class KeyboardController {
 
 		if (mapped === PressedKey.None) return
 
-		// noinspection JSIgnoredPromiseFromCall
-		globalMutex.executeWithAcquiredAsync(Lock.FrontedVariables, () => {
-			if (pressed)
-				this.frontedVariables[FrontendVariable.PressedKeys] |= mapped
-			else
-				this.frontedVariables[FrontendVariable.PressedKeys] &= ~mapped
-		})
+		if (pressed)
+			Atomics.or(this.frontedVariables, FrontendVariable.PressedKeys, mapped)
+		else
+			Atomics.and(this.frontedVariables, FrontendVariable.PressedKeys, ~mapped)
 	}
 }
 

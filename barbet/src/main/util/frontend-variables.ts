@@ -1,6 +1,4 @@
 import KeyboardController from '../keyboard-controller'
-import { globalMutex } from '../worker/worker-global-state'
-import { Lock } from './mutex'
 
 export const enum PressedKey {
 	None = 0,
@@ -46,14 +44,11 @@ export const initFrontendVariableAndRegisterToWindow = () => {
 
 	KeyboardController.createNewAndRegisterToWindow(frontedVariables)
 	const updateWindowFocus = () => {
-		// noinspection JSIgnoredPromiseFromCall
-		globalMutex.executeWithAcquiredAsync(Lock.FrontedVariables, () => {
-			const hasFocus = document.hasFocus()
-			if (hasFocus)
-				frontedVariables[FrontendVariable.AdditionalFlags] |= AdditionalFrontedFlags.WindowHasFocus
-			else
-				frontedVariables[FrontendVariable.AdditionalFlags] &= ~AdditionalFrontedFlags.WindowHasFocus
-		})
+		const hasFocus = document.hasFocus()
+		if (hasFocus)
+			Atomics.or(frontedVariables, FrontendVariable.AdditionalFlags, AdditionalFrontedFlags.WindowHasFocus)
+		else
+			Atomics.and(frontedVariables, FrontendVariable.AdditionalFlags, ~AdditionalFrontedFlags.WindowHasFocus)
 	}
 	window.addEventListener('blur', updateWindowFocus)
 	window.addEventListener('focus', updateWindowFocus)
@@ -80,14 +75,10 @@ function observeCanvasSizes(canvas: HTMLCanvasElement) {
 		lastSizes.pixelRatio = pixelRatio
 		lastSizes.lastResizeTime = performance.now()
 
-		// noinspection JSIgnoredPromiseFromCall
-		globalMutex.executeWithAcquiredAsync(Lock.FrontedVariables, () => {
-			frontedVariables[FrontendVariable.CanvasDrawingWidth] = width * pixelRatio | 0
-			frontedVariables[FrontendVariable.CanvasDrawingHeight] = height * pixelRatio | 0
-
-			if (frameId !== -1)
-				frameId = requestAnimationFrame(checkSizesCallback)
-		})
+		Atomics.store(frontedVariables, FrontendVariable.CanvasDrawingWidth, width * pixelRatio | 0)
+		Atomics.store(frontedVariables, FrontendVariable.CanvasDrawingHeight, height * pixelRatio | 0)
+		if (frameId !== -1)
+			frameId = requestAnimationFrame(checkSizesCallback)
 	}
 	checkSizesCallback()
 	const resizeCallback = () => {
@@ -109,27 +100,25 @@ function observeCanvasSizes(canvas: HTMLCanvasElement) {
 export const bindFrontendVariablesToCanvas = (canvas: HTMLCanvasElement) => {
 	const unobserve = observeCanvasSizes(canvas)
 
-	const defaultMouseListener = async (event: MouseEvent) => {
+	const defaultMouseListener = (event: MouseEvent) => {
 		event.preventDefault()
-		await globalMutex.executeWithAcquiredAsync(Lock.FrontedVariables, () => {
-			const isNowDown = event.type !== 'mouseup'
-			const buttonAsFlag = event.button === 0 ? AdditionalFrontedFlags.LeftMouseButtonPressed : AdditionalFrontedFlags.RightMouseButtonPressed
+		const isNowDown = event.type !== 'mouseup'
+		const buttonAsFlag = event.button === 0 ? AdditionalFrontedFlags.LeftMouseButtonPressed : AdditionalFrontedFlags.RightMouseButtonPressed
 
-			if (isNowDown)
-				frontedVariables[FrontendVariable.AdditionalFlags] |= buttonAsFlag
-			else {
-				const newFlags = (frontedVariables[FrontendVariable.AdditionalFlags]! & ~AdditionalFrontedFlags.LastMouseButtonUnpressedWasRight)
-				frontedVariables[FrontendVariable.AdditionalFlags] = newFlags & ~buttonAsFlag | (buttonAsFlag === AdditionalFrontedFlags.RightMouseButtonPressed ? AdditionalFrontedFlags.LastMouseButtonUnpressedWasRight : 0)
-				frontedVariables[FrontendVariable.LastMouseClickId]++
-			}
+		if (isNowDown)
+			frontedVariables[FrontendVariable.AdditionalFlags] |= buttonAsFlag
+		else {
+			const newFlags = (Atomics.load(frontedVariables, FrontendVariable.AdditionalFlags) & ~AdditionalFrontedFlags.LastMouseButtonUnpressedWasRight)
+			Atomics.store(frontedVariables, FrontendVariable.AdditionalFlags, newFlags & ~buttonAsFlag | (buttonAsFlag === AdditionalFrontedFlags.RightMouseButtonPressed ? AdditionalFrontedFlags.LastMouseButtonUnpressedWasRight : 0))
+			Atomics.add(frontedVariables, FrontendVariable.LastMouseClickId, 1)
+		}
 
-			frontedVariables[FrontendVariable.MouseCursorPositionX] = event.offsetX
-			frontedVariables[FrontendVariable.MouseCursorPositionY] = event.offsetY
-		})
+		Atomics.store(frontedVariables, FrontendVariable.MouseCursorPositionX, event.offsetX)
+		Atomics.store(frontedVariables, FrontendVariable.MouseCursorPositionY, event.offsetY)
 	}
-	const leaveListener = () => globalMutex.executeWithAcquiredAsync(Lock.FrontedVariables, () => {
-		frontedVariables[FrontendVariable.AdditionalFlags] &= ~(AdditionalFrontedFlags.RightMouseButtonPressed | AdditionalFrontedFlags.LeftMouseButtonPressed)
-	})
+	const leaveListener = () => {
+		Atomics.and(frontedVariables, FrontendVariable.AdditionalFlags, ~(AdditionalFrontedFlags.RightMouseButtonPressed | AdditionalFrontedFlags.LeftMouseButtonPressed))
+	}
 
 	canvas.addEventListener('mousedown', defaultMouseListener)
 	canvas.addEventListener('mouseup', defaultMouseListener)
