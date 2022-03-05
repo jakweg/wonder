@@ -51,29 +51,54 @@ export const enum LockValue {
 	Locked,
 }
 
-class Mutex {
+interface Mutex {
+	pass(): unknown
+
+	enter(lock: Lock, timeout?: number): boolean
+
+	unlock(lock: Lock): void
+
+	enterAsync(lock: Lock, timeout?: number): Promise<boolean>
+}
+
+export const createNewMutex = (): Mutex => {
+	if (sharedMemoryIsAvailable)
+		return new MutexImpl(createNewBuffer(Lock.SIZE * Int32Array.BYTES_PER_ELEMENT))
+	else {
+		// return some dummy mutex interface, shared memory is not available anyway
+		return {
+			unlock() {
+			},
+			enterAsync(): Promise<boolean> {
+				return Promise.resolve(true)
+			},
+			enter(): boolean {
+				return true
+			},
+			pass(): unknown {
+				return {}
+			},
+		}
+	}
+}
+
+export const createMutexFromReceived = (object: any): Mutex => {
+	if (typeof object !== 'object' || object['type'] !== 'mutex')
+		throw new Error(`Received invalid mutex`)
+
+	const buffer = object['buffer'] as SharedArrayBuffer
+	if (buffer?.byteLength !== Lock.SIZE * Int32Array.BYTES_PER_ELEMENT)
+		throw new Error(`Received invalid mutex`)
+
+	return new MutexImpl(buffer)
+}
+
+class MutexImpl implements Mutex {
 	private readonly intArray = new Int32Array(this.buffer)
 
-	private constructor(
+	constructor(
 		private readonly buffer: SharedArrayBuffer,
 	) {
-	}
-
-	public static createNew() {
-		return new Mutex(
-			createNewBuffer(Lock.SIZE * Int32Array.BYTES_PER_ELEMENT),
-		)
-	}
-
-	public static fromReceived(object: any) {
-		if (typeof object !== 'object' || object['type'] !== 'mutex')
-			throw new Error(`Received invalid mutex`)
-
-		const buffer = object['buffer'] as SharedArrayBuffer
-		if (buffer?.byteLength !== Lock.SIZE * Int32Array.BYTES_PER_ELEMENT)
-			throw new Error(`Received invalid mutex`)
-
-		return new Mutex(buffer)
 	}
 
 	public pass(): unknown {

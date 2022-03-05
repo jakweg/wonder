@@ -1,4 +1,4 @@
-import Mutex, { isInWorker, Lock } from '../../util/mutex'
+import Mutex, { createMutexFromReceived, isInWorker, Lock } from '../../util/mutex'
 import { ActivityId, requireActivity } from '../renderable/unit/activity'
 import { World } from '../world/world'
 import EntityContainer from './entities/entity-container'
@@ -41,7 +41,7 @@ export class GameState {
 			GroundItemsIndex.fromReceived(object['groundItems']),
 			EntityContainer.fromReceived(object['entities']),
 			null as unknown as PathFinder,
-			Mutex.fromReceived(object['mutex']))
+			createMutexFromReceived(object['mutex']))
 	}
 
 	public passForRenderer(): unknown {
