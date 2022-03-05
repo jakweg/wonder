@@ -47,6 +47,10 @@ export const connect = (): EnvironmentConnection => {
 			renderWorker.replier.send('frontend-variables', {buffer: frontedVariablesBuffer})
 			renderWorker.replier.send('transfer-canvas', {canvas: canvasControl}, [canvasControl])
 			renderWorker.replier.send('game-snapshot-for-renderer', gameSnapshotForRenderer)
+			renderWorker.replier.send('set-worker-load-delays', {
+				render: renderWorker.workerStartDelay,
+				update: updateWorker!.workerStartDelay,
+			})
 		},
 	}
 }
