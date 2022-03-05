@@ -1,3 +1,5 @@
+import { createNewBuffer, sharedMemoryIsAvailable } from './shared-memory'
+
 type WaitAsyncResult = {
 	async: boolean
 	value: Promise<'ok' | 'not-equal' | 'timed-out'>
@@ -10,7 +12,7 @@ interface Additional extends Atomics {
 declare var Atomics: Additional
 
 export const isInWorker = !location.reload
-const useNativeWaitAsync: boolean = !!Atomics.waitAsync
+const useNativeWaitAsync: boolean = !!Atomics.waitAsync && sharedMemoryIsAvailable
 
 export const waitAsyncCompat = useNativeWaitAsync ?
 	Atomics.waitAsync : ((typedArray: Int32Array, index: number, value: number, timeout?: number): WaitAsyncResult => {
@@ -59,7 +61,7 @@ class Mutex {
 
 	public static createNew() {
 		return new Mutex(
-			new SharedArrayBuffer(Lock.SIZE * Int32Array.BYTES_PER_ELEMENT),
+			createNewBuffer(Lock.SIZE * Int32Array.BYTES_PER_ELEMENT),
 		)
 	}
 

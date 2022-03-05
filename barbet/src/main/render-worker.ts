@@ -48,7 +48,5 @@ const considerStartRendering = () => {
 		decodedUpdater = stateUpdaterFromReceived(globalMutex, snapshot['updater'])
 
 		startRenderingGame(canvas, decodedGame, decodedUpdater)
-		// noinspection JSIgnoredPromiseFromCall
-		decodedUpdater?.start(20)
 	}
 }

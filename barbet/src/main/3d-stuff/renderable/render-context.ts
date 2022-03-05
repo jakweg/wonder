@@ -82,7 +82,5 @@ export const startRenderingGame = (canvas: HTMLCanvasElement, game: GameState, u
 	const handleInputEvents = createInputReactor(game)
 
 	setupSceneRendering(canvas, game, gameTickEstimation, gameTickRate, handleInputEvents)
-	// noinspection JSIgnoredPromiseFromCall
-	updater.start(20)
 }
 

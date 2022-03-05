@@ -1,3 +1,4 @@
+import { createNewBuffer } from '../../util/shared-memory'
 import { ItemType } from '../world/item'
 import { WorldSize } from '../world/world'
 
@@ -15,7 +16,7 @@ export class GroundItemsIndex {
 
 	public static createNew(size: WorldSize) {
 		const {sizeX, sizeZ} = size
-		const buffer = new SharedArrayBuffer((sizeX * sizeZ + 1) * Uint8Array.BYTES_PER_ELEMENT)
+		const buffer = createNewBuffer((sizeX * sizeZ + 1) * Uint8Array.BYTES_PER_ELEMENT)
 
 		const itemIds = new Uint8Array(buffer)
 		return new GroundItemsIndex(itemIds, buffer, sizeX, sizeZ)

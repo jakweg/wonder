@@ -1,4 +1,5 @@
 import Mutex, { waitAsyncCompat } from '../../util/mutex'
+import { createNewBuffer } from '../../util/shared-memory'
 import { GameState } from './game-state'
 
 export const STANDARD_GAME_TICK_RATE = 20
@@ -81,7 +82,7 @@ export const createNewStateUpdater = (mutex: Mutex,
 	let maxTicksToPerformAtOnce = 20
 	let ticksPerSecond = 0
 
-	const buffer = new SharedArrayBuffer(MemoryField.SIZE * Int32Array.BYTES_PER_ELEMENT)
+	const buffer = createNewBuffer(MemoryField.SIZE * Int32Array.BYTES_PER_ELEMENT)
 	const memory = new Int32Array(buffer)
 	memory[MemoryField.Status] = Status.Stopped
 

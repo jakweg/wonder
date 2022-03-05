@@ -1,3 +1,4 @@
+import { createNewBuffer } from '../../util/shared-memory'
 import { AIR_ID, BlockId } from './block'
 
 export const WORLD_CHUNK_SIZE = 32
@@ -38,9 +39,9 @@ export class World {
 
 		const size = {sizeX, sizeY, sizeZ, totalBlocks, blocksPerY, chunksSizeX, chunksSizeZ}
 		const buffers = [
-			new SharedArrayBuffer(totalBlocks * Uint8Array.BYTES_PER_ELEMENT),
-			new SharedArrayBuffer(blocksPerY * Uint8ClampedArray.BYTES_PER_ELEMENT),
-			new SharedArrayBuffer(chunksSizeX * chunksSizeZ * Uint16Array.BYTES_PER_ELEMENT),
+			createNewBuffer(totalBlocks * Uint8Array.BYTES_PER_ELEMENT),
+			createNewBuffer(blocksPerY * Uint8ClampedArray.BYTES_PER_ELEMENT),
+			createNewBuffer(chunksSizeX * chunksSizeZ * Uint16Array.BYTES_PER_ELEMENT),
 		]
 
 

@@ -1,14 +1,16 @@
 import { GameState } from './3d-stuff/game-state/game-state'
-import { StateUpdater, stateUpdaterFromReceived } from './3d-stuff/game-state/state-updater'
+import { createNewStateUpdater, StateUpdater, stateUpdaterFromReceived } from './3d-stuff/game-state/state-updater'
 import { startRenderingGame } from './3d-stuff/renderable/render-context'
 import {
 	bindFrontendVariablesToCanvas,
 	frontedVariablesBuffer,
 	initFrontendVariableAndRegisterToWindow,
 } from './util/frontend-variables'
+import { sharedMemoryIsAvailable } from './util/shared-memory'
+import { createEmptyGame } from './worker/example-state-creator'
 import { setMessageHandler } from './worker/message-handler'
 import { WorkerController } from './worker/worker-controller'
-import { globalMutex, globalWorkerDelay } from './worker/worker-global-state'
+import { globalMutex, globalWorkerDelay, setGlobalGameState, setGlobalStateUpdater } from './worker/worker-global-state'
 
 initFrontendVariableAndRegisterToWindow()
 
@@ -35,8 +37,9 @@ async function startDoubleWorkerGame() {
 
 	setMessageHandler('game-snapshot-for-renderer', (data) => {
 		updater = stateUpdaterFromReceived(globalMutex, data.updater)
-		updater.changeTickRate(speedToSet)
 		renderWorker.replier.send('game-snapshot-for-renderer', data)
+		updater.changeTickRate(speedToSet)
+		updater.start(speedToSet)
 	})
 
 	renderWorker.replier.send('set-worker-load-delays', {
@@ -66,12 +69,29 @@ async function startSingleWorkerGame() {
 	})
 }
 
+function startZeroWorkerGame() {
+	const game = createEmptyGame()
+	setGlobalGameState(game)
+
+	const updater = createNewStateUpdater(globalMutex, game)
+	setGlobalStateUpdater(updater)
+
+	const remoteUpdater = stateUpdaterFromReceived(globalMutex, updater.pass())
+	startRenderingGame(canvas, game, remoteUpdater)
+	remoteUpdater.start(speedToSet)
+}
+
 (async () => {
-	const offscreenCanvasIsAvailable = !!((window as any).OffscreenCanvas)
-	if (offscreenCanvasIsAvailable)
-		await startDoubleWorkerGame()
-	else
-		await startSingleWorkerGame()
+	if (sharedMemoryIsAvailable) {
+		const offscreenCanvasIsAvailable = !!((window as any).OffscreenCanvas)
+		if (offscreenCanvasIsAvailable)
+			await startDoubleWorkerGame()
+		else {
+			console.warn('Offscreen rendering is not available')
+			await startSingleWorkerGame()
+		}
+	} else {
+		console.warn('Shared memory is not available')
+		startZeroWorkerGame()
+	}
 })()
-
-

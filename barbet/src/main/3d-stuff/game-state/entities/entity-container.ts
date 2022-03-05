@@ -1,3 +1,4 @@
+import { createNewBuffer } from '../../../util/shared-memory'
 import { ArrayAllocator, DataStore } from './data-store'
 import {
 	createEmptyTraitRecord,
@@ -33,7 +34,7 @@ const createInt32Allocator = (buffers: SharedArrayBuffer[],
 			buffer = this.buffers[this.buffers.length - this.reuseCounter]!
 			this.reuseCounter--
 		} else {
-			buffer = new SharedArrayBuffer(initialCapacity * Int32Array.BYTES_PER_ELEMENT)
+			buffer = createNewBuffer(initialCapacity * Int32Array.BYTES_PER_ELEMENT)
 			this.buffers.push(buffer)
 		}
 		return new Int32Array(buffer)
@@ -41,7 +42,7 @@ const createInt32Allocator = (buffers: SharedArrayBuffer[],
 	resize(oldArray: Int32Array, resizeTo: number): Int32Array {
 		const oldBuffer = oldArray.buffer
 
-		const newBuffer = new SharedArrayBuffer(resizeTo * Int32Array.BYTES_PER_ELEMENT)
+		const newBuffer = createNewBuffer(resizeTo * Int32Array.BYTES_PER_ELEMENT)
 		const newArray = new Int32Array(newBuffer)
 		const buffers = this.buffers
 		for (let i = 0, l = buffers.length; i < l; i++) {

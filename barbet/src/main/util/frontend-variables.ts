@@ -1,4 +1,5 @@
 import KeyboardController from '../keyboard-controller'
+import { createNewBuffer } from './shared-memory'
 
 export const enum PressedKey {
 	None = 0,
@@ -29,7 +30,7 @@ export const enum FrontendVariable {
 }
 
 
-export let frontedVariablesBuffer: SharedArrayBuffer = new SharedArrayBuffer(0)
+export let frontedVariablesBuffer: SharedArrayBuffer = createNewBuffer(0)
 export let frontedVariables = new Int16Array(0)
 
 export const initFrontedVariablesFromReceived = (buffer: SharedArrayBuffer) => {
@@ -38,7 +39,7 @@ export const initFrontedVariablesFromReceived = (buffer: SharedArrayBuffer) => {
 }
 
 export const initFrontendVariableAndRegisterToWindow = () => {
-	frontedVariablesBuffer = new SharedArrayBuffer(FrontendVariable.SIZE * Int16Array.BYTES_PER_ELEMENT)
+	frontedVariablesBuffer = createNewBuffer(FrontendVariable.SIZE * Int16Array.BYTES_PER_ELEMENT)
 	initFrontedVariablesFromReceived(frontedVariablesBuffer)
 
 
