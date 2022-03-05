@@ -64,7 +64,6 @@ async function startSingleWorkerGame() {
 		updater.changeTickRate(speedToSet)
 
 		startRenderingGame(canvas, decodedGame, updater)
-		// noinspection JSIgnoredPromiseFromCall
 		updater.start(speedToSet)
 	})
 }
@@ -73,12 +72,12 @@ function startZeroWorkerGame() {
 	const game = createEmptyGame()
 	setGlobalGameState(game)
 
-	const updater = createNewStateUpdater(globalMutex, game)
-	setGlobalStateUpdater(updater)
+	const updaterInstance = createNewStateUpdater(globalMutex, game)
+	setGlobalStateUpdater(updaterInstance)
 
-	const remoteUpdater = stateUpdaterFromReceived(globalMutex, updater.pass())
-	startRenderingGame(canvas, game, remoteUpdater)
-	remoteUpdater.start(speedToSet)
+	updater = stateUpdaterFromReceived(globalMutex, updaterInstance.pass())
+	startRenderingGame(canvas, game, updater)
+	updater.start(speedToSet)
 }
 
 (async () => {
