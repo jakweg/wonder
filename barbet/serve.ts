@@ -17,7 +17,17 @@ const handler = async (request: Request): Promise<Response> => {
 		if (pathname === '/')
 			pathname = 'index.html'
 
-		const file = Deno.readFile(cwd + pathname)
+		const fullPath = cwd + pathname
+		const mtime = (await Deno.stat(fullPath)).mtime as Date
+		const ifModifiedSince = new Date(request.headers.get('If-Modified-Since') ?? '').getTime()
+		if (!isNaN(ifModifiedSince)) {
+			// add 1000, because gmt format doesn't account for milliseconds but stat syscall does
+			if (mtime.getTime() <= ifModifiedSince + 1000) {
+				return new Response(null, {status: 304})
+			}
+		}
+
+		const file = Deno.readFile(fullPath)
 		let contentType = undefined
 		const dotPosition = pathname.lastIndexOf('.')
 		if (dotPosition >= 0) {
@@ -32,6 +42,7 @@ const handler = async (request: Request): Promise<Response> => {
 				'Cross-Origin-Embedder-Policy': 'require-corp',
 				'Content-Security-Policy': `upgrade-insecure-requests; default-src 'self';`,
 				'Cache-Control': 'max-age=10',
+				'Last-Modified': mtime.toUTCString(),
 			},
 		})
 	} catch (e) {
