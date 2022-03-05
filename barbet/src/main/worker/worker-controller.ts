@@ -16,7 +16,7 @@ export class WorkerController {
 		await mutex.enterAsync(Lock.Update)
 		const scriptURL = `${JS_ROOT}/${scriptName}.js`
 
-		const worker = new Worker(scriptURL, {name})
+		const worker = new Worker(scriptURL, {name, type: 'module'})
 
 		const replier = {
 			send<T extends MessageType>(type: T, extra: Message[T], transferable?: Transferable[]) {

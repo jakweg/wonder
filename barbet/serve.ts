@@ -30,7 +30,8 @@ const handler = async (request: Request): Promise<Response> => {
 				'Content-Type': contentType ?? 'application/octet-stream',
 				'Cross-Origin-Opener-Policy': 'same-origin',
 				'Cross-Origin-Embedder-Policy': 'require-corp',
-				'Content-Security-Policy': `default-src 'self'`,
+				'Content-Security-Policy': `upgrade-insecure-requests; default-src 'self';`,
+				'Cache-Control': 'max-age=10',
 			},
 		})
 	} catch (e) {
