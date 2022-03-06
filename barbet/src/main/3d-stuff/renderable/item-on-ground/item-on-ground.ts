@@ -42,8 +42,6 @@ const createNewItemOnGroundRenderable = (renderer: MainRenderer,
 				for (let x = 0, w = game.groundItems.sizeX; x < w; x++) {
 					const type = game.groundItems.rawItemData[fieldIndex++]! as ItemType
 					if (type === ItemType.None) continue
-					if (type !== ItemType.Box)
-						throw new Error('Invalid item type ' + type)
 
 					const item = requireItem(type)
 

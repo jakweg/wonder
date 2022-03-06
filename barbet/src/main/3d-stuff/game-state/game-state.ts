@@ -6,6 +6,7 @@ import { iterateOverEntitiesWithActivity } from './entities/queries'
 import { DataOffsetWithActivity } from './entities/traits'
 import { GroundItemsIndex } from './ground-items-index'
 import { PathFinder } from './path-finder'
+import { SurfaceResourcesIndex } from './surface-resources-index'
 
 
 export class GameState {
@@ -15,6 +16,7 @@ export class GameState {
 	                    public readonly groundItems: GroundItemsIndex,
 	                    public readonly entities: EntityContainer,
 	                    public readonly pathFinder: PathFinder,
+	                    public readonly surfaceResources: SurfaceResourcesIndex,
 	                    private readonly mutex: Mutex) {
 	}
 
@@ -29,8 +31,9 @@ export class GameState {
 		groundItems: GroundItemsIndex,
 		entities: EntityContainer,
 		pathFinder: PathFinder,
+		surfaceResources: SurfaceResourcesIndex,
 		mutex: Mutex): GameState {
-		return new GameState(world, groundItems, entities, pathFinder, mutex)
+		return new GameState(world, groundItems, entities, pathFinder, surfaceResources, mutex)
 	}
 
 	public static forRenderer(object: any): GameState {
@@ -41,6 +44,7 @@ export class GameState {
 			GroundItemsIndex.fromReceived(object['groundItems']),
 			EntityContainer.fromReceived(object['entities']),
 			null as unknown as PathFinder,
+			SurfaceResourcesIndex.fromReceived(object['surfaceResources']),
 			createMutexFromReceived(object['mutex']))
 	}
 
@@ -51,6 +55,7 @@ export class GameState {
 			world: this.world.pass(),
 			groundItems: this.groundItems.pass(),
 			entities: this.entities.pass(),
+			surfaceResources: this.surfaceResources.pass(),
 		}
 	}
 

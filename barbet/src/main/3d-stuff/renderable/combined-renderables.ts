@@ -4,6 +4,7 @@ import { createPicker } from '../mouse-picker'
 import createHeldItemRenderable from './held-item/held-item'
 import createNewItemOnGroundRenderable from './item-on-ground/item-on-ground'
 import { RenderContext } from './render-context'
+import { createNewSurfaceResourcesRenderable } from './surface-resources/resource'
 import { createNewTerrainRenderable } from './terrain/terrain'
 import { createNewUnitRenderable } from './unit/unit'
 
@@ -12,6 +13,7 @@ export const createCombinedRenderable = (renderer: MainRenderer, state: GameStat
 	const terrain = createNewTerrainRenderable(renderer, state.world)
 	const groundItems = createNewItemOnGroundRenderable(renderer, state)
 	const heldItems = createHeldItemRenderable(renderer, state)
+	const resources = createNewSurfaceResourcesRenderable(renderer, state)
 	const mousePicker = createPicker(renderer.rawContext, [terrain.renderForMousePicker, units.renderForMousePicker])
 
 	return {
@@ -21,6 +23,7 @@ export const createCombinedRenderable = (renderer: MainRenderer, state: GameStat
 			units.render(ctx)
 			groundItems.render(ctx)
 			heldItems.render(ctx)
+			resources.render(ctx)
 		},
 	}
 }

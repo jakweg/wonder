@@ -5,7 +5,10 @@ import { DataOffsetPositions, EntityTrait } from '../3d-stuff/game-state/entitie
 import { GameState } from '../3d-stuff/game-state/game-state'
 import { GroundItemsIndex } from '../3d-stuff/game-state/ground-items-index'
 import { PathFinder } from '../3d-stuff/game-state/path-finder'
+import { SurfaceResourcesIndex } from '../3d-stuff/game-state/surface-resources-index'
 import { BlockId } from '../3d-stuff/world/block'
+import { ItemType } from '../3d-stuff/world/item'
+import { SurfaceResourceType } from '../3d-stuff/world/surface-resource'
 import { World } from '../3d-stuff/world/world'
 import { globalMutex } from './worker-global-state'
 
@@ -29,12 +32,14 @@ export const createEmptyGame = () => {
 	world.recalculateHeightIndex()
 
 	const itemsOnGround = GroundItemsIndex.createNew(world.size)
-	itemsOnGround.setItem(5, 9, 1)
-	itemsOnGround.setItem(6, 9, 1)
+	itemsOnGround.setItem(5, 9, ItemType.Box)
+	itemsOnGround.setItem(6, 9, ItemType.Box)
 	const entityContainer = EntityContainer.createEmptyContainer()
 	const mutex = globalMutex
 	const pathFinder = PathFinder.createNewQueue(world)
-	const gameState = GameState.createNew(world, itemsOnGround, entityContainer, pathFinder, mutex)
+	const resources = SurfaceResourcesIndex.createNew(world.size)
+	resources.setResource(11, 5, SurfaceResourceType.Stone)
+	const gameState = GameState.createNew(world, itemsOnGround, entityContainer, pathFinder, resources, mutex)
 
 	{
 		const unitTraits = EntityTrait.Position | EntityTrait.Drawable | EntityTrait.ItemHoldable | EntityTrait.WithActivity | EntityTrait.Interruptible
