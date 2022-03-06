@@ -62,7 +62,7 @@ const createInputReactor = (game: GameState) => {
 		else
 			await globalMutex.enterAsync(Lock.Update)
 
-		const pickResult = ctx.mousePicker.pick(ctx, mousePositionX / renderer.width, (renderer.height - mousePositionY) / renderer.height)
+		const pickResult = ctx.mousePicker.pick(ctx, mousePositionX, renderer.height - mousePositionY)
 		if (pickResult !== null && pickResult.pickedType !== MousePickableType.Nothing) {
 			const entityContainer = game.entities
 			const result = pickResult

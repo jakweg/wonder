@@ -114,8 +114,8 @@ export const bindFrontendVariablesToCanvas = (canvas: HTMLCanvasElement) => {
 			Atomics.add(frontedVariables, FrontendVariable.LastMouseClickId, 1)
 		}
 
-		Atomics.store(frontedVariables, FrontendVariable.MouseCursorPositionX, event.offsetX)
-		Atomics.store(frontedVariables, FrontendVariable.MouseCursorPositionY, event.offsetY)
+		Atomics.store(frontedVariables, FrontendVariable.MouseCursorPositionX, event.offsetX * window.devicePixelRatio)
+		Atomics.store(frontedVariables, FrontendVariable.MouseCursorPositionY, event.offsetY * window.devicePixelRatio)
 	}
 	const leaveListener = () => {
 		Atomics.and(frontedVariables, FrontendVariable.AdditionalFlags, ~(AdditionalFrontedFlags.RightMouseButtonPressed | AdditionalFrontedFlags.LeftMouseButtonPressed))
