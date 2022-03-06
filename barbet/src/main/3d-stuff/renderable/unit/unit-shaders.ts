@@ -1,6 +1,7 @@
 import { Direction } from '../../../util/direction'
 import { idleVertexTransformationsSource } from '../../game-state/activities/idle'
 import { itemPickUpTransformationsSource } from '../../game-state/activities/item-pickup'
+import { miningResourceTransformationsSource } from '../../game-state/activities/mining-resource'
 import { walkingVertexTransformationsSource } from '../../game-state/activities/walking'
 import { MousePickableType } from '../../mouse-picker'
 import {
@@ -181,6 +182,7 @@ export const enum ShaderId {
 	Idle,
 	Walking,
 	PickUpItem,
+	MiningResource,
 }
 
 export interface UnitShaderCreationOptions {
@@ -193,4 +195,5 @@ export const shaderTransformationSources = (): readonly ((options: UnitShaderCre
 	idleVertexTransformationsSource,
 	walkingVertexTransformationsSource,
 	itemPickUpTransformationsSource,
+	miningResourceTransformationsSource,
 ]

@@ -11,7 +11,14 @@ export const RotationVectorsDeclaration = () => `const vec3 rotationVectors[8] =
 
 export const WalkingDurationsByRotation = () => `const float walkingDurations[8] = float[8](${walkingDurationByDirection.map(e => e.toFixed(8)).join(',')});`
 
+/** @deprecated use RotationYMatrix */
 export const RotationMatrix = (angleVariableName: string) => `mat4(cos(${angleVariableName}), 0, -sin(${angleVariableName}), 0, 0, 1, 0, 0, sin(${angleVariableName}), 0, cos(${angleVariableName}), 0, 0, 0, 0, 1)`
+
+export const RotationYMatrix = (angleVariableName: string) => `mat4(cos(${angleVariableName}), 0, -sin(${angleVariableName}), 0, 0, 1, 0, 0, sin(${angleVariableName}), 0, cos(${angleVariableName}), 0, 0, 0, 0, 1)`
+
+export const RotationXMatrix = (angleVariableName: string) => `mat4(1, 0, 0, 0, 0, cos(${angleVariableName}), sin(${angleVariableName}), 0, 0, -sin(${angleVariableName}), cos(${angleVariableName}), 0, 0, 0, 0, 1)`
+
+export const RotationZMatrix = (angleVariableName: string) => `mat4(cos(${angleVariableName}), sin(${angleVariableName}), 0, 0, -sin(${angleVariableName}), cos(${angleVariableName}), 0, 0, 0, 0, 1, 0, 0, 0, 0, 1)`
 
 export const createProgramFromNewShaders = <A, U>(renderer: MainRenderer,
                                                   vertexSource: string,

@@ -23,8 +23,8 @@ if (isMainBodyVertex && isTopVertex) {
 	pos.y -= usedSin * pos.x * 0.2;
 }
 if (isFaceVertex) {
-	pos.x += usedSin * (pos.y + 1.1) * 0.35;
-	pos.y -= usedSin * pos.y * 0.45;
+	pos.x += usedSin * (pos.y + 1.1) * 0.36;
+	pos.y -= usedSin * pos.y * 0.35;
 }
 if (isMainBodyVertex && isMiddleVertex) {
 	pos.x += usedSin * (pos.y + 0.01) * 1.6;

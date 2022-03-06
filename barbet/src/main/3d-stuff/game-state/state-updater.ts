@@ -127,7 +127,7 @@ export const createNewStateUpdater = (mutex: Mutex,
 		Atomics.store(memory, MemoryField.ExpectedDelayBetweenTicks, expectedDelayBetweenTicks * 1_000_000)
 
 		requestStartTime = performance.now() - executedTicksCounter * expectedDelayBetweenTicks
-		memory[MemoryField.LastTickFinishTime] = (requestStartTime + executedTicksCounter * expectedDelayBetweenTicks) * 10
+		memory[MemoryField.LastTickFinishTime] = (requestStartTime + executedTicksCounter * expectedDelayBetweenTicks) * 100
 		memory[MemoryField.Status] = Status.Running
 		intervalId = setInterval(handleTimer, expectedDelayBetweenTicks)
 	}
