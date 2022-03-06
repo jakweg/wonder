@@ -15,7 +15,10 @@ if (args.size > 0) {
 	console.log('Received unknown options: ', args)
 } else {
 	const jsOutRoot = 'build-js'
-	await Deno.remove(jsOutRoot, {recursive: true})
+	try {
+		await Deno.remove(jsOutRoot, {recursive: true})
+	} catch (_) { // ignore, probably missing folder
+	}
 
 	const config = {
 		define: {
