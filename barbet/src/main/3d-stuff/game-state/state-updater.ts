@@ -92,7 +92,7 @@ export const createNewStateUpdater = (mutex: Mutex,
 			while (true) {
 				await waitAsyncCompat(memory, MemoryField.Status, Status.Stopped, 1.0).value
 				const oldValue = Atomics.compareExchange(memory, MemoryField.Status, Status.RequestedStart, Status.Running) as Status
-				if (oldValue === Status.Running) return
+				if (oldValue === Status.Running || oldValue === Status.RequestedTickRateChange) return
 
 				if (oldValue === Status.RequestedStart) {
 					init()
