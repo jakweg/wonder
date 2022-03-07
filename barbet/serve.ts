@@ -41,7 +41,7 @@ const handler = async (request: Request): Promise<Response> => {
 				'Cross-Origin-Opener-Policy': 'same-origin',
 				'Cross-Origin-Embedder-Policy': 'require-corp',
 				'Content-Security-Policy': `upgrade-insecure-requests; default-src 'self';`,
-				'Cache-Control': 'public;max-age=3;s-maxage=3',
+				'Cache-Control': 'public;must-revalidate;max-age=3;s-maxage=3',
 				'Last-Modified': mtime.toUTCString(),
 			},
 		})
