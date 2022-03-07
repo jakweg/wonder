@@ -5,14 +5,11 @@ export const VersionHeader = () => `#version 300 es`
 
 export const PrecisionHeader = () => `precision mediump float;`
 
-export const PIConstantHeader = () => `const float PI = 3.141592653589;`
+export const PIConstantHeader = () => `const float PI = ${Math.PI};\nconst float PI_OVER1 = ${1 / Math.PI};`
 
 export const RotationVectorsDeclaration = () => `const vec3 rotationVectors[8] = vec3[8](vec3(1.0, 0.0, 0.0), vec3(1.0, 0.0, -1.0), vec3(0.0, 0.0, -1.0), vec3(-1.0, 0.0, -1.0), vec3(-1.0, 0.0, 0.0), vec3(-1.0, 0.0, 1.0), vec3(0.0, 0.0, 1.0), vec3(1.0, 0.0, 1.0));`
 
 export const WalkingDurationsByRotation = () => `const float walkingDurations[8] = float[8](${walkingDurationByDirection.map(e => e.toFixed(8)).join(',')});`
-
-/** @deprecated use RotationYMatrix */
-export const RotationMatrix = (angleVariableName: string) => `mat4(cos(${angleVariableName}), 0, -sin(${angleVariableName}), 0, 0, 1, 0, 0, sin(${angleVariableName}), 0, cos(${angleVariableName}), 0, 0, 0, 0, 1)`
 
 export const RotationYMatrix = (angleVariableName: string) => `mat4(cos(${angleVariableName}), 0, -sin(${angleVariableName}), 0, 0, 1, 0, 0, sin(${angleVariableName}), 0, cos(${angleVariableName}), 0, 0, 0, 0, 1)`
 
@@ -42,3 +39,35 @@ void main() {
 	finalColor1 = v_color1;
 }
 `
+
+export function calculateNormals(elements: Uint16Array | Uint8Array,
+                                 vertexes: Float32Array,
+                                 vertexSize: number,
+                                 normalsOffset: number): void {
+	for (let i = 0, l = elements.length; i < l;) {
+		const a = elements[i++]!
+		const b = elements[i++]!
+		const c = elements[i++]!
+
+
+		const aIndex = a * vertexSize
+		const ax = vertexes[aIndex]!
+		const ay = vertexes[aIndex + 1]!
+		const az = vertexes[aIndex + 2]!
+
+		const bIndex = b * vertexSize
+		const bx = vertexes[bIndex]!
+		const by = vertexes[bIndex + 1]!
+		const bz = vertexes[bIndex + 2]!
+
+		const cIndex = c * vertexSize
+
+		const nx = ay * bz - az * by
+		const ny = az * bx - ax * bz
+		const nz = ax * by - ay * bx
+
+		vertexes[cIndex + normalsOffset] = nx
+		vertexes[cIndex + normalsOffset + 1] = ny
+		vertexes[cIndex + normalsOffset + 2] = nz
+	}
+}

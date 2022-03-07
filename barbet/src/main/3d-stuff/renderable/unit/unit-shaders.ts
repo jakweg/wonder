@@ -1,14 +1,14 @@
 import { Direction } from '../../../util/direction'
 import { idleVertexTransformationsSource } from '../../game-state/activities/idle'
 import { itemPickUpTransformationsSource } from '../../game-state/activities/item-pickup'
-import { miningResourceTransformationsSource } from '../../game-state/activities/mining-resource'
+import { miningResourceTransformationsSource } from '../../game-state/activities/mining-resource/additional-renderer'
 import { walkingVertexTransformationsSource } from '../../game-state/activities/walking'
 import { MousePickableType } from '../../mouse-picker'
 import {
 	PIConstantHeader,
 	PrecisionHeader,
-	RotationMatrix,
 	RotationVectorsDeclaration,
+	RotationYMatrix,
 	VersionHeader,
 	WalkingDurationsByRotation,
 } from '../../shader/common'
@@ -120,7 +120,7 @@ void main() {
 	float a = (rotationProgress > 1.0 || !mergeRotations) ? float(unitRotationAsInt) : mix(float(unitPreviousRotation + 8 * ((unitRotationAsInt - unitPreviousRotation) / 4)), float(unitRotationAsInt), rotationProgress);
 	
     a *= PI / 4.0;
-    mat4 rotation = ${RotationMatrix('a')};
+    mat4 rotation = ${RotationYMatrix('a')};
     `)
 
 	if (!forMousePicker)

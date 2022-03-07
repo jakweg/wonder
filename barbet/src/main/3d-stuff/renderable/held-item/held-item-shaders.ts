@@ -2,8 +2,8 @@ import { Direction } from '../../../util/direction'
 import {
 	PIConstantHeader,
 	PrecisionHeader,
-	RotationMatrix,
 	RotationVectorsDeclaration,
+	RotationYMatrix,
 	VersionHeader,
 	WalkingDurationsByRotation,
 } from '../../shader/common'
@@ -46,7 +46,7 @@ void main() {
 	float a = (rotationProgress > 1.0 || !mergeRotations) ? float(unitRotationAsInt) : mix(float(unitPreviousRotation + 8 * ((unitRotationAsInt - unitPreviousRotation) / 4)), float(unitRotationAsInt), rotationProgress);
 	
     a *= PI / 4.0;
-    mat4 rotation = ${RotationMatrix('a')};
+    mat4 rotation = ${RotationYMatrix('a')};
 	
 	v_color = vec3(1,0,0);
 	vec3 pos = a_modelPosition;
