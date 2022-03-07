@@ -2,6 +2,7 @@ import { Direction, getChangeInXByRotation, getChangeInZByRotation } from '../..
 import { ActivityId } from '../../renderable/unit/activity'
 import { ShaderId } from '../../renderable/unit/unit-shaders'
 import { ItemType } from '../../world/item'
+import { requireResource, SurfaceResourceType } from '../../world/surface-resource'
 import {
 	DataOffsetDrawables,
 	DataOffsetItemHoldable,
@@ -12,6 +13,7 @@ import {
 	requireTrait,
 } from '../entities/traits'
 import { GameState } from '../game-state'
+import activityIdle from './idle'
 import activityItemPickupRoot from './item-pickup-root'
 
 const pickUpItemActivityDuration = 10
@@ -43,6 +45,7 @@ if (isLeftArmVertex || isRightArmVertex) {
 const enum MemoryField {
 	ActivityFinishTick,
 	Direction,
+	GetResource,
 	SIZE,
 }
 
@@ -57,6 +60,8 @@ const activityItemPickup = {
 
 		const finishAt = memory[pointer - MemoryField.ActivityFinishTick]!
 		if (game.currentTick !== finishAt) return
+		const getResource = memory[pointer - MemoryField.GetResource]! === 1
+
 		const direction = memory[pointer - MemoryField.Direction]! as Direction
 
 		const positionsData = game.entities.positions.rawData
@@ -66,15 +71,29 @@ const activityItemPickup = {
 		const itemX = unitX + getChangeInXByRotation(direction)
 		const itemZ = unitZ + getChangeInZByRotation(direction)
 
-		game.entities.itemHoldables.rawData[unit.itemHoldable + DataOffsetItemHoldable.ItemId] = game.groundItems.getItem(itemX, itemZ)
-		game.groundItems.setItem(itemX, itemZ, ItemType.None)
 
+		let itemToPickup: ItemType = ItemType.None
+		if (getResource) {
+			const resource = game.surfaceResources.getResource(itemX, itemZ)
+			itemToPickup = requireResource(resource).gatheredItem
+			game.surfaceResources.setResource(itemX, itemZ, SurfaceResourceType.None)
+		} else {
+			itemToPickup = game.groundItems.getItem(itemX, itemZ)
+			game.groundItems.setItem(itemX, itemZ, ItemType.None)
+		}
+
+		game.entities.itemHoldables.rawData[unit.itemHoldable + DataOffsetItemHoldable.ItemId] = itemToPickup
 		const drawablesData = game.entities.drawables.rawData
 		drawablesData[unit.drawable + DataOffsetDrawables.Rotation] &= ~Direction.MaskMergePrevious
+
 		withActivitiesMemory[unit.withActivity + DataOffsetWithActivity.MemoryPointer] -= MemoryField.SIZE
-		activityItemPickupRoot.onPickedUp(game, unit)
+
+		if (getResource)
+			activityIdle.setup(game, unit)
+		else
+			activityItemPickupRoot.onPickedUp(game, unit)
 	},
-	setup(game: GameState, unit: EntityTraitIndicesRecord, direction: Direction) {
+	setup(game: GameState, unit: EntityTraitIndicesRecord, direction: Direction, getResource: boolean) {
 		requireTrait(unit.thisTraits, EntityTrait.ItemHoldable)
 
 		const now = game.currentTick
@@ -91,6 +110,7 @@ const activityItemPickup = {
 
 		memory[pointer - MemoryField.ActivityFinishTick] = now + pickUpItemActivityDuration
 		memory[pointer - MemoryField.Direction] = direction
+		memory[pointer - MemoryField.GetResource] = getResource ? 1 : 0
 	},
 }
 

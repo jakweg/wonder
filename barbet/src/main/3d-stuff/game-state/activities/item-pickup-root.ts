@@ -48,7 +48,7 @@ const activityItemPickupRoot = {
 				const rotation = (changeX !== 0 || changeZ !== 0)
 					? getRotationByChangeInCoords(changeX, changeZ)
 					: (game.entities.drawables.rawData[unit.drawable + DataOffsetDrawables.Rotation]! & Direction.MaskCurrentRotation)
-				activityItemPickup.setup(game, unit, rotation)
+				activityItemPickup.setup(game, unit, rotation, false)
 				return
 			}
 		}

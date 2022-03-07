@@ -3,7 +3,7 @@ import { ActivityId } from '../../../renderable/unit/activity'
 import { ShaderId } from '../../../renderable/unit/unit-shaders'
 import { DataOffsetDrawables, DataOffsetWithActivity, EntityTraitIndicesRecord } from '../../entities/traits'
 import { GameState } from '../../game-state'
-import activityIdle from '../idle'
+import itemPickup from '../item-pickup'
 import { additionalRenderer, singleMiningAnimationLoopDuration } from './additional-renderer'
 
 
@@ -28,7 +28,8 @@ const activityMiningResource = {
 
 		const direction = memory[pointer - MemoryField.Direction]! as Direction
 		withActivitiesMemory[unit.withActivity + DataOffsetWithActivity.MemoryPointer] -= MemoryField.SIZE
-		activityIdle.setup(game, unit)
+
+		itemPickup.setup(game, unit, direction, true)
 	},
 	setup(game: GameState, unit: EntityTraitIndicesRecord, direction: Direction) {
 		const now = game.currentTick
