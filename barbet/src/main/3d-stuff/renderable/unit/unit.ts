@@ -13,7 +13,7 @@ import { GlProgram, GPUBuffer, MainRenderer } from '../../main-renderer'
 import { pickViaMouseDefaultFragmentShader } from '../../shader/common'
 import { ItemType } from '../../world/item'
 import { RenderContext } from '../render-context'
-import { ActivityId, requireActivity } from './activity'
+import { ActivityId, getAllActivities, requireActivity } from './activity'
 import { buildUnitModel } from './unit-model'
 import {
 	Attributes,
@@ -86,12 +86,25 @@ function preparePrograms(renderer: MainRenderer, modelBuffer: GPUBuffer, modelEl
 			programs.push(program)
 		}
 	}
+
+
 	return {programs, vao}
 }
 
 export const createNewUnitRenderable = (renderer: MainRenderer,
                                         game: GameState) => {
 	const {trianglesToRender, modelBuffer, modelElementsBuffer} = createBuffersForModelMesh(renderer)
+
+
+	const additionalRenderersSetup: any[] = []
+	for (const a of getAllActivities()) {
+		const additional = a.additionalRenderer
+		if (additional === null) {
+			additionalRenderersSetup.push(null)
+			continue
+		}
+		additionalRenderersSetup.push(additional.setup(renderer, game))
+	}
 
 	const unitDataBuffer = renderer.createBuffer(true, false)
 
@@ -108,6 +121,8 @@ export const createNewUnitRenderable = (renderer: MainRenderer,
 		const drawables = container.drawables.rawData
 		const withActivities = container.withActivities.rawData
 		const itemHoldables = container.itemHoldables.rawData
+
+		const batches: any[] = new Array(forMousePicker ? 0 : additionalRenderersSetup.length)
 
 		for (const record of iterateOverDrawableEntities(container)) {
 
@@ -128,6 +143,18 @@ export const createNewUnitRenderable = (renderer: MainRenderer,
 			if (program == null)
 				throw new Error(`Invalid unit program id ${activity.shaderId}`)
 
+			if (!forMousePicker) {
+				const additionalRenderer = activity.additionalRenderer
+				if (additionalRenderer !== null) {
+					let batch = batches[activityId]
+					if (batch === undefined) {
+						batch = additionalRenderer.prepareBatch(additionalRenderersSetup[activityId], ctx)
+						batches[activityId] = batch
+					}
+					additionalRenderer.appendToBatch(additionalRenderersSetup[activityId], batch, record)
+				}
+			}
+
 			program.use()
 			const unitData = []
 
@@ -147,6 +174,13 @@ export const createNewUnitRenderable = (renderer: MainRenderer,
 
 			gl.drawElementsInstanced(gl.TRIANGLES, trianglesToRender, gl.UNSIGNED_SHORT, 0, 1)
 		}
+
+		if (!forMousePicker)
+			for (let i = 0; i < batches.length; i++) {
+				const batch = batches[i]
+				if (batch === undefined) continue
+				requireActivity(i).additionalRenderer?.executeBatch(additionalRenderersSetup[i], ctx, batch)
+			}
 	}
 
 	return {

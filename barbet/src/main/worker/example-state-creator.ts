@@ -1,4 +1,4 @@
-import activityMiningResource from '../3d-stuff/game-state/activities/mining-resource'
+import activityIdle from '../3d-stuff/game-state/activities/idle'
 import EntityContainer from '../3d-stuff/game-state/entities/entity-container'
 import { DataOffsetPositions, EntityTrait } from '../3d-stuff/game-state/entities/traits'
 import { GameState } from '../3d-stuff/game-state/game-state'
@@ -9,7 +9,6 @@ import { BlockId } from '../3d-stuff/world/block'
 import { ItemType } from '../3d-stuff/world/item'
 import { SurfaceResourceType } from '../3d-stuff/world/surface-resource'
 import { World } from '../3d-stuff/world/world'
-import { Direction } from '../util/direction'
 import { globalMutex } from './worker-global-state'
 
 export const createEmptyGame = () => {
@@ -47,7 +46,8 @@ export const createEmptyGame = () => {
 		entityContainer.positions.rawData[entity.position + DataOffsetPositions.PositionX] = 10
 		entityContainer.positions.rawData[entity.position + DataOffsetPositions.PositionY] = 2
 		entityContainer.positions.rawData[entity.position + DataOffsetPositions.PositionZ] = 5
-		activityMiningResource.setup(gameState, entity, Direction.PositiveX)
+		activityIdle.setup(gameState, entity)
+		// activityMiningResource.setup(gameState, entity, Direction.PositiveX)
 		// interruptRequestWalk(entityContainer, entity, 10, 10)
 	}
 

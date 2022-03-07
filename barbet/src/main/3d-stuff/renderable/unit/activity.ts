@@ -7,6 +7,8 @@ import activityWalking from '../../game-state/activities/walking'
 import activityWalkingByPathRoot from '../../game-state/activities/walking-by-path-root'
 import { EntityTraitIndicesRecord } from '../../game-state/entities/traits'
 import { GameState } from '../../game-state/game-state'
+import { MainRenderer } from '../../main-renderer'
+import { RenderContext } from '../render-context'
 import { ShaderId } from './unit-shaders'
 
 export enum ActivityId {
@@ -19,11 +21,23 @@ export enum ActivityId {
 	MiningResource,
 }
 
+export interface AdditionalRenderer<T = any, B = any> {
+	setup(renderer: MainRenderer, game: GameState): T
+
+	prepareBatch(setup: T, ctx: RenderContext): B
+
+	appendToBatch(setup: T, batch: B, unit: EntityTraitIndicesRecord): void
+
+	executeBatch(setup: T, ctx: RenderContext, batch: B): void
+}
+
 export interface ActivityType {
 	/** must be between 0 and 255 */
 	readonly numericId: ActivityId
 
 	readonly shaderId: ShaderId
+
+	readonly additionalRenderer: AdditionalRenderer | null
 
 	perform(game: GameState, unit: EntityTraitIndicesRecord): void
 }
@@ -33,12 +47,21 @@ let lazyInitialized = false
 const allActivities: ActivityType[] = []
 
 export const requireActivity = (id: ActivityId): ActivityType => {
+
+	const activity = getAllActivities()[id]
+	if (activity == null)
+		throw new Error(`Invalid activity id ${id}`)
+	return activity
+}
+
+export const getAllActivities = (): ActivityType[] => {
 	if (!lazyInitialized) {
 		lazyInitialized = true
 		allActivities.push(
 			{
 				numericId: ActivityId.None,
 				shaderId: ShaderId.Stationary,
+				additionalRenderer: null,
 				perform() {
 				},
 			},
@@ -51,9 +74,6 @@ export const requireActivity = (id: ActivityId): ActivityType => {
 		)
 		freezeAndValidateOptionsList(allActivities)
 	}
-	const activity = allActivities[id]
-	if (activity == null)
-		throw new Error(`Invalid activity id ${id}`)
-	return activity
+	return allActivities
 }
 

@@ -32,4 +32,5 @@ ticksInput.addEventListener('input', async (event) => {
 	const game = await env.createNewGame()
 	await env.startRender({canvas, game: game.state, updater: game.updater})
 	game.updater.start(speedToSet)
+	updater = game.updater
 })()

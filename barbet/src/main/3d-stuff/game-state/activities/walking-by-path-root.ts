@@ -33,6 +33,7 @@ const enum MemoryField {
 const activityWalkingByPathRoot = {
 	numericId: ActivityId.WalkingByPathRoot,
 	shaderId: ShaderId.Idle,
+	additionalRenderer: null,
 	perform(game: GameState, unit: EntityTraitIndicesRecord) {
 		const memory = game.entities.activitiesMemory.rawData
 		const withActivitiesMemory = game.entities.withActivities.rawData

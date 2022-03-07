@@ -23,6 +23,7 @@ const enum MemoryField {
 const activityItemPickupRoot = {
 	numericId: ActivityId.ItemPickUpRoot,
 	shaderId: ShaderId.Idle,
+	additionalRenderer: null,
 	perform(game: GameState, unit: EntityTraitIndicesRecord) {
 		const withActivitiesMemory = game.entities.withActivities.rawData
 		const memory = game.entities.activitiesMemory.rawData

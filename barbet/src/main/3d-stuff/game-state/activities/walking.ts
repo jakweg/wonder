@@ -47,6 +47,7 @@ const enum MemoryField {
 const activityWalking = {
 	numericId: ActivityId.Walking,
 	shaderId: ShaderId.Walking,
+	additionalRenderer: null,
 	perform(game: GameState, unit: EntityTraitIndicesRecord) {
 		const now = game.currentTick
 		const withActivitiesMemory = game.entities.withActivities.rawData
