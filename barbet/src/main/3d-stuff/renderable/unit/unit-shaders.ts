@@ -14,26 +14,28 @@ import {
 } from '../../shader/common'
 import { buildShaderColorArray } from './unit-color'
 
-export const MASK_PROVOKING = 0b1 << 6
-export const FLAG_PROVOKING_BOTTOM = 0b0 << 6
-export const FLAG_PROVOKING_TOP = 0b1 << 6
+export const enum UnitBodyPart {
+	MASK_PROVOKING = 0b1 << 6,
+	FLAG_PROVOKING_BOTTOM = 0b0 << 6,
+	FLAG_PROVOKING_TOP = 0b1 << 6,
 
-export const MASK_POSITION = 0b11 << 7
-export const FLAG_POSITION_BOTTOM = 0b00 << 7
-export const FLAG_POSITION_MIDDLE = 0b01 << 7
-export const FLAG_POSITION_TOP = 0b10 << 7
+	MASK_POSITION = 0b11 << 7,
+	FLAG_POSITION_BOTTOM = 0b00 << 7,
+	FLAG_POSITION_MIDDLE = 0b01 << 7,
+	FLAG_POSITION_TOP = 0b10 << 7,
 
-export const MASK_BODY_PART = 0b1111 << 9
-export const FLAG_PART_MAIN_BODY = 0b0001 << 9
-export const FLAG_PART_FACE = 0b1001 << 9
-export const MASK_PART_ANY_ARM = 0b0010 << 9
-export const MASK_PART_ANY_LEG = 0b0100 << 9
-export const FLAG_PART_LEFT = 0b0000 << 9
-export const FLAG_PART_RIGHT = 0b0001 << 9
-export const FLAG_PART_LEFT_ARM = MASK_PART_ANY_ARM | FLAG_PART_LEFT
-export const FLAG_PART_RIGHT_ARM = MASK_PART_ANY_ARM | FLAG_PART_RIGHT
-export const FLAG_PART_LEFT_LEG = MASK_PART_ANY_LEG | FLAG_PART_LEFT
-export const FLAG_PART_RIGHT_LEG = MASK_PART_ANY_LEG | FLAG_PART_RIGHT
+	MASK_BODY_PART = 0b1111 << 9,
+	FLAG_PART_MAIN_BODY = 0b0001 << 9,
+	FLAG_PART_FACE = 0b1001 << 9,
+	MASK_PART_ANY_ARM = 0b0010 << 9,
+	MASK_PART_ANY_LEG = 0b0100 << 9,
+	FLAG_PART_LEFT = 0b0000 << 9,
+	FLAG_PART_RIGHT = 0b0001 << 9,
+	FLAG_PART_LEFT_ARM = MASK_PART_ANY_ARM | FLAG_PART_LEFT,
+	FLAG_PART_RIGHT_ARM = MASK_PART_ANY_ARM | FLAG_PART_RIGHT,
+	FLAG_PART_LEFT_LEG = MASK_PART_ANY_LEG | FLAG_PART_LEFT,
+	FLAG_PART_RIGHT_LEG = MASK_PART_ANY_LEG | FLAG_PART_RIGHT
+}
 
 export const constructUnitVertexShaderSource = (transformations: string,
                                                 {forMousePicker}: UnitShaderCreationOptions): string => {
@@ -74,10 +76,10 @@ void main() {
 	if (!forMousePicker)
 		parts.push(`
 	v_normal = vec3(ivec3(((flagsAsInt >> 4) & 3) - 1, ((flagsAsInt >> 2) & 3) - 1, (flagsAsInt & 3) - 1));
-	if ((flagsAsInt & ${MASK_BODY_PART}) == ${FLAG_PART_FACE}) {
+	if ((flagsAsInt & ${UnitBodyPart.MASK_BODY_PART}) == ${UnitBodyPart.FLAG_PART_FACE}) {
 		v_colorPaletteId = int(a_colorPaletteId) * 9 + 6;
 	} else {
-		bool isProvokingTop = (flagsAsInt & ${MASK_PROVOKING}) == ${FLAG_PROVOKING_TOP};
+		bool isProvokingTop = (flagsAsInt & ${UnitBodyPart.MASK_PROVOKING}) == ${UnitBodyPart.FLAG_PROVOKING_TOP};
 		v_colorPaletteId = (isProvokingTop ? (int(a_colorPaletteId) * 9 + 3) : int(a_colorPaletteId) * 9);
 	}
 	`)
@@ -89,16 +91,16 @@ void main() {
 	int unitPreviousRotation = (mergeRotations ? ((tmpIRotation & ${Direction.MaskPreviousRotation}) >> 3) : (unitRotationAsInt));
 	
 	vec3 pos = a_modelPosition;
-	bool isMainBodyVertex = (flagsAsInt & ${MASK_BODY_PART}) == ${FLAG_PART_MAIN_BODY};
-	bool isFaceVertex = (flagsAsInt & ${MASK_BODY_PART}) == ${FLAG_PART_FACE};
-	bool isTopVertex = (flagsAsInt & ${MASK_POSITION}) == ${FLAG_POSITION_TOP};
-	bool isMiddleVertex = (flagsAsInt & ${MASK_POSITION}) == ${FLAG_POSITION_MIDDLE};
-	bool isBottomVertex = (flagsAsInt & ${MASK_POSITION}) == ${FLAG_POSITION_BOTTOM};
-	bool isAnimatableElement = (flagsAsInt & ${MASK_PART_ANY_LEG | MASK_PART_ANY_ARM}) > 0;
-	bool isLeftArmVertex = (flagsAsInt & ${MASK_BODY_PART}) == ${FLAG_PART_LEFT_ARM};
-	bool isRightArmVertex = (flagsAsInt & ${MASK_BODY_PART}) == ${FLAG_PART_RIGHT_ARM};
-	bool isLeftLegVertex = (flagsAsInt & ${MASK_BODY_PART}) == ${FLAG_PART_LEFT_LEG};
-	bool isRightLegVertex = (flagsAsInt & ${MASK_BODY_PART}) == ${FLAG_PART_RIGHT_LEG};
+	bool isMainBodyVertex = (flagsAsInt & ${UnitBodyPart.MASK_BODY_PART}) == ${UnitBodyPart.FLAG_PART_MAIN_BODY};
+	bool isFaceVertex = (flagsAsInt & ${UnitBodyPart.MASK_BODY_PART}) == ${UnitBodyPart.FLAG_PART_FACE};
+	bool isTopVertex = (flagsAsInt & ${UnitBodyPart.MASK_POSITION}) == ${UnitBodyPart.FLAG_POSITION_TOP};
+	bool isMiddleVertex = (flagsAsInt & ${UnitBodyPart.MASK_POSITION}) == ${UnitBodyPart.FLAG_POSITION_MIDDLE};
+	bool isBottomVertex = (flagsAsInt & ${UnitBodyPart.MASK_POSITION}) == ${UnitBodyPart.FLAG_POSITION_BOTTOM};
+	bool isAnimatableElement = (flagsAsInt & ${UnitBodyPart.MASK_PART_ANY_LEG | UnitBodyPart.MASK_PART_ANY_ARM}) > 0;
+	bool isLeftArmVertex = (flagsAsInt & ${UnitBodyPart.MASK_BODY_PART}) == ${UnitBodyPart.FLAG_PART_LEFT_ARM};
+	bool isRightArmVertex = (flagsAsInt & ${UnitBodyPart.MASK_BODY_PART}) == ${UnitBodyPart.FLAG_PART_RIGHT_ARM};
+	bool isLeftLegVertex = (flagsAsInt & ${UnitBodyPart.MASK_BODY_PART}) == ${UnitBodyPart.FLAG_PART_LEFT_LEG};
+	bool isRightLegVertex = (flagsAsInt & ${UnitBodyPart.MASK_BODY_PART}) == ${UnitBodyPart.FLAG_PART_RIGHT_LEG};
 	float activityDuration = u_times.z - a_activityStartTick;
 		`)
 
