@@ -10,7 +10,8 @@ export const connect = (): EnvironmentConnection => {
 	return {
 		name: 'zero',
 		async createNewGame() {
-			const game = createEmptyGame()
+			const stateBroadcastCallback = () => void 0 // ignore, since everything is locally anyway
+			const game = createEmptyGame(stateBroadcastCallback)
 			setGlobalGameState(game)
 
 			const updaterInstance = createNewStateUpdater(globalMutex, game)

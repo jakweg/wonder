@@ -7,6 +7,7 @@ export interface Message {
 	['game-snapshot-for-renderer']: { game: unknown, updater: unknown }
 	['transfer-canvas']: { canvas: unknown }
 	['frontend-variables']: { buffer: SharedArrayBuffer }
+	['update-entity-container']: { buffers: SharedArrayBuffer[] }
 }
 
 export type MessageType = keyof Message

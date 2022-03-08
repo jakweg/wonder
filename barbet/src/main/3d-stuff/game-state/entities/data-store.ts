@@ -12,15 +12,12 @@ export class DataStore<T> {
 	protected constructor(
 		private readonly allocator: ArrayAllocator<T>,
 		private readonly singleSize: number,
-		private _capacity: number,
 	) {
-		this._rawData = allocator.create(_capacity * singleSize)
+		this._rawData = allocator.create(DEFAULT_STORE_CAPACITY * singleSize + 1)
 	}
 
-	private _size: number = 0
-
 	public get size(): number {
-		return this._size
+		return (this._rawData as any)[0]! as number
 	}
 
 	private _rawData: T
@@ -29,34 +26,25 @@ export class DataStore<T> {
 		return this._rawData
 	}
 
-	public get capacity(): number {
-		return this._capacity
-	}
-
 	public static create<T>(allocator: ArrayAllocator<T>, singleSize: number) {
-		return new DataStore(allocator, singleSize, DEFAULT_STORE_CAPACITY)
+		return new DataStore(allocator, singleSize)
 	}
 
-	public setSizeUnsafe(size: number, capacity: number): void {
-		this._size = size
-		this._capacity = capacity
-	}
-
-	public safeGetPointer(index: number): number {
-		if (index < 0 || index >= this._size || (index | 0) !== index)
-			throw new Error(`Invalid index ${index}`)
-
-		return index * this.singleSize
+	public replaceInternalsUnsafe() {
+		this._rawData = this.allocator.create(-1)
 	}
 
 	public pushBack(): number {
-		const oldIndex = this._size++
-		if (oldIndex === this._capacity) {
-			const newCapacity = Math.ceil(this._capacity * RESIZE_FACTOR) | 0
-			this._capacity = newCapacity
-			this._rawData = this.allocator.resize(this._rawData, newCapacity * this.singleSize | 0)
+		const oldRawData = this._rawData as unknown as Int16Array
+		const currentElementsCount = oldRawData[0]++
+		const newElementIndex = currentElementsCount * this.singleSize + 1
+		const currentCapacity = oldRawData.length
+		if (newElementIndex === currentCapacity) {
+			// need resize
+			const newCapacityInBytes = Math.ceil((currentCapacity - 1) * RESIZE_FACTOR) | 0
+			this._rawData = this.allocator.resize(oldRawData as any, 1 + newCapacityInBytes)
 		}
-		return oldIndex * this.singleSize
+		return newElementIndex
 	}
 
 }

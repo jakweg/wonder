@@ -10,6 +10,7 @@ import { EnvironmentConnection, StartRenderArguments } from './loader'
 // noinspection JSUnusedGlobalSymbols
 export const connect = (): EnvironmentConnection => {
 	let gameSnapshotForRenderer: any = null
+	let entityContainerSnapshotForRenderer: any = null
 	let decodedGame: GameState | null = null
 	let updater: StateUpdater | null = null
 	let updateWorker: WorkerController | null = null
@@ -23,6 +24,12 @@ export const connect = (): EnvironmentConnection => {
 
 			updateWorker = await WorkerController.spawnNew('update-worker', 'update', globalMutex)
 			updateWorker.replier.send('create-game', undefined)
+
+			setMessageHandler('update-entity-container', data => {
+				decodedGame!.entities.replaceBuffersFromReceived(data)
+				entityContainerSnapshotForRenderer = data
+				renderWorker?.replier.send('update-entity-container', data)
+			})
 
 			return await new Promise(resolve => {
 				setMessageHandler('game-snapshot-for-renderer', (data) => {
@@ -51,6 +58,8 @@ export const connect = (): EnvironmentConnection => {
 				render: renderWorker.workerStartDelay,
 				update: updateWorker!.workerStartDelay,
 			})
+			if (entityContainerSnapshotForRenderer !== null)
+				renderWorker.replier.send('update-entity-container', entityContainerSnapshotForRenderer)
 		},
 	}
 }

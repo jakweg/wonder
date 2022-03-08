@@ -66,15 +66,15 @@ export interface EntityTraitIndicesRecord {
 }
 
 export const createEmptyTraitRecord = (): EntityTraitIndicesRecord => ({
-	thisId: 0,
-	thisTraits: 0,
-	idIndex: 0,
-	position: 0,
-	drawable: 0,
-	withActivity: 0,
-	activityMemory: 0,
-	itemHoldable: 0,
-	interruptible: 0,
+	thisId: 1,
+	thisTraits: 1,
+	idIndex: 1,
+	position: 1,
+	drawable: 1,
+	withActivity: 1,
+	activityMemory: 1,
+	itemHoldable: 1,
+	interruptible: 1,
 })
 
 export const hasTrait = (all: EntityTrait, required: EntityTrait): boolean => (all & required) === required

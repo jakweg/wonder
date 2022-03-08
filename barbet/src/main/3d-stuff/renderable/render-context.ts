@@ -69,8 +69,7 @@ export const setupSceneRendering = (canvas: HTMLCanvasElement,
 
 	renderer.beforeRenderFunction = (secondsSinceLastFrame) => {
 		const variables = Atomics.load(frontedVariables, FrontendVariable.AdditionalFlags)
-		const windowHasFocus = (variables & AdditionalFrontedFlags.WindowHasFocus) === AdditionalFrontedFlags.WindowHasFocus
-		return windowHasFocus || secondsSinceLastFrame > 0.5
+		return (variables & AdditionalFrontedFlags.WindowHasFocus) === AdditionalFrontedFlags.WindowHasFocus || secondsSinceLastFrame > 0.5
 	}
 	renderer.beginRendering()
 }

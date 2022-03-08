@@ -36,6 +36,10 @@ setMessageHandler('game-snapshot-for-renderer', (data) => {
 	considerStartRendering()
 })
 
+setMessageHandler('update-entity-container', (data) => {
+	decodedGame!.entities.replaceBuffersFromReceived(data)
+})
+
 setMessageHandler('frontend-variables', ({buffer}) => {
 	initFrontedVariablesFromReceived(buffer)
 })

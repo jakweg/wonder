@@ -16,15 +16,16 @@ import {
 } from './traits'
 
 export const ACTIVITY_MEMORY_SIZE = 20
+type ArraysChangedNotifyCallback = () => void
 
 interface ContainerAllocator<T> extends ArrayAllocator<T> {
-	readonly buffers: SharedArrayBuffer[]
+	buffers: SharedArrayBuffer[]
 	reuseCounter: number
-	readonly notifyArraysChanged: (() => void)
+	readonly notifyArraysChanged: ArraysChangedNotifyCallback
 }
 
 const createInt32Allocator = (buffers: SharedArrayBuffer[],
-                              notify: (() => void)): ContainerAllocator<Int32Array> => ({
+                              notify: ArraysChangedNotifyCallback): ContainerAllocator<Int32Array> => ({
 	buffers: buffers,
 	reuseCounter: buffers.length,
 	notifyArraysChanged: notify,
@@ -55,6 +56,7 @@ const createInt32Allocator = (buffers: SharedArrayBuffer[],
 		for (let i = 0, l = oldArray.length; i < l; ++i)
 			newArray[i] = oldArray[i]!
 
+		this.notifyArraysChanged()
 		return newArray
 	},
 })
@@ -69,7 +71,7 @@ class EntityContainer {
 	public readonly itemHoldables = DataStore.create(this.allocator, DataOffsetItemHoldable.SIZE)
 	public readonly interruptibles = DataStore.create(this.allocator, DataOffsetInterruptible.SIZE)
 
-	private allStores = Object.freeze([
+	public readonly allStores = Object.freeze([
 		this.ids,
 		this.positions,
 		this.drawables,
@@ -78,7 +80,6 @@ class EntityContainer {
 		this.itemHoldables,
 		this.interruptibles,
 	])
-
 	private nextEntityId: number = 1
 
 	constructor(
@@ -95,7 +96,6 @@ class EntityContainer {
 		return container = new EntityContainer(allocator)
 	}
 
-
 	public static fromReceived(object: any) {
 		if (object['type'] !== 'entity-container')
 			throw new Error('Invalid object')
@@ -104,21 +104,27 @@ class EntityContainer {
 		const allocator = createInt32Allocator(object['buffers'],
 			() => container.buffersChanged = true)
 
-		const sizes = object['sizes']
-
 		container = new EntityContainer(allocator)
-		const stores = container.allStores
-		for (let i = 0, l = stores.length; i < l; i++) {
-			stores[i]!.setSizeUnsafe(sizes[i][0], sizes[i][1])
-		}
 		return container
+	}
+
+	public replaceBuffersFromReceived(data: any): void {
+		const buffers = data['buffers'] as SharedArrayBuffer[]
+
+		this.allocator.buffers = buffers
+		this.allocator.reuseCounter = buffers.length
+		for (let store of this.allStores)
+			store.replaceInternalsUnsafe()
+	}
+
+	public passBuffers() {
+		return this.allocator.buffers
 	}
 
 	public pass(): unknown {
 		return {
 			type: 'entity-container',
 			buffers: this.allocator.buffers,
-			sizes: this.allStores.map(s => [s.size, s.capacity]),
 		}
 	}
 
@@ -175,7 +181,6 @@ class EntityContainer {
 			if (hasTrait(traits, EntityTrait.Interruptible)) record.interruptible += DataOffsetInterruptible.SIZE
 		}
 	}
-
 }
 
 export default EntityContainer

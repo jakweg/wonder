@@ -23,6 +23,9 @@ export const connect = (): EnvironmentConnection => {
 			updateWorker.replier.send('create-game', undefined)
 			globalWorkerDelay.difference = updateWorker.workerStartDelay
 
+			setMessageHandler('update-entity-container', data => {
+				decodedGame!.entities.replaceBuffersFromReceived(data)
+			})
 
 			return await new Promise(resolve => {
 				setMessageHandler('game-snapshot-for-renderer', (data) => {

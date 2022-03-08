@@ -18,7 +18,7 @@ export const iterateOverEntitiesWithActivity = function* (container: EntityConta
 	const record = createEmptyTraitRecord()
 	const rawData = container.ids.rawData
 	for (let i = 0, l = container.ids.size; i < l; i++) {
-		const idIndex = i * DataOffsetIds.SIZE
+		const idIndex = i * DataOffsetIds.SIZE + 1
 		const traits = rawData[idIndex + DataOffsetIds.Traits]!
 
 		if (hasTrait(traits, filterTraits)) {
@@ -45,7 +45,7 @@ export const iterateOverAllSelectedEntities = function* (container: EntityContai
 	const record = createEmptyTraitRecord()
 	const rawData = container.ids.rawData
 	for (let i = 0, l = container.ids.size; i < l; i++) {
-		const idIndex = i * DataOffsetIds.SIZE
+		const idIndex = i * DataOffsetIds.SIZE + 1
 		const traits = rawData[idIndex + DataOffsetIds.Traits]!
 
 		if (hasTrait(traits, filterTraits)) {
@@ -67,7 +67,7 @@ export const iterateOverEntitiesHoldingItems = function* (container: EntityConta
 	const itemHoldables = container.itemHoldables.rawData
 
 	for (let i = 0, l = container.ids.size; i < l; i++) {
-		const idIndex = i * DataOffsetIds.SIZE
+		const idIndex = i * DataOffsetIds.SIZE + 1
 		const traits = rawData[idIndex + DataOffsetIds.Traits]!
 
 		if (hasTrait(traits, filterTraits)) {
@@ -93,7 +93,7 @@ export const iterateOverDrawableEntities = function* (container: EntityContainer
 	const rawData = container.ids.rawData
 
 	for (let i = 0, l = container.ids.size; i < l; i++) {
-		const idIndex = i * DataOffsetIds.SIZE
+		const idIndex = i * DataOffsetIds.SIZE + 1
 		const traits = rawData[idIndex + DataOffsetIds.Traits]!
 
 		if (hasTrait(traits, filterTraits)) {
@@ -114,7 +114,7 @@ export const getEntityById_drawableItem = function (container: EntityContainer, 
 	const record = createEmptyTraitRecord()
 	const rawData = container.ids.rawData
 	for (let i = 0, l = container.ids.size; i < l; i++) {
-		const idIndex = i * DataOffsetIds.SIZE
+		const idIndex = i * DataOffsetIds.SIZE + 1
 		const traits = rawData[idIndex + DataOffsetIds.Traits]!
 		const thisId = rawData[idIndex + DataOffsetIds.ID]!
 

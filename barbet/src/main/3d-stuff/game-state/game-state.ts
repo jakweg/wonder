@@ -17,7 +17,8 @@ export class GameState {
 	                    public readonly entities: EntityContainer,
 	                    public readonly pathFinder: PathFinder,
 	                    public readonly surfaceResources: SurfaceResourcesIndex,
-	                    private readonly mutex: Mutex) {
+	                    private readonly mutex: Mutex,
+	                    private readonly stateBroadcastCallback: () => void) {
 	}
 
 	private _currentTick: number = 0
@@ -32,8 +33,9 @@ export class GameState {
 		entities: EntityContainer,
 		pathFinder: PathFinder,
 		surfaceResources: SurfaceResourcesIndex,
-		mutex: Mutex): GameState {
-		return new GameState(world, groundItems, entities, pathFinder, surfaceResources, mutex)
+		mutex: Mutex,
+		stateBroadcastCallback: () => void): GameState {
+		return new GameState(world, groundItems, entities, pathFinder, surfaceResources, mutex, stateBroadcastCallback)
 	}
 
 	public static forRenderer(object: any): GameState {
@@ -45,7 +47,8 @@ export class GameState {
 			EntityContainer.fromReceived(object['entities']),
 			null as unknown as PathFinder,
 			SurfaceResourcesIndex.fromReceived(object['surfaceResources']),
-			createMutexFromReceived(object['mutex']))
+			createMutexFromReceived(object['mutex']),
+			() => void 0)
 	}
 
 	public passForRenderer(): unknown {
@@ -76,6 +79,11 @@ export class GameState {
 			const currentActivity = (container.withActivities.rawData)[entity.withActivity + DataOffsetWithActivity.CurrentId]! as ActivityId
 
 			requireActivity(currentActivity).perform(this, entity)
+		}
+
+		if (container.buffersChanged) {
+			container.buffersChanged = false
+			this.stateBroadcastCallback()
 		}
 
 		this.mutex.unlock(Lock.Update)
