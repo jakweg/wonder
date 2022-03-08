@@ -8,12 +8,13 @@ export const enum SurfaceResourceType {
 }
 
 export interface SurfaceResource {
-	/** must be between 0 and 255 */
+	/** must be between 0 and 31 */
 	numericId: SurfaceResourceType
 
 	gatheredItem: ItemType
 
 	appendToMesh(x: number, y: number, z: number,
+	             amount: number,
 	             vertexData: number[],
 	             elementsData: number[]): void
 }

@@ -66,8 +66,9 @@ export function calculateNormals(elements: Uint16Array | Uint8Array,
 		const ny = az * bx - ax * bz
 		const nz = ax * by - ay * bx
 
-		vertexes[cIndex + normalsOffset] = nx
-		vertexes[cIndex + normalsOffset + 1] = ny
-		vertexes[cIndex + normalsOffset + 2] = nz
+
+		vertexes[cIndex + normalsOffset] = -Math.min(1, Math.max(-1, nx))
+		vertexes[cIndex + normalsOffset + 1] = Math.min(1, Math.max(-1, ny))
+		vertexes[cIndex + normalsOffset + 2] = -Math.min(1, Math.max(-1, nz))
 	}
 }

@@ -2,7 +2,7 @@ import { Direction, getChangeInXByRotation, getChangeInZByRotation } from '../..
 import { ActivityId } from '../../renderable/unit/activity'
 import { ShaderId } from '../../renderable/unit/unit-shaders'
 import { ItemType } from '../../world/item'
-import { requireResource, SurfaceResourceType } from '../../world/surface-resource'
+import { requireResource } from '../../world/surface-resource'
 import {
 	DataOffsetDrawables,
 	DataOffsetItemHoldable,
@@ -74,9 +74,8 @@ const activityItemPickup = {
 
 		let itemToPickup: ItemType = ItemType.None
 		if (getResource) {
-			const resource = game.surfaceResources.getResource(itemX, itemZ)
+			const resource = game.surfaceResources.extractSingleResource(itemX, itemZ)
 			itemToPickup = requireResource(resource).gatheredItem
-			game.surfaceResources.setResource(itemX, itemZ, SurfaceResourceType.None)
 		} else {
 			itemToPickup = game.groundItems.getItem(itemX, itemZ)
 			game.groundItems.setItem(itemX, itemZ, ItemType.None)

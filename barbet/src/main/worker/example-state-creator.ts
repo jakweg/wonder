@@ -38,7 +38,7 @@ export const createEmptyGame = () => {
 	const mutex = globalMutex
 	const pathFinder = PathFinder.createNewQueue(world)
 	const resources = SurfaceResourcesIndex.createNew(world.size)
-	resources.setResource(11, 5, SurfaceResourceType.Stone)
+	resources.setResource(11, 5, SurfaceResourceType.Stone, 3)
 	const gameState = GameState.createNew(world, itemsOnGround, entityContainer, pathFinder, resources, mutex)
 
 	{

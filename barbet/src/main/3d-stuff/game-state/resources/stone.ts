@@ -2,7 +2,7 @@ import { calculateNormals } from '../../shader/common'
 import { ItemType } from '../../world/item'
 import { SurfaceResourceType } from '../../world/surface-resource'
 
-const createVertexesAndElements = (size: number) => {
+const createVertexesAndElements = (size: number, scale: number) => {
 	if (size !== (size | 0) || size < 3 || size > 100)
 		throw new Error('Invalid size')
 
@@ -10,11 +10,11 @@ const createVertexesAndElements = (size: number) => {
 	const elementsData = new Uint8Array(size * 3)
 
 	vertexData[0] = 0.5
-	vertexData[1] = 0.75
+	vertexData[1] = scale * 0.9
 	vertexData[2] = 0.5
 
 	const initialAngle = Math.PI / 4
-	const r = .55
+	const r = scale * 0.5
 	for (let i = 1; i <= size; i++) {
 		const x = Math.cos(i / size * 2 * Math.PI + initialAngle) * r
 		const y = Math.sin(i / size * 2 * Math.PI + initialAngle) * r
@@ -31,14 +31,33 @@ const createVertexesAndElements = (size: number) => {
 	return {vertexData, elementsData}
 }
 
-const {vertexData, elementsData} = createVertexesAndElements(6)
+const {vertexData, elementsData} = createVertexesAndElements(6, 0.7)
 
 let initialized = false
 const initData = () => {
 	if (initialized) return
 	initialized = true
 	calculateNormals(elementsData, vertexData, 6, 3)
-	console.log({vertexData, elementsData})
+}
+
+function extracted(vertexDataToAppend: number[], elementsDataToAppend: number[],
+                   x: number, y: number, z: number,
+                   scale: number) {
+	const vertexCountBeforeAdd = vertexDataToAppend.length / 6 | 0
+	const vertexes = vertexData
+	for (let i = 0, s = vertexes.length; i < s;) {
+		const vx = vertexes[i++]! * scale + x
+		const vy = vertexes[i++]! * scale + y
+		const vz = vertexes[i++]! * scale + z
+		vertexDataToAppend.push(vx, vy, vz,
+			vertexes[i++]!,
+			vertexes[i++]!,
+			vertexes[i++]!)
+	}
+
+	for (const index of elementsData) {
+		elementsDataToAppend.push(index + vertexCountBeforeAdd)
+	}
 }
 
 export default {
@@ -46,24 +65,20 @@ export default {
 	gatheredItem: ItemType.Box,
 
 	appendToMesh(x: number, y: number, z: number,
+	             amount: number,
 	             vertexDataToAppend: number[],
 	             elementsDataToAppend: number[]): void {
 		initData()
 
-		const vertexCountBeforeAdd = vertexDataToAppend.length / 6 | 0
-		const vertexes = vertexData
-		for (let i = 0, s = vertexes.length; i < s;) {
-			const vx = vertexes[i++]! + x
-			const vy = vertexes[i++]! + y
-			const vz = vertexes[i++]! + z
-			vertexDataToAppend.push(vx, vy, vz,
-				vertexes[i++]!,
-				vertexes[i++]!,
-				vertexes[i++]!)
-		}
-
-		for (const index of elementsData) {
-			elementsDataToAppend.push(index + vertexCountBeforeAdd)
-		}
+		if (amount > 0)
+			extracted(vertexDataToAppend, elementsDataToAppend, x, y, z, 1)
+		if (amount > 1)
+			extracted(vertexDataToAppend, elementsDataToAppend, x - 0.1, y, z + 0.5, 0.5)
+		if (amount > 2)
+			extracted(vertexDataToAppend, elementsDataToAppend, x + 0.1, y, z, 0.4)
+		if (amount > 3)
+			extracted(vertexDataToAppend, elementsDataToAppend, x - 0.1, y, z, 0.3)
+		if (amount > 4)
+			extracted(vertexDataToAppend, elementsDataToAppend, x + 0.5, y, z + 0.4, 0.6)
 	},
 }

@@ -1,6 +1,7 @@
 import { toGl } from '../../../util/matrix/common'
 import { fromValues } from '../../../util/matrix/vec3'
 import { GameState } from '../../game-state/game-state'
+import { AMOUNT_SHIFT_BITS, MASK_AMOUNT, MASK_RESOURCE_TYPE } from '../../game-state/surface-resources-index'
 import { MainRenderer } from '../../main-renderer'
 import { createProgramFromNewShaders } from '../../shader/common'
 import { requireResource, SurfaceResourceType } from '../../world/surface-resource'
@@ -39,14 +40,15 @@ export const createNewSurfaceResourcesRenderable = (renderer: MainRenderer,
 			let fieldIndex = 1
 			for (let z = 0, h = resources.sizeZ; z < h; z++) {
 				for (let x = 0, w = resources.sizeX; x < w; x++) {
-					const type = resources.rawData[fieldIndex++]! as SurfaceResourceType
+					const raw = resources.rawData[fieldIndex++]!
+					const type = raw & MASK_RESOURCE_TYPE as SurfaceResourceType
 					if (type === SurfaceResourceType.None) continue
-
+					const amount = (raw & MASK_AMOUNT) >> AMOUNT_SHIFT_BITS
 					const resource = requireResource(type)
 
 					const y = world.getHighestBlockHeight(x, z) + 1
 
-					resource.appendToMesh(x, y, z, vertexData, elementsData)
+					resource.appendToMesh(x, y, z, amount, vertexData, elementsData)
 				}
 			}
 
@@ -67,8 +69,7 @@ export const createNewSurfaceResourcesRenderable = (renderer: MainRenderer,
 			modelBuffer.bind()
 			modelElementsBuffer.bind()
 
-			gl.uniform3fv(program.uniforms.lightPosition, toGl(ctx.sunPosition))
-			gl.uniform3fv(program.uniforms.lightPosition, toGl(fromValues(200, 5, 10)))
+			gl.uniform3fv(program.uniforms.lightPosition, toGl(fromValues(80, 40, 20)))
 			gl.uniformMatrix4fv(program.uniforms.combinedMatrix, false, toGl(ctx.camera.combinedMatrix))
 
 			gl.drawElements(gl.TRIANGLES, trianglesToRender, gl.UNSIGNED_SHORT, 0)

@@ -21,7 +21,7 @@ void main() {
 
 export const surfaceResourceFragmentShader = `${VersionHeader()}
 ${PrecisionHeader()}
-out vec4 finalColor;
+out vec3 finalColor;
 flat in vec3 v_color;
 flat in vec3 v_normal;
 flat in vec3 v_currentPosition;
@@ -30,7 +30,7 @@ const float ambientLight = 0.3;
 void main() {
 	vec3 lightDirection = normalize(vec3(u_lightPosition) - v_currentPosition);
 	float diffuse = max(sqrt(dot(v_normal, lightDirection)), ambientLight);
-	finalColor = vec4(v_color * diffuse, 1);
+	finalColor = vec3(v_color * diffuse);
 }
 `
 
