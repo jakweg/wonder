@@ -43,7 +43,7 @@ export const createNewSurfaceResourcesRenderable = (renderer: MainRenderer,
 					const raw = resources.rawData[fieldIndex++]!
 					const type = raw & MASK_RESOURCE_TYPE as SurfaceResourceType
 					if (type === SurfaceResourceType.None) continue
-					const amount = (raw & MASK_AMOUNT) >> AMOUNT_SHIFT_BITS
+					const amount = ((raw & MASK_AMOUNT) >> AMOUNT_SHIFT_BITS) + 1
 					const resource = requireResource(type)
 
 					const y = world.getHighestBlockHeight(x, z) + 1

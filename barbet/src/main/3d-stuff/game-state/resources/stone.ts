@@ -1,6 +1,6 @@
 import { calculateNormals } from '../../shader/common'
 import { ItemType } from '../../world/item'
-import { SurfaceResourceType } from '../../world/surface-resource'
+import { SurfaceResource, SurfaceResourceType } from '../../world/surface-resource'
 
 const createVertexesAndElements = (size: number, scale: number) => {
 	if (size !== (size | 0) || size < 3 || size > 100)
@@ -81,4 +81,4 @@ export default {
 		if (amount > 4)
 			extracted(vertexDataToAppend, elementsDataToAppend, x + 0.5, y, z + 0.4, 0.6)
 	},
-}
+} as SurfaceResource

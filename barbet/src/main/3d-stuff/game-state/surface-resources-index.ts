@@ -44,18 +44,15 @@ export class SurfaceResourcesIndex {
 
 	public setResource(x: number, z: number, type: SurfaceResourceType, amount: number): void {
 		this.validateCoords(x, z)
-		this.rawData[z * this.sizeX + x + 1] = (type & MASK_RESOURCE_TYPE) | (amount << AMOUNT_SHIFT_BITS)
+		const index = z * this.sizeX + x + 1
+		if (type === SurfaceResourceType.None)
+			this.rawData[index] = SurfaceResourceType.None
+		else {
+			if (amount !== (amount | 0) || amount <= 0 || amount - 1 > 0b111)
+				throw new Error(`Invalid resource amount ${amount}`)
+			this.rawData[index] = (type & MASK_RESOURCE_TYPE) | ((amount - 1) << AMOUNT_SHIFT_BITS)
+		}
 		this.rawData[0]++
-	}
-
-	public getResourceType(x: number, z: number): SurfaceResourceType {
-		this.validateCoords(x, z)
-		return this.rawData[z * this.sizeX + x + 1]! & MASK_RESOURCE_TYPE as SurfaceResourceType
-	}
-
-	public getResourceAmount(x: number, z: number): number {
-		this.validateCoords(x, z)
-		return ((this.rawData[z * this.sizeX + x + 1]! & MASK_AMOUNT) >> AMOUNT_SHIFT_BITS)
 	}
 
 	public extractSingleResource(x: number, z: number): SurfaceResourceType {
@@ -63,10 +60,14 @@ export class SurfaceResourcesIndex {
 		const raw = this.rawData[z * this.sizeX + x + 1]!
 		const type = raw & MASK_RESOURCE_TYPE as SurfaceResourceType
 		const amount = ((raw & MASK_AMOUNT) >> AMOUNT_SHIFT_BITS)
-		if (type === SurfaceResourceType.None || amount === 0)
+		if (type === SurfaceResourceType.None)
 			return SurfaceResourceType.None
 
-		this.rawData[z * this.sizeX + x + 1] = type | ((amount - 1) << AMOUNT_SHIFT_BITS)
+		if (amount === 0)
+			this.rawData[z * this.sizeX + x + 1] = SurfaceResourceType.None
+		else
+			this.rawData[z * this.sizeX + x + 1] = type | ((amount - 1) << AMOUNT_SHIFT_BITS)
+
 		this.rawData[0]++
 		return type
 	}
