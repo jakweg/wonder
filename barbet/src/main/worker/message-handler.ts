@@ -8,6 +8,7 @@ export interface Message {
 	['transfer-canvas']: { canvas: unknown }
 	['frontend-variables']: { buffer: SharedArrayBuffer }
 	['update-entity-container']: { buffers: SharedArrayBuffer[] }
+	['camera-buffer']: { buffer: SharedArrayBuffer }
 }
 
 export type MessageType = keyof Message

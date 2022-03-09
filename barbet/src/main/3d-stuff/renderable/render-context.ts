@@ -22,12 +22,11 @@ export interface RenderContext {
 
 export const setupSceneRendering = (canvas: HTMLCanvasElement,
                                     state: GameState,
+                                    camera: Camera,
                                     gameTickEstimation: () => number,
                                     gameTickRate: () => number,
                                     handleInputEvents: (dt: number, r: MainRenderer, ctx: RenderContext) => Promise<void>) => {
 	const renderer = MainRenderer.fromHTMLCanvas(canvas)
-	const camera = Camera.newPerspective()
-	camera.moveCamera(9.5, 0, 7)
 
 	const sunPosition = vec3.fromValues(500, 1500, -500)
 
@@ -75,11 +74,11 @@ export const setupSceneRendering = (canvas: HTMLCanvasElement,
 }
 
 
-export const startRenderingGame = (canvas: HTMLCanvasElement, game: GameState, updater: StateUpdater) => {
+export const startRenderingGame = (canvas: HTMLCanvasElement, game: GameState, updater: StateUpdater, camera: Camera) => {
 	const gameTickEstimation = () => updater.estimateCurrentGameTickTime(globalWorkerDelay.difference)
 	const gameTickRate = () => updater.getTickRate()
 	const handleInputEvents = createInputReactor(game)
 
-	setupSceneRendering(canvas, game, gameTickEstimation, gameTickRate, handleInputEvents)
+	setupSceneRendering(canvas, game, camera, gameTickEstimation, gameTickRate, handleInputEvents)
 }
 

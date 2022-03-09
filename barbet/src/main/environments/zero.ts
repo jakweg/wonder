@@ -1,6 +1,8 @@
 import { createNewStateUpdater, stateUpdaterFromReceived } from '../3d-stuff/game-state/state-updater'
 import { startRenderingGame } from '../3d-stuff/renderable/render-context'
+import { Camera } from '../camera'
 import { createEmptyGame } from '../worker/example-state-creator'
+import { getCameraBuffer } from '../worker/serializable-settings'
 import { globalMutex, setGlobalGameState, setGlobalStateUpdater } from '../worker/worker-global-state'
 import { EnvironmentConnection, StartRenderArguments } from './loader'
 
@@ -23,7 +25,7 @@ export const connect = (): EnvironmentConnection => {
 			}
 		},
 		async startRender(args: StartRenderArguments): Promise<void> {
-			startRenderingGame(args.canvas, args.game, args.updater)
+			startRenderingGame(args.canvas, args.game, args.updater, Camera.newUsingBuffer(getCameraBuffer()))
 		},
 	}
 }

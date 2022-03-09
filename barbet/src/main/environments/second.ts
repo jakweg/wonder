@@ -2,6 +2,7 @@ import { GameState } from '../3d-stuff/game-state/game-state'
 import { StateUpdater, stateUpdaterFromReceived } from '../3d-stuff/game-state/state-updater'
 import { frontedVariablesBuffer } from '../util/frontend-variables'
 import { setMessageHandler } from '../worker/message-handler'
+import { getCameraBuffer } from '../worker/serializable-settings'
 import { WorkerController } from '../worker/worker-controller'
 import { globalMutex } from '../worker/worker-global-state'
 import { EnvironmentConnection, StartRenderArguments } from './loader'
@@ -52,6 +53,7 @@ export const connect = (): EnvironmentConnection => {
 			renderWorker = await WorkerController.spawnNew('render-worker', 'render', globalMutex)
 			const canvasControl = (args.canvas as any).transferControlToOffscreen()
 			renderWorker.replier.send('frontend-variables', {buffer: frontedVariablesBuffer})
+			renderWorker.replier.send('camera-buffer', {buffer: getCameraBuffer()})
 			renderWorker.replier.send('transfer-canvas', {canvas: canvasControl}, [canvasControl])
 			renderWorker.replier.send('game-snapshot-for-renderer', gameSnapshotForRenderer)
 			renderWorker.replier.send('set-worker-load-delays', {
