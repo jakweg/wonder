@@ -82,6 +82,7 @@ export const iterateOverEntitiesHoldingItems = function* (container: EntityConta
 			}
 		}
 
+		if (hasTrait(traits, EntityTrait.Drawable)) record.drawable += DataOffsetDrawables.SIZE
 		if (hasTrait(traits, EntityTrait.WithActivity)) record.withActivity += DataOffsetWithActivity.SIZE
 		if (hasTrait(traits, EntityTrait.Position)) record.position += DataOffsetPositions.SIZE
 		if (hasTrait(traits, EntityTrait.ItemHoldable)) record.itemHoldable += DataOffsetItemHoldable.SIZE

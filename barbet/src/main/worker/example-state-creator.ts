@@ -12,7 +12,7 @@ import { World } from '../3d-stuff/world/world'
 import { Direction } from '../util/direction'
 import { globalMutex } from './worker-global-state'
 
-export const createEmptyGame = () => {
+export const createEmptyGame = (stateBroadcastCallback: () => void) => {
 	const world = World.createEmpty(20, 30, 20, BlockId.Air)
 	for (let i = 0, w = world.size.sizeX; i < w; i++)
 		for (let j = 0, h = world.size.sizeZ; j < h; j++)
@@ -39,17 +39,22 @@ export const createEmptyGame = () => {
 	const pathFinder = PathFinder.createNewQueue(world)
 	const resources = SurfaceResourcesIndex.createNew(world.size)
 	resources.setResource(11, 5, SurfaceResourceType.Stone, 3)
-	const gameState = GameState.createNew(world, itemsOnGround, entityContainer, pathFinder, resources, mutex)
+	const gameState = GameState.createNew(world, itemsOnGround, entityContainer, pathFinder, resources, mutex, stateBroadcastCallback)
 
-	{
+	const spawnUnit = (x: number, y: number, z: number) => {
 		const unitTraits = EntityTrait.Position | EntityTrait.Drawable | EntityTrait.ItemHoldable | EntityTrait.WithActivity | EntityTrait.Interruptible
 		const entity = entityContainer.createEntity(unitTraits)
-		entityContainer.positions.rawData[entity.position + DataOffsetPositions.PositionX] = 10
-		entityContainer.positions.rawData[entity.position + DataOffsetPositions.PositionY] = 2
-		entityContainer.positions.rawData[entity.position + DataOffsetPositions.PositionZ] = 5
+		entityContainer.positions.rawData[entity.position + DataOffsetPositions.PositionX] = x
+		entityContainer.positions.rawData[entity.position + DataOffsetPositions.PositionY] = y
+		entityContainer.positions.rawData[entity.position + DataOffsetPositions.PositionZ] = z
 		activityMiningResource.setup(gameState, entity, Direction.PositiveX)
 		// interruptRequestWalk(entityContainer, entity, 10, 10)
 	}
+	setTimeout(() => {
+		for (let i = 0; i < 7; i++) {
+			spawnUnit(i + 4, 2, i + 5)
+		}
+	}, 1000)
 
 	return gameState
 }
