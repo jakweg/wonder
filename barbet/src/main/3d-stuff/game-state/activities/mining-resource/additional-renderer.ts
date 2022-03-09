@@ -70,7 +70,7 @@ type T = {
 	trianglesToRender: number
 }
 
-type B = { unitPositions: number[] }
+type B = { unitPositions: number[], count: number }
 const HandRotationMatrix = (forHand: boolean) => `
 float r = ${forHand ? '' : `${-Math.PI / 2.0} + -`}(abs(sin(activityDuration * ${(Math.PI * hammerTicksInSingleActivityPeriod / singleMiningAnimationLoopDuration).toFixed(7)}) * (${forHand ? 'isBottomVertex ? 1.9 : 1.5' : '1.9'})) - 0.2);
 mat4 handRotation = ${RotationZMatrix('r')}
@@ -156,7 +156,7 @@ export const additionalRenderer: AdditionalRenderer<T, B> = {
 		}
 	},
 	prepareBatch(): B {
-		return {unitPositions: []}
+		return {unitPositions: [], count: 0}
 	},
 	appendToBatch(setup: T, batch: B, unit: EntityTraitIndicesRecord): void {
 		const positions = setup.positions.rawData
@@ -166,9 +166,12 @@ export const additionalRenderer: AdditionalRenderer<T, B> = {
 
 		const activityStartTick = setup.withActivities.rawData[unit.withActivity + DataOffsetWithActivity.StartTick]!
 
+		batch.count++
 		batch.unitPositions.push(unitX, unitY, unitZ, activityStartTick)
 	},
 	executeBatch(setup: T, ctx: RenderContext, batch: B): void {
+		const count = batch.count
+		if (count === 0) return
 		const gl = ctx.gl
 		const program = setup.program
 		setup.vao.bind()
@@ -178,6 +181,6 @@ export const additionalRenderer: AdditionalRenderer<T, B> = {
 		gl.uniformMatrix4fv(program.uniforms.combinedMatrix, false, toGl(ctx.camera.combinedMatrix))
 		gl.uniform1f(program.uniforms.time, ctx.gameTickEstimation)
 
-		gl.drawElementsInstanced(gl.TRIANGLES, setup.trianglesToRender, gl.UNSIGNED_BYTE, 0, 1)
+		gl.drawElementsInstanced(gl.TRIANGLES, setup.trianglesToRender, gl.UNSIGNED_BYTE, 0, count)
 	},
 }

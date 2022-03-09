@@ -22,7 +22,7 @@ import walkingByPathRoot from './walking-by-path-root'
 
 type Program = GlProgram<'modelPosition' | 'unitPosition', 'rotation' | 'combinedMatrix'>
 type T = { vao: any, batchBuffer: GPUBuffer, positions: DataStore<Int32Array>, program: Program }
-type B = { unitPositions: number[] }
+type B = { unitPositions: number[], count: number }
 
 const vertexSource = `${VersionHeader()}
 ${PrecisionHeader()}
@@ -67,7 +67,7 @@ const additionalRenderer: AdditionalRenderer<T, B> = {
 		return {vao, batchBuffer, positions: game.entities.positions, program}
 	},
 	prepareBatch(): B {
-		return {unitPositions: []}
+		return {unitPositions: [], count: 0}
 	},
 	appendToBatch(setup: T, batch: B, unit: EntityTraitIndicesRecord): void {
 		const positions = setup.positions.rawData
@@ -75,11 +75,14 @@ const additionalRenderer: AdditionalRenderer<T, B> = {
 		const unitY = positions[unit.position + DataOffsetPositions.PositionY]!
 		const unitZ = positions[unit.position + DataOffsetPositions.PositionZ]!
 
+		batch.count++
 		batch.unitPositions.push(unitX, unitY, unitZ)
 	},
 	executeBatch(setup: T, ctx: RenderContext, batch: B): void {
-		const gl = ctx.gl
+		const count = batch.count
+		if (count === 0) return
 		const program = setup.program
+		const gl = ctx.gl
 		setup.vao.bind()
 		program.use()
 		setup.batchBuffer.setContent(new Float32Array(batch.unitPositions))
@@ -87,7 +90,7 @@ const additionalRenderer: AdditionalRenderer<T, B> = {
 		gl.uniformMatrix4fv(program.uniforms.combinedMatrix, false, toGl(ctx.camera.combinedMatrix))
 
 		gl.uniformMatrix4fv(program.uniforms.rotation, false, toGl(mat4.fromYRotation(mat4.create(), ctx.secondsSinceFirstRender * 5)))
-		gl.drawArraysInstanced(gl.TRIANGLES, 0, 3, 1)
+		gl.drawArraysInstanced(gl.TRIANGLES, 0, 3, count)
 	},
 }
 
