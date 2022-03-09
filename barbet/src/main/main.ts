@@ -12,6 +12,12 @@ const canvas: HTMLCanvasElement = document.getElementById('main-canvas') as HTML
 bindFrontendVariablesToCanvas(canvas)
 
 let updater: StateUpdater | null = null
+
+if (getFromLocalStorage('other/pause-on-blur') === true) {
+	window.addEventListener('blur', () => updater?.stop())
+	window.addEventListener('focus', () => updater?.start())
+}
+
 const ticksInput = document.getElementById('input-ticksPerSecond') as HTMLInputElement
 let speedToSet = Math.max(1, (+getFromLocalStorage('other/tps') | 0) || STANDARD_GAME_TICK_RATE)
 addSaveCallback(() => ({'other/tps': speedToSet}))

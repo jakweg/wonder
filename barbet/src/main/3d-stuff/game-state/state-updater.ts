@@ -33,8 +33,11 @@ export const stateUpdaterFromReceived = (mutex: Mutex,
 
 	return {
 		start(ticksPerSecond?: number): void {
-			const changed = Status.Stopped === Atomics.compareExchange(memory, MemoryField.Status, Status.Stopped, Status.RequestedStart)
-			if (!changed) return
+			let previous = Atomics.compareExchange(memory, MemoryField.Status, Status.Stopped, Status.RequestedStart)
+			if (previous === Status.RequestedStop)
+				previous = Atomics.compareExchange(memory, MemoryField.Status, Status.RequestedStop, Status.Running)
+
+			if (previous !== Status.Stopped) return
 
 			if (ticksPerSecond !== undefined)
 				Atomics.store(memory, MemoryField.TicksPerSecond, ticksPerSecond)
@@ -79,7 +82,6 @@ export const createNewStateUpdater = (mutex: Mutex,
 	let expectedDelayBetweenTicks = 0
 	let requestStartTime = 0
 	let executedTicksCounter = 0
-	let maxTicksToPerformAtOnce = 20
 	let ticksPerSecond = 0
 
 	const buffer = createNewBuffer(MemoryField.SIZE * Int32Array.BYTES_PER_ELEMENT)
@@ -147,6 +149,11 @@ export const createNewStateUpdater = (mutex: Mutex,
 
 	let isExecutingTimer = false
 	const handleTimer = async () => {
+		if (Atomics.load(memory, MemoryField.Status) as Status === Status.RequestedStop) {
+			handleStatus()
+			return
+		}
+
 		if (isExecutingTimer) return
 		isExecutingTimer = true
 		const now = performance.now()
@@ -159,9 +166,9 @@ export const createNewStateUpdater = (mutex: Mutex,
 			throw new Error(`negative ticks ${ticksToExecute}`)
 		}
 
-		if (ticksToExecute > maxTicksToPerformAtOnce) {
+		if (now - lastTickTimeToSet > 1000) {
 			stopInstantly()
-			throw new Error(`State updater stopped due to lag: missed ${ticksToExecute} ticks`)
+			throw new Error(`State updater stopped due to lag: missed ${ticksToExecute} ticks (${now - lastTickTimeToSet | 0}ms)`)
 		}
 
 		for (let i = 0; i < ticksToExecute; i++) {
