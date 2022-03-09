@@ -2,6 +2,12 @@ import { GameState } from '../3d-stuff/game-state/game-state'
 import { StateUpdater } from '../3d-stuff/game-state/state-updater'
 import { DEBUG, FORCE_ENV_ZERO, JS_ROOT } from '../build-info'
 import { frontedVariablesBuffer } from '../util/frontend-variables'
+import { getCameraBuffer } from '../worker/serializable-settings'
+
+export interface ConnectArguments {
+	frontendVariables: SharedArrayBuffer
+	camera: SharedArrayBuffer
+}
 
 export type Environment =
 /** SharedArrayBuffer is not available.
@@ -35,5 +41,6 @@ export const loadEnvironment = async (name: Environment): Promise<Readonly<Envir
 		name = 'zero'
 	}
 	const {connect} = await import((`${JS_ROOT}/environments/${name}.js`))
-	return Object.freeze(connect({frontendVariables: frontedVariablesBuffer}) as EnvironmentConnection)
+	const args: ConnectArguments = {frontendVariables: frontedVariablesBuffer, camera: getCameraBuffer()}
+	return Object.freeze(connect(args) as EnvironmentConnection)
 }

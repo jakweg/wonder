@@ -2,15 +2,16 @@ import { GameState } from '../3d-stuff/game-state/game-state'
 import { StateUpdater, stateUpdaterFromReceived } from '../3d-stuff/game-state/state-updater'
 import { frontedVariablesBuffer, initFrontedVariablesFromReceived } from '../util/frontend-variables'
 import { setMessageHandler } from '../worker/message-handler'
-import { getCameraBuffer } from '../worker/serializable-settings'
+import { getCameraBuffer, setCameraBuffer } from '../worker/serializable-settings'
 import { WorkerController } from '../worker/worker-controller'
 import { globalMutex } from '../worker/worker-global-state'
-import { EnvironmentConnection, StartRenderArguments } from './loader'
+import { ConnectArguments, EnvironmentConnection, StartRenderArguments } from './loader'
 
 // this function is always used
 // noinspection JSUnusedGlobalSymbols
-export const connect = ({frontendVariables}: { frontendVariables: SharedArrayBuffer }): EnvironmentConnection => {
-	initFrontedVariablesFromReceived(frontendVariables)
+export const connect = (args: ConnectArguments): EnvironmentConnection => {
+	initFrontedVariablesFromReceived(args.frontendVariables)
+	setCameraBuffer(args.camera)
 
 	let gameSnapshotForRenderer: any = null
 	let entityContainerSnapshotForRenderer: any = null

@@ -3,14 +3,15 @@ import { startRenderingGame } from '../3d-stuff/renderable/render-context'
 import { Camera } from '../camera'
 import { initFrontedVariablesFromReceived } from '../util/frontend-variables'
 import { createEmptyGame } from '../worker/example-state-creator'
-import { getCameraBuffer } from '../worker/serializable-settings'
+import { getCameraBuffer, setCameraBuffer } from '../worker/serializable-settings'
 import { globalMutex, setGlobalGameState, setGlobalStateUpdater } from '../worker/worker-global-state'
-import { EnvironmentConnection, StartRenderArguments } from './loader'
+import { ConnectArguments, EnvironmentConnection, StartRenderArguments } from './loader'
 
 // this function is always used
 // noinspection JSUnusedGlobalSymbols
-export const connect = ({frontendVariables}: { frontendVariables: SharedArrayBuffer }): EnvironmentConnection => {
-	initFrontedVariablesFromReceived(frontendVariables)
+export const connect = (args: ConnectArguments): EnvironmentConnection => {
+	initFrontedVariablesFromReceived(args.frontendVariables)
+	setCameraBuffer(args.camera)
 
 	return {
 		name: 'zero',

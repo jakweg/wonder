@@ -31,6 +31,9 @@ export const getCameraBuffer = () => {
 	}
 	return cameraBuffer
 }
+export const setCameraBuffer = (buffer: SharedArrayBuffer) => {
+	cameraBuffer = buffer
+}
 
 export const save = () => {
 	if (isInWorker) throw new Error('Attempt to save storage in worker')
