@@ -40,6 +40,19 @@ export const save = () => {
 	putInLocalStorage('camera/buffer', [...new Float32Array(getCameraBuffer())])
 }
 
+let saveCallbacks: any[] = []
+export const addSaveCallback = (callback: () => any) => {
+	saveCallbacks.push(callback)
+}
+
 export const registerSaveSettingsCallback = () => {
-	window.addEventListener('beforeunload', () => save())
+	window.addEventListener('beforeunload', () => {
+		for (let i = 0, l = saveCallbacks.length; i < l; i++) {
+			const result = saveCallbacks[i]()
+			if (result != null)
+				for (const entry of Object.entries(result))
+					putInLocalStorage(entry[0], entry[1])
+		}
+		save()
+	})
 }
