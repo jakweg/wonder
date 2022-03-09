@@ -37,7 +37,7 @@ const activityWalkingByPathRoot = {
 	perform(game: GameState, unit: EntityTraitIndicesRecord) {
 		const memory = game.entities.activitiesMemory.rawData
 		const withActivitiesMemory = game.entities.withActivities.rawData
-		const pointer = unit.activityMemory + withActivitiesMemory[unit.withActivity + DataOffsetWithActivity.MemoryPointer]!
+		const pointer = withActivitiesMemory[unit.withActivity + DataOffsetWithActivity.MemoryPointer]! + unit.activityMemory
 
 		const status: Status = memory[pointer - MemoryField.Status]!
 		const requestId = memory[pointer - MemoryField.PathRequestId]!
@@ -84,7 +84,6 @@ const activityWalkingByPathRoot = {
 		}
 
 		// finished path
-
 		const returnToActivity: ActivityId = memory[pointer - MemoryField.ReturnToActivity]!
 
 		if ((unit.thisTraits & EntityTrait.Drawable) === EntityTrait.Drawable)
@@ -98,12 +97,13 @@ const activityWalkingByPathRoot = {
 		requireTrait(unit.thisTraits, EntityTrait.Position)
 
 		const positionData = game.entities.positions.rawData
+		const withActivitiesMemory = game.entities.withActivities.rawData
+		const memory = game.entities.activitiesMemory.rawData
+
 		const posX = positionData[unit.position + DataOffsetPositions.PositionX]!
 		const posZ = positionData[unit.position + DataOffsetPositions.PositionZ]!
 
-		const withActivitiesMemory = game.entities.withActivities.rawData
-		const memory = game.entities.activitiesMemory.rawData
-		const pointer = (withActivitiesMemory[unit.withActivity + DataOffsetWithActivity.MemoryPointer] += MemoryField.SIZE)
+		const pointer = (withActivitiesMemory[unit.withActivity + DataOffsetWithActivity.MemoryPointer] += MemoryField.SIZE) + unit.activityMemory
 
 		withActivitiesMemory[unit.withActivity + DataOffsetWithActivity.CurrentId] = ActivityId.WalkingByPathRoot
 		withActivitiesMemory[unit.withActivity + DataOffsetWithActivity.StartTick] = game.currentTick

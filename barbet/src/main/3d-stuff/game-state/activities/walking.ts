@@ -52,7 +52,7 @@ const activityWalking = {
 		const now = game.currentTick
 		const withActivitiesMemory = game.entities.withActivities.rawData
 		const activityMemory = game.entities.activitiesMemory.rawData
-		const pointer = withActivitiesMemory[unit.withActivity + DataOffsetWithActivity.MemoryPointer]!
+		const pointer = withActivitiesMemory[unit.withActivity + DataOffsetWithActivity.MemoryPointer]! + unit.activityMemory
 
 		if (now === activityMemory[pointer - MemoryField.WalkingFinishTick]!) {
 			withActivitiesMemory[unit.withActivity + DataOffsetWithActivity.MemoryPointer] -= MemoryField.SIZE
@@ -79,7 +79,7 @@ const activityWalking = {
 
 		const withActivitiesMemory = game.entities.withActivities.rawData
 		const memory = game.entities.activitiesMemory.rawData
-		const pointer = (withActivitiesMemory[unit.withActivity + DataOffsetWithActivity.MemoryPointer] += MemoryField.SIZE)
+		const pointer = (withActivitiesMemory[unit.withActivity + DataOffsetWithActivity.MemoryPointer] += MemoryField.SIZE) + unit.activityMemory
 
 		withActivitiesMemory[unit.withActivity + DataOffsetWithActivity.CurrentId] = ActivityId.Walking
 		withActivitiesMemory[unit.withActivity + DataOffsetWithActivity.StartTick] = now

@@ -66,8 +66,8 @@ export interface EntityTraitIndicesRecord {
 }
 
 export const createEmptyTraitRecord = (): EntityTraitIndicesRecord => ({
-	thisId: 1,
-	thisTraits: 1,
+	thisId: 0,
+	thisTraits: 0,
 	idIndex: 1,
 	position: 1,
 	drawable: 1,

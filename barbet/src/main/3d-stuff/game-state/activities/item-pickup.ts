@@ -56,7 +56,7 @@ const activityItemPickup = {
 	perform(game: GameState, unit: EntityTraitIndicesRecord) {
 		const withActivitiesMemory = game.entities.withActivities.rawData
 		const memory = game.entities.activitiesMemory.rawData
-		const pointer = withActivitiesMemory[unit.withActivity + DataOffsetWithActivity.MemoryPointer]!
+		const pointer = withActivitiesMemory[unit.withActivity + DataOffsetWithActivity.MemoryPointer]! + unit.activityMemory
 
 		const finishAt = memory[pointer - MemoryField.ActivityFinishTick]!
 		if (game.currentTick !== finishAt) return
@@ -98,7 +98,7 @@ const activityItemPickup = {
 		const now = game.currentTick
 		const withActivitiesMemory = game.entities.withActivities.rawData
 		const memory = game.entities.activitiesMemory.rawData
-		const pointer = (withActivitiesMemory[unit.withActivity + DataOffsetWithActivity.MemoryPointer] += MemoryField.SIZE)
+		const pointer = (withActivitiesMemory[unit.withActivity + DataOffsetWithActivity.MemoryPointer] += MemoryField.SIZE) + unit.activityMemory
 
 		withActivitiesMemory[unit.withActivity + DataOffsetWithActivity.CurrentId] = ActivityId.ItemPickUp
 		withActivitiesMemory[unit.withActivity + DataOffsetWithActivity.StartTick] = now

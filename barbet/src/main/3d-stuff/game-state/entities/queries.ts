@@ -55,6 +55,7 @@ export const iterateOverAllSelectedEntities = function* (container: EntityContai
 			yield record
 		}
 
+		if (hasTrait(traits, EntityTrait.Drawable)) record.drawable += DataOffsetDrawables.SIZE
 		if (hasTrait(traits, EntityTrait.Interruptible)) record.interruptible += DataOffsetInterruptible.SIZE
 	}
 }

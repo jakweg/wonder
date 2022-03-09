@@ -27,7 +27,7 @@ const activityItemPickupRoot = {
 	perform(game: GameState, unit: EntityTraitIndicesRecord) {
 		const withActivitiesMemory = game.entities.withActivities.rawData
 		const memory = game.entities.activitiesMemory.rawData
-		const pointer = withActivitiesMemory[unit.withActivity + DataOffsetWithActivity.MemoryPointer]!
+		const pointer = withActivitiesMemory[unit.withActivity + DataOffsetWithActivity.MemoryPointer]! + unit.activityMemory
 
 		const itemX = memory[pointer - MemoryField.DestinationX]!
 		const itemZ = memory[pointer - MemoryField.DestinationZ]!
@@ -61,7 +61,7 @@ const activityItemPickupRoot = {
 
 		const withActivitiesMemory = game.entities.withActivities.rawData
 		const memory = game.entities.activitiesMemory.rawData
-		const pointer = withActivitiesMemory[unit.withActivity + DataOffsetWithActivity.MemoryPointer]!
+		const pointer = withActivitiesMemory[unit.withActivity + DataOffsetWithActivity.MemoryPointer]! + unit.activityMemory
 
 		withActivitiesMemory[unit.withActivity + DataOffsetWithActivity.CurrentId] = memory[pointer - MemoryField.ReturnTo]!
 		withActivitiesMemory[unit.withActivity + DataOffsetWithActivity.MemoryPointer] -= MemoryField.SIZE
@@ -72,7 +72,7 @@ const activityItemPickupRoot = {
 
 		const withActivitiesMemory = game.entities.withActivities.rawData
 		const memory = game.entities.activitiesMemory.rawData
-		const pointer = (withActivitiesMemory[unit.withActivity + DataOffsetWithActivity.MemoryPointer] += MemoryField.SIZE)
+		const pointer = (withActivitiesMemory[unit.withActivity + DataOffsetWithActivity.MemoryPointer] += MemoryField.SIZE) + unit.activityMemory
 
 		withActivitiesMemory[unit.withActivity + DataOffsetWithActivity.CurrentId] = ActivityId.ItemPickUpRoot
 

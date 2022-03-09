@@ -21,7 +21,7 @@ const activityMiningResource = {
 		const now = game.currentTick
 		const memory = game.entities.activitiesMemory.rawData
 		const withActivitiesMemory = game.entities.withActivities.rawData
-		const pointer = withActivitiesMemory[unit.withActivity + DataOffsetWithActivity.MemoryPointer]!
+		const pointer = withActivitiesMemory[unit.withActivity + DataOffsetWithActivity.MemoryPointer]! + unit.activityMemory
 
 		const finishAt = memory[pointer - MemoryField.ActivityFinishTick]!
 		if (finishAt !== now) return
@@ -35,12 +35,12 @@ const activityMiningResource = {
 		const now = game.currentTick
 		const memory = game.entities.activitiesMemory.rawData
 		const withActivitiesMemory = game.entities.withActivities.rawData
-		const pointer = (withActivitiesMemory[unit.withActivity + DataOffsetWithActivity.MemoryPointer] += MemoryField.SIZE)
+		const drawablesData = game.entities.drawables.rawData
+		const pointer = (withActivitiesMemory[unit.withActivity + DataOffsetWithActivity.MemoryPointer] += MemoryField.SIZE) + unit.activityMemory
 
 		withActivitiesMemory[unit.withActivity + DataOffsetWithActivity.StartTick] = now
 		withActivitiesMemory[unit.withActivity + DataOffsetWithActivity.CurrentId] = ActivityId.MiningResource
 
-		const drawablesData = game.entities.drawables.rawData
 		const oldRotation = drawablesData[unit.drawable + DataOffsetDrawables.Rotation]!
 		drawablesData[unit.drawable + DataOffsetDrawables.Rotation] = Direction.FlagMergeWithPrevious | ((oldRotation & Direction.MaskCurrentRotation) << 3) | direction
 
