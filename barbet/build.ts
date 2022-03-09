@@ -42,7 +42,7 @@ if (args.size > 0) {
 		minify: buildForProduction,
 		outdir: jsOutRoot,
 		target: 'es2021',
-		splitting: true,
+		splitting: false,
 		format: 'esm',
 		watch: buildForProduction ? false : {
 			onRebuild(error: any) {

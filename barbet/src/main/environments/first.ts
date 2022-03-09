@@ -2,6 +2,7 @@ import { GameState } from '../3d-stuff/game-state/game-state'
 import { StateUpdater, stateUpdaterFromReceived } from '../3d-stuff/game-state/state-updater'
 import { startRenderingGame } from '../3d-stuff/renderable/render-context'
 import { Camera } from '../camera'
+import { initFrontedVariablesFromReceived } from '../util/frontend-variables'
 import { setMessageHandler } from '../worker/message-handler'
 import { getCameraBuffer } from '../worker/serializable-settings'
 import { WorkerController } from '../worker/worker-controller'
@@ -10,7 +11,9 @@ import { EnvironmentConnection, StartRenderArguments } from './loader'
 
 // this function is always used
 // noinspection JSUnusedGlobalSymbols
-export const connect = (): EnvironmentConnection => {
+export const connect = ({frontendVariables}: { frontendVariables: SharedArrayBuffer }): EnvironmentConnection => {
+	initFrontedVariablesFromReceived(frontendVariables)
+
 	let decodedGame: GameState | null = null
 	let updater: StateUpdater | null = null
 	let updateWorker: WorkerController | null = null

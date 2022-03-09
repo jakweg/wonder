@@ -1,6 +1,7 @@
 import { GameState } from '../3d-stuff/game-state/game-state'
 import { StateUpdater } from '../3d-stuff/game-state/state-updater'
 import { DEBUG, FORCE_ENV_ZERO, JS_ROOT } from '../build-info'
+import { frontedVariablesBuffer } from '../util/frontend-variables'
 
 export type Environment =
 /** SharedArrayBuffer is not available.
@@ -34,5 +35,5 @@ export const loadEnvironment = async (name: Environment): Promise<Readonly<Envir
 		name = 'zero'
 	}
 	const {connect} = await import((`${JS_ROOT}/environments/${name}.js`))
-	return Object.freeze(connect() as EnvironmentConnection)
+	return Object.freeze(connect({frontendVariables: frontedVariablesBuffer}) as EnvironmentConnection)
 }
