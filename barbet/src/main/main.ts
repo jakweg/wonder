@@ -22,14 +22,22 @@ if (getFromLocalStorage('other/pause-on-blur') === true) {
 }
 
 const ticksInput = document.getElementById('input-ticksPerSecond') as HTMLInputElement
-let speedToSet = STANDARD_GAME_TICK_RATE
-observeSetting('other/tps', (value) => speedToSet = Math.max(1, +value))
+let speedToSet = 0
+observeSetting('other/tps', STANDARD_GAME_TICK_RATE, (value) => speedToSet = Math.max(1, +value))
 
 ticksInput.value = speedToSet.toString()
 ticksInput.addEventListener('input', async (event) => {
 	speedToSet = +(event.target as HTMLInputElement).value
 	updater?.changeTickRate(speedToSet)
 	SettingsContainer.INSTANCE.set('other/tps', speedToSet)
+})
+
+
+const fpsCapInput = document.getElementById('input-fpsCap') as HTMLInputElement
+observeSetting('rendering/fps-cap', 0, (value) => fpsCapInput.value = (value || 0)?.toString())
+fpsCapInput.addEventListener('input', async (event) => {
+	const value = +(event.target as HTMLInputElement).value
+	SettingsContainer.INSTANCE.set('rendering/fps-cap', value)
 });
 
 (async () => {

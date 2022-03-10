@@ -2,6 +2,7 @@ import { Camera } from '../../camera'
 import { AdditionalFrontedFlags, frontedVariables, FrontendVariable } from '../../util/frontend-variables'
 import * as vec3 from '../../util/matrix/vec3'
 import { isInWorker, Lock } from '../../util/mutex'
+import { observeSetting } from '../../worker/observable-settings'
 import { globalMutex, globalWorkerDelay } from '../../worker/worker-global-state'
 import { GameState } from '../game-state/game-state'
 import { STANDARD_GAME_TICK_RATE, StateUpdater } from '../game-state/state-updater'
@@ -41,11 +42,11 @@ export const setupSceneRendering = (canvas: HTMLCanvasElement,
 			await handleInputEvents(dt, renderer, lastContext)
 		camera.updateMatrixIfNeeded()
 
+		renderer.renderStarted()
 		if (isInWorker)
 			globalMutex.enter(Lock.Update)
 		else
 			await globalMutex.enterAsync(Lock.Update)
-		renderer.renderStarted()
 
 		const now = performance.now()
 		const secondsSinceFirstRender = (now - firstRenderTime) / 1000
@@ -65,10 +66,26 @@ export const setupSceneRendering = (canvas: HTMLCanvasElement,
 		globalMutex.unlock(Lock.Update)
 	}
 
+	let minSecondsBetweenFramesFocus = 0
+	let minSecondsBetweenFramesBlur = 0
+
+	observeSetting('rendering/fps-cap', null, value => {
+		if (typeof value !== 'number' || value <= 0)
+			minSecondsBetweenFramesFocus = 0
+		else
+			minSecondsBetweenFramesFocus = 1 / ((+value <= 0 ? 0.00001 : (+value * 1.4)))
+	})
+	observeSetting('rendering/fps-cap-on-blur', null, value => {
+		if (typeof value !== 'number' || value <= 0)
+			minSecondsBetweenFramesBlur = 99999
+		else
+			minSecondsBetweenFramesBlur = 1 / ((+value <= 0 ? 0.00001 : (+value * 1.4)))
+	})
 
 	renderer.beforeRenderFunction = (secondsSinceLastFrame) => {
 		const variables = Atomics.load(frontedVariables, FrontendVariable.AdditionalFlags)
-		return (variables & AdditionalFrontedFlags.WindowHasFocus) === AdditionalFrontedFlags.WindowHasFocus || secondsSinceLastFrame > 0.5
+		const hasFocus = (variables & AdditionalFrontedFlags.WindowHasFocus) === AdditionalFrontedFlags.WindowHasFocus
+		return secondsSinceLastFrame >= (hasFocus ? minSecondsBetweenFramesFocus : minSecondsBetweenFramesBlur)
 	}
 	renderer.beginRendering()
 }

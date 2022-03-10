@@ -1,6 +1,6 @@
 import { getFromLocalStorage, putInLocalStorage } from './serializable-settings'
 
-const allSettingKeys = ['other/tps'] as const
+const allSettingKeys = ['other/tps', 'rendering/fps-cap', 'rendering/fps-cap-on-blur'] as const
 type SettingName = typeof allSettingKeys[keyof typeof allSettingKeys]
 
 class SettingsContainer {
@@ -52,8 +52,15 @@ class SettingsContainer {
 		}
 	}
 
-	public observe(key: SettingName, callback: (value: any) => any): any {
-		const value = this.values.get(key)
+	public observe(key: SettingName,
+	               defaultValue: any,
+	               callback: (value: any) => any): any {
+
+		let value = this.values.get(key)
+		if (value == null && defaultValue != null) {
+			value = defaultValue
+			this.values.set(key, defaultValue)
+		}
 		let list = this.listeners.get(key)
 		if (list === undefined) {
 			list = []
@@ -72,6 +79,8 @@ class SettingsContainer {
 }
 
 export default SettingsContainer
-export const observeSetting = (key: SettingName, callback: (value: any) => any): void => {
-	SettingsContainer.INSTANCE.observe(key, callback)
+export const observeSetting = (key: SettingName,
+                               defaultValue: any,
+                               callback: (value: any) => any): void => {
+	SettingsContainer.INSTANCE.observe(key, defaultValue, callback)
 }
