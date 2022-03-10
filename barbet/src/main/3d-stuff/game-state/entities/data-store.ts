@@ -39,7 +39,7 @@ export class DataStore<T> {
 		const currentElementsCount = oldRawData[0]++
 		const newElementIndex = currentElementsCount * this.singleSize + 1
 		const currentCapacity = oldRawData.length
-		if (newElementIndex === currentCapacity) {
+		if (newElementIndex + this.singleSize >= currentCapacity) {
 			// need resize
 			const newCapacityInBytes = Math.ceil((currentCapacity - 1) * RESIZE_FACTOR) | 0
 			this._rawData = this.allocator.resize(oldRawData as any, 1 + newCapacityInBytes)
