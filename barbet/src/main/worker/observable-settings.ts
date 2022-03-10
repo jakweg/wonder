@@ -1,7 +1,13 @@
+import { STANDARD_GAME_TICK_RATE } from '../3d-stuff/game-state/state-updater'
 import { getFromLocalStorage, putInLocalStorage } from './serializable-settings'
 
-const allSettingKeys = ['other/tps', 'rendering/fps-cap', 'rendering/fps-cap-on-blur'] as const
-type SettingName = typeof allSettingKeys[keyof typeof allSettingKeys]
+const settingsToDefaults = {
+	'other/tps': STANDARD_GAME_TICK_RATE,
+	'rendering/fps-cap': 0, // vsync only
+	'rendering/fps-cap-on-blur': 15,
+}
+
+type SettingName = keyof typeof settingsToDefaults
 
 class SettingsContainer {
 	public static INSTANCE: SettingsContainer
@@ -13,8 +19,16 @@ class SettingsContainer {
 
 	public static fromLocalstorage() {
 		const values = new Map<SettingName, any>()
-		for (const key of allSettingKeys)
-			values.set(key, getFromLocalStorage(key) ?? null)
+		for (const [key, value] of Object.entries(settingsToDefaults)) {
+			let fromLocalStorage = getFromLocalStorage(key)
+			const invalidType = fromLocalStorage != null && typeof fromLocalStorage !== typeof value
+			if (fromLocalStorage == null || invalidType) {
+				if (invalidType)
+					console.error(`Invalid value for key ${key} in localstorage`)
+				fromLocalStorage = value
+			}
+			values.set(key as SettingName, fromLocalStorage)
+		}
 
 		return new SettingsContainer(values)
 	}
@@ -53,14 +67,9 @@ class SettingsContainer {
 	}
 
 	public observe(key: SettingName,
-	               defaultValue: any,
 	               callback: (value: any) => any): any {
 
 		let value = this.values.get(key)
-		if (value == null && defaultValue != null) {
-			value = defaultValue
-			this.values.set(key, defaultValue)
-		}
 		let list = this.listeners.get(key)
 		if (list === undefined) {
 			list = []
@@ -79,8 +88,8 @@ class SettingsContainer {
 }
 
 export default SettingsContainer
-export const observeSetting = (key: SettingName,
-                               defaultValue: any,
-                               callback: (value: any) => any): void => {
-	SettingsContainer.INSTANCE.observe(key, defaultValue, callback)
+export const observeSetting = <T extends SettingName>(
+	key: T,
+	callback: (value: typeof settingsToDefaults[T]) => any): void => {
+	SettingsContainer.INSTANCE.observe(key, callback)
 }

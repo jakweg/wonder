@@ -1,4 +1,4 @@
-import { STANDARD_GAME_TICK_RATE, StateUpdater } from './3d-stuff/game-state/state-updater'
+import { StateUpdater } from './3d-stuff/game-state/state-updater'
 import { Environment, loadEnvironment } from './environments/loader'
 import { bindFrontendVariablesToCanvas, initFrontendVariableAndRegisterToWindow } from './util/frontend-variables'
 import { sharedMemoryIsAvailable } from './util/shared-memory'
@@ -23,7 +23,7 @@ if (getFromLocalStorage('other/pause-on-blur') === true) {
 
 const ticksInput = document.getElementById('input-ticksPerSecond') as HTMLInputElement
 let speedToSet = 0
-observeSetting('other/tps', STANDARD_GAME_TICK_RATE, (value) => speedToSet = Math.max(1, +value))
+observeSetting('other/tps', (value) => speedToSet = Math.max(1, +value))
 
 ticksInput.value = speedToSet.toString()
 ticksInput.addEventListener('input', async (event) => {
@@ -34,7 +34,7 @@ ticksInput.addEventListener('input', async (event) => {
 
 
 const fpsCapInput = document.getElementById('input-fpsCap') as HTMLInputElement
-observeSetting('rendering/fps-cap', 0, (value) => fpsCapInput.value = (value || 0)?.toString())
+observeSetting('rendering/fps-cap', (value) => fpsCapInput.value = (value || 0)?.toString())
 fpsCapInput.addEventListener('input', async (event) => {
 	const value = +(event.target as HTMLInputElement).value
 	SettingsContainer.INSTANCE.set('rendering/fps-cap', value)

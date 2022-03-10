@@ -69,17 +69,11 @@ export const setupSceneRendering = (canvas: HTMLCanvasElement,
 	let minSecondsBetweenFramesFocus = 0
 	let minSecondsBetweenFramesBlur = 0
 
-	observeSetting('rendering/fps-cap', null, value => {
-		if (typeof value !== 'number' || value <= 0)
-			minSecondsBetweenFramesFocus = 0
-		else
-			minSecondsBetweenFramesFocus = 1 / ((+value <= 0 ? 0.00001 : (+value * 1.4)))
+	observeSetting('rendering/fps-cap', value => {
+		minSecondsBetweenFramesFocus = (value <= 0) ? 0 : (1 / ((+value <= 0 ? 0.00001 : (+value * 1.4))))
 	})
-	observeSetting('rendering/fps-cap-on-blur', null, value => {
-		if (typeof value !== 'number' || value <= 0)
-			minSecondsBetweenFramesBlur = 99999
-		else
-			minSecondsBetweenFramesBlur = 1 / ((+value <= 0 ? 0.00001 : (+value * 1.4)))
+	observeSetting('rendering/fps-cap-on-blur', value => {
+		minSecondsBetweenFramesBlur = (value <= 0) ? 9999999 : 1 / ((+value <= 0 ? 0.00001 : (+value * 1.4)))
 	})
 
 	renderer.beforeRenderFunction = (secondsSinceLastFrame) => {
