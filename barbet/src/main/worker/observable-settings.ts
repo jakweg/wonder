@@ -3,6 +3,7 @@ import { getFromLocalStorage, putInLocalStorage } from './serializable-settings'
 
 const settingsToDefaults = {
 	'other/tps': STANDARD_GAME_TICK_RATE,
+	'other/pause-on-blur': false,
 	'rendering/fps-cap': 0, // vsync only
 	'rendering/fps-cap-on-blur': 15,
 }
