@@ -120,7 +120,7 @@ export const createNewStateUpdater = (mutex: Mutex,
 
 		ticksPerSecond = memory[MemoryField.TicksPerSecond]!
 		if (ticksPerSecond <= 0)
-			throw new Error('Invalid tps')
+			throw new Error(`Invalid tps ${ticksPerSecond}`)
 
 		clearInterval(intervalId)
 

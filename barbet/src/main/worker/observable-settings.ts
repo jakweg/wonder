@@ -6,6 +6,7 @@ const settingsToDefaults = {
 	'other/pause-on-blur': false,
 	'rendering/fps-cap': 0, // vsync only
 	'rendering/fps-cap-on-blur': 15,
+	'rendering/antialias': true,
 }
 
 type SettingName = keyof typeof settingsToDefaults
@@ -57,7 +58,7 @@ class SettingsContainer {
 			putInLocalStorage(key as string, value)
 	}
 
-	public set(key: SettingName, value: any): void {
+	public set<T extends SettingName>(key: SettingName, value: typeof settingsToDefaults[T]): void {
 		const oldValue = this.values.get(key)
 		if (oldValue === undefined || oldValue !== value) {
 			this.values.set(key, value)
@@ -67,8 +68,13 @@ class SettingsContainer {
 		}
 	}
 
+	public get<T extends SettingName>(key: SettingName): typeof settingsToDefaults[T] {
+		return this.values.get(key)
+	}
+
 	public observe(key: SettingName,
-	               callback: (value: any) => any): any {
+	               callback: (value: any) => any,
+	               initialCall: boolean): any {
 
 		let value = this.values.get(key)
 		let list = this.listeners.get(key)
@@ -76,10 +82,9 @@ class SettingsContainer {
 			list = []
 			this.listeners.set(key, list)
 		}
-		callback(value)
+		if (initialCall)
+			callback(value)
 		list.push(callback)
-		const snapshot = this.pass()
-		this.everythingListeners.forEach(e => e(snapshot))
 	}
 
 	public observeEverything(callback: (snapshot: any) => any): any {
@@ -92,5 +97,5 @@ export default SettingsContainer
 export const observeSetting = <T extends SettingName>(
 	key: T,
 	callback: (value: typeof settingsToDefaults[T]) => any): void => {
-	SettingsContainer.INSTANCE.observe(key, callback)
+	SettingsContainer.INSTANCE.observe(key, callback, true)
 }

@@ -1,15 +1,15 @@
 import { DEBUG } from '../build-info'
+import SettingsContainer from '../worker/observable-settings'
 
 type AllocatedResourceEntry = { id: any, type: 'shader' | 'program' | 'buffer' | 'vertex-array' }
 
 const obtainWebGl2ContextFromCanvas = (canvas: HTMLCanvasElement): WebGL2RenderingContext => {
 	const context = canvas.getContext('webgl2', {
 		alpha: false,
-		antialias: true,
+		antialias: SettingsContainer.INSTANCE.get('rendering/antialias'),
 		depth: true,
 		stencil: false,
 		failIfMajorPerformanceCaveat: true,
-		powerPreference: 'low-power',
 	}) as WebGL2RenderingContext
 	if (context == null)
 		throw new Error('Unable to obtain context')
@@ -62,7 +62,7 @@ export class MainRenderer {
 
 	private constructor(
 		private readonly canvas: HTMLCanvasElement,
-		private gl: WebGL2RenderingContext) {
+		private readonly gl: WebGL2RenderingContext) {
 	}
 
 	public get rawContext(): WebGL2RenderingContext {
