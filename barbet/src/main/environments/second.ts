@@ -2,6 +2,7 @@ import { GameState } from '../3d-stuff/game-state/game-state'
 import { StateUpdater, stateUpdaterFromReceived } from '../3d-stuff/game-state/state-updater'
 import { frontedVariablesBuffer, initFrontedVariablesFromReceived } from '../util/frontend-variables'
 import { setMessageHandler } from '../worker/message-handler'
+import SettingsContainer from '../worker/observable-settings'
 import { getCameraBuffer, setCameraBuffer } from '../worker/serializable-settings'
 import { WorkerController } from '../worker/worker-controller'
 import { globalMutex } from '../worker/worker-global-state'
@@ -12,6 +13,7 @@ import { ConnectArguments, EnvironmentConnection, StartRenderArguments } from '.
 export const connect = (args: ConnectArguments): EnvironmentConnection => {
 	initFrontedVariablesFromReceived(args.frontendVariables)
 	setCameraBuffer(args.camera)
+	SettingsContainer.INSTANCE = args.settings
 
 	let gameSnapshotForRenderer: any = null
 	let entityContainerSnapshotForRenderer: any = null
@@ -28,6 +30,7 @@ export const connect = (args: ConnectArguments): EnvironmentConnection => {
 
 			updateWorker = await WorkerController.spawnNew('update-worker', 'update', globalMutex)
 			updateWorker.replier.send('create-game', undefined)
+			args.settings.observeEverything(snapshot => updateWorker?.replier.send('new-settings', snapshot))
 
 			setMessageHandler('update-entity-container', data => {
 				decodedGame!.entities.replaceBuffersFromReceived(data)
@@ -46,7 +49,7 @@ export const connect = (args: ConnectArguments): EnvironmentConnection => {
 				})
 			})
 		},
-		async startRender(args: StartRenderArguments): Promise<void> {
+		async startRender(renderArguments: StartRenderArguments): Promise<void> {
 			if (renderWorker !== null)
 				throw new Error('Render worker was already created')
 
@@ -54,7 +57,8 @@ export const connect = (args: ConnectArguments): EnvironmentConnection => {
 				throw new Error('Create game first')
 
 			renderWorker = await WorkerController.spawnNew('render-worker', 'render', globalMutex)
-			const canvasControl = (args.canvas as any).transferControlToOffscreen()
+			args.settings.observeEverything(snapshot => renderWorker?.replier.send('new-settings', snapshot))
+			const canvasControl = (renderArguments.canvas as any).transferControlToOffscreen()
 			renderWorker.replier.send('frontend-variables', {buffer: frontedVariablesBuffer})
 			renderWorker.replier.send('camera-buffer', {buffer: getCameraBuffer()})
 			renderWorker.replier.send('transfer-canvas', {canvas: canvasControl}, [canvasControl])

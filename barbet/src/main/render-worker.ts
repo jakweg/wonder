@@ -5,8 +5,10 @@ import { Camera } from './camera'
 import { initFrontedVariablesFromReceived } from './util/frontend-variables'
 import { takeControlOverWorkerConnection } from './worker/connections-manager'
 import { Connection, setMessageHandler } from './worker/message-handler'
+import SettingsContainer from './worker/observable-settings'
 import { globalMutex, globalWorkerDelay, setGlobalMutex } from './worker/worker-global-state'
 
+SettingsContainer.INSTANCE = SettingsContainer.createEmpty()
 takeControlOverWorkerConnection()
 
 let canvas: HTMLCanvasElement | null = null
@@ -19,6 +21,10 @@ let connectionWithParent: Connection
 setMessageHandler('set-global-mutex', (data, connection) => {
 	setGlobalMutex(data.mutex)
 	connectionWithParent = connection
+})
+
+setMessageHandler('new-settings', settings => {
+	SettingsContainer.INSTANCE.update(settings)
 })
 
 setMessageHandler('transfer-canvas', (data) => {

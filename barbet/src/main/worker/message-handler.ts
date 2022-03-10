@@ -9,6 +9,7 @@ export interface Message {
 	['frontend-variables']: { buffer: SharedArrayBuffer }
 	['update-entity-container']: { buffers: SharedArrayBuffer[] }
 	['camera-buffer']: { buffer: SharedArrayBuffer }
+	['new-settings']: any
 }
 
 export type MessageType = keyof Message

@@ -62,7 +62,7 @@ export class MainRenderer {
 
 	private constructor(
 		private readonly canvas: HTMLCanvasElement,
-		private readonly gl: WebGL2RenderingContext) {
+		private gl: WebGL2RenderingContext) {
 	}
 
 	public get rawContext(): WebGL2RenderingContext {

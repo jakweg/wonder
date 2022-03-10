@@ -166,7 +166,7 @@ export const createNewStateUpdater = (mutex: Mutex,
 			throw new Error(`negative ticks ${ticksToExecute}`)
 		}
 
-		if (now - lastTickTimeToSet > 1000) {
+		if (ticksToExecute > 10 && now - lastTickTimeToSet > 1000) {
 			stopInstantly()
 			throw new Error(`State updater stopped due to lag: missed ${ticksToExecute} ticks (${now - lastTickTimeToSet | 0}ms)`)
 		}

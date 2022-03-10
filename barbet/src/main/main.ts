@@ -2,8 +2,11 @@ import { STANDARD_GAME_TICK_RATE, StateUpdater } from './3d-stuff/game-state/sta
 import { Environment, loadEnvironment } from './environments/loader'
 import { bindFrontendVariablesToCanvas, initFrontendVariableAndRegisterToWindow } from './util/frontend-variables'
 import { sharedMemoryIsAvailable } from './util/shared-memory'
+import SettingsContainer, { observeSetting } from './worker/observable-settings'
 import { addSaveCallback, getFromLocalStorage, registerSaveSettingsCallback } from './worker/serializable-settings'
 
+SettingsContainer.INSTANCE = SettingsContainer.fromLocalstorage()
+addSaveCallback(() => SettingsContainer.INSTANCE.saveToLocalStorage())
 registerSaveSettingsCallback()
 initFrontendVariableAndRegisterToWindow()
 
@@ -19,12 +22,14 @@ if (getFromLocalStorage('other/pause-on-blur') === true) {
 }
 
 const ticksInput = document.getElementById('input-ticksPerSecond') as HTMLInputElement
-let speedToSet = Math.max(1, (+getFromLocalStorage('other/tps') | 0) || STANDARD_GAME_TICK_RATE)
-addSaveCallback(() => ({'other/tps': speedToSet}))
+let speedToSet = STANDARD_GAME_TICK_RATE
+observeSetting('other/tps', (value) => speedToSet = Math.max(1, +value))
+
 ticksInput.value = speedToSet.toString()
 ticksInput.addEventListener('input', async (event) => {
 	speedToSet = +(event.target as HTMLInputElement).value
 	updater?.changeTickRate(speedToSet)
+	SettingsContainer.INSTANCE.set('other/tps', speedToSet)
 });
 
 (async () => {
