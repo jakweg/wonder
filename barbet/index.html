@@ -17,7 +17,12 @@
     </label>
     <label>
         <span>fps-cap</span>
-        <input id="input-fpsCap" max="60" min=0 step=1 type="range" value=0>
+        <select id="input-fpsCap">
+            <option value="0">VSYNC</option>
+            <option value="15">15</option>
+            <option value="30">30</option>
+            <option value="60">60</option>
+        </select>
     </label>
 </div>
 <script src="build-js/main.js" type=module></script>
