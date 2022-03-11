@@ -79,6 +79,72 @@ export class World {
 		}
 	}
 
+	public extractTo(other: World, sx: number, sy: number, sz: number): void {
+		if (other === this)
+			throw new Error('Cannot extract to self')
+		this.validateCoords(sx, sy, sz)
+		const {sizeX, sizeY, sizeZ, blocksPerY} = other.size
+
+		if (this.size.sizeX - sx < sizeX
+			|| this.size.sizeY - sy < sizeY
+			|| this.size.sizeZ - sz < sizeZ)
+			throw new Error('Invalid sizes')
+
+
+		const mySizeX = this.size.sizeX
+		const myBlocksPerY = this.size.blocksPerY
+		const myRawData = this.rawBlockData
+		const otherRawData = other.rawBlockData
+		const myHeightData = this.rawHeightData
+		const otherHeightData = other.rawHeightData
+
+		other.lastChangeId++
+		for (let i = other.chunkModificationIds.length - 1; i >= 0; i--)
+			other.chunkModificationIds[i]++
+
+		for (let y = 0; y < sizeY; y++) {
+			for (let x = 0; x < sizeX; x++) {
+				for (let z = 0; z < sizeZ; z++) {
+					otherRawData[y * blocksPerY + x * sizeX + z] = myRawData[(y + sy) * myBlocksPerY + (x + sx) * mySizeX + (z + sz)]!
+					otherHeightData[x * sizeX + z] = myHeightData[(x + sx) * mySizeX + (z + sz)]! - sy
+				}
+			}
+		}
+	}
+
+	public copyFrom(other: World, sx: number, sy: number, sz: number): void {
+		if (other === this)
+			throw new Error('Cannot copy to self')
+		this.validateCoords(sx, sy, sz)
+		const {sizeX, sizeY, sizeZ, blocksPerY} = other.size
+
+		if (this.size.sizeX - sx < sizeX
+			|| this.size.sizeY - sy < sizeY
+			|| this.size.sizeZ - sz < sizeZ)
+			throw new Error('Invalid sizes')
+
+
+		const myBlocksPerY = this.size.blocksPerY
+		const mySizeX = this.size.sizeX
+		const myRawData = this.rawBlockData
+		const otherRawData = other.rawBlockData
+		const otherHeightData = other.rawHeightData
+		const myHeightData = this.rawHeightData
+
+		this.lastChangeId++
+		for (let i = this.chunkModificationIds.length - 1; i >= 0; i--)
+			this.chunkModificationIds[i]++
+
+		for (let y = 0; y < sizeY; y++) {
+			for (let x = 0; x < sizeX; x++) {
+				for (let z = 0; z < sizeZ; z++) {
+					myRawData[(y + sy) * myBlocksPerY + (x + sx) * mySizeX + (z + sz)] = otherRawData[y * blocksPerY + x * sizeX + z]!
+					myHeightData[(x + sx) * mySizeX + (z + sz)] = otherHeightData[x * sizeX + z]! + sy
+				}
+			}
+		}
+	}
+
 	public setBlock(x: number, y: number, z: number, blockId: BlockId) {
 		this.validateCoords(x, y, z)
 		const sizeX = this.size.sizeX
