@@ -1,3 +1,4 @@
+import { decodeArray, encodeArray } from '../../../util/serializers'
 import { createNewBuffer } from '../../../util/shared-memory'
 import { ArrayAllocator, DataStore } from './data-store'
 import {
@@ -87,7 +88,7 @@ class EntityContainer {
 	) {
 	}
 
-	public static createEmptyContainer() {
+	public static createEmptyContainer(): EntityContainer {
 		let container: EntityContainer
 
 		const allocator = createInt32Allocator([],
@@ -96,12 +97,23 @@ class EntityContainer {
 		return container = new EntityContainer(allocator)
 	}
 
-	public static fromReceived(object: any) {
+	public static fromReceived(object: any): EntityContainer {
 		if (object['type'] !== 'entity-container')
 			throw new Error('Invalid object')
 
 		let container: EntityContainer
 		const allocator = createInt32Allocator(object['buffers'],
+			() => container.buffersChanged = true)
+
+		container = new EntityContainer(allocator)
+		return container
+	}
+
+	public static deserialize(object: any): EntityContainer {
+		let container: EntityContainer
+		const buffers = (object.buffers as string[]).map(b => decodeArray(b, true, Uint8Array).buffer as SharedArrayBuffer)
+
+		const allocator = createInt32Allocator(buffers,
 			() => container.buffersChanged = true)
 
 		container = new EntityContainer(allocator)
@@ -125,6 +137,12 @@ class EntityContainer {
 		return {
 			type: 'entity-container',
 			buffers: this.allocator.buffers,
+		}
+	}
+
+	public serialize(): any {
+		return {
+			buffers: this.allocator.buffers.map(array => encodeArray(new Uint8Array(array))),
 		}
 	}
 

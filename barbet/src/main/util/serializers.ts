@@ -16,6 +16,7 @@ export const decodeArray = <T>(data: string, makeShared: boolean, constructor: {
 	for (let i = 0; i < length; i++)
 		array[i] = data.charCodeAt(i)
 
-	return new constructor(buffer)
+	// @ts-ignore
+	return Uint8Array === constructor ? array : (new constructor(buffer))
 }
 

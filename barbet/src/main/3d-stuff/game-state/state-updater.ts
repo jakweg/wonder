@@ -81,7 +81,7 @@ export const createNewStateUpdater = (mutex: Mutex,
 	let intervalId = 0
 	let expectedDelayBetweenTicks = 0
 	let requestStartTime = 0
-	let executedTicksCounter = 0
+	let executedTicksCounter = state.currentTick
 	let ticksPerSecond = 0
 
 	const buffer = createNewBuffer(MemoryField.SIZE * Int32Array.BYTES_PER_ELEMENT)

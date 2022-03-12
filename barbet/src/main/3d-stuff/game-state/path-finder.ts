@@ -18,15 +18,36 @@ interface PathResult {
 }
 
 export class PathFinder {
-	private readonly readyPaths = new Map<number, PathResult>()
-	private readonly pathQueue: PathRequest[] = []
-	private nextPathRequestId: number = 0
 
-	private constructor(private readonly world: World) {
+	private constructor(private readonly world: World,
+	                    private readonly readyPaths: Map<number, PathResult>,
+	                    private readonly pathQueue: PathRequest[],
+	                    private nextPathRequestId: number) {
 	}
 
-	public static createNewQueue(world: World) {
-		return new PathFinder(world)
+	public static createNewQueue(world: World): PathFinder {
+		return new PathFinder(world, new Map<number, PathResult>(), [], 0)
+	}
+
+	public static deserialize(world: World, object: any): PathFinder {
+		const {readyPaths, pathQueue, nextPathRequestId} = object
+
+		return new PathFinder(world,
+			new Map<number, PathResult>(readyPaths.map((e: any) => [e.id, {...e}])),
+			pathQueue.map((e: any) => ({...e})),
+			nextPathRequestId)
+	}
+
+	public serialize(): any {
+		return {
+			readyPaths: [...this.readyPaths.entries()].map(e => ({
+				...e[1],
+				id: e[0],
+				directions: [...(e[1].directions)],
+			})),
+			pathQueue: this.pathQueue.map(e => ({...e})),
+			nextPathRequestId: this.nextPathRequestId,
+		}
 	}
 
 	public tick(game: GameState) {

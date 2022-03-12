@@ -1,20 +1,21 @@
+import { decodeArray, encodeArray } from '../../util/serializers'
 import { createNewBuffer } from '../../util/shared-memory'
 import { ItemType } from '../world/item'
 import { WorldSize } from '../world/world'
 
 
 export class GroundItemsIndex {
-	public get lastDataChangeId(): number {
-		return this.rawItemData[0]!
-	}
-
 	private constructor(public readonly rawItemData: Uint8Array,
 	                    private readonly buffer: SharedArrayBuffer,
 	                    public readonly sizeX: number,
 	                    public readonly sizeZ: number) {
 	}
 
-	public static createNew(size: WorldSize) {
+	public get lastDataChangeId(): number {
+		return this.rawItemData[0]!
+	}
+
+	public static createNew(size: WorldSize): GroundItemsIndex {
 		const {sizeX, sizeZ} = size
 		const buffer = createNewBuffer((sizeX * sizeZ + 1) * Uint8Array.BYTES_PER_ELEMENT)
 
@@ -23,7 +24,7 @@ export class GroundItemsIndex {
 	}
 
 
-	public static fromReceived(object: any) {
+	public static fromReceived(object: any): GroundItemsIndex {
 		if (object['type'] !== 'ground-items-index') throw new Error('Invalid object')
 		const sizeX = object['sizeX'] as number
 		const sizeZ = object['sizeZ'] as number
@@ -33,12 +34,27 @@ export class GroundItemsIndex {
 		return new GroundItemsIndex(itemIds, buffer, sizeX, sizeZ)
 	}
 
+	public static deserialize(object: any): GroundItemsIndex {
+		const {sizeX, sizeZ, index} = object
+
+		const itemIds = decodeArray(index, true, Uint8Array)
+		return new GroundItemsIndex(itemIds, itemIds.buffer as SharedArrayBuffer, sizeX, sizeZ)
+	}
+
 	public pass(): unknown {
 		return {
 			type: 'ground-items-index',
 			sizeX: this.sizeX,
 			sizeZ: this.sizeZ,
 			buffer: this.buffer,
+		}
+	}
+
+	public serialize(): any {
+		return {
+			sizeX: this.sizeX,
+			sizeZ: this.sizeZ,
+			index: encodeArray(this.rawItemData),
 		}
 	}
 

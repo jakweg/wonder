@@ -1,3 +1,4 @@
+import { decodeArray, encodeArray } from '../../util/serializers'
 import { createNewBuffer } from '../../util/shared-memory'
 import { SurfaceResourceType } from '../world/surface-resource'
 import { ComputedWorldSize } from '../world/world'
@@ -25,6 +26,13 @@ export class SurfaceResourcesIndex {
 		return new SurfaceResourcesIndex(size.sizeX, size.sizeZ, buffer, rawIndex)
 	}
 
+	public static deserialize(object: any): SurfaceResourcesIndex {
+		const {sizeX, sizeZ, index} = object
+
+		const rawIndex = decodeArray(index, true, Uint8Array)
+		return new SurfaceResourcesIndex(sizeX, sizeZ, rawIndex.buffer as SharedArrayBuffer, rawIndex)
+	}
+
 	public static fromReceived(object: any): SurfaceResourcesIndex {
 		if (object['type'] !== 'surface-index') throw new Error('Invalid object')
 		const buffer = object['buffer'] as SharedArrayBuffer
@@ -41,6 +49,13 @@ export class SurfaceResourcesIndex {
 		}
 	}
 
+	public serialize(): any {
+		return {
+			sizeX: this.sizeX,
+			sizeZ: this.sizeZ,
+			index: encodeArray(this.rawData),
+		}
+	}
 
 	public setResource(x: number, z: number, type: SurfaceResourceType, amount: number): void {
 		this.validateCoords(x, z)

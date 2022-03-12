@@ -12,16 +12,16 @@ import { SurfaceResourcesIndex } from './surface-resources-index'
 export class GameState {
 	private isRunningLogic: boolean = false
 
-	private constructor(public readonly world: World,
-	                    public readonly groundItems: GroundItemsIndex,
-	                    public readonly entities: EntityContainer,
-	                    public readonly pathFinder: PathFinder,
-	                    public readonly surfaceResources: SurfaceResourcesIndex,
-	                    private readonly mutex: Mutex,
-	                    private readonly stateBroadcastCallback: () => void) {
+	private constructor(
+		private _currentTick: number,
+		public readonly world: World,
+		public readonly groundItems: GroundItemsIndex,
+		public readonly entities: EntityContainer,
+		public readonly pathFinder: PathFinder,
+		public readonly surfaceResources: SurfaceResourcesIndex,
+		private readonly mutex: Mutex,
+		private readonly stateBroadcastCallback: () => void) {
 	}
-
-	private _currentTick: number = 0
 
 	public get currentTick(): number {
 		return this._currentTick | 0
@@ -35,13 +35,26 @@ export class GameState {
 		surfaceResources: SurfaceResourcesIndex,
 		mutex: Mutex,
 		stateBroadcastCallback: () => void): GameState {
-		return new GameState(world, groundItems, entities, pathFinder, surfaceResources, mutex, stateBroadcastCallback)
+		return new GameState(0, world, groundItems, entities, pathFinder, surfaceResources, mutex, stateBroadcastCallback)
+	}
+
+	public static deserialize(object: any, mutex: Mutex, stateBroadcastCallback: () => void): GameState {
+		const world = World.deserialize(object.world)
+		return new GameState(
+			+object.tick,
+			world,
+			GroundItemsIndex.deserialize(object.groundItems),
+			EntityContainer.deserialize(object.entities),
+			PathFinder.deserialize(world, object.pathFinder),
+			SurfaceResourcesIndex.deserialize(object.surfaceResources),
+			mutex, stateBroadcastCallback)
 	}
 
 	public static forRenderer(object: any): GameState {
 		if (object['type'] !== 'game-state') throw new Error('Invalid object')
 
 		return new GameState(
+			-1,
 			World.fromReceived(object['world']),
 			GroundItemsIndex.fromReceived(object['groundItems']),
 			EntityContainer.fromReceived(object['entities']),
@@ -59,6 +72,19 @@ export class GameState {
 			groundItems: this.groundItems.pass(),
 			entities: this.entities.pass(),
 			surfaceResources: this.surfaceResources.pass(),
+		}
+	}
+
+	public serialize(): any {
+		if (this.pathFinder == null)
+			throw new Error('Cannot serialize game without pathfinder')
+		return {
+			tick: this._currentTick,
+			world: this.world.serialize(),
+			groundItems: this.groundItems.serialize(),
+			entities: this.entities.serialize(),
+			surfaceResources: this.surfaceResources.serialize(),
+			pathFinder: this.pathFinder.serialize(),
 		}
 	}
 
