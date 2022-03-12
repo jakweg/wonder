@@ -71,77 +71,63 @@ export class World {
 		return new World(size, blockData, heightData, chunkModificationIds, buffers)
 	}
 
+	public static copyFragment(from: World, to: World,
+	                           fromX: number, fromY: number, fromZ: number,
+	                           toX: number, toY: number, toZ: number,
+	                           sizeX: number, sizeY: number, sizeZ: number): void {
+		if (from === to)
+			throw new Error('Cannot copy to self')
+
+		const toSizeX = to.size.sizeX
+		const fromSizeX = from.size.sizeX
+		const toSizeZ = to.size.sizeZ
+		const fromSizeZ = from.size.sizeZ
+		const toRawData = to.rawBlockData
+		const fromRawData = from.rawBlockData
+		const fromBlocksY = from.size.blocksPerY
+		const toBlocksY = to.size.blocksPerY
+		const fromRawHeightData = from.rawHeightData
+		const toRawHeightData = to.rawHeightData
+		const heightDelta = toY - fromY
+
+		if (
+			fromX !== (fromX | 0) || fromX < 0 || fromX >= fromSizeX
+			|| fromY !== (fromY | 0) || fromY < 0 || fromY >= from.size.sizeY
+			|| fromZ !== (fromZ | 0) || fromZ < 0 || fromZ >= fromSizeZ
+
+			|| toX !== (toX | 0) || toX < 0 || (toX + sizeX) > toSizeX
+			|| toY !== (toY | 0) || toY < 0 || (toY + sizeY) > to.size.sizeY
+			|| toZ !== (toZ | 0) || toZ < 0 || (toZ + sizeZ) > toSizeZ
+
+			|| sizeX !== (sizeX | 0) || sizeX < 0
+			|| sizeY !== (sizeY | 0) || sizeY < 0
+			|| sizeZ !== (sizeZ | 0) || sizeZ < 0
+		) throw new Error('Invalid arguments')
+
+
+		for (let y = 0; y < sizeY; y++)
+			for (let x = 0; x < sizeX; x++)
+				for (let z = 0; z < sizeZ; z++)
+					toRawData[(toY + y) * toBlocksY + (toX + x) * toSizeZ + (toZ + z)] = fromRawData[(fromY + y) * fromBlocksY + (fromX + x) * fromSizeZ + (fromZ + z)]!
+
+
+		for (let x = 0; x < sizeX; x++)
+			for (let z = 0; z < sizeZ; z++)
+				toRawHeightData[(toZ + z) * toSizeX + (toX + x)] = fromRawHeightData[(fromZ + z) * fromSizeX + (fromX + x)]! + heightDelta
+
+
+		to.lastChangeId++
+		const chunkModificationIds = to.chunkModificationIds
+		for (let i = 0, l = chunkModificationIds.length; i < l; i++)
+			chunkModificationIds[i]++
+	}
+
+
 	public pass(): unknown {
 		return {
 			type: 'world',
 			size: this.size,
 			buffers: this.buffers,
-		}
-	}
-
-	public extractTo(other: World, sx: number, sy: number, sz: number): void {
-		if (other === this)
-			throw new Error('Cannot extract to self')
-		this.validateCoords(sx, sy, sz)
-		const {sizeX, sizeY, sizeZ, blocksPerY} = other.size
-
-		if (this.size.sizeX - sx < sizeX
-			|| this.size.sizeY - sy < sizeY
-			|| this.size.sizeZ - sz < sizeZ)
-			throw new Error('Invalid sizes')
-
-
-		const mySizeX = this.size.sizeX
-		const myBlocksPerY = this.size.blocksPerY
-		const myRawData = this.rawBlockData
-		const otherRawData = other.rawBlockData
-		const myHeightData = this.rawHeightData
-		const otherHeightData = other.rawHeightData
-
-		other.lastChangeId++
-		for (let i = other.chunkModificationIds.length - 1; i >= 0; i--)
-			other.chunkModificationIds[i]++
-
-		for (let y = 0; y < sizeY; y++) {
-			for (let x = 0; x < sizeX; x++) {
-				for (let z = 0; z < sizeZ; z++) {
-					otherRawData[y * blocksPerY + x * sizeX + z] = myRawData[(y + sy) * myBlocksPerY + (x + sx) * mySizeX + (z + sz)]!
-					otherHeightData[x * sizeX + z] = myHeightData[(x + sx) * mySizeX + (z + sz)]! - sy
-				}
-			}
-		}
-	}
-
-	public copyFrom(other: World, sx: number, sy: number, sz: number): void {
-		if (other === this)
-			throw new Error('Cannot copy to self')
-		this.validateCoords(sx, sy, sz)
-		const {sizeX, sizeY, sizeZ, blocksPerY} = other.size
-
-		if (this.size.sizeX - sx < sizeX
-			|| this.size.sizeY - sy < sizeY
-			|| this.size.sizeZ - sz < sizeZ)
-			throw new Error('Invalid sizes')
-
-
-		const myBlocksPerY = this.size.blocksPerY
-		const mySizeX = this.size.sizeX
-		const myRawData = this.rawBlockData
-		const otherRawData = other.rawBlockData
-		const otherHeightData = other.rawHeightData
-		const myHeightData = this.rawHeightData
-
-		this.lastChangeId++
-		for (let i = this.chunkModificationIds.length - 1; i >= 0; i--)
-			this.chunkModificationIds[i]++
-
-		for (let y = 0; y < sizeY; y++) {
-			for (let x = 0; x < sizeX; x++) {
-				for (let z = 0; z < sizeZ; z++) {
-					myRawData[(y + sy) * myBlocksPerY + (x + sx) * mySizeX + (z + sz)] = otherRawData[y * blocksPerY + x * sizeX + z]!
-					myHeightData[(x + sx) * mySizeX + (z + sz)] = otherHeightData[x * sizeX + z]! + sy
-				}
-			}
 		}
 	}
 
