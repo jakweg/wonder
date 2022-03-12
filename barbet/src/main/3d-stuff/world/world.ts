@@ -1,3 +1,4 @@
+import { decodeArray, encodeArray } from '../../util/serializers'
 import { createNewBuffer } from '../../util/shared-memory'
 import { AIR_ID, BlockId } from './block'
 
@@ -59,7 +60,7 @@ export class World {
 		return new World(size, blockData, heightData, chunkModificationIds, buffers)
 	}
 
-	public static fromReceived(object: any) {
+	public static fromReceived(object: any): World {
 		if (object['type'] !== 'world') throw new Error('Invalid world object')
 		const size = object['size'] as ComputedWorldSize
 		const buffers = object['buffers'] as SharedArrayBuffer[]
@@ -69,6 +70,27 @@ export class World {
 		const chunkModificationIds = new Uint16Array(buffers[2]!)
 
 		return new World(size, blockData, heightData, chunkModificationIds, buffers)
+	}
+
+	public static deserialize(object: any): World {
+		const {sizeX, sizeY, sizeZ, blocks} = object
+		const blocksPerY = sizeX * sizeZ
+		const totalBlocks = sizeY * blocksPerY
+		const chunksSizeX = Math.ceil(sizeX / WORLD_CHUNK_SIZE)
+		const chunksSizeZ = Math.ceil(sizeZ / WORLD_CHUNK_SIZE)
+		const size: ComputedWorldSize = {sizeX, sizeY, sizeZ, blocksPerY, totalBlocks, chunksSizeX, chunksSizeZ}
+
+		const rawBlockData = decodeArray(blocks, true, Uint8Array)
+
+		const buffers = [
+			rawBlockData.buffer as SharedArrayBuffer,
+			createNewBuffer(blocksPerY * Uint8ClampedArray.BYTES_PER_ELEMENT),
+			createNewBuffer(chunksSizeX * chunksSizeZ * Uint16Array.BYTES_PER_ELEMENT),
+		]
+
+		const world = new World(size, rawBlockData, new Uint8ClampedArray(buffers[1]!), new Uint16Array(buffers[2]!), buffers)
+		world.recalculateHeightIndex()
+		return world
 	}
 
 	public static copyFragment(from: World, to: World,
@@ -128,6 +150,15 @@ export class World {
 			type: 'world',
 			size: this.size,
 			buffers: this.buffers,
+		}
+	}
+
+	public serialize(): any {
+		return {
+			sizeX: this.size.sizeX,
+			sizeY: this.size.sizeY,
+			sizeZ: this.size.sizeZ,
+			blocks: encodeArray(this.rawBlockData),
 		}
 	}
 
