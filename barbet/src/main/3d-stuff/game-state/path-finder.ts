@@ -38,7 +38,7 @@ export class PathFinder {
 				this.readyPaths.delete(id)
 		}
 
-		const tester = (x: number, z: number) => this.world.getHighestBlockHeight(x, z) === 1
+		const tester = (x: number, z: number) => this.world.getHighestBlockHeightSafe(x, z) === 1
 		for (const req of this.pathQueue) {
 
 			const directions = findPathDirectionsToArea(req.fromX, req.fromZ, req.toX, req.toZ, req.areaSize, tester)

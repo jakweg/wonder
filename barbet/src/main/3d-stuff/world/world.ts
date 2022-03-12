@@ -184,6 +184,15 @@ export class World {
 		return this.rawHeightData[z * sizeX + x]!
 	}
 
+	public getHighestBlockHeightSafe(x: number, z: number): number {
+		const sizeX = this.size.sizeX
+		const sizeZ = this.size.sizeZ
+		if (x < 0 || x >= sizeX || (x | 0) !== x
+			|| z < 0 || z >= sizeZ || (z | 0) !== z)
+			return -1
+		return this.rawHeightData[z * sizeX + x]!
+	}
+
 	private validateCoords(x: number, y: number, z: number) {
 		if (x < 0 || x >= this.size.sizeX || (x | 0) !== x
 			|| y < 0 || y >= this.size.sizeY || (y | 0) !== y
