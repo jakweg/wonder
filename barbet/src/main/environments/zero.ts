@@ -1,7 +1,7 @@
 import { createNewStateUpdater, stateUpdaterFromReceived } from '../3d-stuff/game-state/state-updater'
 import { startRenderingGame } from '../3d-stuff/renderable/render-context'
 import { Camera } from '../camera'
-import { initFrontedVariablesFromReceived } from '../util/frontend-variables'
+import { initFrontedVariablesFromReceived } from '../util/frontend-variables-updaters'
 import { createEmptyGame } from '../worker/example-state-creator'
 import SettingsContainer from '../worker/observable-settings'
 import { getCameraBuffer, setCameraBuffer } from '../worker/serializable-settings'

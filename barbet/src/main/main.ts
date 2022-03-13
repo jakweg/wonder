@@ -1,6 +1,9 @@
 import { StateUpdater } from './3d-stuff/game-state/state-updater'
 import { Environment, loadEnvironment } from './environments/loader'
-import { bindFrontendVariablesToCanvas, initFrontendVariableAndRegisterToWindow } from './util/frontend-variables'
+import {
+	bindFrontendVariablesToCanvas,
+	initFrontendVariableAndRegisterToWindow,
+} from './util/frontend-variables-updaters'
 import { sharedMemoryIsAvailable } from './util/shared-memory'
 import SettingsContainer, { observeSetting } from './worker/observable-settings'
 import { addSaveCallback, registerSaveSettingsCallback } from './worker/serializable-settings'

@@ -1,6 +1,7 @@
 import { GameState } from '../3d-stuff/game-state/game-state'
 import { StateUpdater, stateUpdaterFromReceived } from '../3d-stuff/game-state/state-updater'
-import { frontedVariablesBuffer, initFrontedVariablesFromReceived } from '../util/frontend-variables'
+import { frontedVariablesBuffer } from '../util/frontend-variables'
+import { initFrontedVariablesFromReceived } from '../util/frontend-variables-updaters'
 import { setMessageHandler } from '../worker/message-handler'
 import SettingsContainer from '../worker/observable-settings'
 import { getCameraBuffer, setCameraBuffer } from '../worker/serializable-settings'
