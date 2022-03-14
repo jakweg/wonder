@@ -26,10 +26,10 @@ export const enum MemoryField {
 export type StateUpdater = ReturnType<typeof stateUpdaterFromReceived>
 export const stateUpdaterFromReceived = (mutex: Mutex,
                                          data: any) => {
-	if (data?.type !== 'state-updater')
+	if (data['type'] !== 'state-updater')
 		throw new Error('Invalid state updater')
 
-	const memory = new Int32Array(data.buffer)
+	const memory = new Int32Array(data['buffer'])
 
 	return {
 		start(ticksPerSecond?: number): void {
@@ -69,7 +69,7 @@ export const stateUpdaterFromReceived = (mutex: Mutex,
 			Atomics.store(memory, MemoryField.Status, Status.RequestedStop)
 			const wait = waitAsyncCompat(memory, MemoryField.Status, Status.RequestedStop)
 			if (wait.async)
-				return wait.value.then(() => 'stopped')
+				return wait['value'].then(() => 'stopped')
 			else
 				return Promise.resolve('stopped')
 		},
@@ -92,7 +92,8 @@ export const createNewStateUpdater = (mutex: Mutex,
 	const setupStartRequestMonitoring = () => {
 		(async () => {
 			while (true) {
-				await waitAsyncCompat(memory, MemoryField.Status, Status.Stopped, 1.0).value
+				await waitAsyncCompat(memory, MemoryField.Status, Status.Stopped, 10.0)['value']
+
 				const oldValue = Atomics.compareExchange(memory, MemoryField.Status, Status.RequestedStart, Status.Running) as Status
 				if (oldValue === Status.Running || oldValue === Status.RequestedTickRateChange) return
 
@@ -190,8 +191,8 @@ export const createNewStateUpdater = (mutex: Mutex,
 	return {
 		pass(): unknown {
 			return {
-				type: 'state-updater',
-				buffer,
+				'type': 'state-updater',
+				'buffer': buffer,
 			}
 		},
 		terminate(): void {

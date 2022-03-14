@@ -3,7 +3,7 @@ import { createNewBuffer } from './shared-memory'
 type ArrayToEncode = Uint8Array | Int8Array | Uint16Array | Int16Array | Uint32Array | Int32Array
 
 export const encodeArray = (array: ArrayToEncode): string => {
-	return btoa(String.fromCharCode(...new Uint8Array(array.buffer)))
+	return btoa(String.fromCharCode(...new Uint8Array(array['buffer'])))
 }
 
 export const decodeArray = <T>(data: string, makeShared: boolean, constructor: { new(b: ArrayBufferLike): T }): T => {

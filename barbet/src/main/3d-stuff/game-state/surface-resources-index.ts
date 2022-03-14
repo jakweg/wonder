@@ -27,7 +27,9 @@ export class SurfaceResourcesIndex {
 	}
 
 	public static deserialize(object: any): SurfaceResourcesIndex {
-		const {sizeX, sizeZ, index} = object
+		const sizeX = object['sizeX']
+		const sizeZ = object['sizeZ']
+		const index = object['index']
 
 		const rawIndex = decodeArray(index, true, Uint8Array)
 		return new SurfaceResourcesIndex(sizeX, sizeZ, rawIndex.buffer as SharedArrayBuffer, rawIndex)
@@ -43,17 +45,17 @@ export class SurfaceResourcesIndex {
 
 	public pass(): unknown {
 		return {
-			type: 'surface-index',
-			buffer: this.buffer,
-			sizes: [this.sizeX, this.sizeZ],
+			'type': 'surface-index',
+			'buffer': this.buffer,
+			'sizes': [this.sizeX, this.sizeZ],
 		}
 	}
 
 	public serialize(): any {
 		return {
-			sizeX: this.sizeX,
-			sizeZ: this.sizeZ,
-			index: encodeArray(this.rawData),
+			'sizeX': this.sizeX,
+			'sizeZ': this.sizeZ,
+			'index': encodeArray(this.rawData),
 		}
 	}
 

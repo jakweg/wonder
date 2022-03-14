@@ -44,8 +44,8 @@ export class Camera {
 
 	public passCameraLink(): unknown {
 		return {
-			type: 'camera-link',
-			buffer: this.internalBuffer,
+			'type': 'camera-link',
+			'buffer': this.internalBuffer,
 		}
 	}
 

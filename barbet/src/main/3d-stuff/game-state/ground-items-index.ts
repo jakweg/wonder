@@ -35,7 +35,9 @@ export class GroundItemsIndex {
 	}
 
 	public static deserialize(object: any): GroundItemsIndex {
-		const {sizeX, sizeZ, index} = object
+		const sizeX = object['sizeX']
+		const sizeZ = object['sizeZ']
+		const index = object['index']
 
 		const itemIds = decodeArray(index, true, Uint8Array)
 		return new GroundItemsIndex(itemIds, itemIds.buffer as SharedArrayBuffer, sizeX, sizeZ)
@@ -43,18 +45,18 @@ export class GroundItemsIndex {
 
 	public pass(): unknown {
 		return {
-			type: 'ground-items-index',
-			sizeX: this.sizeX,
-			sizeZ: this.sizeZ,
-			buffer: this.buffer,
+			'type': 'ground-items-index',
+			'sizeX': this.sizeX,
+			'sizeZ': this.sizeZ,
+			'buffer': this.buffer,
 		}
 	}
 
 	public serialize(): any {
 		return {
-			sizeX: this.sizeX,
-			sizeZ: this.sizeZ,
-			index: encodeArray(this.rawItemData),
+			'sizeX': this.sizeX,
+			'sizeZ': this.sizeZ,
+			'index': encodeArray(this.rawItemData),
 		}
 	}
 

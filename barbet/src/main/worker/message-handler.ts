@@ -31,16 +31,16 @@ export interface Connection {
 }
 
 export const createMessageHandler = (connection: Connection) => (e: MessageEvent): void => {
-	const data = e.data as CombinedMessage<MessageType>
-	const type = data.type
-	const extra = data.extra
+	const data = e['data'] as CombinedMessage<MessageType>
+	const type = data['type']
+	const extra = data['extra']
 
 	const callback = messageHandlers[type]
 	if (callback === undefined) {
 		if (type !== 'error') {
 			const msg = `Unknown message type ${type}`
 			console.error(msg, data)
-			connection.send('error', {message: msg})
+			connection.send('error', {'message': msg})
 		}
 	} else {
 		callback(extra, connection)

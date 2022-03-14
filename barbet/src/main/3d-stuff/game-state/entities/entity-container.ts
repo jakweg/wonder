@@ -111,7 +111,7 @@ class EntityContainer {
 
 	public static deserialize(object: any): EntityContainer {
 		let container: EntityContainer
-		const buffers = (object.buffers as string[]).map(b => decodeArray(b, true, Uint8Array).buffer as SharedArrayBuffer)
+		const buffers = (object['buffers'] as string[]).map(b => decodeArray(b, true, Uint8Array)['buffer'] as SharedArrayBuffer)
 
 		const allocator = createInt32Allocator(buffers,
 			() => container.buffersChanged = true)
@@ -135,14 +135,14 @@ class EntityContainer {
 
 	public pass(): unknown {
 		return {
-			type: 'entity-container',
-			buffers: this.allocator.buffers,
+			'type': 'entity-container',
+			'buffers': this.allocator.buffers,
 		}
 	}
 
 	public serialize(): any {
 		return {
-			buffers: this.allocator.buffers.map(array => encodeArray(new Uint8Array(array))),
+			'buffers': this.allocator.buffers.map(array => encodeArray(new Uint8Array(array))),
 		}
 	}
 

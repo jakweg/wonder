@@ -20,8 +20,8 @@ function setUpMousePicker(renderer: MainRenderer, vertexBuffer: GPUBuffer, indic
 	mouseVao.bind()
 	vertexBuffer.bind()
 	const floatSize = Float32Array.BYTES_PER_ELEMENT
-	mouseProgram.enableAttribute(mouseProgram.attributes.position, 3, true, 7 * floatSize, 0, 0)
-	mouseProgram.enableAttribute(mouseProgram.attributes.flags, 1, true, 7 * floatSize, 6 * floatSize, 0)
+	mouseProgram.enableAttribute(mouseProgram.attributes['position'], 3, true, 7 * floatSize, 0, 0)
+	mouseProgram.enableAttribute(mouseProgram.attributes['flags'], 1, true, 7 * floatSize, 6 * floatSize, 0)
 	indicesBuffer.bind()
 
 	return {mouseProgram, mouseVao}
@@ -38,9 +38,9 @@ function setUpStandardRenderer(renderer: MainRenderer) {
 	const floatSize = Float32Array.BYTES_PER_ELEMENT
 	const stride = 7 * floatSize
 
-	program.enableAttribute(program.attributes.position, 3, true, stride, 0, 0)
-	program.enableAttribute(program.attributes.color, 3, true, stride, 3 * floatSize, 0)
-	program.enableAttribute(program.attributes.flags, 1, true, stride, 6 * floatSize, 0)
+	program.enableAttribute(program.attributes['position'], 3, true, stride, 0, 0)
+	program.enableAttribute(program.attributes['color'], 3, true, stride, 3 * floatSize, 0)
+	program.enableAttribute(program.attributes['flags'], 1, true, stride, 6 * floatSize, 0)
 	return {program, vao, vertexBuffer, indicesBuffer}
 }
 
@@ -90,10 +90,10 @@ export const createNewTerrainRenderable = (renderer: MainRenderer,
 			vao.bind()
 			program.use()
 
-			gl.uniformMatrix4fv(program.uniforms.projection, false, toGl(camera.perspectiveMatrix))
-			gl.uniformMatrix4fv(program.uniforms.view, false, toGl(camera.viewMatrix))
-			gl.uniform1f(program.uniforms.time, ctx.secondsSinceFirstRender)
-			gl.uniform3fv(program.uniforms.lightPosition, toGl(ctx.sunPosition))
+			gl.uniformMatrix4fv(program.uniforms['projection'], false, toGl(camera.perspectiveMatrix))
+			gl.uniformMatrix4fv(program.uniforms['view'], false, toGl(camera.viewMatrix))
+			gl.uniform1f(program.uniforms['time'], ctx.secondsSinceFirstRender)
+			gl.uniform3fv(program.uniforms['lightPosition'], toGl(ctx.sunPosition))
 
 			gl.drawElements(gl.TRIANGLES, trianglesToRender, gl.UNSIGNED_INT, 0)
 		},
@@ -104,8 +104,8 @@ export const createNewTerrainRenderable = (renderer: MainRenderer,
 			mouseVao.bind()
 			mouseProgram.use()
 
-			gl.uniformMatrix4fv(mouseProgram.uniforms.combinedMatrix, false, toGl(combinedMatrix))
-			gl.uniform1f(mouseProgram.uniforms.time, ctx.secondsSinceFirstRender)
+			gl.uniformMatrix4fv(mouseProgram.uniforms['combinedMatrix'], false, toGl(combinedMatrix))
+			gl.uniform1f(mouseProgram.uniforms['time'], ctx.secondsSinceFirstRender)
 
 			gl.drawElements(gl.TRIANGLES, trianglesToRender, gl.UNSIGNED_INT, 0)
 		},

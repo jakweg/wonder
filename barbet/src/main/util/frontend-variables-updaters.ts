@@ -28,9 +28,9 @@ function observeCanvasSizes(canvas: HTMLCanvasElement) {
 	let frameId: number = 0
 	const lastSizes = {lastResizeTime: 0, width: 0, height: 0, pixelRatio: 0}
 	const checkSizesCallback = () => {
-		const width = canvas.clientWidth
-		const height = canvas.clientHeight
-		const pixelRatio = window.devicePixelRatio
+		const width = canvas['clientWidth']
+		const height = canvas['clientHeight']
+		const pixelRatio = window['devicePixelRatio']
 		if (width === lastSizes.width && height === lastSizes.height && pixelRatio === lastSizes.pixelRatio) {
 			const timeSinceLastResize = performance.now() - lastSizes.lastResizeTime
 			const nextCheckTimeout = (timeSinceLastResize > 20_000) ? 10_000 : timeSinceLastResize * 0.5
@@ -56,7 +56,7 @@ function observeCanvasSizes(canvas: HTMLCanvasElement) {
 			checkSizesCallback()
 		}
 	}
-	window.addEventListener('resize', resizeCallback, {passive: true})
+	window.addEventListener('resize', resizeCallback, {'passive': true})
 	return () => {
 		frameId = -1
 		clearTimeout(timeoutId)
@@ -81,8 +81,8 @@ export const bindFrontendVariablesToCanvas = (canvas: HTMLCanvasElement) => {
 			Atomics.add(frontedVariables, FrontendVariable.LastMouseClickId, 1)
 		}
 
-		Atomics.store(frontedVariables, FrontendVariable.MouseCursorPositionX, event.offsetX * window.devicePixelRatio)
-		Atomics.store(frontedVariables, FrontendVariable.MouseCursorPositionY, event.offsetY * window.devicePixelRatio)
+		Atomics.store(frontedVariables, FrontendVariable.MouseCursorPositionX, event['offsetX'] * window['devicePixelRatio'])
+		Atomics.store(frontedVariables, FrontendVariable.MouseCursorPositionY, event['offsetY'] * window['devicePixelRatio'])
 	}
 	const leaveListener = () => {
 		Atomics.and(frontedVariables, FrontendVariable.AdditionalFlags, ~(AdditionalFrontedFlags.RightMouseButtonPressed | AdditionalFrontedFlags.LeftMouseButtonPressed))
@@ -91,7 +91,7 @@ export const bindFrontendVariablesToCanvas = (canvas: HTMLCanvasElement) => {
 	canvas.addEventListener('mousedown', defaultMouseListener)
 	canvas.addEventListener('mouseup', defaultMouseListener)
 	canvas.addEventListener('contextmenu', defaultMouseListener)
-	canvas.addEventListener('mouseleave', leaveListener, {passive: true})
+	canvas.addEventListener('mouseleave', leaveListener, {'passive': true})
 
 	return () => {
 		unobserve()

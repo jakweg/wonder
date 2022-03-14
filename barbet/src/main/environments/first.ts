@@ -13,22 +13,22 @@ import { ConnectArguments, EnvironmentConnection, StartRenderArguments } from '.
 // this function is always used
 // noinspection JSUnusedGlobalSymbols
 export const connect = (args: ConnectArguments): EnvironmentConnection => {
-	initFrontedVariablesFromReceived(args.frontendVariables)
-	setCameraBuffer(args.camera)
-	SettingsContainer.INSTANCE = args.settings
+	initFrontedVariablesFromReceived(args['frontendVariables'])
+	setCameraBuffer(args['camera'])
+	SettingsContainer.INSTANCE = args['settings']
 
 	let decodedGame: GameState | null = null
 	let updater: StateUpdater | null = null
 	let updateWorker: WorkerController | null = null
 
 	return {
-		name: 'zero',
-		async createNewGame() {
+		'name': 'first',
+		async 'createNewGame'() {
 			if (updateWorker !== null)
 				throw new Error('Game was already created')
 
 			updateWorker = await WorkerController.spawnNew('update-worker', 'update', globalMutex)
-			args.settings.observeEverything(snapshot => updateWorker?.replier.send('new-settings', snapshot))
+			args['settings'].observeEverything(snapshot => updateWorker?.replier.send('new-settings', snapshot))
 
 			updateWorker.replier.send('create-game', undefined)
 			globalWorkerDelay.difference = updateWorker.workerStartDelay
@@ -39,17 +39,16 @@ export const connect = (args: ConnectArguments): EnvironmentConnection => {
 
 			return await new Promise(resolve => {
 				setMessageHandler('game-snapshot-for-renderer', (data) => {
-					decodedGame = GameState.forRenderer(data.game)
+					decodedGame = GameState.forRenderer(data['game'])
 
-					updater = stateUpdaterFromReceived(globalMutex, data.updater)
-					resolve({state: decodedGame, updater})
+					updater = stateUpdaterFromReceived(globalMutex, data['updater'])
+					resolve({'state': decodedGame, 'updater': updater})
 				})
 			})
 		},
-		async startRender(args: StartRenderArguments): Promise<void> {
+		async 'startRender'(args: StartRenderArguments): Promise<void> {
 			const camera = Camera.newUsingBuffer(getCameraBuffer())
-			startRenderingGame(args.canvas, args.game, args.updater, camera)
+			startRenderingGame(args['canvas'], args['game'], args['updater'], camera)
 		},
 	}
 }
-

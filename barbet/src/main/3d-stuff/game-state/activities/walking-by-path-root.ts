@@ -46,11 +46,11 @@ const activityWalkingByPathRoot = {
 		switch (status) {
 			case Status.WaitingForPath:
 				if (path === undefined) return
-				if (!path.found || path.directions.length === 0) break
+				if (!path['found'] || path['directions'].length === 0) break
 
 				memory[pointer - MemoryField.Status] = Status.GotPath
 				memory[pointer - MemoryField.NextPathDirectionIndex] = 1
-				activityWalking.tryToContinueWalking(game, unit, path.directions[0]!)
+				activityWalking.tryToContinueWalking(game, unit, path['directions'][0]!)
 				return
 
 			case Status.GotPath:
@@ -59,8 +59,8 @@ const activityWalkingByPathRoot = {
 				if (!wasInterrupted) {
 					if (path !== undefined) {
 						const directionIndex = memory[pointer - MemoryField.NextPathDirectionIndex]++
-						if (directionIndex < path.directions.length) {
-							const canWalkSuccessfully = activityWalking.tryToContinueWalking(game, unit, path.directions[directionIndex]!)
+						if (directionIndex < path['directions'].length) {
+							const canWalkSuccessfully = activityWalking.tryToContinueWalking(game, unit, path['directions'][directionIndex]!)
 							if (canWalkSuccessfully)
 								return
 						}

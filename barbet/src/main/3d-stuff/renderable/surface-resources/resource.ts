@@ -20,8 +20,8 @@ export const createNewSurfaceResourcesRenderable = (renderer: MainRenderer,
 	modelBuffer.setContent(new Float32Array())
 
 	const floatSize = Float32Array.BYTES_PER_ELEMENT
-	program.enableAttribute(program.attributes.modelPosition, 3, true, 6 * floatSize, 0, 0)
-	program.enableAttribute(program.attributes.normal, 3, true, 6 * floatSize, 3 * floatSize, 0)
+	program.enableAttribute(program.attributes['modelPosition'], 3, true, 6 * floatSize, 0, 0)
+	program.enableAttribute(program.attributes['normal'], 3, true, 6 * floatSize, 3 * floatSize, 0)
 
 	const modelElementsBuffer = renderer.createBuffer(false, false)
 	modelElementsBuffer.setContent(new Float32Array())
@@ -69,8 +69,8 @@ export const createNewSurfaceResourcesRenderable = (renderer: MainRenderer,
 			modelBuffer.bind()
 			modelElementsBuffer.bind()
 
-			gl.uniform3fv(program.uniforms.lightPosition, toGl(fromValues(80, 40, 20)))
-			gl.uniformMatrix4fv(program.uniforms.combinedMatrix, false, toGl(ctx.camera.combinedMatrix))
+			gl.uniform3fv(program.uniforms['lightPosition'], toGl(fromValues(80, 40, 20)))
+			gl.uniformMatrix4fv(program.uniforms['combinedMatrix'], false, toGl(ctx.camera.combinedMatrix))
 
 			gl.drawElements(gl.TRIANGLES, trianglesToRender, gl.UNSIGNED_SHORT, 0)
 		},

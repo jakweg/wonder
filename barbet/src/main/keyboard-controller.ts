@@ -27,8 +27,8 @@ class KeyboardController {
 	public static createNewAndRegisterToWindow(frontedVariables: Int16Array): KeyboardController {
 		const controller = new KeyboardController(frontedVariables)
 
-		document.addEventListener('keydown', ({code}) => controller.setKeyPressed(code, true))
-		document.addEventListener('keyup', ({code}) => controller.setKeyPressed(code, false))
+		document.addEventListener('keydown', event => controller.setKeyPressed(event['code'], true))
+		document.addEventListener('keyup', event => controller.setKeyPressed(event['code'], false))
 		window.addEventListener('blur', () => controller.cancelAllPressed())
 
 		return controller

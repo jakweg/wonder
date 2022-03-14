@@ -72,16 +72,16 @@ function preparePrograms(renderer: MainRenderer, modelBuffer: GPUBuffer, modelEl
 
 
 			modelBuffer.bind()
-			program.enableAttribute(program.attributes.modelPosition, 3, true, 7 * 4, 0, 0)
-			program.enableAttribute(program.attributes.flags, 1, true, 7 * 4, 6 * 4, 0)
+			program.enableAttribute(program.attributes['modelPosition'], 3, true, 7 * 4, 0, 0)
+			program.enableAttribute(program.attributes['flags'], 1, true, 7 * 4, 6 * 4, 0)
 
 
 			unitDataBuffer.bind()
-			program.enableAttribute(program.attributes.worldPosition, 3, true, 6 * 4, 0, 1)
-			program.enableAttribute(program.attributes.unitId, 1, true, 6 * 4, 3 * 4, 1)
-			program.enableAttribute(program.attributes.colorPaletteId, 1, true, 6 * 4, 3 * 4, 1)
-			program.enableAttribute(program.attributes.activityStartTick, 1, true, 6 * 4, 4 * 4, 1)
-			program.enableAttribute(program.attributes.unitRotation, 1, true, 6 * 4, 5 * 4, 1)
+			program.enableAttribute(program.attributes['worldPosition'], 3, true, 6 * 4, 0, 1)
+			program.enableAttribute(program.attributes['unitId'], 1, true, 6 * 4, 3 * 4, 1)
+			program.enableAttribute(program.attributes['colorPaletteId'], 1, true, 6 * 4, 3 * 4, 1)
+			program.enableAttribute(program.attributes['activityStartTick'], 1, true, 6 * 4, 4 * 4, 1)
+			program.enableAttribute(program.attributes['unitRotation'], 1, true, 6 * 4, 5 * 4, 1)
 
 			programs.push(program)
 		}
@@ -168,9 +168,9 @@ export const createNewUnitRenderable = (renderer: MainRenderer,
 			unitDataBuffer.setContent(new Float32Array(unitData))
 
 
-			gl.uniformMatrix4fv(program.uniforms.combinedMatrix, false, toGl(combinedMatrix))
-			gl.uniform3f(program.uniforms.times, ctx.secondsSinceFirstRender, ctx.gameTime, gameTickEstimation)
-			gl.uniform3fv(program.uniforms.lightPosition, toGl(add(clone(ctx.sunPosition), ctx.sunPosition, fromValues(0, -10, -400))))
+			gl.uniformMatrix4fv(program.uniforms['combinedMatrix'], false, toGl(combinedMatrix))
+			gl.uniform3f(program.uniforms['times'], ctx.secondsSinceFirstRender, ctx.gameTime, gameTickEstimation)
+			gl.uniform3fv(program.uniforms['lightPosition'], toGl(add(clone(ctx.sunPosition), ctx.sunPosition, fromValues(0, -10, -400))))
 
 			gl.drawElementsInstanced(gl.TRIANGLES, trianglesToRender, gl.UNSIGNED_SHORT, 0, 1)
 		}

@@ -10,7 +10,7 @@ SettingsContainer.INSTANCE = SettingsContainer.createEmpty()
 takeControlOverWorkerConnection()
 
 setMessageHandler('set-global-mutex', (data) => {
-	setGlobalMutex(data.mutex)
+	setGlobalMutex(data['mutex'])
 })
 
 setMessageHandler('new-settings', settings => {
@@ -22,7 +22,7 @@ setMessageHandler('create-game', (_, connection) => {
 	let updater
 	const stateBroadcastCallback = () => {
 		connection.send('update-entity-container', {
-			buffers: state?.entities?.passBuffers(),
+			'buffers': state?.entities?.passBuffers(),
 		})
 	}
 
@@ -33,7 +33,7 @@ setMessageHandler('create-game', (_, connection) => {
 	setGlobalStateUpdater(updater)
 
 	connection.send('game-snapshot-for-renderer', {
-		game: state.passForRenderer(),
-		updater: updater.pass(),
+		'game': state.passForRenderer(),
+		'updater': updater.pass(),
 	})
 })

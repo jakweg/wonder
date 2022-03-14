@@ -28,18 +28,18 @@ const ticksInput = document.getElementById('input-ticksPerSecond') as HTMLInputE
 let speedToSet = 0
 observeSetting('other/tps', (value) => speedToSet = Math.max(1, +value))
 
-ticksInput.value = speedToSet.toString()
+ticksInput['value'] = speedToSet.toString()
 ticksInput.addEventListener('input', async (event) => {
-	speedToSet = +(event.target as HTMLInputElement).value
+	speedToSet = +(event['target'] as HTMLInputElement)['value']
 	updater?.changeTickRate(speedToSet)
 	SettingsContainer.INSTANCE.set('other/tps', speedToSet)
 })
 
 
 const fpsCapInput = document.getElementById('input-fpsCap') as HTMLInputElement
-observeSetting('rendering/fps-cap', (value) => fpsCapInput.value = (value || 0)?.toString())
+observeSetting('rendering/fps-cap', (value) => fpsCapInput['value'] = (value || 0)?.toString())
 fpsCapInput.addEventListener('input', async (event) => {
-	const value = +(event.target as HTMLInputElement).value
+	const value = +(event['target'] as HTMLInputElement)['value']
 	SettingsContainer.INSTANCE.set('rendering/fps-cap', value)
 });
 
@@ -55,8 +55,8 @@ fpsCapInput.addEventListener('input', async (event) => {
 	}
 
 	const env = await loadEnvironment(usedEnvironment)
-	const game = await env.createNewGame()
-	await env.startRender({canvas, game: game.state, updater: game.updater})
+	const game = await env['createNewGame']()
+	await env['startRender']({'canvas': canvas, 'game': game['state'], 'updater': game['updater']})
 	game.updater.start(speedToSet)
 	updater = game.updater
 })()

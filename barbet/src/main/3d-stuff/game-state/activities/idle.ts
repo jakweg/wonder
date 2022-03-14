@@ -46,7 +46,7 @@ void main() {
 }
 `
 const additionalRenderer: AdditionalRenderer<T, B> = {
-	setup(renderer: MainRenderer, game: GameState): T {
+	setup: function (renderer: MainRenderer, game: GameState): T {
 		const vao = renderer.createVAO()
 		vao.bind()
 		const program = createProgramFromNewShaders(renderer, vertexSource, fragmentSource) as Program
@@ -58,11 +58,11 @@ const additionalRenderer: AdditionalRenderer<T, B> = {
 			.flatMap(e => [r * Math.cos(e), r * Math.sin(e)])),
 		)
 		const floatSize = Float32Array.BYTES_PER_ELEMENT
-		program.enableAttribute(program.attributes.modelPosition, 2, true, 2 * floatSize, 0, 0)
+		program.enableAttribute(program.attributes['modelPosition'], 2, true, 2 * floatSize, 0, 0)
 
 		const batchBuffer = renderer.createBuffer(true, true)
 		batchBuffer.bind()
-		program.enableAttribute(program.attributes.unitPosition, 3, true, 3 * floatSize, 0, 1)
+		program.enableAttribute(program.attributes['unitPosition'], 3, true, 3 * floatSize, 0, 1)
 
 		return {vao, batchBuffer, positions: game.entities.positions, program}
 	},
@@ -87,9 +87,9 @@ const additionalRenderer: AdditionalRenderer<T, B> = {
 		program.use()
 		setup.batchBuffer.setContent(new Float32Array(batch.unitPositions))
 
-		gl.uniformMatrix4fv(program.uniforms.combinedMatrix, false, toGl(ctx.camera.combinedMatrix))
+		gl.uniformMatrix4fv(program.uniforms['combinedMatrix'], false, toGl(ctx.camera.combinedMatrix))
 
-		gl.uniformMatrix4fv(program.uniforms.rotation, false, toGl(mat4.fromYRotation(mat4.create(), ctx.secondsSinceFirstRender * 5)))
+		gl.uniformMatrix4fv(program.uniforms['rotation'], false, toGl(mat4.fromYRotation(mat4.create(), ctx.secondsSinceFirstRender * 5)))
 		gl.drawArraysInstanced(gl.TRIANGLES, 0, 3, count)
 	},
 }

@@ -139,12 +139,12 @@ export const additionalRenderer: AdditionalRenderer<T, B> = {
 
 		const triangleBuffer = renderer.createBuffer(true, false)
 		triangleBuffer.setContent(data.vertexes)
-		program.enableAttribute(program.attributes.modelPosition, 3, true, 6 * floatSize, 0, 0)
-		program.enableAttribute(program.attributes.modelNormals, 3, true, 6 * floatSize, 3 * floatSize, 0)
+		program.enableAttribute(program.attributes['modelPosition'], 3, true, 6 * floatSize, 0, 0)
+		program.enableAttribute(program.attributes['modelNormals'], 3, true, 6 * floatSize, 3 * floatSize, 0)
 
 		const batchBuffer = renderer.createBuffer(true, true)
 		batchBuffer.bind()
-		program.enableAttribute(program.attributes.unitData, 4, true, 4 * floatSize, 0, 1)
+		program.enableAttribute(program.attributes['unitData'], 4, true, 4 * floatSize, 0, 1)
 
 		return {
 			vao,
@@ -178,8 +178,8 @@ export const additionalRenderer: AdditionalRenderer<T, B> = {
 		program.use()
 		setup.batchBuffer.setContent(new Float32Array(batch.unitPositions))
 
-		gl.uniformMatrix4fv(program.uniforms.combinedMatrix, false, toGl(ctx.camera.combinedMatrix))
-		gl.uniform1f(program.uniforms.time, ctx.gameTickEstimation)
+		gl.uniformMatrix4fv(program.uniforms['combinedMatrix'], false, toGl(ctx.camera.combinedMatrix))
+		gl.uniform1f(program.uniforms['time'], ctx.gameTickEstimation)
 
 		gl.drawElementsInstanced(gl.TRIANGLES, setup.trianglesToRender, gl.UNSIGNED_BYTE, 0, count)
 	},

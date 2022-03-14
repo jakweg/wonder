@@ -18,13 +18,13 @@ export const waitAsyncCompat = useNativeWaitAsync ?
 	Atomics.waitAsync : ((typedArray: Int32Array, index: number, value: number, timeout?: number): WaitAsyncResult => {
 		const load = Atomics.load(typedArray, index)
 		if (load !== value)
-			return {async: false, value: Promise.resolve('ok')}
+			return {'async': false, 'value': Promise.resolve('ok')}
 
 		const timeoutValue = timeout ?? Number.POSITIVE_INFINITY
 		const started = performance.now()
 		return {
-			async: true,
-			value: new Promise(resolve => {
+			'async': true,
+			'value': new Promise(resolve => {
 				const interval = setInterval(() => {
 					const load = Atomics.load(typedArray, index)
 					if (load !== value) {
@@ -35,7 +35,7 @@ export const waitAsyncCompat = useNativeWaitAsync ?
 						resolve('timed-out')
 						clearInterval(interval)
 					}
-				}, 5)
+				}, 10)
 			}),
 		}
 	})
@@ -103,8 +103,8 @@ class MutexImpl implements Mutex {
 
 	public pass(): unknown {
 		return {
-			type: 'mutex',
-			buffer: this.buffer,
+			'type': 'mutex',
+			'buffer': this.buffer,
 		}
 	}
 
@@ -141,7 +141,7 @@ class MutexImpl implements Mutex {
 
 			const wait = waitAsyncCompat(array, lock, LockValue.Locked, timeout)
 			if (wait.async) {
-				if (await wait.value === 'timed-out') {
+				if (await wait['value'] === 'timed-out') {
 					throw new Error(`Lock timeout ${lock}`)
 					// return false
 				}

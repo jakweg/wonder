@@ -19,7 +19,7 @@ let cameraBuffer: SharedArrayBuffer | null = null
 let connectionWithParent: Connection
 
 setMessageHandler('set-global-mutex', (data, connection) => {
-	setGlobalMutex(data.mutex)
+	setGlobalMutex(data['mutex'])
 	connectionWithParent = connection
 })
 
@@ -31,12 +31,12 @@ setMessageHandler('transfer-canvas', (data) => {
 	if (canvas !== null)
 		throw new Error('Canvas is already not null')
 
-	canvas = data.canvas as HTMLCanvasElement
+	canvas = data['canvas'] as HTMLCanvasElement
 	considerStartRendering()
 })
 
-setMessageHandler('set-worker-load-delays', ({update, render}) => {
-	globalWorkerDelay.difference = update - render
+setMessageHandler('set-worker-load-delays', (data) => {
+	globalWorkerDelay.difference = data['update'] - data['render']
 })
 
 setMessageHandler('game-snapshot-for-renderer', (data) => {
@@ -49,11 +49,11 @@ setMessageHandler('update-entity-container', (data) => {
 })
 
 setMessageHandler('camera-buffer', (data) => {
-	cameraBuffer = data.buffer
+	cameraBuffer = data['buffer']
 })
 
-setMessageHandler('frontend-variables', ({buffer}) => {
-	initFrontedVariablesFromReceived(buffer)
+setMessageHandler('frontend-variables', (data) => {
+	initFrontedVariablesFromReceived(data['buffer'])
 })
 
 

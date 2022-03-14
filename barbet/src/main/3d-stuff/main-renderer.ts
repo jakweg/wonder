@@ -5,11 +5,11 @@ type AllocatedResourceEntry = { id: any, type: 'shader' | 'program' | 'buffer' |
 
 const obtainWebGl2ContextFromCanvas = (canvas: HTMLCanvasElement): WebGL2RenderingContext => {
 	const context = canvas.getContext('webgl2', {
-		alpha: false,
-		antialias: SettingsContainer.INSTANCE.get('rendering/antialias'),
-		depth: true,
-		stencil: false,
-		failIfMajorPerformanceCaveat: true,
+		'alpha': false,
+		'antialias': SettingsContainer.INSTANCE.get('rendering/antialias'),
+		'depth': true,
+		'stencil': false,
+		'failIfMajorPerformanceCaveat': true,
 	}) as WebGL2RenderingContext
 	if (context == null)
 		throw new Error('Unable to obtain context')
@@ -21,14 +21,14 @@ const getAllUniforms = (gl: WebGL2RenderingContext, program: WebGLProgram) => {
 	const allNames: string[] = []
 	const count: number = gl.getProgramParameter(program, gl.ACTIVE_UNIFORMS)
 	for (let i = 0; i < count; i++) {
-		const name = gl.getActiveUniform(program, i)!.name
+		const name = gl.getActiveUniform(program, i)!['name']
 		if (name.startsWith('gl_'))
 			continue
 		if (!name.startsWith('u_'))
 			throw new Error(`Uniform name '${name}' doesn't start with proper prefix`)
 		allNames.push(name)
 	}
-	const mapped = Object.fromEntries(allNames.map((name) => ([name.substr(2), gl.getUniformLocation(program, name)])))
+	const mapped = Object.fromEntries(allNames.map((name) => ([name.substring(2), gl.getUniformLocation(program, name)])))
 	return DEBUG ? {...mapped, names: allNames} : mapped
 }
 
@@ -36,14 +36,14 @@ const getAllAttributes = (gl: WebGL2RenderingContext, program: WebGLProgram) => 
 	const allNames: string[] = []
 	const count: number = gl.getProgramParameter(program, gl.ACTIVE_ATTRIBUTES)
 	for (let i = 0; i < count; i++) {
-		const name = gl.getActiveAttrib(program, i)!.name
+		const name = gl.getActiveAttrib(program, i)!['name']
 		if (name.startsWith('gl_'))
 			continue
 		if (!name.startsWith('a_'))
 			throw new Error(`Attribute name '${name}' doesn't start with proper prefix`)
 		allNames.push(name)
 	}
-	const mapped = Object.fromEntries(allNames.map((name) => [name.substr(2), gl.getAttribLocation(program, name)]))
+	const mapped = Object.fromEntries(allNames.map((name) => [name.substring(2), gl.getAttribLocation(program, name)]))
 	return DEBUG ? {...mapped, names: allNames} : mapped
 }
 
@@ -201,8 +201,8 @@ export class MainRenderer {
 
 	private setUpFrameBeforeRender(gl: WebGL2RenderingContext) {
 		if (this.lastWidth !== this.width || this.lastHeight != this.height) {
-			this.canvas.width = this.lastWidth = this.width
-			this.canvas.height = this.lastHeight = this.height
+			this.canvas['width'] = this.lastWidth = this.width
+			this.canvas['height'] = this.lastHeight = this.height
 		}
 		gl.viewport(0, 0, this.width, this.height)
 

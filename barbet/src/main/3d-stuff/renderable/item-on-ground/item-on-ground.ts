@@ -15,8 +15,8 @@ function prepareRenderer(renderer: MainRenderer) {
 
 	const modelBuffer = renderer.createBuffer(true, false)
 	modelBuffer.setContent(new Float32Array())
-	program.enableAttribute(program.attributes.modelPosition, 3, true, 4 * floatSize, 0, 0)
-	program.enableAttribute(program.attributes.flags, 1, true, 4 * floatSize, 3 * floatSize, 0)
+	program.enableAttribute(program.attributes['modelPosition'], 3, true, 4 * floatSize, 0, 0)
+	program.enableAttribute(program.attributes['flags'], 1, true, 4 * floatSize, 3 * floatSize, 0)
 
 	const modelElementsBuffer = renderer.createBuffer(false, false)
 	modelElementsBuffer.setContent(new Float32Array())
@@ -65,9 +65,9 @@ const createNewItemOnGroundRenderable = (renderer: MainRenderer,
 			vao.bind()
 			program.use()
 
-			gl.uniformMatrix4fv(program.uniforms.combinedMatrix, false, toGl(camera.combinedMatrix))
-			gl.uniform1f(program.uniforms.time, ctx.secondsSinceFirstRender)
-			gl.uniform3fv(program.uniforms.lightPosition, toGl(add(clone(ctx.sunPosition), ctx.sunPosition, fromValues(0, -400, 0))))
+			gl.uniformMatrix4fv(program.uniforms['combinedMatrix'], false, toGl(camera.combinedMatrix))
+			gl.uniform1f(program.uniforms['time'], ctx.secondsSinceFirstRender)
+			gl.uniform3fv(program.uniforms['lightPosition'], toGl(add(clone(ctx.sunPosition), ctx.sunPosition, fromValues(0, -400, 0))))
 
 			gl.drawElements(gl.TRIANGLES, trianglesToRender, gl.UNSIGNED_SHORT, 0)
 		},

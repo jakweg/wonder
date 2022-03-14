@@ -42,11 +42,11 @@ export const loadEnvironment = async (name: Environment): Promise<Readonly<Envir
 			console.error(`Forced environment change ${name} -> ${'zero' as Environment}`)
 		name = 'zero'
 	}
-	const {connect} = await import((`${JS_ROOT}/environments/${name}.js`))
+	const connect = (await import((`${JS_ROOT}/environments/${name}.js`)))['connect']
 	const args: ConnectArguments = {
-		frontendVariables: frontedVariablesBuffer,
-		camera: getCameraBuffer(),
-		settings: SettingsContainer.INSTANCE,
+		'frontendVariables': frontedVariablesBuffer,
+		'camera': getCameraBuffer(),
+		'settings': SettingsContainer.INSTANCE,
 	}
 	return Object.freeze(connect(args) as EnvironmentConnection)
 }

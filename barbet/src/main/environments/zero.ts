@@ -11,13 +11,13 @@ import { ConnectArguments, EnvironmentConnection, StartRenderArguments } from '.
 // this function is always used
 // noinspection JSUnusedGlobalSymbols
 export const connect = (args: ConnectArguments): EnvironmentConnection => {
-	initFrontedVariablesFromReceived(args.frontendVariables)
-	setCameraBuffer(args.camera)
-	SettingsContainer.INSTANCE = args.settings
+	initFrontedVariablesFromReceived(args['frontendVariables'])
+	setCameraBuffer(args['camera'])
+	SettingsContainer.INSTANCE = args['settings']
 
 	return {
-		name: 'zero',
-		async createNewGame() {
+		'name': 'zero',
+		async 'createNewGame'() {
 			const stateBroadcastCallback = () => void 0 // ignore, since everything is locally anyway
 			const game = createEmptyGame(stateBroadcastCallback)
 			setGlobalGameState(game)
@@ -26,12 +26,12 @@ export const connect = (args: ConnectArguments): EnvironmentConnection => {
 			setGlobalStateUpdater(updaterInstance)
 
 			return {
-				state: game,
-				updater: stateUpdaterFromReceived(globalMutex, updaterInstance.pass()),
+				'state': game,
+				'updater': stateUpdaterFromReceived(globalMutex, updaterInstance.pass()),
 			}
 		},
-		async startRender(args: StartRenderArguments): Promise<void> {
-			startRenderingGame(args.canvas, args.game, args.updater, Camera.newUsingBuffer(getCameraBuffer()))
+		async 'startRender'(args: StartRenderArguments): Promise<void> {
+			startRenderingGame(args['canvas'], args['game'], args['updater'], Camera.newUsingBuffer(getCameraBuffer()))
 		},
 	}
 }

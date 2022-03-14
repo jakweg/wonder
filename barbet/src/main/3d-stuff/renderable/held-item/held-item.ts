@@ -22,8 +22,8 @@ function prepareRenderer(renderer: MainRenderer) {
 	const floatSize = Float32Array.BYTES_PER_ELEMENT
 	const program = createProgramFromNewShaders<Attributes, Uniforms>(renderer, inHandVertexShader, itemFragmentShaderSource)
 
-	program.enableAttribute(program.attributes.modelPosition, 3, true, 4 * floatSize, 0, 0)
-	program.enableAttribute(program.attributes.flags, 1, true, 4 * floatSize, 3 * floatSize, 0)
+	program.enableAttribute(program.attributes['modelPosition'], 3, true, 4 * floatSize, 0, 0)
+	program.enableAttribute(program.attributes['flags'], 1, true, 4 * floatSize, 3 * floatSize, 0)
 
 	return {vao, program}
 }
@@ -36,12 +36,12 @@ const createHeldItemRenderable = (renderer: MainRenderer,
 	for (const {array} of itemBuffers) {
 		if (array == null) continue
 		array.bind()
-		program.enableAttribute(program.attributes.modelPosition, 3, true, 4 * 4, 0, 0)
-		program.enableAttribute(program.attributes.flags, 1, true, 4 * 4, 3 * 4, 0)
+		program.enableAttribute(program.attributes['modelPosition'], 3, true, 4 * 4, 0, 0)
+		program.enableAttribute(program.attributes['flags'], 1, true, 4 * 4, 3 * 4, 0)
 	}
 
 	return {
-		render(ctx: RenderContext) {
+		render: function (ctx: RenderContext) {
 			const {gl, camera} = ctx
 
 			vao.bind()
@@ -86,12 +86,12 @@ const createHeldItemRenderable = (renderer: MainRenderer,
 				unitData = (unitData & ~UnitData.MaskRotation) | rotation
 
 
-				gl.uniform3f(program.uniforms.unitPosition, unitX, unitY, unitZ)
-				gl.uniformMatrix4fv(program.uniforms.combinedMatrix, false, toGl(camera.combinedMatrix))
-				gl.uniform1f(program.uniforms.activityStartTick, activityStartTick)
-				gl.uniform1i(program.uniforms.unitData, unitData)
-				gl.uniform1f(program.uniforms.gameTick, ctx.gameTickEstimation)
-				gl.uniform3fv(program.uniforms.lightPosition, toGl(add(clone(ctx.sunPosition), ctx.sunPosition, fromValues(0, -400, 0))))
+				gl.uniform3f(program.uniforms['unitPosition'], unitX, unitY, unitZ)
+				gl.uniformMatrix4fv(program.uniforms['combinedMatrix'], false, toGl(camera.combinedMatrix))
+				gl.uniform1f(program.uniforms['activityStartTick'], activityStartTick)
+				gl.uniform1i(program.uniforms['unitData'], unitData)
+				gl.uniform1f(program.uniforms['gameTick'], ctx.gameTickEstimation)
+				gl.uniform3fv(program.uniforms['lightPosition'], toGl(add(clone(ctx.sunPosition), ctx.sunPosition, fromValues(0, -400, 0))))
 
 				gl.drawElements(gl.TRIANGLES, trianglesToRender, gl.UNSIGNED_BYTE, 0)
 			}

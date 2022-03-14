@@ -39,14 +39,14 @@ export class GameState {
 	}
 
 	public static deserialize(object: any, mutex: Mutex, stateBroadcastCallback: () => void): GameState {
-		const world = World.deserialize(object.world)
+		const world = World.deserialize(object['world'])
 		return new GameState(
-			+object.tick,
+			+object['tick'],
 			world,
-			GroundItemsIndex.deserialize(object.groundItems),
-			EntityContainer.deserialize(object.entities),
-			PathFinder.deserialize(world, object.pathFinder),
-			SurfaceResourcesIndex.deserialize(object.surfaceResources),
+			GroundItemsIndex.deserialize(object['groundItems']),
+			EntityContainer.deserialize(object['entities']),
+			PathFinder.deserialize(world, object['pathFinder']),
+			SurfaceResourcesIndex.deserialize(object['surfaceResources']),
 			mutex, stateBroadcastCallback)
 	}
 
@@ -66,12 +66,12 @@ export class GameState {
 
 	public passForRenderer(): unknown {
 		return {
-			type: 'game-state',
-			mutex: this.mutex.pass(),
-			world: this.world.pass(),
-			groundItems: this.groundItems.pass(),
-			entities: this.entities.pass(),
-			surfaceResources: this.surfaceResources.pass(),
+			'type': 'game-state',
+			'mutex': this.mutex.pass(),
+			'world': this.world.pass(),
+			'groundItems': this.groundItems.pass(),
+			'entities': this.entities.pass(),
+			'surfaceResources': this.surfaceResources.pass(),
 		}
 	}
 
@@ -79,12 +79,12 @@ export class GameState {
 		if (this.pathFinder == null)
 			throw new Error('Cannot serialize game without pathfinder')
 		return {
-			tick: this._currentTick,
-			world: this.world.serialize(),
-			groundItems: this.groundItems.serialize(),
-			entities: this.entities.serialize(),
-			surfaceResources: this.surfaceResources.serialize(),
-			pathFinder: this.pathFinder.serialize(),
+			'tick': this._currentTick,
+			'world': this.world.serialize(),
+			'groundItems': this.groundItems.serialize(),
+			'entities': this.entities.serialize(),
+			'surfaceResources': this.surfaceResources.serialize(),
+			'pathFinder': this.pathFinder.serialize(),
 		}
 	}
 
