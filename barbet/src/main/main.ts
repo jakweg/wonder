@@ -4,6 +4,7 @@ import {
 	bindFrontendVariablesToCanvas,
 	initFrontendVariableAndRegisterToWindow,
 } from './util/frontend-variables-updaters'
+import { getSavesList } from './util/persistance/saves-database'
 import { sharedMemoryIsAvailable } from './util/shared-memory'
 import SettingsContainer, { observeSetting } from './worker/observable-settings'
 import { addSaveCallback, registerSaveSettingsCallback } from './worker/serializable-settings'
@@ -44,6 +45,8 @@ fpsCapInput.addEventListener('input', async (event) => {
 });
 
 (async () => {
+	const anySaveName = getSavesList().then(e => e[0])
+
 	let usedEnvironment: Environment = 'zero'
 	if (sharedMemoryIsAvailable) {
 		const offscreenCanvasIsAvailable = !!((window as any).OffscreenCanvas)
@@ -55,9 +58,13 @@ fpsCapInput.addEventListener('input', async (event) => {
 	}
 
 	const env = await loadEnvironment(usedEnvironment)
-	const game = await env['createNewGame']()
+	const game = await env['createNewGame']({'saveName': await anySaveName})
 	const receivedUpdater = game['updater']
 	await env['startRender']({'canvas': canvas, 'game': game['state'], 'updater': receivedUpdater})
 	receivedUpdater.start(speedToSet)
 	updater = receivedUpdater
+
+	window.addEventListener('beforeunload', async () => {
+		env.saveGame({saveName: 'latest'})
+	})
 })()

@@ -28,12 +28,22 @@ export interface StartRenderArguments {
 	updater: StateUpdater
 }
 
+export interface CreateGameArguments {
+	saveName: string | undefined
+}
+
+export interface SaveGameArguments {
+	saveName: string
+}
+
 export interface EnvironmentConnection {
 	name: string
 
-	createNewGame(): Promise<{ state: GameState, updater: StateUpdater }>
+	createNewGame(args: CreateGameArguments): Promise<{ state: GameState, updater: StateUpdater }>
 
 	startRender(args: StartRenderArguments): Promise<void>
+
+	saveGame(args: SaveGameArguments): void
 }
 
 export const loadEnvironment = async (name: Environment): Promise<Readonly<EnvironmentConnection>> => {
