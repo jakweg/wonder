@@ -32,7 +32,7 @@ export class SurfaceResourcesIndex {
 		const index = object['index']
 
 		const rawIndex = decodeArray(index, true, Uint8Array)
-		return new SurfaceResourcesIndex(sizeX, sizeZ, rawIndex.buffer as SharedArrayBuffer, rawIndex)
+		return new SurfaceResourcesIndex(sizeX, sizeZ, rawIndex['buffer'] as SharedArrayBuffer, rawIndex)
 	}
 
 	public static fromReceived(object: any): SurfaceResourcesIndex {

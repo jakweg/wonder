@@ -7,7 +7,7 @@ import SettingsContainer from '../worker/observable-settings'
 import { getCameraBuffer, setCameraBuffer } from '../worker/serializable-settings'
 import { WorkerController } from '../worker/worker-controller'
 import { globalMutex } from '../worker/worker-global-state'
-import { ConnectArguments, EnvironmentConnection, StartRenderArguments } from './loader'
+import { ConnectArguments, EnvironmentConnection, SaveGameArguments, StartRenderArguments } from './loader'
 
 // this function is always used
 // noinspection JSUnusedGlobalSymbols
@@ -25,12 +25,12 @@ export const connect = (args: ConnectArguments): EnvironmentConnection => {
 
 	return {
 		'name': 'second',
-		async 'createNewGame'() {
+		async 'createNewGame'(gameArgs) {
 			if (updateWorker !== null)
 				throw new Error('Game was already created')
 
 			updateWorker = await WorkerController.spawnNew('update-worker', 'update', globalMutex)
-			updateWorker.replier.send('create-game', undefined)
+			updateWorker.replier.send('create-game', {'saveName': gameArgs['saveName']})
 			args['settings'].observeEverything(snapshot => updateWorker?.replier.send('new-settings', snapshot))
 
 			setMessageHandler('update-entity-container', data => {
@@ -70,6 +70,9 @@ export const connect = (args: ConnectArguments): EnvironmentConnection => {
 			})
 			if (entityContainerSnapshotForRenderer !== null)
 				renderWorker.replier.send('update-entity-container', entityContainerSnapshotForRenderer)
+		},
+		'saveGame'(args: SaveGameArguments): void {
+			updateWorker?.replier?.send('save-game', {'saveName': args['saveName']})
 		},
 	}
 }

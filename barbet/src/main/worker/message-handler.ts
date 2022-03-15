@@ -2,7 +2,7 @@ export interface Message {
 	['error']: { message: string }
 	['connection-established']: { now: number }
 	['set-global-mutex']: { mutex: unknown }
-	['create-game']: undefined
+	['create-game']: { saveName: string | undefined }
 	['set-worker-load-delays']: { update: number, render: number }
 	['game-snapshot-for-renderer']: { game: unknown, updater: unknown }
 	['transfer-canvas']: { canvas: unknown }
@@ -10,6 +10,7 @@ export interface Message {
 	['update-entity-container']: { buffers: SharedArrayBuffer[] }
 	['camera-buffer']: { buffer: SharedArrayBuffer }
 	['new-settings']: any
+	['save-game']: { saveName: string }
 }
 
 export type MessageType = keyof Message

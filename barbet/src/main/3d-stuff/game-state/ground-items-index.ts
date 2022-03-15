@@ -39,7 +39,7 @@ export class GroundItemsIndex {
 		const index = object['index']
 
 		const itemIds = decodeArray(index, true, Uint8Array)
-		return new GroundItemsIndex(itemIds, itemIds.buffer as SharedArrayBuffer, sizeX, sizeZ)
+		return new GroundItemsIndex(itemIds, itemIds['buffer'] as SharedArrayBuffer, sizeX, sizeZ)
 	}
 
 	public pass(): unknown {

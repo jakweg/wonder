@@ -42,11 +42,11 @@ const createInt32Allocator = (buffers: SharedArrayBuffer[],
 		return new Int32Array(buffer)
 	},
 	resize(oldArray: Int32Array, resizeTo: number): Int32Array {
-		const oldBuffer = oldArray.buffer
+		const oldBuffer = oldArray['buffer']
 
 		const newBuffer = createNewBuffer(resizeTo * Int32Array.BYTES_PER_ELEMENT)
 		const newArray = new Int32Array(newBuffer)
-		const buffers = this.buffers
+		const buffers = this['buffers']
 		for (let i = 0, l = buffers.length; i < l; i++) {
 			if (buffers[i] === oldBuffer) {
 				buffers[i] = newBuffer
