@@ -6,6 +6,7 @@ import { SurfaceResourcesIndex } from '../3d-stuff/game-state/surface-resources-
 import { BlockId } from '../3d-stuff/world/block'
 import { World } from '../3d-stuff/world/world'
 import { readSaveData } from '../util/persistance/saves-database'
+import { ArrayEncodingType, setArrayEncodingType } from '../util/persistance/serializers'
 import { fillEmptyWorldWithDefaultData } from './example-world-creator'
 import { globalMutex } from './worker-global-state'
 
@@ -25,5 +26,10 @@ export const createEmptyGame = (stateBroadcastCallback: () => void): GameState =
 
 export const loadGameFromDb = async (id: string, stateBroadcastCallback: () => void): Promise<GameState> => {
 	const data = await readSaveData(id)
-	return GameState.deserialize(data, globalMutex, stateBroadcastCallback)
+	setArrayEncodingType(ArrayEncodingType.AsArray)
+	try {
+		return GameState.deserialize(data, globalMutex, stateBroadcastCallback)
+	} finally {
+		setArrayEncodingType(ArrayEncodingType.None)
+	}
 }

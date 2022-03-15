@@ -1,6 +1,7 @@
 import { GameState } from './3d-stuff/game-state/game-state'
 import { createNewStateUpdater } from './3d-stuff/game-state/state-updater'
 import { putSaveData } from './util/persistance/saves-database'
+import { ArrayEncodingType, setArrayEncodingType } from './util/persistance/serializers'
 import { takeControlOverWorkerConnection } from './worker/connections-manager'
 import { setMessageHandler } from './worker/message-handler'
 import SettingsContainer from './worker/observable-settings'
@@ -44,6 +45,12 @@ setMessageHandler('create-game', async (args, connection) => {
 
 setMessageHandler('save-game', async data => {
 	const saveName = data['saveName']
-	const rawData = state.serialize()
+	setArrayEncodingType(ArrayEncodingType.AsArray)
+	let rawData
+	try {
+		rawData = state.serialize()
+	} finally {
+		setArrayEncodingType(ArrayEncodingType.None)
+	}
 	await putSaveData(saveName, rawData)
 })

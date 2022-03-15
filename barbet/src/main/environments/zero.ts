@@ -4,6 +4,7 @@ import { startRenderingGame } from '../3d-stuff/renderable/render-context'
 import { Camera } from '../camera'
 import { initFrontedVariablesFromReceived } from '../util/frontend-variables-updaters'
 import { putSaveData } from '../util/persistance/saves-database'
+import { ArrayEncodingType, setArrayEncodingType } from '../util/persistance/serializers'
 import SettingsContainer from '../worker/observable-settings'
 import { getCameraBuffer, setCameraBuffer } from '../worker/serializable-settings'
 import { globalMutex, setGlobalGameState, setGlobalStateUpdater } from '../worker/worker-global-state'
@@ -47,7 +48,12 @@ export const connect = (args: ConnectArguments): EnvironmentConnection => {
 			startRenderingGame(args['canvas'], args['game'], args['updater'], Camera.newUsingBuffer(getCameraBuffer()))
 		},
 		'saveGame'(args: SaveGameArguments): void {
-			void putSaveData(args['saveName'], game.serialize())
+			setArrayEncodingType(ArrayEncodingType.AsArray)
+			try {
+				void putSaveData(args['saveName'], game.serialize())
+			} finally {
+				setArrayEncodingType(ArrayEncodingType.None)
+			}
 		},
 	}
 }
