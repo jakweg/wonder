@@ -14,6 +14,7 @@ import {
 	CreateGameArguments,
 	EnvironmentConnection,
 	SaveGameArguments,
+	SaveMethod,
 	StartRenderArguments,
 } from './loader'
 
@@ -47,12 +48,30 @@ export const connect = (args: ConnectArguments): EnvironmentConnection => {
 		async 'startRender'(args: StartRenderArguments): Promise<void> {
 			startRenderingGame(args['canvas'], args['game'], args['updater'], Camera.newUsingBuffer(getCameraBuffer()))
 		},
-		'saveGame'(args: SaveGameArguments): void {
-			setArrayEncodingType(ArrayEncodingType.AsArray)
-			try {
-				void putSaveData(args['saveName'], game.serialize())
-			} finally {
-				setArrayEncodingType(ArrayEncodingType.None)
+		'saveGame'(saveArgs: SaveGameArguments): void {
+			const saveName = saveArgs['saveName']
+			switch (saveArgs['method']) {
+				case SaveMethod.ToIndexedDatabase: {
+					setArrayEncodingType(ArrayEncodingType.AsArray)
+					try {
+						void putSaveData(saveName, game.serialize())
+					} finally {
+						setArrayEncodingType(ArrayEncodingType.None)
+					}
+				}
+					break
+				case SaveMethod.ToDataUrl: {
+					setArrayEncodingType(ArrayEncodingType.ToString)
+					const asString = JSON.stringify(game.serialize())
+					setArrayEncodingType(ArrayEncodingType.None)
+
+					const length = asString.length
+					const bytes = new Uint8Array(length)
+					for (let i = 0; i < length; i++)
+						bytes[i] = asString.charCodeAt(i)!
+					const url = URL.createObjectURL(new Blob([bytes]))
+					args['saveResultsCallback']({'url': url})
+				}
 			}
 		},
 	}

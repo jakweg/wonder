@@ -39,6 +39,10 @@ export const connect = (args: ConnectArguments): EnvironmentConnection => {
 				renderWorker?.replier.send('update-entity-container', data)
 			})
 
+			setMessageHandler('save-game-result', data => {
+				args['saveResultsCallback'](data)
+			})
+
 			return new Promise(resolve => {
 				setMessageHandler('game-snapshot-for-renderer', (data) => {
 					gameSnapshotForRenderer = data
@@ -72,7 +76,7 @@ export const connect = (args: ConnectArguments): EnvironmentConnection => {
 				renderWorker.replier.send('update-entity-container', entityContainerSnapshotForRenderer)
 		},
 		'saveGame'(args: SaveGameArguments): void {
-			updateWorker?.replier?.send('save-game', {'saveName': args['saveName']})
+			updateWorker?.replier?.send('save-game', args)
 		},
 	}
 }

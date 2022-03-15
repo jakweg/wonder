@@ -37,6 +37,10 @@ export const connect = (args: ConnectArguments): EnvironmentConnection => {
 				decodedGame!.entities.replaceBuffersFromReceived(data)
 			})
 
+			setMessageHandler('save-game-result', data => {
+				args['saveResultsCallback'](data)
+			})
+
 			return await new Promise(resolve => {
 				setMessageHandler('game-snapshot-for-renderer', (data) => {
 					decodedGame = GameState.forRenderer(data['game'])
@@ -51,7 +55,7 @@ export const connect = (args: ConnectArguments): EnvironmentConnection => {
 			startRenderingGame(args['canvas'], args['game'], args['updater'], camera)
 		},
 		'saveGame'(args: SaveGameArguments): void {
-			updateWorker?.replier?.send('save-game', {'saveName': args['saveName']})
+			updateWorker?.replier?.send('save-game', args)
 		},
 	}
 }

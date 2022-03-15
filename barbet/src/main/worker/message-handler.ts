@@ -1,3 +1,5 @@
+import { SaveGameArguments } from '../environments/loader'
+
 export interface Message {
 	['error']: { message: string }
 	['connection-established']: { now: number }
@@ -10,7 +12,8 @@ export interface Message {
 	['update-entity-container']: { buffers: SharedArrayBuffer[] }
 	['camera-buffer']: { buffer: SharedArrayBuffer }
 	['new-settings']: any
-	['save-game']: { saveName: string }
+	['save-game']: SaveGameArguments
+	['save-game-result']: { url: string }
 }
 
 export type MessageType = keyof Message

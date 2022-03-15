@@ -1,5 +1,5 @@
 import { StateUpdater } from './3d-stuff/game-state/state-updater'
-import { Environment, loadEnvironment } from './environments/loader'
+import { Environment, loadEnvironment, SaveMethod } from './environments/loader'
 import {
 	bindFrontendVariablesToCanvas,
 	initFrontendVariableAndRegisterToWindow,
@@ -42,7 +42,16 @@ observeSetting('rendering/fps-cap', (value) => fpsCapInput['value'] = (value || 
 fpsCapInput.addEventListener('input', async (event) => {
 	const value = +(event['target'] as HTMLInputElement)['value']
 	SettingsContainer.INSTANCE.set('rendering/fps-cap', value)
-});
+})
+
+const saveCallback = (data: any) => {
+	const url = data['url']
+	const anchor = document.createElement('a')
+	anchor['href'] = url
+	anchor['download'] = 'latest.map-save.json'
+	anchor['click']()
+	URL.revokeObjectURL(url)
+}
 
 (async () => {
 	const anySaveName = getSavesList().then(e => e[0])
@@ -51,13 +60,13 @@ fpsCapInput.addEventListener('input', async (event) => {
 	if (sharedMemoryIsAvailable) {
 		const offscreenCanvasIsAvailable = !!((window as any).OffscreenCanvas)
 		if (offscreenCanvasIsAvailable)
-			usedEnvironment = 'second'
+			usedEnvironment = 'zero'
 		else {
 			usedEnvironment = 'first'
 		}
 	}
 
-	const env = await loadEnvironment(usedEnvironment)
+	const env = await loadEnvironment(usedEnvironment, saveCallback)
 	const game = await env['createNewGame']({'saveName': await anySaveName})
 	const receivedUpdater = game['updater']
 	await env['startRender']({'canvas': canvas, 'game': game['state'], 'updater': receivedUpdater})
@@ -65,6 +74,14 @@ fpsCapInput.addEventListener('input', async (event) => {
 	updater = receivedUpdater
 
 	window.addEventListener('beforeunload', async () => {
-		env['saveGame']({'saveName': 'latest'})
+		env['saveGame']({'saveName': 'latest', 'method': SaveMethod.ToIndexedDatabase})
+	})
+
+	document.addEventListener('keydown', event => {
+		if (event['code'] === 'KeyS' && event['ctrlKey']) {
+			event.preventDefault()
+			event.stopPropagation()
+			env['saveGame']({'saveName': 'latest', 'method': SaveMethod.ToDataUrl})
+		}
 	})
 })()

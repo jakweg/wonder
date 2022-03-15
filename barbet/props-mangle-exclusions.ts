@@ -1,4 +1,8 @@
 const list = Object.freeze([
+	'stopPropagation',
+	'createObjectURL',
+	'revokeObjectURL',
+	'createElement',
 	'onabort',
 	'onblocked',
 	'onerror',

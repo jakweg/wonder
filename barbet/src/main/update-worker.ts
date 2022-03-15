@@ -1,5 +1,6 @@
 import { GameState } from './3d-stuff/game-state/game-state'
 import { createNewStateUpdater } from './3d-stuff/game-state/state-updater'
+import { SaveMethod } from './environments/loader'
 import { putSaveData } from './util/persistance/saves-database'
 import { ArrayEncodingType, setArrayEncodingType } from './util/persistance/serializers'
 import { takeControlOverWorkerConnection } from './worker/connections-manager'
@@ -43,14 +44,28 @@ setMessageHandler('create-game', async (args, connection) => {
 	})
 })
 
-setMessageHandler('save-game', async data => {
+setMessageHandler('save-game', async (data, connection) => {
 	const saveName = data['saveName']
-	setArrayEncodingType(ArrayEncodingType.AsArray)
-	let rawData
-	try {
-		rawData = state.serialize()
-	} finally {
-		setArrayEncodingType(ArrayEncodingType.None)
+	switch (data['method']) {
+		case SaveMethod.ToIndexedDatabase: {
+			setArrayEncodingType(ArrayEncodingType.AsArray)
+			const rawData = state.serialize()
+			setArrayEncodingType(ArrayEncodingType.None)
+			await putSaveData(saveName, rawData)
+		}
+			break
+		case SaveMethod.ToDataUrl: {
+			setArrayEncodingType(ArrayEncodingType.ToString)
+			const asString = JSON.stringify(state.serialize())
+			setArrayEncodingType(ArrayEncodingType.None)
+
+			const length = asString.length
+			const bytes = new Uint8Array(length)
+			for (let i = 0; i < length; i++)
+				bytes[i] = asString.charCodeAt(i)!
+			const url = URL.createObjectURL(new Blob([bytes]))
+
+			connection.send('save-game-result', {'url': url})
+		}
 	}
-	await putSaveData(saveName, rawData)
 })

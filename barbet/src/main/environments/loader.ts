@@ -9,6 +9,7 @@ export interface ConnectArguments {
 	frontendVariables: SharedArrayBuffer
 	camera: SharedArrayBuffer
 	settings: SettingsContainer
+	saveResultsCallback: ((data: { url: string }) => void)
 }
 
 export type Environment =
@@ -32,8 +33,14 @@ export interface CreateGameArguments {
 	saveName: string | undefined
 }
 
+export const enum SaveMethod {
+	ToIndexedDatabase,
+	ToDataUrl
+}
+
 export interface SaveGameArguments {
 	saveName: string
+	method: SaveMethod
 }
 
 export interface EnvironmentConnection {
@@ -46,7 +53,9 @@ export interface EnvironmentConnection {
 	saveGame(args: SaveGameArguments): void
 }
 
-export const loadEnvironment = async (name: Environment): Promise<Readonly<EnvironmentConnection>> => {
+export const loadEnvironment = async (name: Environment,
+                                      saveResultsCallback: ((data: { url: string }) => void))
+	: Promise<Readonly<EnvironmentConnection>> => {
 	if (FORCE_ENV_ZERO && name !== 'zero') {
 		if (!DEBUG)
 			console.error(`Forced environment change ${name} -> ${'zero' as Environment}`)
@@ -57,6 +66,7 @@ export const loadEnvironment = async (name: Environment): Promise<Readonly<Envir
 		'frontendVariables': frontedVariablesBuffer,
 		'camera': getCameraBuffer(),
 		'settings': SettingsContainer.INSTANCE,
+		'saveResultsCallback': saveResultsCallback,
 	}
 	return Object.freeze(connect(args) as EnvironmentConnection)
 }
