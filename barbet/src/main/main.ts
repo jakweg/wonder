@@ -56,7 +56,8 @@ fpsCapInput.addEventListener('input', async (event) => {
 
 	const env = await loadEnvironment(usedEnvironment)
 	const game = await env['createNewGame']()
-	await env['startRender']({'canvas': canvas, 'game': game['state'], 'updater': game['updater']})
-	game.updater.start(speedToSet)
-	updater = game.updater
+	const receivedUpdater = game['updater']
+	await env['startRender']({'canvas': canvas, 'game': game['state'], 'updater': receivedUpdater})
+	receivedUpdater.start(speedToSet)
+	updater = receivedUpdater
 })()

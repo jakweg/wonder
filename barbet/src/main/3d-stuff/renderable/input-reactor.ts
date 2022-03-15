@@ -20,7 +20,6 @@ const enum EventHappened {
 }
 
 const createInputReactor = (game: GameState) => {
-
 	let lastClickId: number = 0
 	let eventHappened: EventHappened = EventHappened.None
 	let mousePositionX: number = 0

@@ -50,7 +50,7 @@ export const connect = (args: ConnectArguments): EnvironmentConnection => {
 				})
 			})
 		},
-		async 'startRender'(renderArguments: StartRenderArguments): Promise<void> {
+		'startRender': async function (renderArguments: StartRenderArguments): Promise<void> {
 			if (renderWorker !== null)
 				throw new Error('Render worker was already created')
 
@@ -58,8 +58,8 @@ export const connect = (args: ConnectArguments): EnvironmentConnection => {
 				throw new Error('Create game first')
 
 			renderWorker = await WorkerController.spawnNew('render-worker', 'render', globalMutex)
-			args.settings.observeEverything(snapshot => renderWorker?.replier.send('new-settings', snapshot))
-			const canvasControl = (renderArguments.canvas as any).transferControlToOffscreen()
+			SettingsContainer.INSTANCE.observeEverything(snapshot => renderWorker?.replier.send('new-settings', snapshot))
+			const canvasControl = (renderArguments['canvas'] as any).transferControlToOffscreen()
 			renderWorker.replier.send('frontend-variables', {'buffer': frontedVariablesBuffer})
 			renderWorker.replier.send('camera-buffer', {'buffer': getCameraBuffer()})
 			renderWorker.replier.send('transfer-canvas', {'canvas': canvasControl}, [canvasControl])

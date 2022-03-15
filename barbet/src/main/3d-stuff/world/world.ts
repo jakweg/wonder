@@ -73,7 +73,11 @@ export class World {
 	}
 
 	public static deserialize(object: any): World {
-		const {sizeX, sizeY, sizeZ, blocks} = object
+		const sizeX = object['sizeX']
+		const sizeY = object['sizeY']
+		const sizeZ = object['sizeZ']
+		const blocks = object['blocks']
+
 		const blocksPerY = sizeX * sizeZ
 		const totalBlocks = sizeY * blocksPerY
 		const chunksSizeX = Math.ceil(sizeX / WORLD_CHUNK_SIZE)
@@ -83,7 +87,7 @@ export class World {
 		const rawBlockData = decodeArray(blocks, true, Uint8Array)
 
 		const buffers = [
-			rawBlockData.buffer as SharedArrayBuffer,
+			rawBlockData['buffer'] as SharedArrayBuffer,
 			createNewBuffer(blocksPerY * Uint8ClampedArray.BYTES_PER_ELEMENT),
 			createNewBuffer(chunksSizeX * chunksSizeZ * Uint16Array.BYTES_PER_ELEMENT),
 		]
@@ -147,18 +151,18 @@ export class World {
 
 	public pass(): unknown {
 		return {
-			type: 'world',
-			size: this.size,
-			buffers: this.buffers,
+			'type': 'world',
+			'size': this.size,
+			'buffers': this.buffers,
 		}
 	}
 
 	public serialize(): any {
 		return {
-			sizeX: this.size.sizeX,
-			sizeY: this.size.sizeY,
-			sizeZ: this.size.sizeZ,
-			blocks: encodeArray(this.rawBlockData),
+			'sizeX': this.size.sizeX,
+			'sizeY': this.size.sizeY,
+			'sizeZ': this.size.sizeZ,
+			'blocks': encodeArray(this.rawBlockData),
 		}
 	}
 

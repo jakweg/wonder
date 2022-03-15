@@ -70,8 +70,8 @@ export const bindFrontendVariablesToCanvas = (canvas: HTMLCanvasElement) => {
 
 	const defaultMouseListener = (event: MouseEvent) => {
 		event.preventDefault()
-		const isNowDown = event.type !== 'mouseup'
-		const buttonAsFlag = event.button === 0 ? AdditionalFrontedFlags.LeftMouseButtonPressed : AdditionalFrontedFlags.RightMouseButtonPressed
+		const isNowDown = event['type'] !== 'mouseup'
+		const buttonAsFlag = event['button'] === 0 ? AdditionalFrontedFlags.LeftMouseButtonPressed : AdditionalFrontedFlags.RightMouseButtonPressed
 
 		if (isNowDown)
 			frontedVariables[FrontendVariable.AdditionalFlags] |= buttonAsFlag

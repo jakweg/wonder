@@ -27,10 +27,8 @@ export class WorkerController {
 		worker['onmessage'] = createMessageHandler(replier)
 
 		await new Promise<void>(resolve => {
-			console.log('waiting')
 			setMessageHandler('connection-established', (data) => {
 				delay = performance.now() - data['now']
-				console.log('ok')
 				resolve()
 			}, true)
 		}).then(() => replier?.send('set-global-mutex', {'mutex': mutex.pass()}))
