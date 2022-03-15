@@ -135,7 +135,6 @@ const list = Object.freeze([
 	'SharedArrayBuffer',
 	'shift',
 	'sin',
-	'size',
 	'splice',
 	'sqrt',
 	'SQRT2',

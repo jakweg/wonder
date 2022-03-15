@@ -62,7 +62,16 @@ export class World {
 
 	public static fromReceived(object: any): World {
 		if (object['type'] !== 'world') throw new Error('Invalid world object')
-		const size = object['size'] as ComputedWorldSize
+		const sizes = object['sizes']
+		const sizeX = sizes[0]
+		const sizeY = sizes[1]
+		const sizeZ = sizes[2]
+		const blocksPerY = sizeX * sizeZ
+		const totalBlocks = sizeY * blocksPerY
+		const chunksSizeX = Math.ceil(sizeX / WORLD_CHUNK_SIZE)
+		const chunksSizeZ = Math.ceil(sizeZ / WORLD_CHUNK_SIZE)
+
+		const size: ComputedWorldSize = {sizeX, sizeY, sizeZ, totalBlocks, blocksPerY, chunksSizeX, chunksSizeZ}
 		const buffers = object['buffers'] as SharedArrayBuffer[]
 
 		const blockData = new Uint8Array(buffers[0]!)
@@ -73,9 +82,10 @@ export class World {
 	}
 
 	public static deserialize(object: any): World {
-		const sizeX = object['sizeX']
-		const sizeY = object['sizeY']
-		const sizeZ = object['sizeZ']
+		const sizes = object['sizes']
+		const sizeX = sizes[0]
+		const sizeY = sizes[1]
+		const sizeZ = sizes[2]
 		const blocks = object['blocks']
 
 		const blocksPerY = sizeX * sizeZ
@@ -152,16 +162,14 @@ export class World {
 	public pass(): unknown {
 		return {
 			'type': 'world',
-			'size': this.size,
+			'sizes': [this.size.sizeX, this.size.sizeY, this.size.sizeZ],
 			'buffers': this.buffers,
 		}
 	}
 
 	public serialize(): any {
 		return {
-			'sizeX': this.size.sizeX,
-			'sizeY': this.size.sizeY,
-			'sizeZ': this.size.sizeZ,
+			'sizes': [this.size.sizeX, this.size.sizeY, this.size.sizeZ],
 			'blocks': encodeArray(this.rawBlockData),
 		}
 	}
