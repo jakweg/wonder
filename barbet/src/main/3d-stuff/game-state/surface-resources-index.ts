@@ -36,7 +36,6 @@ export class SurfaceResourcesIndex {
 	}
 
 	public static fromReceived(object: any): SurfaceResourcesIndex {
-		if (object['type'] !== 'surface-index') throw new Error('Invalid object')
 		const buffer = object['buffer'] as SharedArrayBuffer
 		const rawIndex = new Uint8Array(buffer)
 
@@ -45,7 +44,6 @@ export class SurfaceResourcesIndex {
 
 	public pass(): unknown {
 		return {
-			'type': 'surface-index',
 			'buffer': this.buffer,
 			'sizes': [this.sizeX, this.sizeZ],
 		}

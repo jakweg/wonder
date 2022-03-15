@@ -83,12 +83,9 @@ export const createNewMutex = (): Mutex => {
 }
 
 export const createMutexFromReceived = (object: any): Mutex => {
-	if (typeof object !== 'object' || object['type'] !== 'mutex')
-		throw new Error(`Received invalid mutex`)
-
 	const buffer = object['buffer'] as SharedArrayBuffer
 	if (buffer?.byteLength !== Lock.SIZE * Int32Array.BYTES_PER_ELEMENT)
-		throw new Error(`Received invalid mutex`)
+		throw new Error(`Received invalid object`)
 
 	return new MutexImpl(buffer)
 }
@@ -103,7 +100,6 @@ class MutexImpl implements Mutex {
 
 	public pass(): unknown {
 		return {
-			'type': 'mutex',
 			'buffer': this.buffer,
 		}
 	}

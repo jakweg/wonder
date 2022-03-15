@@ -61,7 +61,6 @@ export class World {
 	}
 
 	public static fromReceived(object: any): World {
-		if (object['type'] !== 'world') throw new Error('Invalid world object')
 		const sizes = object['sizes']
 		const sizeX = sizes[0]
 		const sizeY = sizes[1]
@@ -161,7 +160,6 @@ export class World {
 
 	public pass(): unknown {
 		return {
-			'type': 'world',
 			'sizes': [this.size.sizeX, this.size.sizeY, this.size.sizeZ],
 			'buffers': this.buffers,
 		}

@@ -44,7 +44,6 @@ export class Camera {
 
 	public passCameraLink(): unknown {
 		return {
-			'type': 'camera-link',
 			'buffer': this.internalBuffer,
 		}
 	}
@@ -78,7 +77,6 @@ export class Camera {
 
 export type CameraLink = ReturnType<typeof cameraLinkFromReceived>
 export const cameraLinkFromReceived = (data: any) => {
-	if (data['type'] !== 'camera-link') throw new Error()
 	const buffer = data['buffer'] as SharedArrayBuffer
 	const wrapped = new Float32Array(buffer)
 	return {

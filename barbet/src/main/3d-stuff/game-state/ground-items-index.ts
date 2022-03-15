@@ -25,7 +25,6 @@ export class GroundItemsIndex {
 
 
 	public static fromReceived(object: any): GroundItemsIndex {
-		if (object['type'] !== 'ground-items-index') throw new Error('Invalid object')
 		const sizeX = object['sizeX'] as number
 		const sizeZ = object['sizeZ'] as number
 		const buffer = object['buffer'] as SharedArrayBuffer
@@ -45,7 +44,6 @@ export class GroundItemsIndex {
 
 	public pass(): unknown {
 		return {
-			'type': 'ground-items-index',
 			'sizeX': this.sizeX,
 			'sizeZ': this.sizeZ,
 			'buffer': this.buffer,

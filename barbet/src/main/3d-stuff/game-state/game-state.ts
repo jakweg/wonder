@@ -51,8 +51,6 @@ export class GameState {
 	}
 
 	public static forRenderer(object: any): GameState {
-		if (object['type'] !== 'game-state') throw new Error('Invalid object')
-
 		return new GameState(
 			-1,
 			World.fromReceived(object['world']),
@@ -66,7 +64,6 @@ export class GameState {
 
 	public passForRenderer(): unknown {
 		return {
-			'type': 'game-state',
 			'mutex': this.mutex.pass(),
 			'world': this.world.pass(),
 			'groundItems': this.groundItems.pass(),

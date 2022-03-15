@@ -26,9 +26,6 @@ export const enum MemoryField {
 export type StateUpdater = ReturnType<typeof stateUpdaterFromReceived>
 export const stateUpdaterFromReceived = (mutex: Mutex,
                                          data: any) => {
-	if (data['type'] !== 'state-updater')
-		throw new Error('Invalid state updater')
-
 	const memory = new Int32Array(data['buffer'])
 
 	return {
@@ -191,7 +188,6 @@ export const createNewStateUpdater = (mutex: Mutex,
 	return {
 		pass(): unknown {
 			return {
-				'type': 'state-updater',
 				'buffer': buffer,
 			}
 		},

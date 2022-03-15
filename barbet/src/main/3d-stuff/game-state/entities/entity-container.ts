@@ -98,9 +98,6 @@ class EntityContainer {
 	}
 
 	public static fromReceived(object: any): EntityContainer {
-		if (object['type'] !== 'entity-container')
-			throw new Error('Invalid object')
-
 		let container: EntityContainer
 		const allocator = createInt32Allocator(object['buffers'],
 			() => container.buffersChanged = true)
@@ -135,7 +132,6 @@ class EntityContainer {
 
 	public pass(): unknown {
 		return {
-			'type': 'entity-container',
 			'buffers': this.allocator.buffers,
 		}
 	}
