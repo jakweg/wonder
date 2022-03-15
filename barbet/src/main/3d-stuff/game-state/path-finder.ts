@@ -39,13 +39,13 @@ export class PathFinder {
 
 	public serialize(): any {
 		return {
-			readyPaths: [...this.readyPaths.entries()].map(e => ({
+			'readyPaths': [...this.readyPaths.entries()].map(e => ({
 				...e[1],
 				'id': e[0],
 				'directions': [...(e[1]['directions'])],
 			})),
-			pathQueue: this.pathQueue.map(e => ({...e})),
-			nextPathRequestId: this.nextPathRequestId,
+			'pathQueue': this.pathQueue.map(e => ({...e})),
+			'nextPathRequestId': this.nextPathRequestId,
 		}
 	}
 
@@ -75,13 +75,13 @@ export class PathFinder {
 				'found': true,
 				'directions': new Uint8Array(directions),
 			}
-			this.readyPaths.set(req['id'], object)
+			this.readyPaths['set'](req['id'], object)
 		}
 		this.pathQueue.splice(0)
 	}
 
 	public getComputedPath(id: number): PathResult | undefined {
-		return this.readyPaths.get(id)
+		return this.readyPaths['get'](id)
 	}
 
 	public requestPath(fromX: number, fromZ: number,
@@ -92,6 +92,6 @@ export class PathFinder {
 			'toZ': toZ, 'id': this.nextPathRequestId++,
 		}
 		this.pathQueue.push(req)
-		return req.id
+		return req['id']
 	}
 }

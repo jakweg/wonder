@@ -74,7 +74,7 @@ export class GameState {
 
 	public serialize(): any {
 		if (this.pathFinder == null)
-			throw new Error('Cannot serialize game without pathfinder')
+			throw new Error('Missing pathfinder')
 		return {
 			'tick': this._currentTick,
 			'world': this.world.serialize(),

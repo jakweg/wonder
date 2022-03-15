@@ -65,6 +65,6 @@ fpsCapInput.addEventListener('input', async (event) => {
 	updater = receivedUpdater
 
 	window.addEventListener('beforeunload', async () => {
-		env.saveGame({saveName: 'latest'})
+		env['saveGame']({'saveName': 'latest'})
 	})
 })()

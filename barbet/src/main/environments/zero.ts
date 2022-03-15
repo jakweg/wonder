@@ -29,9 +29,9 @@ export const connect = (args: ConnectArguments): EnvironmentConnection => {
 		async 'createNewGame'(args: CreateGameArguments) {
 			const stateBroadcastCallback = () => void 0 // ignore, since everything is locally anyway
 
-			game = args.saveName === undefined
+			game = args['saveName'] === undefined
 				? createEmptyGame(stateBroadcastCallback)
-				: await loadGameFromDb(args.saveName, stateBroadcastCallback)
+				: await loadGameFromDb(args['saveName'], stateBroadcastCallback)
 
 			setGlobalGameState(game)
 
@@ -47,7 +47,7 @@ export const connect = (args: ConnectArguments): EnvironmentConnection => {
 			startRenderingGame(args['canvas'], args['game'], args['updater'], Camera.newUsingBuffer(getCameraBuffer()))
 		},
 		'saveGame'(args: SaveGameArguments): void {
-			void putSaveData(args.saveName, game.serialize())
+			void putSaveData(args['saveName'], game.serialize())
 		},
 	}
 }
