@@ -1,4 +1,4 @@
-import { decodeArray, encodeArray } from '../../util/serializers'
+import { decodeArray, encodeArray } from '../../util/persistance/serializers'
 import { createNewBuffer } from '../../util/shared-memory'
 import { SurfaceResourceType } from '../world/surface-resource'
 import { ComputedWorldSize } from '../world/world'

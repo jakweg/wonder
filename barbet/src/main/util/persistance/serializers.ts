@@ -1,4 +1,4 @@
-import { createNewBuffer } from './shared-memory'
+import { createNewBuffer } from '../shared-memory'
 
 type ArrayToEncode = Uint8Array | Int8Array | Uint16Array | Int16Array | Uint32Array | Int32Array
 
