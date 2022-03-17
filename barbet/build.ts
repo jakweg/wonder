@@ -60,25 +60,24 @@ if (args.size > 0) {
 	}
 	if (config.watch && serve) {
 		await import('./serve.ts')
-	}
+	} else {
+		if (buildForProduction) {
+			const mangleExcludedPropNames: readonly string[] = (await import('./props-mangle-exclusions.ts')).default
 
-	if (buildForProduction) {
-		const mangleExcludedPropNames: readonly string[] = (await import('./props-mangle-exclusions.ts')).default
-
-		const results = await esbuild.build({
-			entryPoints: entryPoints.map(e => `${jsOutRoot}/${e}.js`),
-			minify: true,
-			outdir: jsOutRoot,
-			allowOverwrite: true,
-			format: 'esm',
-			mangleProps: /./,
-			mangleCache: {
-				...Object.fromEntries(mangleExcludedPropNames.map(e => [e, false])),
-			},
-		} as any)
-		if (produceMappings)
-			await Deno.writeTextFile('./mappings.txt', JSON.stringify(results.mangleCache, undefined, 3))
-
+			const results = await esbuild.build({
+				entryPoints: entryPoints.map(e => `${jsOutRoot}/${e}.js`),
+				minify: true,
+				outdir: jsOutRoot,
+				allowOverwrite: true,
+				format: 'esm',
+				mangleProps: /./,
+				mangleCache: {
+					...Object.fromEntries(mangleExcludedPropNames.map(e => [e, false])),
+				},
+			} as any)
+			if (produceMappings)
+				await Deno.writeTextFile('./mappings.txt', JSON.stringify(results.mangleCache, undefined, 3))
+		}
 		Deno.exit(0)
 	}
 }
