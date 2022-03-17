@@ -1,11 +1,10 @@
 import { StateUpdater } from './3d-stuff/game-state/state-updater'
-import { Environment, loadEnvironment, SaveMethod } from './environments/loader'
+import { EnvironmentConnection, getSuggestedEnvironmentName, loadEnvironment, SaveMethod } from './environments/loader'
 import {
 	bindFrontendVariablesToCanvas,
 	initFrontendVariableAndRegisterToWindow,
 } from './util/frontend-variables-updaters'
-import { deleteAllSaves, getSavesList } from './util/persistance/saves-database'
-import { sharedMemoryIsAvailable } from './util/shared-memory'
+import { getSavesList } from './util/persistance/saves-database'
 import SettingsContainer, { observeSetting } from './worker/observable-settings'
 import { addSaveCallback, registerSaveSettingsCallback } from './worker/serializable-settings'
 
@@ -25,12 +24,22 @@ const recreateCanvas = (): HTMLCanvasElement => {
 	return clone
 }
 
-let updater: StateUpdater | null = null
+
+interface PageState {
+	updater: StateUpdater | null
+	environment: EnvironmentConnection | null
+}
+
+const state: PageState = {
+	updater: null,
+	environment: null,
+}
+
 
 let pauseOnBlur = false
 observeSetting('other/pause-on-blur', v => pauseOnBlur = v)
-window.addEventListener('blur', () => pauseOnBlur && updater?.stop())
-window.addEventListener('focus', () => pauseOnBlur && updater?.start())
+window.addEventListener('blur', () => pauseOnBlur && state?.updater?.stop())
+window.addEventListener('focus', () => pauseOnBlur && state?.updater?.start())
 
 const ticksInput = document.getElementById('input-ticksPerSecond') as HTMLInputElement
 let speedToSet = 0
@@ -39,7 +48,7 @@ observeSetting('other/tps', (value) => speedToSet = Math.max(1, +value))
 ticksInput['value'] = speedToSet.toString()
 ticksInput.addEventListener('input', async (event) => {
 	speedToSet = +(event['target'] as HTMLInputElement)['value']
-	updater?.changeTickRate(speedToSet)
+	state?.updater?.changeTickRate(speedToSet)
 	SettingsContainer.INSTANCE.set('other/tps', speedToSet)
 })
 
@@ -51,11 +60,6 @@ fpsCapInput.addEventListener('input', async (event) => {
 	SettingsContainer.INSTANCE.set('rendering/fps-cap', value)
 })
 
-let deletedAll: boolean = false
-document.getElementById('input-reset')!.addEventListener('click', async () => {
-	deletedAll = true
-	await deleteAllSaves()
-})
 
 const askForFile = async () => {
 	return new Promise<File | null>(resolve => {
@@ -83,49 +87,51 @@ const saveCallback = (data: any) => {
 	URL.revokeObjectURL(url)
 }
 
-(async () => {
-	const anySaveName = getSavesList().then(e => e[0])
+window.addEventListener('beforeunload', async () => {
+	state.environment?.['saveGame']({'saveName': 'latest', 'method': SaveMethod.ToIndexedDatabase})
+})
 
-	let usedEnvironment: Environment = 'zero'
-	if (sharedMemoryIsAvailable) {
-		const offscreenCanvasIsAvailable = !!((window as any).OffscreenCanvas)
-		if (offscreenCanvasIsAvailable)
-			usedEnvironment = 'second'
-		else {
-			usedEnvironment = 'first'
+const inputReset = document.getElementById('input-reset')!
+inputReset.addEventListener('click', async () => {
+	if (state.environment === null) return
+	inputReset['blur']()
+	await state.environment['terminateGame']({})
+	const results = await state.environment['createNewGame']({})
+	await state.environment['startRender']({'canvas': recreateCanvas()})
+	state.updater = results['updater']
+	state.updater.start(speedToSet)
+})
+
+document.addEventListener('keydown', async event => {
+	if (event['code'] === 'KeyS' && event['ctrlKey']) {
+		event.preventDefault()
+		event.stopPropagation()
+		state.environment?.['saveGame']({'saveName': 'latest', 'method': SaveMethod.ToDataUrl})
+	} else if (event['code'] === 'KeyO' && event['ctrlKey']) {
+		event.preventDefault()
+		event.stopPropagation()
+		const file = await askForFile()
+		if (file != null && state.environment !== null) {
+			await state.environment['terminateGame']({})
+			const results = await state.environment['createNewGame']({'fileToRead': file})
+			await state.environment['startRender']({'canvas': recreateCanvas()})
+			state.updater = results['updater']
+			state.updater.start(speedToSet)
 		}
 	}
+})
 
-	const env = await loadEnvironment(usedEnvironment, saveCallback)
-	const game = await env['createNewGame']({'saveName': await anySaveName})
-	const receivedUpdater = game['updater']
-	await env['startRender']({'canvas': recreateCanvas()})
-	receivedUpdater.start(speedToSet)
-	updater = receivedUpdater
 
-	window.addEventListener('beforeunload', async () => {
-		if (!deletedAll)
-			env['saveGame']({'saveName': 'latest', 'method': SaveMethod.ToIndexedDatabase})
-	})
+const prepareEnvironment = (): Promise<EnvironmentConnection> => {
+	return loadEnvironment(getSuggestedEnvironmentName(), saveCallback)
+}
 
-	document.addEventListener('keydown', async event => {
-		if (event['code'] === 'KeyS' && event['ctrlKey']) {
-			event.preventDefault()
-			event.stopPropagation()
-			env['saveGame']({'saveName': 'latest', 'method': SaveMethod.ToDataUrl})
-		}
-		if (event['code'] === 'KeyT') {
-			env['terminateGame']({})
-		} else if (event['code'] === 'KeyO' && event['ctrlKey']) {
-			event.preventDefault()
-			event.stopPropagation()
-			const file = await askForFile()
-			if (file != null) {
-				await env['terminateGame']({})
-				const results = await env['createNewGame']({'fileToRead': file})
-				await env['startRender']({'canvas': recreateCanvas()})
-				results['updater'].start(speedToSet)
-			}
-		}
-	})
-})()
+const initPageState = async () => {
+	state.environment = await prepareEnvironment()
+
+	const anySaveName = await getSavesList().then(e => e[0])
+	await state.environment['createNewGame']({'saveName': anySaveName})
+	await state.environment['startRender']({'canvas': recreateCanvas()})
+}
+// noinspection JSIgnoredPromiseFromCall
+initPageState()

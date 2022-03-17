@@ -2,6 +2,7 @@ import { GameState } from '../3d-stuff/game-state/game-state'
 import { StateUpdater } from '../3d-stuff/game-state/state-updater'
 import { DEBUG, FORCE_ENV_ZERO, JS_ROOT } from '../build-info'
 import { frontedVariablesBuffer } from '../util/frontend-variables'
+import { sharedMemoryIsAvailable } from '../util/shared-memory'
 import SettingsContainer from '../worker/observable-settings'
 import { getCameraBuffer } from '../worker/serializable-settings'
 
@@ -55,6 +56,19 @@ export interface EnvironmentConnection {
 	saveGame(args: SaveGameArguments): void
 
 	terminateGame(args: TerminateGameArguments): void
+}
+
+export const getSuggestedEnvironmentName = () => {
+	let usedEnvironment: Environment = 'zero'
+	if (sharedMemoryIsAvailable) {
+		const offscreenCanvasIsAvailable = !!((window as any).OffscreenCanvas)
+		if (offscreenCanvasIsAvailable)
+			usedEnvironment = 'second'
+		else {
+			usedEnvironment = 'first'
+		}
+	}
+	return usedEnvironment
 }
 
 export const loadEnvironment = async (name: Environment,
