@@ -44,3 +44,24 @@ export const putSaveData = async (id: string, data: any): Promise<void> => {
 
 	db['close']()
 }
+
+export const deleteSaveData = async (id: string): Promise<void> => {
+	const db = await openIndexedDatabase(Constants.DB_NAME, Constants.VERSION, createSavesDatabaseCallback)
+	const transaction = db.transaction([Constants.STORE_MAIN_DATA as string], 'readwrite')
+	await promiseWrapRequest(transaction.objectStore(Constants.STORE_MAIN_DATA)['delete'](id))
+
+	await promiseWrapTransactionCommit(transaction)
+
+	db['close']()
+}
+
+export const deleteAllSaves = async (): Promise<void> => {
+	const db = await openIndexedDatabase(Constants.DB_NAME, Constants.VERSION, createSavesDatabaseCallback)
+	const transaction = db.transaction([Constants.STORE_MAIN_DATA as string], 'readwrite')
+	const data = await promiseWrapRequest(transaction.objectStore(Constants.STORE_MAIN_DATA).getAllKeys(null, 1)) as string[]
+	await Promise.all(data.map(id => promiseWrapRequest(transaction.objectStore(Constants.STORE_MAIN_DATA)['delete'](id))))
+
+	await promiseWrapTransactionCommit(transaction)
+
+	db['close']()
+}

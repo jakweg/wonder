@@ -4,7 +4,7 @@ import {
 	bindFrontendVariablesToCanvas,
 	initFrontendVariableAndRegisterToWindow,
 } from './util/frontend-variables-updaters'
-import { getSavesList } from './util/persistance/saves-database'
+import { deleteAllSaves, getSavesList } from './util/persistance/saves-database'
 import { sharedMemoryIsAvailable } from './util/shared-memory'
 import SettingsContainer, { observeSetting } from './worker/observable-settings'
 import { addSaveCallback, registerSaveSettingsCallback } from './worker/serializable-settings'
@@ -44,6 +44,12 @@ fpsCapInput.addEventListener('input', async (event) => {
 	SettingsContainer.INSTANCE.set('rendering/fps-cap', value)
 })
 
+let deletedAll: boolean = false
+document.getElementById('input-reset')!.addEventListener('click', async () => {
+	deletedAll = true
+	await deleteAllSaves()
+})
+
 const saveCallback = (data: any) => {
 	const url = data['url']
 	const anchor = document.createElement('a')
@@ -60,7 +66,7 @@ const saveCallback = (data: any) => {
 	if (sharedMemoryIsAvailable) {
 		const offscreenCanvasIsAvailable = !!((window as any).OffscreenCanvas)
 		if (offscreenCanvasIsAvailable)
-			usedEnvironment = 'zero'
+			usedEnvironment = 'second'
 		else {
 			usedEnvironment = 'first'
 		}
@@ -74,7 +80,8 @@ const saveCallback = (data: any) => {
 	updater = receivedUpdater
 
 	window.addEventListener('beforeunload', async () => {
-		env['saveGame']({'saveName': 'latest', 'method': SaveMethod.ToIndexedDatabase})
+		if (!deletedAll)
+			env['saveGame']({'saveName': 'latest', 'method': SaveMethod.ToIndexedDatabase})
 	})
 
 	document.addEventListener('keydown', event => {
