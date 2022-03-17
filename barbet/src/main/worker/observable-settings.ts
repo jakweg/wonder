@@ -85,17 +85,27 @@ class SettingsContainer {
 		if (initialCall)
 			callback(value)
 		list.push(callback)
+		return () => {
+			const index = list?.indexOf(callback) ?? -1
+			if (index >= 0)
+				list?.splice(index, 1)
+		}
 	}
 
 	public observeEverything(callback: (snapshot: any) => any): any {
 		this.everythingListeners.push(callback)
 		callback(this.pass())
+		return () => {
+			const index = this.everythingListeners.indexOf(callback) ?? -1
+			if (index >= 0)
+				this.everythingListeners.splice(index, 1)
+		}
 	}
 }
 
 export default SettingsContainer
 export const observeSetting = <T extends SettingName>(
 	key: T,
-	callback: (value: typeof settingsToDefaults[T]) => any): void => {
-	SettingsContainer.INSTANCE.observe(key, callback, true)
+	callback: (value: typeof settingsToDefaults[T]) => any) => {
+	return SettingsContainer.INSTANCE.observe(key, callback, true)
 }

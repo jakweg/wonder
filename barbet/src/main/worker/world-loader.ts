@@ -33,3 +33,21 @@ export const loadGameFromDb = async (id: string, stateBroadcastCallback: () => v
 		setArrayEncodingType(ArrayEncodingType.None)
 	}
 }
+
+export const loadGameFromFile = async (file: File, stateBroadcastCallback: () => void): Promise<GameState> => {
+	return new Promise((resolve, reject) => {
+		const reader = new FileReader()
+		reader['onerror'] = reject
+		reader['onload'] = () => {
+			try {
+				setArrayEncodingType(ArrayEncodingType.ToString)
+				const state = GameState.deserialize(JSON.parse(reader.result as string), globalMutex, stateBroadcastCallback)
+				setArrayEncodingType(ArrayEncodingType.None)
+				resolve(state)
+			} catch (e) {
+				reject(e)
+			}
+		}
+		reader['readAsText'](file)
+	})
+}

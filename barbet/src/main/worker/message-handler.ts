@@ -1,10 +1,10 @@
-import { SaveGameArguments } from '../environments/loader'
+import { CreateGameArguments, SaveGameArguments, TerminateGameArguments } from '../environments/loader'
 
 export interface Message {
 	['error']: { message: string }
 	['connection-established']: { now: number }
 	['set-global-mutex']: { mutex: unknown }
-	['create-game']: { saveName: string | undefined }
+	['create-game']: CreateGameArguments
 	['set-worker-load-delays']: { update: number, render: number }
 	['game-snapshot-for-renderer']: { game: unknown, updater: unknown }
 	['transfer-canvas']: { canvas: unknown }
@@ -13,6 +13,7 @@ export interface Message {
 	['camera-buffer']: { buffer: SharedArrayBuffer }
 	['new-settings']: any
 	['save-game']: SaveGameArguments
+	['terminate-game']: TerminateGameArguments
 	['save-game-result']: { url: string }
 }
 

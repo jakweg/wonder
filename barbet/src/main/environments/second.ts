@@ -7,76 +7,88 @@ import SettingsContainer from '../worker/observable-settings'
 import { getCameraBuffer, setCameraBuffer } from '../worker/serializable-settings'
 import { WorkerController } from '../worker/worker-controller'
 import { globalMutex } from '../worker/worker-global-state'
-import { ConnectArguments, EnvironmentConnection, SaveGameArguments, StartRenderArguments } from './loader'
+import {
+	ConnectArguments,
+	EnvironmentConnection,
+	SaveGameArguments,
+	StartRenderArguments,
+	TerminateGameArguments,
+} from './loader'
 
 // this function is always used
 // noinspection JSUnusedGlobalSymbols
-export const connect = (args: ConnectArguments): EnvironmentConnection => {
+export const connect = async (args: ConnectArguments): Promise<EnvironmentConnection> => {
 	initFrontedVariablesFromReceived(args['frontendVariables'])
 	setCameraBuffer(args['camera'])
 	SettingsContainer.INSTANCE = args['settings']
 
-	let gameSnapshotForRenderer: any = null
+	let startGameCallback: any = null
 	let entityContainerSnapshotForRenderer: any = null
+	let gameSnapshotForRenderer: any = null
 	let decodedGame: GameState | null = null
 	let updater: StateUpdater | null = null
-	let updateWorker: WorkerController | null = null
-	let renderWorker: WorkerController | null = null
+	const workers = await Promise.all([
+		WorkerController.spawnNew('update-worker', 'update', globalMutex),
+		WorkerController.spawnNew('render-worker', 'render', globalMutex),
+	])
+
+	const [updateWorker, renderWorker] = workers
+	SettingsContainer.INSTANCE.observeEverything(snapshot => {
+		updateWorker.replier.send('new-settings', snapshot)
+		renderWorker.replier.send('new-settings', snapshot)
+	})
+
+	renderWorker.replier.send('frontend-variables', {'buffer': frontedVariablesBuffer})
+	renderWorker.replier.send('camera-buffer', {'buffer': getCameraBuffer()})
+	renderWorker.replier.send('set-worker-load-delays', {
+		'render': renderWorker.workerStartDelay,
+		'update': updateWorker!.workerStartDelay,
+	})
+
+	setMessageHandler('save-game-result', data => {
+		args['saveResultsCallback'](data)
+	})
+
+	setMessageHandler('game-snapshot-for-renderer', (data) => {
+		gameSnapshotForRenderer = data
+		decodedGame = GameState.forRenderer(data['game'])
+		updater = stateUpdaterFromReceived(globalMutex, data['updater'])
+		startGameCallback({'state': decodedGame, 'updater': updater})
+	})
+	setMessageHandler('update-entity-container', data => {
+		decodedGame!.entities.replaceBuffersFromReceived(data)
+		entityContainerSnapshotForRenderer = data
+		renderWorker.replier.send('update-entity-container', data)
+	})
+
 
 	return {
 		'name': 'second',
 		async 'createNewGame'(gameArgs) {
-			if (updateWorker !== null)
+			if (decodedGame !== null)
 				throw new Error('Game was already created')
 
-			updateWorker = await WorkerController.spawnNew('update-worker', 'update', globalMutex)
-			updateWorker.replier.send('create-game', {'saveName': gameArgs['saveName']})
-			args['settings'].observeEverything(snapshot => updateWorker?.replier.send('new-settings', snapshot))
+			updateWorker.replier.send('create-game', gameArgs)
 
-			setMessageHandler('update-entity-container', data => {
-				decodedGame!.entities.replaceBuffersFromReceived(data)
-				entityContainerSnapshotForRenderer = data
-				renderWorker?.replier.send('update-entity-container', data)
-			})
-
-			setMessageHandler('save-game-result', data => {
-				args['saveResultsCallback'](data)
-			})
-
-			return new Promise(resolve => {
-				setMessageHandler('game-snapshot-for-renderer', (data) => {
-					gameSnapshotForRenderer = data
-
-					decodedGame = GameState.forRenderer(data['game'])
-					updater = stateUpdaterFromReceived(globalMutex, data['updater'])
-
-					resolve({'state': decodedGame, 'updater': updater})
-				})
-			})
+			return new Promise(resolve => startGameCallback = resolve)
 		},
 		'startRender': async function (renderArguments: StartRenderArguments): Promise<void> {
-			if (renderWorker !== null)
-				throw new Error('Render worker was already created')
-
 			if (gameSnapshotForRenderer === null)
 				throw new Error('Create game first')
 
-			renderWorker = await WorkerController.spawnNew('render-worker', 'render', globalMutex)
-			SettingsContainer.INSTANCE.observeEverything(snapshot => renderWorker?.replier.send('new-settings', snapshot))
 			const canvasControl = (renderArguments['canvas'] as any).transferControlToOffscreen()
-			renderWorker.replier.send('frontend-variables', {'buffer': frontedVariablesBuffer})
-			renderWorker.replier.send('camera-buffer', {'buffer': getCameraBuffer()})
 			renderWorker.replier.send('transfer-canvas', {'canvas': canvasControl}, [canvasControl])
 			renderWorker.replier.send('game-snapshot-for-renderer', gameSnapshotForRenderer)
-			renderWorker.replier.send('set-worker-load-delays', {
-				'render': renderWorker.workerStartDelay,
-				'update': updateWorker!.workerStartDelay,
-			})
 			if (entityContainerSnapshotForRenderer !== null)
 				renderWorker.replier.send('update-entity-container', entityContainerSnapshotForRenderer)
 		},
 		'saveGame'(args: SaveGameArguments): void {
-			updateWorker?.replier?.send('save-game', args)
+			updateWorker.replier?.send('save-game', args)
+		},
+		'terminateGame'(args: TerminateGameArguments): void {
+			renderWorker.replier.send('terminate-game', args)
+			updateWorker.replier.send('terminate-game', args)
+			entityContainerSnapshotForRenderer = decodedGame = updater = null
 		},
 	}
 }

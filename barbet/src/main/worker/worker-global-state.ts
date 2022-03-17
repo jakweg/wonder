@@ -8,17 +8,17 @@ export const setGlobalMutex = (data: unknown) => {
 }
 
 
-let globalGameState: GameState | null = null
-export const setGlobalGameState = (state: GameState) => {
-	if (globalGameState !== null)
+export let globalGameState: GameState | null = null
+export const setGlobalGameState = (state: GameState | null) => {
+	if (globalGameState !== null && state !== null)
 		throw new Error('Game is not null')
 	globalGameState = state
 }
 
 type StateUpdater = ReturnType<typeof createNewStateUpdater>
 export let globalStateUpdater: StateUpdater | null = null
-export const setGlobalStateUpdater = (u: StateUpdater) => {
-	if (globalStateUpdater !== null)
+export const setGlobalStateUpdater = (u: StateUpdater | null) => {
+	if (globalStateUpdater !== null && u !== null)
 		throw new Error('Updater is not null')
 	globalStateUpdater = u
 }

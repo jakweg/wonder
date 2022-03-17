@@ -11,6 +11,7 @@ import { globalMutex, globalWorkerDelay, setGlobalMutex } from './worker/worker-
 SettingsContainer.INSTANCE = SettingsContainer.createEmpty()
 takeControlOverWorkerConnection()
 
+let renderCancelCallback: () => void = () => void 0
 let canvas: HTMLCanvasElement | null = null
 let gameSnapshot: unknown | null = null
 let decodedGame: GameState | null = null
@@ -56,6 +57,11 @@ setMessageHandler('frontend-variables', (data) => {
 	initFrontedVariablesFromReceived(data['buffer'])
 })
 
+setMessageHandler('terminate-game', () => {
+	renderCancelCallback()
+	canvas = decodedUpdater = decodedGame = gameSnapshot = null
+})
+
 
 const considerStartRendering = () => {
 	if (decodedGame === null && canvas !== null && gameSnapshot !== null) {
@@ -65,6 +71,6 @@ const considerStartRendering = () => {
 
 		const camera = cameraBuffer ? Camera.newUsingBuffer(cameraBuffer) : Camera.newPerspective()
 
-		startRenderingGame(canvas, decodedGame, decodedUpdater, camera)
+		renderCancelCallback = startRenderingGame(canvas, decodedGame, decodedUpdater, camera)
 	}
 }

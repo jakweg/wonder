@@ -1,4 +1,3 @@
-import { GameState } from './3d-stuff/game-state/game-state'
 import { createNewStateUpdater } from './3d-stuff/game-state/state-updater'
 import { SaveMethod } from './environments/loader'
 import { putSaveData } from './util/persistance/saves-database'
@@ -6,8 +5,15 @@ import { ArrayEncodingType, setArrayEncodingType } from './util/persistance/seri
 import { takeControlOverWorkerConnection } from './worker/connections-manager'
 import { setMessageHandler } from './worker/message-handler'
 import SettingsContainer from './worker/observable-settings'
-import { globalMutex, setGlobalGameState, setGlobalMutex, setGlobalStateUpdater } from './worker/worker-global-state'
-import { createEmptyGame, loadGameFromDb } from './worker/world-loader'
+import {
+	globalGameState,
+	globalMutex,
+	globalStateUpdater,
+	setGlobalGameState,
+	setGlobalMutex,
+	setGlobalStateUpdater,
+} from './worker/worker-global-state'
+import { createEmptyGame, loadGameFromDb, loadGameFromFile } from './worker/world-loader'
 
 SettingsContainer.INSTANCE = SettingsContainer.createEmpty()
 takeControlOverWorkerConnection()
@@ -20,19 +26,28 @@ setMessageHandler('new-settings', settings => {
 	SettingsContainer.INSTANCE.update(settings)
 })
 
-let state: GameState
+setMessageHandler('terminate-game', () => {
+	globalStateUpdater?.terminate()
+	setGlobalGameState(null)
+	setGlobalStateUpdater(null)
+})
+
 setMessageHandler('create-game', async (args, connection) => {
 	let updater
 	const stateBroadcastCallback = () => {
+		if (globalGameState === null) return
 		connection.send('update-entity-container', {
-			'buffers': state?.entities?.passBuffers(),
+			'buffers': globalGameState?.entities?.passBuffers(),
 		})
 	}
 
 	const saveName = args['saveName']
-	state = saveName !== undefined
-		? await loadGameFromDb(saveName, stateBroadcastCallback)
-		: createEmptyGame(stateBroadcastCallback)
+	const file = args['fileToRead']
+	const state = file !== undefined
+		? await loadGameFromFile(file, stateBroadcastCallback)
+		: (saveName !== undefined
+			? await loadGameFromDb(saveName, stateBroadcastCallback)
+			: createEmptyGame(stateBroadcastCallback))
 	setGlobalGameState(state)
 
 	updater = createNewStateUpdater(globalMutex, state)
@@ -46,6 +61,8 @@ setMessageHandler('create-game', async (args, connection) => {
 
 setMessageHandler('save-game', async (data, connection) => {
 	const saveName = data['saveName']
+	const state = globalGameState
+	if (state === null) return
 	switch (data['method']) {
 		case SaveMethod.ToIndexedDatabase: {
 			setArrayEncodingType(ArrayEncodingType.AsArray)

@@ -14,9 +14,16 @@ addSaveCallback(() => SettingsContainer.INSTANCE.saveToLocalStorage())
 registerSaveSettingsCallback()
 initFrontendVariableAndRegisterToWindow()
 
-const canvas: HTMLCanvasElement = document.getElementById('main-canvas') as HTMLCanvasElement
+const recreateCanvas = (): HTMLCanvasElement => {
+	const canvas = document.getElementById('main-canvas') as HTMLCanvasElement
+	(canvas as any)['cancelCallback']?.()
 
-bindFrontendVariablesToCanvas(canvas)
+	const clone = canvas['cloneNode'](false) as HTMLCanvasElement
+	canvas.parentElement!['replaceChild'](clone, canvas);
+
+	(clone as any)['cancelCallback'] = bindFrontendVariablesToCanvas(clone)
+	return clone
+}
 
 let updater: StateUpdater | null = null
 
@@ -50,6 +57,23 @@ document.getElementById('input-reset')!.addEventListener('click', async () => {
 	await deleteAllSaves()
 })
 
+const askForFile = async () => {
+	return new Promise<File | null>(resolve => {
+		const input = document.createElement('input')
+		input['type'] = 'file'
+		input['accept'] = '.json'
+		input['oninput'] = () => {
+			const selectedFile = input['files']?.[0]
+			if (selectedFile == null) {
+				resolve(null)
+				return
+			}
+			resolve(selectedFile)
+		}
+		input['click']()
+	})
+}
+
 const saveCallback = (data: any) => {
 	const url = data['url']
 	const anchor = document.createElement('a')
@@ -75,7 +99,7 @@ const saveCallback = (data: any) => {
 	const env = await loadEnvironment(usedEnvironment, saveCallback)
 	const game = await env['createNewGame']({'saveName': await anySaveName})
 	const receivedUpdater = game['updater']
-	await env['startRender']({'canvas': canvas, 'game': game['state'], 'updater': receivedUpdater})
+	await env['startRender']({'canvas': recreateCanvas(), 'game': game['state'], 'updater': receivedUpdater})
 	receivedUpdater.start(speedToSet)
 	updater = receivedUpdater
 
@@ -84,11 +108,24 @@ const saveCallback = (data: any) => {
 			env['saveGame']({'saveName': 'latest', 'method': SaveMethod.ToIndexedDatabase})
 	})
 
-	document.addEventListener('keydown', event => {
+	document.addEventListener('keydown', async event => {
 		if (event['code'] === 'KeyS' && event['ctrlKey']) {
 			event.preventDefault()
 			event.stopPropagation()
 			env['saveGame']({'saveName': 'latest', 'method': SaveMethod.ToDataUrl})
+		}
+		if (event['code'] === 'KeyT') {
+			env['terminateGame']({})
+		} else if (event['code'] === 'KeyO' && event['ctrlKey']) {
+			event.preventDefault()
+			event.stopPropagation()
+			const file = await askForFile()
+			if (file != null) {
+				await env['terminateGame']({})
+				const results = await env['createNewGame']({'fileToRead': file})
+				await env['startRender']({'canvas': recreateCanvas()})
+				results['updater'].start(speedToSet)
+			}
 		}
 	})
 })()

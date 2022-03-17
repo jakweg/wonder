@@ -26,7 +26,8 @@ export const setupSceneRendering = (canvas: HTMLCanvasElement,
                                     camera: Camera,
                                     gameTickEstimation: () => number,
                                     gameTickRate: () => number,
-                                    handleInputEvents: (dt: number, r: MainRenderer, ctx: RenderContext) => Promise<void>) => {
+                                    handleInputEvents: (dt: number, r: MainRenderer, ctx: RenderContext) => Promise<void>)
+	: () => void => {
 	const renderer = MainRenderer.fromHTMLCanvas(canvas)
 
 	const sunPosition = vec3.fromValues(500, 1500, -500)
@@ -69,10 +70,10 @@ export const setupSceneRendering = (canvas: HTMLCanvasElement,
 	let minSecondsBetweenFramesFocus = 0
 	let minSecondsBetweenFramesBlur = 0
 
-	observeSetting('rendering/fps-cap', value => {
+	const unsub1 = observeSetting('rendering/fps-cap', value => {
 		minSecondsBetweenFramesFocus = (value <= 0) ? 0 : (1 / ((+value <= 0 ? 0.00001 : (+value * 1.4))))
 	})
-	observeSetting('rendering/fps-cap-on-blur', value => {
+	const unsub2 = observeSetting('rendering/fps-cap-on-blur', value => {
 		minSecondsBetweenFramesBlur = (value <= 0) ? 9999999 : 1 / ((+value <= 0 ? 0.00001 : (+value * 1.4)))
 	})
 
@@ -82,14 +83,20 @@ export const setupSceneRendering = (canvas: HTMLCanvasElement,
 		return secondsSinceLastFrame >= (hasFocus ? minSecondsBetweenFramesFocus : minSecondsBetweenFramesBlur)
 	}
 	renderer.beginRendering()
+
+	return () => {
+		unsub1()
+		unsub2()
+		renderer.stopRendering()
+	}
 }
 
 
-export const startRenderingGame = (canvas: HTMLCanvasElement, game: GameState, updater: StateUpdater, camera: Camera) => {
+export const startRenderingGame = (canvas: HTMLCanvasElement, game: GameState, updater: StateUpdater, camera: Camera): () => void => {
 	const gameTickEstimation = () => updater.estimateCurrentGameTickTime(globalWorkerDelay.difference)
 	const gameTickRate = () => updater.getTickRate()
 	const handleInputEvents = createInputReactor(game)
 
-	setupSceneRendering(canvas, game, camera, gameTickEstimation, gameTickRate, handleInputEvents)
+	return setupSceneRendering(canvas, game, camera, gameTickEstimation, gameTickRate, handleInputEvents)
 }
 

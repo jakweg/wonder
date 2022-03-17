@@ -25,12 +25,13 @@ export type Environment =
 
 export interface StartRenderArguments {
 	canvas: HTMLCanvasElement
-	game: GameState
-	updater: StateUpdater
+	game?: GameState
+	updater?: StateUpdater
 }
 
 export interface CreateGameArguments {
-	saveName: string | undefined
+	saveName?: string
+	fileToRead?: File
 }
 
 export const enum SaveMethod {
@@ -43,6 +44,9 @@ export interface SaveGameArguments {
 	method: SaveMethod
 }
 
+export interface TerminateGameArguments {
+}
+
 export interface EnvironmentConnection {
 	name: string
 
@@ -51,6 +55,8 @@ export interface EnvironmentConnection {
 	startRender(args: StartRenderArguments): Promise<void>
 
 	saveGame(args: SaveGameArguments): void
+
+	terminateGame(args: TerminateGameArguments): void
 }
 
 export const loadEnvironment = async (name: Environment,

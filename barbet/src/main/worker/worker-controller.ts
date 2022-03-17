@@ -5,7 +5,8 @@ import { Connection, createMessageHandler, Message, MessageType, setMessageHandl
 
 
 export class WorkerController {
-	private constructor(public readonly replier: Connection,
+	private constructor(private readonly worker: Worker,
+	                    public readonly replier: Connection,
 	                    public readonly workerStartDelay: number) {
 	}
 
@@ -34,6 +35,10 @@ export class WorkerController {
 		}).then(() => replier?.send('set-global-mutex', {'mutex': mutex.pass()}))
 
 		mutex.unlock(Lock.Update)
-		return new WorkerController(replier, delay)
+		return new WorkerController(worker, replier, delay)
+	}
+
+	public terminate(): void {
+		this.worker['terminate']?.()
 	}
 }
