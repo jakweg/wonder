@@ -27,12 +27,9 @@ export const connect = async (args: ConnectArguments): Promise<EnvironmentConnec
 	let gameSnapshotForRenderer: any = null
 	let decodedGame: GameState | null = null
 	let updater: StateUpdater | null = null
-	const workers = await Promise.all([
-		WorkerController.spawnNew('update-worker', 'update', globalMutex),
-		WorkerController.spawnNew('render-worker', 'render', globalMutex),
-	])
 
-	const [updateWorker, renderWorker] = workers
+	const updateWorker = await WorkerController.spawnNew('update-worker', 'update', globalMutex)
+	const renderWorker = await WorkerController.spawnNew('render-worker', 'render', globalMutex)
 	SettingsContainer.INSTANCE.observeEverything(snapshot => {
 		updateWorker.replier.send('new-settings', snapshot)
 		renderWorker.replier.send('new-settings', snapshot)

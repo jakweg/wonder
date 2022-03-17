@@ -41,7 +41,7 @@ export const loadGameFromFile = async (file: File, stateBroadcastCallback: () =>
 		reader['onload'] = () => {
 			try {
 				setArrayEncodingType(ArrayEncodingType.ToString)
-				const state = GameState.deserialize(JSON.parse(reader.result as string), globalMutex, stateBroadcastCallback)
+				const state = GameState.deserialize(JSON.parse(reader['result'] as string), globalMutex, stateBroadcastCallback)
 				setArrayEncodingType(ArrayEncodingType.None)
 				resolve(state)
 			} catch (e) {

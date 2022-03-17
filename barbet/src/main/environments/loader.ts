@@ -25,8 +25,6 @@ export type Environment =
 
 export interface StartRenderArguments {
 	canvas: HTMLCanvasElement
-	game?: GameState
-	updater?: StateUpdater
 }
 
 export interface CreateGameArguments {
@@ -74,5 +72,5 @@ export const loadEnvironment = async (name: Environment,
 		'settings': SettingsContainer.INSTANCE,
 		'saveResultsCallback': saveResultsCallback,
 	}
-	return Object.freeze(connect(args) as EnvironmentConnection)
+	return Object.freeze(await connect(args) as EnvironmentConnection)
 }

@@ -19,7 +19,7 @@ const recreateCanvas = (): HTMLCanvasElement => {
 	(canvas as any)['cancelCallback']?.()
 
 	const clone = canvas['cloneNode'](false) as HTMLCanvasElement
-	canvas.parentElement!['replaceChild'](clone, canvas);
+	canvas['parentElement']!['replaceChild'](clone, canvas);
 
 	(clone as any)['cancelCallback'] = bindFrontendVariablesToCanvas(clone)
 	return clone
@@ -99,7 +99,7 @@ const saveCallback = (data: any) => {
 	const env = await loadEnvironment(usedEnvironment, saveCallback)
 	const game = await env['createNewGame']({'saveName': await anySaveName})
 	const receivedUpdater = game['updater']
-	await env['startRender']({'canvas': recreateCanvas(), 'game': game['state'], 'updater': receivedUpdater})
+	await env['startRender']({'canvas': recreateCanvas()})
 	receivedUpdater.start(speedToSet)
 	updater = receivedUpdater
 
