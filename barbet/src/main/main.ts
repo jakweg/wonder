@@ -1,5 +1,11 @@
 import { StateUpdater } from './3d-stuff/game-state/state-updater'
-import { EnvironmentConnection, getSuggestedEnvironmentName, loadEnvironment, SaveMethod } from './environments/loader'
+import {
+	CreateGameArguments,
+	EnvironmentConnection,
+	getSuggestedEnvironmentName,
+	loadEnvironment,
+	SaveMethod,
+} from './environments/loader'
 import {
 	bindFrontendVariablesToCanvas,
 	initFrontendVariableAndRegisterToWindow,
@@ -93,13 +99,8 @@ window.addEventListener('beforeunload', async () => {
 
 const inputReset = document.getElementById('input-reset')!
 inputReset.addEventListener('click', async () => {
-	if (state.environment === null) return
 	inputReset['blur']()
-	await state.environment['terminateGame']({})
-	const results = await state.environment['createNewGame']({})
-	await state.environment['startRender']({'canvas': recreateCanvas()})
-	state.updater = results['updater']
-	state.updater.start(speedToSet)
+	await runGame({})
 })
 
 document.addEventListener('keydown', async event => {
@@ -111,12 +112,8 @@ document.addEventListener('keydown', async event => {
 		event.preventDefault()
 		event.stopPropagation()
 		const file = await askForFile()
-		if (file != null && state.environment !== null) {
-			await state.environment['terminateGame']({})
-			const results = await state.environment['createNewGame']({'fileToRead': file})
-			await state.environment['startRender']({'canvas': recreateCanvas()})
-			state.updater = results['updater']
-			state.updater.start(speedToSet)
+		if (file != null) {
+			await runGame({'fileToRead': file})
 		}
 	}
 })
@@ -126,12 +123,20 @@ const prepareEnvironment = (): Promise<EnvironmentConnection> => {
 	return loadEnvironment(getSuggestedEnvironmentName(), saveCallback)
 }
 
+const runGame = async (args: CreateGameArguments) => {
+	if (state.environment === null) return
+	await state.environment['terminateGame']({})
+	const results = await state.environment['createNewGame'](args)
+	await state.environment['startRender']({'canvas': recreateCanvas()})
+	state.updater = results['updater']
+	state.updater.start(speedToSet)
+}
+
 const initPageState = async () => {
 	state.environment = await prepareEnvironment()
 
 	const anySaveName = await getSavesList().then(e => e[0])
-	await state.environment['createNewGame']({'saveName': anySaveName})
-	await state.environment['startRender']({'canvas': recreateCanvas()})
+	await runGame({'saveName': anySaveName})
 }
 // noinspection JSIgnoredPromiseFromCall
 initPageState()
