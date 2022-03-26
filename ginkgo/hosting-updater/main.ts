@@ -36,7 +36,7 @@ const hostedFiles = [
 async function cleanTmpFolder() {
 	try {
 		await Deno.remove(`${TMP_FOLDER_ROOT}`, {recursive: true})
-	} catch (e) {
+	} catch (_) {
 		// ignore
 	}
 }

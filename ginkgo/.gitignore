@@ -1,3 +1,4 @@
 logs
 /scripts/setup-private.sh
-/hosting-updater/private-key.json
+private-key.json
+github-secret.txt
