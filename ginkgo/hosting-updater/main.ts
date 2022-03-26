@@ -13,7 +13,7 @@ const firebaseHostingConfig = {
 		'headers': [{
 			'glob': '**',
 			'headers': {
-				'Cache-Control': `public;must-revalidate;max-age=${60 * 60 * 24 * 2};s-maxage=3`,
+				'Cache-Control': `public;must-revalidate;max-age=${60 * 60 * 24 * 2};s-maxage=${60 * 60 * 6}`,
 				'Cross-Origin-Opener-Policy': 'same-origin',
 				'Cross-Origin-Embedder-Policy': 'require-corp',
 				'Content-Security-Policy': `upgrade-insecure-requests; default-src 'self';`,
