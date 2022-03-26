@@ -11,10 +11,6 @@ if [[ "$KEY_FILE" == "" ]]; then
   echo "Missing KEY_FILE variable name"
   exit 1
 fi
-if [[ "$REGION" == "" ]]; then
-  echo "Missing REGION variable name"
-  exit 1
-fi
 
 output=$(gcloud --version 2>/dev/null)
 if [[ $? -ne 0 ]]; then
