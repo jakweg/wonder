@@ -60,10 +60,9 @@ if [[ $(gcloud iam service-accounts list --filter "EMAIL:$SERVICE_ACCOUNT_NAME@$
   fi
   echo "WARNING: Private key has been created and saved into $KEY_FILE"
   echo "Please delete it as soon as possible"
-  gcloud projects add-iam-policy-binding "$GCP_PROJECT" --member="serviceAccount:$SERVICE_ACCOUNT_NAME@$GCP_PROJECT.iam.gserviceaccount.com" --role="roles/firebasehosting.admin" > /dev/null
+  gcloud projects add-iam-policy-binding "$GCP_PROJECT" --member="serviceAccount:$SERVICE_ACCOUNT_NAME@$GCP_PROJECT.iam.gserviceaccount.com" --role="roles/firebasehosting.admin" >/dev/null
   if [[ $? -ne 0 ]]; then
-      echo "granting hosting permissions failed"
-      exit 1
-    fi
+    echo "granting hosting permissions failed"
+    exit 1
+  fi
 fi
-

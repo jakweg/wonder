@@ -1,5 +1,5 @@
+import { serve } from 'https://deno.land/std@0.119.0/http/server.ts'
 import 'https://deno.land/x/dotenv/mod.ts'
-// import {serve} from 'https://deno.land/std@0.119.0/http/server.ts'
 
 const TMP_FOLDER_ROOT = '/tmp/builder'
 const FINAL_FILES_FOLDER_NAME = 'dest'
@@ -13,8 +13,10 @@ const firebaseHostingConfig = {
 		'headers': [{
 			'glob': '**',
 			'headers': {
-				'Cache-Control': 'max-age=1800',
-				'X-Custom': 'hello=world',
+				'Cache-Control': `public;must-revalidate;max-age=${60 * 60 * 24 * 2};s-maxage=3`,
+				'Cross-Origin-Opener-Policy': 'same-origin',
+				'Cross-Origin-Embedder-Policy': 'require-corp',
+				'Content-Security-Policy': `upgrade-insecure-requests; default-src 'self';`,
 			},
 		}],
 	},
@@ -30,13 +32,6 @@ const hostedFiles = [
 	'build-js/environments/first.js',
 	'build-js/environments/second.js',
 ]
-
-// const PORT = Deno.env.get('PORT') || 3000
-// const s = serve(`0.0.0.0:${PORT}`)
-//
-// for await (const req of s) {
-// 	req.respond(null, {status: 200})
-// }
 
 async function cleanTmpFolder() {
 	try {
@@ -221,12 +216,32 @@ async function uploadRequiredFiles(token: string, uploadUrl: string, requiredHas
 	await Promise.all(Object.entries(hash2file).map(([hash, file]) => uploadFile(token, uploadUrl, hash, file)))
 }
 
-const {file2hash, hash2file} = await prepareFileForUploadAndGetHashes()
-const {token, versionId} = await prepareAccountAndCreateNewSite()
+async function prepareReleaseAndPublishIt() {
+	const {file2hash, hash2file} = await prepareFileForUploadAndGetHashes()
+	const {token, versionId} = await prepareAccountAndCreateNewSite()
 
-const {uploadUrl, uploadRequiredHashes} = await populateFiles(token, versionId, file2hash)
-await uploadRequiredFiles(token, uploadUrl, uploadRequiredHashes, hash2file)
+	const {uploadUrl, uploadRequiredHashes} = await populateFiles(token, versionId, file2hash)
+	await uploadRequiredFiles(token, uploadUrl, uploadRequiredHashes, hash2file)
 
-await markVersionAsFinalized(token, versionId)
-await publishRelease(token, versionId)
-await cleanTmpFolder()
+	await markVersionAsFinalized(token, versionId)
+	await publishRelease(token, versionId)
+	await cleanTmpFolder()
+}
+
+
+async function handler(_: Request): Promise<Response> {
+	try {
+		await prepareReleaseAndPublishIt()
+
+		return new Response(null, {status: 200})
+	} catch (e) {
+		console.error(e)
+		return new Response(JSON.stringify(e), {status: 500})
+	}
+}
+
+const PORT = +(Deno.env.get('PORT') ?? '3000') || 3000
+serve(handler, {
+	port: PORT,
+})
+
