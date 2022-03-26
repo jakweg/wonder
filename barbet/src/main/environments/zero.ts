@@ -58,7 +58,7 @@ export const connect = (args: ConnectArguments): EnvironmentConnection => {
 			renderCancelCallback = startRenderingGame(args['canvas'], game, updater!, Camera.newUsingBuffer(getCameraBuffer()))
 		},
 		'terminateGame'(_: TerminateGameArguments) {
-			renderCancelCallback()
+			renderCancelCallback?.()
 			updater?.stop()
 			game = updater = null
 			setGlobalStateUpdater(null)

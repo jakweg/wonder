@@ -58,7 +58,7 @@ setMessageHandler('frontend-variables', (data) => {
 })
 
 setMessageHandler('terminate-game', () => {
-	renderCancelCallback()
+	renderCancelCallback?.()
 	canvas = decodedUpdater = decodedGame = gameSnapshot = null
 })
 
