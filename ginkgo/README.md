@@ -27,7 +27,8 @@ for SharedArrayBuffer to work.
    with `KEY_FILE` pointing to file from step 4.
 7. Deploy container which acts as a webhook. Invoke `./scripts/deploy-github-webhook.sh`
    with `KEY_FILE` pointing to file from step 5.
-8. You'll get URL in a console which you can add in GitHub as a webhook. Use secret generated in step 1.
+8. You'll get URL in a console which you can add in GitHub as a webhook. Use secret generated in step 1. Please
+   choose `application/json` as content type.
 9. Done, you can trigger hosting upload by pushing into `master` branch or publish any message on `hosting-update`
    topic.
 

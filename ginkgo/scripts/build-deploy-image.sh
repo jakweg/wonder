@@ -86,7 +86,6 @@ if [[ $? -ne 0 ]]; then
   echo "gcloud run deploy failed for $CONTAINER_NAME, see logs for more details"
   exit 1
 fi
-gcloud run services list --filter="SERVICE:$CONTAINER_NAME"
 
 if [[ "$(gcloud iam service-accounts list --filter "EMAIL:hosting-updater-pubsub-invoker@$GCP_PROJECT.iam.gserviceaccount.com" 2>&1 | tail +2)" == "" ]]; then
   gcloud iam service-accounts create "hosting-updater-pubsub-invoker" --display-name "Hosting refresh invoker"
@@ -94,7 +93,7 @@ if [[ "$(gcloud iam service-accounts list --filter "EMAIL:hosting-updater-pubsub
     echo "pubsub-invoker account creation failed"
     exit 1
   fi
-  gcloud run services add-iam-policy-binding "$CONTAINER_NAME" "--member=serviceAccount:hosting-updater-pubsub-invoker@$GCP_PROJECT.iam.gserviceaccount.com" --role=roles/run.invoker
+  gcloud run services add-iam-policy-binding "$CONTAINER_NAME" --region "$REGION" "--member=serviceAccount:hosting-updater-pubsub-invoker@$GCP_PROJECT.iam.gserviceaccount.com" --role=roles/run.invoker
 fi
 
 if [[ $(gcloud pubsub subscriptions list --filter "name:projects/$GCP_PROJECT/subscriptions/hosting-updater-subscription" --format "csv(name)" 2>&1 | tail +2) == "" ]]; then
