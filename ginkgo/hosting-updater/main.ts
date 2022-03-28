@@ -8,20 +8,6 @@ const BRANCH = 'master'
 const GIT_URL = 'https://github.com/JakubekWeg/wonder'
 const SITE_ID = 'next-wonder'
 
-const firebaseHostingConfig = {
-	'config': {
-		'headers': [{
-			'glob': '**',
-			'headers': {
-				'Cache-Control': `public;must-revalidate;max-age=${60 * 60 * 24 * 2};s-maxage=${60 * 60 * 6}`,
-				'Cross-Origin-Opener-Policy': 'same-origin',
-				'Cross-Origin-Embedder-Policy': 'require-corp',
-				'Content-Security-Policy': `upgrade-insecure-requests; default-src 'self';`,
-			},
-		}],
-	},
-}
-
 const hostedFiles = [
 	'index.html',
 	'style.css',
@@ -81,14 +67,14 @@ async function getAccessToken(): Promise<string> {
 	return outputString
 }
 
-async function createNewSite(token: string, config: any): Promise<string> {
+async function createNewSite(token: string, config: string): Promise<string> {
 	const response = await fetch(`https://firebasehosting.googleapis.com/v1beta1/sites/${SITE_ID}/versions`, {
 		method: 'POST',
 		headers: {
 			'Authorization': `Bearer ${token}`,
 			'Content-Type': 'application/json',
 		},
-		body: JSON.stringify(config),
+		body: config,
 	})
 
 	if (!response.ok)
@@ -207,6 +193,8 @@ async function prepareFileForUploadAndGetHashes() {
 async function prepareAccountAndCreateNewSite() {
 	await activateServiceAccount()
 	const token = await getAccessToken()
+
+	const firebaseHostingConfig = new TextDecoder().decode(await Deno.readFile(`${TMP_FOLDER_ROOT}/${FOLDER_TO_CLONE}/barbet/firebase-hosting-config.json`))
 
 	const versionId = await createNewSite(token, firebaseHostingConfig)
 	return {token, versionId}
