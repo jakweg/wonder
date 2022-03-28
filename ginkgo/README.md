@@ -1,6 +1,6 @@
 # Ginkgo
 
-### CI/CD pipeline for project Wonder
+### Continuous deployment pipeline for project Wonder
 
 Pipeline works on GCP using [Cloud Run](https://cloud.google.com/run/) and [PubSub](https://cloud.google.com/pubsub/).
 You need to have a Firebase project created and billing enabled in order to run that.

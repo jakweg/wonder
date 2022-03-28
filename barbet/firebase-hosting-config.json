@@ -1,0 +1,15 @@
+{
+  "config": {
+    "headers": [
+      {
+        "glob": "**",
+        "headers": {
+          "Cache-Control": "public;must-revalidate;max-age=172800;s-maxage=43200",
+          "Cross-Origin-Opener-Policy": "same-origin",
+          "Cross-Origin-Embedder-Policy": "require-corp",
+          "Content-Security-Policy": "upgrade-insecure-requests; default-src \"self\";"
+        }
+      }
+    ]
+  }
+}
