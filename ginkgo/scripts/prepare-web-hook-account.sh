@@ -7,10 +7,6 @@ if [[ "$GCP_PROJECT" == "" ]]; then
   echo "Missing GCP_PROJECT variable name"
   exit 1
 fi
-if [[ "$KEY_FILE" == "" ]]; then
-  echo "Missing KEY_FILE variable name"
-  exit 1
-fi
 
 output=$(gcloud --version 2>/dev/null)
 if [[ $? -ne 0 ]]; then
@@ -49,13 +45,7 @@ if [[ $(gcloud iam service-accounts list --filter "EMAIL:$SERVICE_ACCOUNT_NAME@$
     echo "service account creation failed"
     exit 1
   fi
-  gcloud iam service-accounts keys create "$KEY_FILE" --iam-account "$SERVICE_ACCOUNT_NAME@$GCP_PROJECT.iam.gserviceaccount.com"
-  if [[ $? -ne 0 ]]; then
-    echo "service account keys creation failed"
-    exit 1
-  fi
-  echo "WARNING: Private key has been created and saved into $KEY_FILE"
-  echo "Please delete it as soon as possible"
+
   gcloud pubsub topics add-iam-policy-binding hosting-update --member "serviceAccount:$SERVICE_ACCOUNT_NAME@$GCP_PROJECT.iam.gserviceaccount.com" --role=roles/pubsub.publisher >/dev/null
   if [[ $? -ne 0 ]]; then
     echo "granting PubSub permissions failed"
