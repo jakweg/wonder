@@ -81,7 +81,7 @@ rm $CONTAINER_NAME/private-key.json
 echo "Done"
 
 echo "Deploying container to Cloud Run"
-gcloud run deploy "$CONTAINER_NAME" --image="gcr.io/$GCP_PROJECT/$CONTAINER_NAME" --region="$REGION" --no-allow-unauthenticated --cpu=1 --memory=512Mi --max-instances=1 >"logs/run_deploy_$CONTAINER_NAME.log" 2>&1
+gcloud run deploy "$CONTAINER_NAME" --image="gcr.io/$GCP_PROJECT/$CONTAINER_NAME" --region="$REGION" --no-allow-unauthenticated --concurrency=1 --cpu=1 --memory=512Mi --max-instances=1 >"logs/run_deploy_$CONTAINER_NAME.log" 2>&1
 if [[ $? -ne 0 ]]; then
   echo "gcloud run deploy failed for $CONTAINER_NAME, see logs for more details"
   exit 1
@@ -99,9 +99,8 @@ fi
 if [[ $(gcloud pubsub subscriptions list --filter "name:projects/$GCP_PROJECT/subscriptions/hosting-updater-subscription" --format "csv(name)" 2>&1 | tail +2) == "" ]]; then
   gcloud pubsub subscriptions create hosting-updater-subscription --topic "projects/$GCP_PROJECT/topics/hosting-update" \
     --message-retention-duration=10m \
-    --ack-deadline=180 \
+    --ack-deadline=180 --max-delivery-attempts=1 --min-retry-delay=1m \
     --push-endpoint="$(gcloud run services list --filter="SERVICE:hosting-updater" --format "csv(URL)" | tail +2)" "--push-auth-service-account=hosting-updater-pubsub-invoker@$GCP_PROJECT.iam.gserviceaccount.com"
 fi
-
 
 exit 0

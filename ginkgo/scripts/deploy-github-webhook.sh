@@ -13,10 +13,6 @@ if [[ "$GITHUB_SECRET" == "" ]]; then
   echo "Missing GITHUB_SECRET variable name"
   exit 1
 fi
-if [[ "$KEY_FILE" == "" ]]; then
-  echo "Missing KEY_FILE variable name"
-  exit 1
-fi
 CONTAINER_NAME="github-webhook"
 
 output=$(docker --version 2>/dev/null)
@@ -70,21 +66,23 @@ if [[ $(gcloud pubsub topics list --filter "name:projects/$GCP_PROJECT/topics/ho
 fi
 
 echo "Submitting $CONTAINER_NAME to Cloud Build"
-cp "$KEY_FILE" $CONTAINER_NAME/private-key.json
 cp "$GITHUB_SECRET" $CONTAINER_NAME/github-secret.txt
 gcloud builds submit "$CONTAINER_NAME" --tag "gcr.io/$GCP_PROJECT/$CONTAINER_NAME" >"logs/build_submit_$CONTAINER_NAME.log" 2>&1
 if [[ $? -ne 0 ]]; then
-  rm $CONTAINER_NAME/private-key.json
   rm $CONTAINER_NAME/github-secret.txt
   echo "gcloud builds submit failed for $CONTAINER_NAME, see logs for more details"
   exit 1
 fi
-rm $CONTAINER_NAME/private-key.json
 rm $CONTAINER_NAME/github-secret.txt
 echo "Done"
 
 echo "Deploying container to Cloud Run"
-gcloud run deploy "$CONTAINER_NAME" --image="gcr.io/$GCP_PROJECT/$CONTAINER_NAME" --region="$REGION" --allow-unauthenticated --cpu=1 --memory=128Mi --max-instances=1 >"logs/run_deploy_$CONTAINER_NAME.log" 2>&1
+gcloud run deploy "$CONTAINER_NAME" \
+  --service-account="github-webhook@$GCP_PROJECT.iam.gserviceaccount.com" \
+  --image="gcr.io/$GCP_PROJECT/$CONTAINER_NAME" --concurrency=1 --region="$REGION" \
+  --allow-unauthenticated --cpu=1 --memory=128Mi \
+  --max-instances=1 >"logs/run_deploy_$CONTAINER_NAME.log" 2>&1
+
 if [[ $? -ne 0 ]]; then
   echo "gcloud run deploy failed for $CONTAINER_NAME, see logs for more details"
   exit 1

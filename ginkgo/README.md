@@ -40,10 +40,10 @@ GCP_PROJECT1="<project name which you want to host on>"
 GCP_PROJECT2="<project name with billing enabled>" # can be the same as above
 
 echo -n "<replace me with something random>" > /tmp/github-secret.txt
-KEY_FILE="/tmp/hosting-updater-key.json" GCP_PROJECT=$GCP_PROJECT1 ./scripts/prepare-hosting.sh
-KEY_FILE="/tmp/hosting-updater-key.json" REGION="us-central1" GCP_PROJECT=$GCP_PROJECT2 ./scripts/build-deploy-image.sh
-KEY_FILE="/tmp/github-key.json" GCP_PROJECT=$GCP_PROJECT2 ./scripts/prepare-github-webhook.sh
-GITHUB_SECRET="/tmp/github-secret.txt" KEY_FILE="/tmp/github-key.json" REGION="us-central1" GCP_PROJECT=$GCP_PROJECT2 ./scripts/deploy-github-webhook.sh
+KEY_FILE="/tmp/hosting-updater-key.json" GCP_PROJECT=$GCP_PROJECT1 ./scripts/prepare-hosting-updater-account.sh
+KEY_FILE="/tmp/hosting-updater-key.json" REGION="us-central1" GCP_PROJECT=$GCP_PROJECT2 ./scripts/deploy-hosting-updater.sh
+GCP_PROJECT=$GCP_PROJECT2 ./scripts/prepare-web-hook-account.sh
+GITHUB_SECRET="/tmp/github-secret.txt" REGION="us-central1" GCP_PROJECT=$GCP_PROJECT2 ./scripts/deploy-github-webhook.sh
 ```
 
 ##### Now every time you push to `master` new frontend gets published automatically 😃

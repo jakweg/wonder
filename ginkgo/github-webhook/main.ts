@@ -20,18 +20,38 @@ async function computeHash(key: string, content: Uint8Array): Promise<string> {
 	return outputString.substring(outputString.lastIndexOf(' ') + 1).trimRight()
 }
 
-async function activateServiceAccount() {
-	const cmd = ['./google-cloud-sdk/bin/gcloud', 'auth', 'activate-service-account', '--key-file', './private-key.json']
-	const process = Deno.run({cmd, stdout: 'null'})
-	if (!(await process.status()).success)
-		throw new Error('gcloud auth activate-service-account process failed :(')
+
+async function getProjectId() {
+	return await (await fetch('http://metadata.google.internal/computeMetadata/v1/project/project-id', {
+		headers: {'Metadata-Flavor': 'Google'},
+	})).text()
+}
+
+async function getAccessToken(): Promise<string> {
+	return (await (await fetch('http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/token', {
+		headers: {'Metadata-Flavor': 'Google'},
+	})).json()).access_token
 }
 
 async function sendPubSub() {
-	const cmd = ['./google-cloud-sdk/bin/gcloud', 'pubsub', 'topics', 'publish', 'hosting-update', '--message', 'requested by github webhook']
-	const process = Deno.run({cmd, stdout: 'null'})
-	if (!(await process.status()).success)
-		throw new Error('gcloud auth activate-service-account process failed :(')
+	const projectId = await getProjectId()
+	const token = await getAccessToken()
+
+	const response2 = await fetch(`https://pubsub.googleapis.com/v1/projects/${projectId}/topics/hosting-update:publish`, {
+		method: 'POST',
+		headers: {
+			'Authorization': 'Bearer ' + token,
+		},
+		body: JSON.stringify({
+			'messages': [
+				{data: btoa('Hello world')},
+			],
+		}),
+	})
+	if (!response2.ok) {
+		console.error(await response2.text())
+		throw new Error('Sending pubsub failed')
+	}
 }
 
 async function handler(request: Request): Promise<Response> {
@@ -55,7 +75,6 @@ async function handler(request: Request): Promise<Response> {
 		if (body.ref !== expectedRef)
 			return new Response(`Ignoring: ref is ${body.ref}, but expected ${expectedRef}`, {status: 200})
 
-		await activateServiceAccount()
 		await sendPubSub()
 
 		return new Response(null, {status: 201})
