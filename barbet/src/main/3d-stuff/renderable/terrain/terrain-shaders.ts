@@ -6,6 +6,7 @@ ${PrecisionHeader()}
 in vec3 a_position;
 in vec3 a_color;
 in float a_flags;
+out vec3 v_vertexPosition;
 flat out vec3 v_color;
 flat out vec3 v_currentPosition;
 flat out vec3 v_normal;
@@ -17,6 +18,7 @@ void main() {
 	v_normal = vec3(ivec3(((flags >> 4) & 3) - 1, ((flags >> 2) & 3) - 1, (flags & 3) - 1));
 	v_color = a_color;
 	v_currentPosition = a_position;
+	v_vertexPosition = a_position;
 	vec3 pos = a_position;
 	if (pos.y < 1.50) {
 		pos.y += sin(u_time * 2.1 + pos.x + pos.z * 100.0) * 0.15 + 0.5;
@@ -29,6 +31,7 @@ void main() {
 export const fragmentShaderSource = `${VersionHeader()}
 ${PrecisionHeader()}
 out vec4 finalColor;
+in vec3 v_vertexPosition;
 flat in vec3 v_normal;
 flat in vec3 v_color;
 flat in vec3 v_currentPosition;
@@ -41,6 +44,47 @@ void main() {
 	float diffuse = max(dot(normal, lightDirection), ambientLight);
 	vec3 lightColor = vec3(1,1,1);
 	finalColor = vec4(v_color * lightColor * diffuse, 1);
+}
+`
+export const fragmentShaderSourceWithTileBorders = `${VersionHeader()}
+${PrecisionHeader()}
+out vec4 finalColor;
+in vec3 v_vertexPosition;
+flat in vec3 v_normal;
+flat in vec3 v_color;
+flat in vec3 v_currentPosition;
+uniform float u_time;
+uniform vec3 u_lightPosition;
+const float ambientLight = 0.3;
+void main() {
+	vec3 normal = v_normal;
+	vec3 lightDirection = normalize(u_lightPosition - v_currentPosition);
+	float diffuse = max(dot(normal, lightDirection), ambientLight);
+	vec3 lightColor = vec3(1,1,1);
+	finalColor = vec4(v_color * lightColor * diffuse, 1);
+	
+	float distanceOne;
+	float distanceTwo;
+	if (v_normal.y != 0.0) {
+		distanceOne = v_vertexPosition.x;
+		distanceTwo = v_vertexPosition.z;
+	} else if (v_normal.x != 0.0) {
+		distanceOne = v_vertexPosition.y;
+		distanceTwo = v_vertexPosition.z;
+	} else {
+		distanceOne = v_vertexPosition.x;
+		distanceTwo = v_vertexPosition.y;
+	}
+	distanceOne = abs(distanceOne - float(int(distanceOne + 0.5)));
+	distanceTwo = abs(distanceTwo - float(int(distanceTwo + 0.5)));
+	float smallerDistance = min(distanceOne, distanceTwo);
+	if (smallerDistance < 0.03) {
+		float tmp = 33.0;
+		float multiply = (smallerDistance * smallerDistance) * (tmp * tmp) * 0.3 + 0.7;
+		finalColor.r *= multiply;
+		finalColor.g *= multiply;
+		finalColor.b *= multiply;
+	} 
 }
 `
 

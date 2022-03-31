@@ -7,6 +7,7 @@ const settingsToDefaults = {
 	'rendering/fps-cap': 0, // vsync only
 	'rendering/fps-cap-on-blur': 15,
 	'rendering/antialias': true,
+	'rendering/show-tile-borders': true,
 }
 
 type SettingName = keyof typeof settingsToDefaults

@@ -10,6 +10,14 @@ function antiAlias() {
 	})
 }
 
+function tileBorders() {
+	const input = document.getElementById('input-enable-tile-borders') as HTMLSelectElement
+	observeSetting('rendering/show-tile-borders', (value) => input['value'] = value ? '1' : '0')
+	input.addEventListener('change', () => {
+		SettingsContainer.INSTANCE.set('rendering/show-tile-borders', input['value'] === '1')
+	})
+}
+
 function pauseOnBlur() {
 	const input = document.getElementById('input-pause-on-blur') as HTMLSelectElement
 	observeSetting('other/pause-on-blur', (value) => input['value'] = value ? '1' : '0')
@@ -63,6 +71,7 @@ export const bindSettingsListeners = () => {
 	tps()
 
 	antiAlias()
+	tileBorders()
 	pauseOnBlur()
 	fpsCap()
 	fpsCapOnBlur()
