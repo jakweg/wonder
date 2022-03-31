@@ -1,4 +1,5 @@
 import { toGl } from '../../../util/matrix/common'
+import { observeSetting } from '../../../worker/observable-settings'
 import { GPUBuffer, MainRenderer } from '../../main-renderer'
 import { createProgramFromNewShaders, pickViaMouseDefaultFragmentShader } from '../../shader/common'
 import { World, WORLD_CHUNK_SIZE } from '../../world/world'
@@ -7,6 +8,7 @@ import { RenderContext } from '../render-context'
 import {
 	Attributes,
 	fragmentShaderSource,
+	fragmentShaderSourceWithTileBorders,
 	MousePickerAttributes,
 	MousePickerUniforms,
 	pickViaMouseVertexShaderSource,
@@ -28,7 +30,8 @@ function setUpMousePicker(renderer: MainRenderer, vertexBuffer: GPUBuffer, indic
 }
 
 function setUpStandardRenderer(renderer: MainRenderer) {
-	const program = createProgramFromNewShaders<Attributes, Uniforms>(renderer, vertexShaderSource, fragmentShaderSource)
+	const defaultProgram = createProgramFromNewShaders<Attributes, Uniforms>(renderer, vertexShaderSource, fragmentShaderSource)
+	const programWithTileBorders = createProgramFromNewShaders<Attributes, Uniforms>(renderer, vertexShaderSource, fragmentShaderSourceWithTileBorders)
 	const vao = renderer.createVAO()
 	vao.bind()
 	const vertexBuffer = renderer.createBuffer(true, false)
@@ -38,16 +41,18 @@ function setUpStandardRenderer(renderer: MainRenderer) {
 	const floatSize = Float32Array.BYTES_PER_ELEMENT
 	const stride = 7 * floatSize
 
-	program.enableAttribute(program.attributes['position'], 3, true, stride, 0, 0)
-	program.enableAttribute(program.attributes['color'], 3, true, stride, 3 * floatSize, 0)
-	program.enableAttribute(program.attributes['flags'], 1, true, stride, 6 * floatSize, 0)
-	return {program, vao, vertexBuffer, indicesBuffer}
+	for (const program of [defaultProgram, programWithTileBorders]) {
+		program.enableAttribute(program.attributes['position'], 3, true, stride, 0, 0)
+		program.enableAttribute(program.attributes['color'], 3, true, stride, 3 * floatSize, 0)
+		program.enableAttribute(program.attributes['flags'], 1, true, stride, 6 * floatSize, 0)
+	}
+	return {defaultProgram, programWithTileBorders, vao, vertexBuffer, indicesBuffer}
 }
 
 export const createNewTerrainRenderable = (renderer: MainRenderer,
                                            world: World) => {
 
-	const {program, vao, vertexBuffer, indicesBuffer} = setUpStandardRenderer(renderer)
+	const {defaultProgram, programWithTileBorders, vao, vertexBuffer, indicesBuffer} = setUpStandardRenderer(renderer)
 	const {mouseProgram, mouseVao} = setUpMousePicker(renderer, vertexBuffer, indicesBuffer)
 
 
@@ -83,11 +88,15 @@ export const createNewTerrainRenderable = (renderer: MainRenderer,
 		lastMeshRecreationId = world.lastChangeId
 	}
 
+	let showTileBorders = false
+	observeSetting('rendering/show-tile-borders', v => showTileBorders = v)
+
 	return {
 		render(ctx: RenderContext) {
 			rebuildMeshIfNeeded()
 			const {gl, camera} = ctx
 			vao.bind()
+			const program = showTileBorders ? programWithTileBorders : defaultProgram;
 			program.use()
 
 			gl.uniformMatrix4fv(program.uniforms['projection'], false, toGl(camera.perspectiveMatrix))
