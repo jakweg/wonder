@@ -51,7 +51,7 @@ observeSetting('other/tps', tps => state?.updater?.changeTickRate(tps))
 observeSetting('rendering/antialias', () => state?.environment?.['startRender']({'canvas': recreateCanvas()}))
 
 bindSettingsListeners()
-document.body.classList.remove('not-loaded-body')
+document['body'].classList['remove']('not-loaded-body')
 
 
 const askForFile = async () => {
