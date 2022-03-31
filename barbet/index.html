@@ -3,32 +3,88 @@
 <head>
     <meta charset="UTF-8">
     <meta name="author" content="Jakub Węgrzyn">
+    <meta name="theme-color" content="#000000"/>
     <meta name="viewport"
           content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title>Wonder</title>
+    <script src="build-js/main.js" type=module></script>
     <link href="style.css" rel="stylesheet"/>
 </head>
-<body>
+<body class="not-loaded-body">
 <canvas id="main-canvas"></canvas>
 <div class="controls">
-    <label>
-        <span>ticksPerSecond</span>
+    <label title="Ticks per second">
+        <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 0 24 24" width="24px">
+            <path
+                    d="M16.24 7.76C15.07 6.59 13.54 6 12 6v6l-4.24 4.24c2.34 2.34 6.14 2.34 8.49 0 2.34-2.34 2.34-6.14-.01-8.48zM12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8z"/>
+        </svg>
         <input id="input-ticksPerSecond" max="240" min=1 step=1 type="range" value=20>
     </label>
-    <label>
-        <span>fps-cap</span>
-        <select id="input-fpsCap">
-            <option value="0">VSYNC</option>
-            <option value="15">15</option>
-            <option value="30">30</option>
-            <option value="60">60</option>
-        </select>
-    </label>
-    <label>
-        <input id="input-reset" type="button" value="Reset">
-    </label>
+    <div class="label">
+        <button id="input-reset" type="button">
+            <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 0 24 24" width="24px">
+                <path d="M12,5V2L8,6l4,4V7c3.31,0,6,2.69,6,6c0,2.97-2.17,5.43-5,5.91v2.02c3.95-0.49,7-3.85,7-7.93C20,8.58,16.42,5,12,5z"/>
+                <path d="M6,13c0-1.65,0.67-3.15,1.76-4.24L6.34,7.34C4.9,8.79,4,10.79,4,13c0,4.08,3.05,7.44,7,7.93v-2.02 C8.17,18.43,6,15.97,6,13z"/>
+            </svg>
+        </button>
+
+        <button id="input-settings" type="button">
+
+            <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 0 24 24" width="24px">
+                <path d="M19.44 12.99l-.01.02c.04-.33.08-.67.08-1.01 0-.34-.03-.66-.07-.99l.01.02 2.44-1.92-2.43-4.22-2.87 1.16.01.01c-.52-.4-1.09-.74-1.71-1h.01L14.44 2H9.57l-.44 3.07h.01c-.62.26-1.19.6-1.71 1l.01-.01-2.88-1.17-2.44 4.22 2.44 1.92.01-.02c-.04.33-.07.65-.07.99 0 .34.03.68.08 1.01l-.01-.02-2.1 1.65-.33.26 2.43 4.2 2.88-1.15-.02-.04c.53.41 1.1.75 1.73 1.01h-.03L9.58 22h4.85s.03-.18.06-.42l.38-2.65h-.01c.62-.26 1.2-.6 1.73-1.01l-.02.04 2.88 1.15 2.43-4.2s-.14-.12-.33-.26l-2.11-1.66zM12 15.5c-1.93 0-3.5-1.57-3.5-3.5s1.57-3.5 3.5-3.5 3.5 1.57 3.5 3.5-1.57 3.5-3.5 3.5z"/>
+            </svg>
+        </button>
+    </div>
 </div>
-<script src="build-js/main.js" type=module></script>
+<div id="overlay" class="overlay"></div>
+<div id="settings" class="settings">
+    <header>
+        <h4>Settings</h4>
+        <button id="btn-close-settings">
+            <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 0 24 24" width="24px" fill="#000000">
+                <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41z"/>
+            </svg>
+        </button>
+    </header>
+
+    <main>
+        <label>
+            <span>Antialiasing:</span>
+            <select id="input-enable-antialias">
+                <option value="1">enabled</option>
+                <option value="0">disabled</option>
+            </select>
+        </label>
+        <label>
+            <span>Pause gameplay when not focused:</span>
+            <select id="input-pause-on-blur">
+                <option value="1">Pause</option>
+                <option value="0">Don't pause</option>
+            </select>
+        </label>
+        <label>
+            <span>Frames per second limit:</span>
+            <select id="input-fps-cap">
+                <option value="0">VSYNC</option>
+                <option value="15">15</option>
+                <option value="30">30</option>
+                <option value="60">60</option>
+            </select>
+        </label>
+        <label>
+            <span>Frames per second limit when not focused:</span>
+            <select id="input-fps-cap-blur">
+                <option value="0">Stop rendering</option>
+                <option value="1">1</option>
+                <option value="2">2</option>
+                <option value="5">5</option>
+                <option value="15">15</option>
+                <option value="30">30</option>
+                <option value="999">Don't limit</option>
+            </select>
+        </label>
+    </main>
+</div>
 </body>
 </html>

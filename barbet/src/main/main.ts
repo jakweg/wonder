@@ -6,6 +6,7 @@ import {
 	loadEnvironment,
 	SaveMethod,
 } from './environments/loader'
+import { bindSettingsListeners } from './html-controls/settings'
 import {
 	bindFrontendVariablesToCanvas,
 	initFrontendVariableAndRegisterToWindow,
@@ -41,30 +42,16 @@ const state: PageState = {
 	environment: null,
 }
 
-
 let pauseOnBlur = false
 observeSetting('other/pause-on-blur', v => pauseOnBlur = v)
 window.addEventListener('blur', () => pauseOnBlur && state?.updater?.stop())
 window.addEventListener('focus', () => pauseOnBlur && state?.updater?.start())
 
-const ticksInput = document.getElementById('input-ticksPerSecond') as HTMLInputElement
-let speedToSet = 0
-observeSetting('other/tps', (value) => speedToSet = Math.max(1, +value))
+observeSetting('other/tps', tps => state?.updater?.changeTickRate(tps))
+observeSetting('rendering/antialias', () => state?.environment?.['startRender']({'canvas': recreateCanvas()}))
 
-ticksInput['value'] = speedToSet.toString()
-ticksInput.addEventListener('input', async (event) => {
-	speedToSet = +(event['target'] as HTMLInputElement)['value']
-	state?.updater?.changeTickRate(speedToSet)
-	SettingsContainer.INSTANCE.set('other/tps', speedToSet)
-})
-
-
-const fpsCapInput = document.getElementById('input-fpsCap') as HTMLInputElement
-observeSetting('rendering/fps-cap', (value) => fpsCapInput['value'] = (value || 0)?.toString())
-fpsCapInput.addEventListener('input', async (event) => {
-	const value = +(event['target'] as HTMLInputElement)['value']
-	SettingsContainer.INSTANCE.set('rendering/fps-cap', value)
-})
+bindSettingsListeners()
+document.body.classList.remove('not-loaded-body')
 
 
 const askForFile = async () => {
@@ -129,6 +116,7 @@ const runGame = async (args: CreateGameArguments) => {
 	const results = await state.environment['createNewGame'](args)
 	await state.environment['startRender']({'canvas': recreateCanvas()})
 	state.updater = results['updater']
+	const speedToSet = +SettingsContainer.INSTANCE.get('other/tps')
 	state.updater.start(speedToSet)
 }
 

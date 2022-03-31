@@ -58,6 +58,7 @@ export const connect = async (args: ConnectArguments): Promise<EnvironmentConnec
 		},
 		async 'startRender'(args: StartRenderArguments): Promise<void> {
 			if (decodedGame === null) throw new Error('Start game first')
+			renderingCancelCallback?.()
 			const camera = Camera.newUsingBuffer(getCameraBuffer())
 			renderingCancelCallback = startRenderingGame(args['canvas'], decodedGame, updater!, camera)
 		},
