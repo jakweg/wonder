@@ -24,7 +24,7 @@ export const getCameraBuffer = () => {
 	if (cameraBuffer === null) {
 		let array = getFromLocalStorage('camera/buffer')
 		if (array == undefined || array.length !== 6)
-			array = [2.1, 4, -3.0001, 0, 0, 0]
+			array = [14.723411560058594, 8.757417678833008, 2.952042818069458, 12.62341022491455, 4.75743293762207, 5.952143669128418]
 		cameraBuffer = createNewBuffer(6 * Float32Array.BYTES_PER_ELEMENT)
 		const tmp = new Float32Array(cameraBuffer)
 		for (let i = 0; i < 6; i++) tmp[i] = array[i]!
