@@ -29,9 +29,6 @@ setMessageHandler('new-settings', settings => {
 })
 
 setMessageHandler('transfer-canvas', (data) => {
-	if (canvas !== null)
-		throw new Error('Canvas is already not null')
-
 	canvas = data['canvas'] as HTMLCanvasElement
 	considerStartRendering()
 })
@@ -64,13 +61,16 @@ setMessageHandler('terminate-game', () => {
 
 
 const considerStartRendering = () => {
-	if (decodedGame === null && canvas !== null && gameSnapshot !== null) {
+	if (decodedGame === null && gameSnapshot !== null) {
 		const snapshot = gameSnapshot as any
 		decodedGame = GameState.forRenderer(snapshot['game'])
 		decodedUpdater = stateUpdaterFromReceived(globalMutex, snapshot['updater'])
+	}
 
+	if (canvas !== null && decodedGame !== null && decodedUpdater !== null) {
 		const camera = cameraBuffer ? Camera.newUsingBuffer(cameraBuffer) : Camera.newPerspective()
 
+		renderCancelCallback?.()
 		renderCancelCallback = startRenderingGame(canvas, decodedGame, decodedUpdater, camera)
 	}
 }

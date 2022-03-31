@@ -1,19 +1,25 @@
+body {
+    position: relative;
+    display: grid;
+    place-items: center;
+    color-scheme: light dark;
+    margin: 0;
+}
+
 canvas {
     width: 100vw;
     height: 100vh;
     box-sizing: border-box;
+    background: black;
+    color: #eee;
 }
 
-body {
-    margin: 0;
-    position: relative;
-}
-
-body > * {
-    position: absolute;
+.not-loaded-body {
+    display: none;
 }
 
 .controls {
+    position: absolute;
     right: 0;
     top: 0;
     padding: 4px;
@@ -21,15 +27,83 @@ body > * {
     background: rgba(0, 0, 0, .3);
 }
 
-label {
-    display: block;
-    text-align: right;
+label, .label {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 2px 2px 8px;
+}
+
+.controls button {
+    display: flex;
+    margin: 4px;
     padding: 2px;
+    cursor: pointer;
+}
+
+.controls svg {
+    fill: #ffffff;
+}
+
+.overlay {
+    pointer-events: none;
+    opacity: 0;
+    background: #000000;
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    transition: opacity 0.2s;
+}
+
+.overlay.shown {
+    opacity: 0.7;
+    pointer-events: all;
 }
 
 .controls input, .controls select {
     display: inline-block;
+    cursor: pointer;
     width: 120px;
     box-sizing: border-box;
     margin-left: 4px;
+}
+
+.settings {
+    position: absolute;
+    padding: 4px;
+    border-radius: 8px;
+    background: #381e00;
+    transition: opacity .2s;
+    width: min(400px, 80vw);
+    box-shadow: 2px 2px 6px 2px #00000088;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.settings > header {
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+.settings header h4 {
+    margin: 2px;
+}
+
+.settings.shown {
+    opacity: 1;
+    pointer-events: all;
+}
+
+.settings main {
+    padding: 4px;
+}
+
+.settings select {
+    padding: 4px;
+    width: 100px;
+    cursor: pointer;
 }

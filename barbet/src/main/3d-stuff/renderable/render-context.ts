@@ -88,6 +88,7 @@ export const setupSceneRendering = (canvas: HTMLCanvasElement,
 		unsub1()
 		unsub2()
 		renderer.stopRendering()
+		renderer.cleanUp()
 	}
 }
 
