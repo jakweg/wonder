@@ -35,6 +35,7 @@ const list = Object.freeze([
 	'charCodeAt',
 	'checkFramebufferStatus',
 	'CLAMP_TO_EDGE',
+	'classList',
 	'clear',
 	'clearColor',
 	'clearInterval',

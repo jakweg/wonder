@@ -55,6 +55,7 @@ export const connect = (args: ConnectArguments): EnvironmentConnection => {
 		},
 		async 'startRender'(args: StartRenderArguments): Promise<void> {
 			if (game === null) throw new Error('Start game first')
+			renderCancelCallback?.()
 			renderCancelCallback = startRenderingGame(args['canvas'], game, updater!, Camera.newUsingBuffer(getCameraBuffer()))
 		},
 		'terminateGame'(_: TerminateGameArguments) {
