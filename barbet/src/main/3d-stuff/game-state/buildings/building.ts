@@ -1,7 +1,7 @@
 import { freezeAndValidateOptionsList } from '../../../util/common'
 import { ArrayEncodingType, setArrayEncodingType } from '../../../util/persistance/serializers'
 import { World } from '../../world/world'
-import { buildChunkMesh, Mesh } from '../../world/world-to-mesh-converter'
+import { buildChunkMesh, Mesh, moveChunkMesh } from '../../world/world-to-mesh-converter'
 
 export const enum BuildingId {
 	None,
@@ -22,11 +22,14 @@ export interface BuildingType {
 }
 
 const decodeVertexesAndIndices = (data: any): Mesh => {
-	setArrayEncodingType(ArrayEncodingType.ToString)
+	setArrayEncodingType(ArrayEncodingType.String)
 	const world = World.deserialize(data)
 	setArrayEncodingType(ArrayEncodingType.None)
 	const chunkSize = Math.max(world.size.sizeX, world.size.sizeZ)
-	return buildChunkMesh(world, 0, 0, chunkSize)
+	const mesh = buildChunkMesh(world, 0, 0, chunkSize)
+	const offset = 0.001
+	moveChunkMesh(mesh, -world.size.sizeX / 2 + offset + 0.5, offset, -world.size.sizeZ / 2 + offset + 0.5)
+	return mesh
 }
 
 export const allBuilding: BuildingType[] = [
@@ -40,8 +43,8 @@ export const allBuilding: BuildingType[] = [
 	},
 	{
 		numericId: BuildingId.Monument,
-		maskSizeX: 5,
-		maskSizeY: 5,
+		maskSizeX: 3,
+		maskSizeY: 3,
 		mask: new Uint8Array(5 * 5).fill(1),
 		...decodeVertexesAndIndices({
 			'sizes': [3, 3, 3],

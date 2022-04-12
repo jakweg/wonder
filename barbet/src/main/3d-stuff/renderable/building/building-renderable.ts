@@ -1,7 +1,7 @@
 import { toGl } from '../../../util/matrix/common'
 import { BuildingId, requireBuilding } from '../../game-state/buildings/building'
 import { DataOffsetBuildingData, DataOffsetPositions, EntityTrait } from '../../game-state/entities/traits'
-import { GameState } from '../../game-state/game-state'
+import { GameState, MetadataField } from '../../game-state/game-state'
 import { MainRenderer } from '../../main-renderer'
 import { createProgramFromNewShaders } from '../../shader/common'
 import { RenderContext } from '../render-context'
@@ -32,8 +32,9 @@ const createNewBuildingRenderable = (renderer: MainRenderer,
 	let trianglesToRender = 0
 	let lastRebuildId = 0
 	const recreateMeshIfNeeded = () => {
-		if (lastRebuildId !== 1) {
-			lastRebuildId = 1
+		const lastChangeId = game.metaData[MetadataField.LastBuildingsChange]!
+		if (lastRebuildId !== lastChangeId) {
+			lastRebuildId = lastChangeId
 			renderer.unbindVAO()
 
 			const vertexData: number[] = []
@@ -50,15 +51,18 @@ const createNewBuildingRenderable = (renderer: MainRenderer,
 				const y = positions[entity.position + DataOffsetPositions.PositionY]!
 				const z = positions[entity.position + DataOffsetPositions.PositionZ]!
 
-				const vertexCountBeforeAdd = vertexData.length / 4 | 0
+				const vertexCountBeforeAdd = vertexData.length / 7 | 0
 
 				const vertexes = building.vertexes
 				for (let i = 0, s = vertexes.length; i < s;) {
 					const vx = vertexes[i++]! + x
 					const vy = vertexes[i++]! + y
 					const vz = vertexes[i++]! + z
+					const color0 = vertexes[i++]!
+					const color1 = vertexes[i++]!
+					const color2 = vertexes[i++]!
 					const flags = vertexes[i++]!
-					vertexData.push(vx, vy, vz, flags)
+					vertexData.push(vx, vy, vz, color0, color1, color2, flags)
 				}
 
 				const indices = building.indices

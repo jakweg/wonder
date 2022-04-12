@@ -26,7 +26,7 @@ export const createEmptyGame = (stateBroadcastCallback: () => void): GameState =
 
 export const loadGameFromDb = async (id: string, stateBroadcastCallback: () => void): Promise<GameState> => {
 	const data = await readSaveData(id)
-	setArrayEncodingType(ArrayEncodingType.AsArray)
+	setArrayEncodingType(ArrayEncodingType.Array)
 	try {
 		return GameState.deserialize(data, globalMutex, stateBroadcastCallback)
 	} finally {
@@ -40,7 +40,7 @@ export const loadGameFromFile = async (file: File, stateBroadcastCallback: () =>
 		reader['onerror'] = reject
 		reader['onload'] = () => {
 			try {
-				setArrayEncodingType(ArrayEncodingType.ToString)
+				setArrayEncodingType(ArrayEncodingType.String)
 				const state = GameState.deserialize(JSON.parse(reader['result'] as string), globalMutex, stateBroadcastCallback)
 				setArrayEncodingType(ArrayEncodingType.None)
 				resolve(state)

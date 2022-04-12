@@ -1,7 +1,9 @@
 import { AdditionalFrontedFlags, frontedVariables, FrontendVariable } from '../../util/frontend-variables'
 import { isInWorker, Lock } from '../../util/mutex'
 import { globalMutex } from '../../worker/worker-global-state'
-import { GameState } from '../game-state/game-state'
+import { BuildingId } from '../game-state/buildings/building'
+import { DataOffsetBuildingData, DataOffsetPositions, EntityTrait } from '../game-state/entities/traits'
+import { GameState, MetadataField } from '../game-state/game-state'
 import { MainRenderer } from '../main-renderer'
 import { MousePickableType, MousePickerResultAny, MousePickerTerrainResult } from '../mouse-picker'
 import { BlockId } from '../world/block'
@@ -120,11 +122,25 @@ const handlePick = (pickResult: MousePickerResultAny, event: EventHappened, game
 	}
 }
 
+const spawnBuilding = (game: GameState, x: number, y: number, z: number, type: BuildingId) => {
+	const entities = game.entities
+	const traits = EntityTrait.Position | EntityTrait.BuildingData
+	const entity = entities.createEntity(traits)
+
+	entities.positions.rawData[entity.position + DataOffsetPositions.PositionX] = x
+	entities.positions.rawData[entity.position + DataOffsetPositions.PositionY] = y
+	entities.positions.rawData[entity.position + DataOffsetPositions.PositionZ] = z
+	entities.buildingData.rawData[entity.buildingData + DataOffsetBuildingData.TypeId] = type
+
+	game.metaData[MetadataField.LastBuildingsChange]++
+}
+
 
 const handlePickBlock = (result: MousePickerTerrainResult, event: EventHappened, game: GameState) => {
 	switch (event) {
 		case EventHappened.LeftClick:
-			game.world.setBlock(result.x + result.normals[0], result.y + result.normals[1], result.z + result.normals[2], BlockId.Gravel)
+			spawnBuilding(game, result.x, result.y, result.z, BuildingId.Monument)
+			// game.world.setBlock(result.x + result.normals[0], result.y + result.normals[1], result.z + result.normals[2], BlockId.Gravel)
 			break
 		case EventHappened.RightClick:
 			game.world.setBlock(result.x, result.y, result.z, BlockId.Air)

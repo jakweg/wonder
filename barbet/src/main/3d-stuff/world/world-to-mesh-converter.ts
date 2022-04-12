@@ -180,6 +180,16 @@ export const buildChunkMesh = (world: World, chunkX: number, chunkZ: number, chu
 	}
 }
 
+export const moveChunkMesh = (mesh: Mesh, offsetX: number, offsetY: number, offsetZ: number) => {
+	const vertexes = mesh.vertexes
+	const size = vertexes.length / FLOATS_PER_VERTEX | 0
+	for (let i = 0; i < size; i++) {
+		vertexes[i * FLOATS_PER_VERTEX] += offsetX
+		vertexes[i * FLOATS_PER_VERTEX + 1] += offsetY
+		vertexes[i * FLOATS_PER_VERTEX + 2] += offsetZ
+	}
+}
+
 export const combineMeshes = (meshes: Mesh[]): Mesh => {
 	const vertexes = []
 	const indices = []

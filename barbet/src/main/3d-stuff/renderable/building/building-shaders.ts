@@ -30,7 +30,7 @@ flat in vec3 v_normal;
 flat in vec3 v_color;
 flat in vec3 v_currentPosition;
 uniform float u_time;
-const vec3 lightPosition = vec3(300.0, 50.0, -500.0);
+const vec3 lightPosition = vec3(300.0, 250.0, -500.0);
 const float ambientLight = 0.3;
 void main() {
 	vec3 normal = v_normal;

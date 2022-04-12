@@ -71,7 +71,7 @@ export const connect = (args: ConnectArguments): EnvironmentConnection => {
 			const saveName = saveArgs['saveName']
 			switch (saveArgs['method']) {
 				case SaveMethod.ToIndexedDatabase: {
-					setArrayEncodingType(ArrayEncodingType.AsArray)
+					setArrayEncodingType(ArrayEncodingType.Array)
 					try {
 						void putSaveData(saveName, game.serialize())
 					} finally {
@@ -80,7 +80,7 @@ export const connect = (args: ConnectArguments): EnvironmentConnection => {
 				}
 					break
 				case SaveMethod.ToDataUrl: {
-					setArrayEncodingType(ArrayEncodingType.ToString)
+					setArrayEncodingType(ArrayEncodingType.String)
 					const asString = JSON.stringify(game.serialize())
 					setArrayEncodingType(ArrayEncodingType.None)
 

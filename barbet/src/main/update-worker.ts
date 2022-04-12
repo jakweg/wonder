@@ -67,14 +67,14 @@ setMessageHandler('save-game', async (data, connection) => {
 	if (state === null) return
 	switch (data['method']) {
 		case SaveMethod.ToIndexedDatabase: {
-			setArrayEncodingType(ArrayEncodingType.AsArray)
+			setArrayEncodingType(ArrayEncodingType.Array)
 			const rawData = state.serialize()
 			setArrayEncodingType(ArrayEncodingType.None)
 			await putSaveData(saveName, rawData)
 		}
 			break
 		case SaveMethod.ToDataUrl: {
-			setArrayEncodingType(ArrayEncodingType.ToString)
+			setArrayEncodingType(ArrayEncodingType.String)
 			const asString = JSON.stringify(state.serialize())
 			setArrayEncodingType(ArrayEncodingType.None)
 
@@ -105,7 +105,7 @@ setMessageHandler('debug', (data) => {
 		0, 0, 0,
 		newOne.size.sizeX, newOne.size.sizeY, newOne.size.sizeZ)
 
-	setArrayEncodingType(ArrayEncodingType.ToString)
+	setArrayEncodingType(ArrayEncodingType.String)
 	console.log(newOne.serialize())
 	setArrayEncodingType(ArrayEncodingType.None)
 })
