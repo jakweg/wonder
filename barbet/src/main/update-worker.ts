@@ -1,4 +1,6 @@
 import { createNewStateUpdater } from './3d-stuff/game-state/state-updater'
+import { computeWorldBoundingBox } from './3d-stuff/world/bounding-box'
+import { World } from './3d-stuff/world/world'
 import { SaveMethod } from './environments/loader'
 import { putSaveData } from './util/persistance/saves-database'
 import { ArrayEncodingType, setArrayEncodingType } from './util/persistance/serializers'
@@ -85,4 +87,25 @@ setMessageHandler('save-game', async (data, connection) => {
 			connection.send('save-game-result', {'url': url})
 		}
 	}
+})
+
+setMessageHandler('debug', (data) => {
+	const type = data['type']
+	if (type !== 'create-building-prototype')
+		return
+
+	if (globalGameState == null) return
+	const world = globalGameState!.world
+	const box = computeWorldBoundingBox(world)
+
+	const newOne = World.createEmpty(box.maxX - box.minX + 1, box.maxY - box.minY, box.maxZ - box.minZ + 1)
+
+	World.copyFragment(world, newOne,
+		box.minX, box.minY, box.minZ,
+		0, 0, 0,
+		newOne.size.sizeX, newOne.size.sizeY, newOne.size.sizeZ)
+
+	setArrayEncodingType(ArrayEncodingType.ToString)
+	console.log(newOne.serialize())
+	setArrayEncodingType(ArrayEncodingType.None)
 })

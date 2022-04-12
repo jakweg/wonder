@@ -99,8 +99,7 @@ export const createNewTerrainRenderable = (renderer: MainRenderer,
 			const program = showTileBorders ? programWithTileBorders : defaultProgram;
 			program.use()
 
-			gl.uniformMatrix4fv(program.uniforms['projection'], false, toGl(camera.perspectiveMatrix))
-			gl.uniformMatrix4fv(program.uniforms['view'], false, toGl(camera.viewMatrix))
+			gl.uniformMatrix4fv(program.uniforms['combinedMatrix'], false, toGl(camera.combinedMatrix))
 			gl.uniform1f(program.uniforms['time'], ctx.secondsSinceFirstRender)
 			gl.uniform3fv(program.uniforms['lightPosition'], toGl(ctx.sunPosition))
 

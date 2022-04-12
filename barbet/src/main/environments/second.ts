@@ -9,6 +9,7 @@ import { WorkerController } from '../worker/worker-controller'
 import { globalMutex } from '../worker/worker-global-state'
 import {
 	ConnectArguments,
+	DebugCommandArguments,
 	EnvironmentConnection,
 	SaveGameArguments,
 	StartRenderArguments,
@@ -86,6 +87,9 @@ export const connect = async (args: ConnectArguments): Promise<EnvironmentConnec
 			renderWorker.replier.send('terminate-game', args)
 			updateWorker.replier.send('terminate-game', args)
 			entityContainerSnapshotForRenderer = decodedGame = updater = null
+		},
+		'debugCommand'(args: DebugCommandArguments): void {
+			updateWorker.replier.send('debug', args)
 		},
 	}
 }

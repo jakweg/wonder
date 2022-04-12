@@ -7,11 +7,11 @@ export const enum MousePickableType {
 	Unit,
 }
 
-interface MousePickerNothingResult {
+export interface MousePickerNothingResult {
 	pickedType: MousePickableType.Nothing
 }
 
-interface MousePickerTerrainResult {
+export interface MousePickerTerrainResult {
 	pickedType: MousePickableType.Terrain
 	x: number
 	y: number
@@ -19,10 +19,12 @@ interface MousePickerTerrainResult {
 	normals: [number, number, number]
 }
 
-interface MousePickerUnitResult {
+export interface MousePickerUnitResult {
 	pickedType: MousePickableType.Unit
 	numericId: number
 }
+
+export type MousePickerResultAny = MousePickerTerrainResult | MousePickerUnitResult | MousePickerNothingResult
 
 export const createPicker = (gl: WebGL2RenderingContext,
                              renderers: ((ctx: RenderContext) => void)[]) => {
@@ -86,7 +88,7 @@ export const createPicker = (gl: WebGL2RenderingContext,
 
 	return {
 		pick(ctx: RenderContext, mouseX: number, mouseY: number)
-			: MousePickerTerrainResult | MousePickerUnitResult | MousePickerNothingResult {
+			: MousePickerResultAny {
 			preparePickerIfNeeded()
 
 			gl.bindFramebuffer(gl.FRAMEBUFFER, fb)
