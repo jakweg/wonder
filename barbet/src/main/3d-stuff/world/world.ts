@@ -18,8 +18,6 @@ export interface ComputedWorldSize extends WorldSize {
 }
 
 export class World {
-	public lastChangeId: number = 0
-
 	private constructor(
 		public readonly size: ComputedWorldSize,
 		public readonly rawBlockData: Uint8Array,
@@ -151,7 +149,6 @@ export class World {
 				toRawHeightData[(toZ + z) * toSizeX + (toX + x)] = fromRawHeightData[(fromZ + z) * fromSizeX + (fromX + x)]! + heightDelta
 
 
-		to.lastChangeId++
 		const chunkModificationIds = to.chunkModificationIds
 		for (let i = 0, l = chunkModificationIds.length; i < l; i++)
 			chunkModificationIds[i]++
@@ -190,7 +187,6 @@ export class World {
 				this.rawHeightData[z * sizeX + x]! = top
 			}
 
-		this.lastChangeId++
 		this.chunkModificationIds[((z / WORLD_CHUNK_SIZE) | 0) * this.size.chunksSizeX + (x / WORLD_CHUNK_SIZE | 0)]++
 		// notify nearby chunks if affected
 		this.chunkModificationIds[(((z - 1) / WORLD_CHUNK_SIZE) | 0) * this.size.chunksSizeX + (x / WORLD_CHUNK_SIZE | 0)]++

@@ -165,7 +165,9 @@ export const spawnBuilding = (game: GameState, centerX: number, centerZ: number,
 	entities.positions.rawData[entity.position + DataOffsetPositions.PositionY] = minY + 1
 	entities.positions.rawData[entity.position + DataOffsetPositions.PositionZ] = centerZ
 	entities.buildingData.rawData[entity.buildingData + DataOffsetBuildingData.TypeId] = type
+	entities.buildingData.rawData[entity.buildingData + DataOffsetBuildingData.ProgressPointsToFull] = building.pointsToFullyBuild
 
+	game.metaData[MetadataField.LastWorldChange]++
 	game.metaData[MetadataField.LastBuildingsChange]++
 
 	return entity.thisId

@@ -57,6 +57,7 @@ export const enum DataOffsetInterruptible {
 
 export const enum DataOffsetBuildingData {
 	TypeId,
+	ProgressPointsToFull,
 	SIZE,
 }
 
@@ -142,6 +143,7 @@ export const initializeTraitsOfNewEntity = (container: EntityContainer, record: 
 	if (index !== NO_INDEX) {
 		const data = container.buildingData.rawData
 		data[index + DataOffsetBuildingData.TypeId] = BuildingId.None
+		data[index + DataOffsetBuildingData.ProgressPointsToFull] = 0
 	}
 }
 

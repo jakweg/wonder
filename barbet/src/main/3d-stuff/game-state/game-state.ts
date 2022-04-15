@@ -13,6 +13,7 @@ import { TileMetaDataIndex } from './tile-meta-data-index'
 
 export const enum MetadataField {
 	CurrentTick,
+	LastWorldChange,
 	LastBuildingsChange,
 	SIZE
 }

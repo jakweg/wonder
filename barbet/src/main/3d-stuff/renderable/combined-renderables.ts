@@ -11,7 +11,7 @@ import { createNewUnitRenderable } from './unit/unit'
 
 export const createCombinedRenderable = (renderer: MainRenderer, state: GameState) => {
 	const units = createNewUnitRenderable(renderer, state)
-	const terrain = createNewTerrainRenderable(renderer, state.world)
+	const terrain = createNewTerrainRenderable(renderer, state)
 	const groundItems = createNewItemOnGroundRenderable(renderer, state)
 	const heldItems = createHeldItemRenderable(renderer, state)
 	const resources = createNewSurfaceResourcesRenderable(renderer, state)

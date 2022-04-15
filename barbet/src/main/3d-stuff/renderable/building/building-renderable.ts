@@ -53,7 +53,17 @@ const createNewBuildingRenderable = (renderer: MainRenderer,
 
 				const vertexCountBeforeAdd = vertexData.length / 7 | 0
 
-				const vertexes = building.vertexes
+				const pointsToFullyBuild = buildingData[entity.buildingData + DataOffsetBuildingData.ProgressPointsToFull]!
+				let vertexes = building.vertexes
+				let indices = building.indices
+
+				if (pointsToFullyBuild > 0) {
+					const state = building.inProgressStates[pointsToFullyBuild - 1]!
+					vertexes = state.vertexes
+					indices = state.indices
+				}
+
+
 				for (let i = 0, s = vertexes.length; i < s;) {
 					const vx = vertexes[i++]! + x
 					const vy = vertexes[i++]! + y
@@ -64,8 +74,6 @@ const createNewBuildingRenderable = (renderer: MainRenderer,
 					const flags = vertexes[i++]!
 					vertexData.push(vx, vy, vz, color0, color1, color2, flags)
 				}
-
-				const indices = building.indices
 				for (const index of indices) {
 					elementsData.push(index + vertexCountBeforeAdd)
 				}
