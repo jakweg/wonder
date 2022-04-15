@@ -81,7 +81,7 @@ export class GameState {
 
 	public passForRenderer(): unknown {
 		return {
-			'metadata': this.metaData.buffer,
+			'metadata': this.metaData['buffer'],
 			'mutex': this.mutex.pass(),
 			'world': this.world.pass(),
 			'groundItems': this.groundItems.pass(),
