@@ -9,6 +9,7 @@ import { DataOffsetWithActivity } from './entities/traits'
 import { GroundItemsIndex } from './ground-items-index'
 import { PathFinder } from './path-finder'
 import { SurfaceResourcesIndex } from './surface-resources-index'
+import { TileMetaDataIndex } from './tile-meta-data-index'
 
 export const enum MetadataField {
 	CurrentTick,
@@ -24,6 +25,7 @@ export class GameState {
 		public readonly world: World,
 		public readonly groundItems: GroundItemsIndex,
 		public readonly entities: EntityContainer,
+		public readonly tileMetaDataIndex: TileMetaDataIndex,
 		public readonly pathFinder: PathFinder,
 		public readonly surfaceResources: SurfaceResourcesIndex,
 		private readonly mutex: Mutex,
@@ -38,6 +40,7 @@ export class GameState {
 		world: World,
 		groundItems: GroundItemsIndex,
 		entities: EntityContainer,
+		tileMetaDataIndex: TileMetaDataIndex,
 		pathFinder: PathFinder,
 		surfaceResources: SurfaceResourcesIndex,
 		mutex: Mutex,
@@ -45,18 +48,19 @@ export class GameState {
 		return new GameState(
 			new Int32Array(createNewBuffer(MetadataField.SIZE * Int32Array.BYTES_PER_ELEMENT)),
 			world, groundItems, entities,
-			pathFinder, surfaceResources,
+			tileMetaDataIndex, pathFinder, surfaceResources,
 			mutex, stateBroadcastCallback)
 	}
 
 	public static deserialize(object: any, mutex: Mutex, stateBroadcastCallback: () => void): GameState {
 		const world = World.deserialize(object['world'])
+		const tileMetaDataIndex = TileMetaDataIndex.deserialize(object['tileMetaDataIndex'], world.rawHeightData)
 		return new GameState(
 			decodeArray(object['metadata'], true, Int32Array),
 			world,
 			GroundItemsIndex.deserialize(object['groundItems']),
 			EntityContainer.deserialize(object['entities']),
-			PathFinder.deserialize(world, object['pathFinder']),
+			tileMetaDataIndex, PathFinder.deserialize(tileMetaDataIndex, object['pathFinder']),
 			SurfaceResourcesIndex.deserialize(object['surfaceResources']),
 			mutex, stateBroadcastCallback)
 	}
@@ -67,6 +71,7 @@ export class GameState {
 			World.fromReceived(object['world']),
 			GroundItemsIndex.fromReceived(object['groundItems']),
 			EntityContainer.fromReceived(object['entities']),
+			null as unknown as TileMetaDataIndex,
 			null as unknown as PathFinder,
 			SurfaceResourcesIndex.fromReceived(object['surfaceResources']),
 			createMutexFromReceived(object['mutex']),
@@ -93,6 +98,7 @@ export class GameState {
 			'groundItems': this.groundItems.serialize(),
 			'entities': this.entities.serialize(),
 			'surfaceResources': this.surfaceResources.serialize(),
+			'tileMetaDataIndex': this.tileMetaDataIndex.serialize(),
 			'pathFinder': this.pathFinder.serialize(),
 		}
 	}

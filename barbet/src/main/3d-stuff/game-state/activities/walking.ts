@@ -63,12 +63,12 @@ const activityWalking = {
 	tryToContinueWalking(game: GameState, unit: EntityTraitIndicesRecord, direction: Direction): boolean {
 		const positionData = game.entities.positions.rawData
 		const posX = positionData[unit.position + DataOffsetPositions.PositionX]!
-		const posY = positionData[unit.position + DataOffsetPositions.PositionY]!
+		// const posY = positionData[unit.position + DataOffsetPositions.PositionY]!
 		const posZ = positionData[unit.position + DataOffsetPositions.PositionZ]!
 
 		const dx = posX + getChangeInXByRotation(direction)
 		const dz = posZ + getChangeInZByRotation(direction)
-		if (posY !== game.world.getHighestBlockHeight(dx, dz) + 1)
+		if (!game.tileMetaDataIndex.walkableTester(dx, dz))
 			return false
 
 		positionData[unit.position + DataOffsetPositions.PositionX] = dx

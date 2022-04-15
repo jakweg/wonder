@@ -1,6 +1,6 @@
 import { findPathDirectionsToArea } from '../../util/path-finder'
-import { World } from '../world/world'
 import { GameState } from './game-state'
+import { TileMetaDataIndex } from './tile-meta-data-index'
 
 interface PathRequest {
 	id: number
@@ -19,19 +19,18 @@ interface PathResult {
 
 export class PathFinder {
 
-	private constructor(private readonly world: World,
+	private constructor(private readonly tileMetaDataIndex: TileMetaDataIndex,
 	                    private readonly readyPaths: Map<number, PathResult>,
 	                    private readonly pathQueue: PathRequest[],
 	                    private nextPathRequestId: number) {
 	}
 
-	public static createNewQueue(world: World): PathFinder {
-		return new PathFinder(world, new Map<number, PathResult>(), [], 0)
+	public static createNewQueue(tileMetaDataIndex: TileMetaDataIndex): PathFinder {
+		return new PathFinder(tileMetaDataIndex, new Map<number, PathResult>(), [], 0)
 	}
 
-	public static deserialize(world: World, object: any): PathFinder {
-
-		return new PathFinder(world,
+	public static deserialize(tileMetaDataIndex: TileMetaDataIndex, object: any): PathFinder {
+		return new PathFinder(tileMetaDataIndex,
 			new Map<number, PathResult>(object['readyPaths'].map((e: any) => [e['id'], {...e}])),
 			object['pathQueue'].map((e: any) => ({...e})),
 			object['nextPathRequestId'])
@@ -58,7 +57,8 @@ export class PathFinder {
 				this.readyPaths.delete(id)
 		}
 
-		const tester = (x: number, z: number) => this.world.getHighestBlockHeightSafe(x, z) === 1
+		const tester = this.tileMetaDataIndex.walkableTester
+
 		for (const req of this.pathQueue) {
 
 			const directions = findPathDirectionsToArea(req['fromX'], req['fromZ'], req['toX'], req['toZ'], req['areaSize'], tester)
