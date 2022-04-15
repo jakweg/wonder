@@ -68,16 +68,18 @@ const activityWalkingByPathRoot = {
 
 
 					// Path was forgotten or obstacle got in the way
-					const returnTo = memory[pointer - MemoryField.ReturnToActivity]!
 					const dx = memory[pointer - MemoryField.DestinationX]!
-					const dy = memory[pointer - MemoryField.DestinationZ]!
+					const dz = memory[pointer - MemoryField.DestinationZ]!
 					const areaSize = memory[pointer - MemoryField.DestinationAreaSize]!
 
 					if ((unit.thisTraits & EntityTrait.Drawable) === EntityTrait.Drawable)
 						game.entities.drawables.rawData[unit.drawable + DataOffsetDrawables.Rotation] &= ~Direction.FlagMergeWithPrevious
 
-					withActivitiesMemory[unit.withActivity + DataOffsetWithActivity.MemoryPointer] -= MemoryField.SIZE
-					activityWalkingByPathRoot.setup(game, unit, returnTo, dx, dy, areaSize)
+					const positionData = game.entities.positions.rawData
+					const posX = positionData[unit.position + DataOffsetPositions.PositionX]!
+					const posZ = positionData[unit.position + DataOffsetPositions.PositionZ]!
+					memory[pointer - MemoryField.PathRequestId] = game.pathFinder.requestPath(posX, posZ, dx, dz, areaSize)
+					memory[pointer - MemoryField.Status] = Status.WaitingForPath
 					return
 				}
 				break
@@ -92,7 +94,7 @@ const activityWalkingByPathRoot = {
 		withActivitiesMemory[unit.withActivity + DataOffsetWithActivity.CurrentId] = returnToActivity
 		withActivitiesMemory[unit.withActivity + DataOffsetWithActivity.MemoryPointer] -= MemoryField.SIZE
 	},
-	setup(game: GameState, unit: EntityTraitIndicesRecord, returnTo: ActivityId,
+	setup(game: GameState, unit: EntityTraitIndicesRecord,
 	      x: number, z: number, areaSize: number) {
 		requireTrait(unit.thisTraits, EntityTrait.Position)
 
@@ -105,10 +107,11 @@ const activityWalkingByPathRoot = {
 
 		const pointer = (withActivitiesMemory[unit.withActivity + DataOffsetWithActivity.MemoryPointer] += MemoryField.SIZE) + unit.activityMemory
 
+		const returnToActivity = withActivitiesMemory[unit.withActivity + DataOffsetWithActivity.CurrentId]!
 		withActivitiesMemory[unit.withActivity + DataOffsetWithActivity.CurrentId] = ActivityId.WalkingByPathRoot
 		withActivitiesMemory[unit.withActivity + DataOffsetWithActivity.StartTick] = game.currentTick
 
-		memory[pointer - MemoryField.ReturnToActivity] = returnTo
+		memory[pointer - MemoryField.ReturnToActivity] = returnToActivity
 		memory[pointer - MemoryField.PathRequestId] = game.pathFinder.requestPath(posX, posZ, x, z, areaSize)
 		memory[pointer - MemoryField.Status] = Status.WaitingForPath
 		memory[pointer - MemoryField.DestinationX] = x

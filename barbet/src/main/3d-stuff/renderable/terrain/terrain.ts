@@ -1,8 +1,9 @@
 import { toGl } from '../../../util/matrix/common'
 import { observeSetting } from '../../../worker/observable-settings'
+import { GameState, MetadataField } from '../../game-state/game-state'
 import { GPUBuffer, MainRenderer } from '../../main-renderer'
 import { createProgramFromNewShaders, pickViaMouseDefaultFragmentShader } from '../../shader/common'
-import { World, WORLD_CHUNK_SIZE } from '../../world/world'
+import { WORLD_CHUNK_SIZE } from '../../world/world'
 import { buildChunkMesh, combineMeshes, Mesh } from '../../world/world-to-mesh-converter'
 import { RenderContext } from '../render-context'
 import {
@@ -50,7 +51,7 @@ function setUpStandardRenderer(renderer: MainRenderer) {
 }
 
 export const createNewTerrainRenderable = (renderer: MainRenderer,
-                                           world: World) => {
+                                           game: GameState) => {
 
 	const {defaultProgram, programWithTileBorders, vao, vertexBuffer, indicesBuffer} = setUpStandardRenderer(renderer)
 	const {mouseProgram, mouseVao} = setUpMousePicker(renderer, vertexBuffer, indicesBuffer)
@@ -58,6 +59,7 @@ export const createNewTerrainRenderable = (renderer: MainRenderer,
 
 	let trianglesToRender = 0 | 0
 	let lastMeshRecreationId = -1
+	const world = game.world
 	const chunksX = world.size.chunksSizeX
 	const chunksZ = world.size.chunksSizeZ
 	const meshes: Mesh[] = new Array(chunksX * chunksZ)
@@ -67,7 +69,8 @@ export const createNewTerrainRenderable = (renderer: MainRenderer,
 	const rebuildMeshIfNeeded = () => {
 		let counter = 0
 		renderer.unbindVAO()
-		if (lastMeshRecreationId === world.lastChangeId) return
+		const lastChangeId = game.metaData[MetadataField.LastWorldChange]!
+		if (lastMeshRecreationId === lastChangeId) return
 		let chunkIndex = 0
 		for (let j = 0; j < chunksZ; j++) {
 			for (let i = 0; i < chunksX; i++) {
@@ -85,7 +88,7 @@ export const createNewTerrainRenderable = (renderer: MainRenderer,
 		vertexBuffer.setContent(combinedMesh.vertexes)
 		indicesBuffer.setContent(combinedMesh.indices)
 		trianglesToRender = (combinedMesh.indices.byteLength / combinedMesh.indices.BYTES_PER_ELEMENT) | 0
-		lastMeshRecreationId = world.lastChangeId
+		lastMeshRecreationId = lastChangeId
 	}
 
 	let showTileBorders = false
@@ -96,11 +99,10 @@ export const createNewTerrainRenderable = (renderer: MainRenderer,
 			rebuildMeshIfNeeded()
 			const {gl, camera} = ctx
 			vao.bind()
-			const program = showTileBorders ? programWithTileBorders : defaultProgram;
+			const program = showTileBorders ? programWithTileBorders : defaultProgram
 			program.use()
 
-			gl.uniformMatrix4fv(program.uniforms['projection'], false, toGl(camera.perspectiveMatrix))
-			gl.uniformMatrix4fv(program.uniforms['view'], false, toGl(camera.viewMatrix))
+			gl.uniformMatrix4fv(program.uniforms['combinedMatrix'], false, toGl(camera.combinedMatrix))
 			gl.uniform1f(program.uniforms['time'], ctx.secondsSinceFirstRender)
 			gl.uniform3fv(program.uniforms['lightPosition'], toGl(ctx.sunPosition))
 

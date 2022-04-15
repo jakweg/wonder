@@ -1,6 +1,5 @@
 import SeededRandom from '../../util/seeded-random'
 import { AIR_ID, allBlocks, BlockId } from './block'
-import { World } from './world'
 
 const NO_ELEMENT_INDEX_MARKER = 4294967295
 const NO_COLOR_VALUE = 2
@@ -22,7 +21,12 @@ export interface Mesh {
 	indices: Uint32Array,
 }
 
-export const buildChunkMesh = (world: World, chunkX: number, chunkZ: number, chunkSize: number): Mesh => {
+interface WorldLike {
+	size: { sizeX: number, sizeY: number, sizeZ: number }
+	rawBlockData: Uint8Array
+}
+
+export const buildChunkMesh = (world: WorldLike, chunkX: number, chunkZ: number, chunkSize: number): Mesh => {
 	const {sizeX, sizeY, sizeZ} = world.size
 	const worldData = world.rawBlockData
 
@@ -177,6 +181,16 @@ export const buildChunkMesh = (world: World, chunkX: number, chunkZ: number, chu
 	return {
 		vertexes: new Float32Array(vertexes),
 		indices: new Uint32Array(indices),
+	}
+}
+
+export const moveChunkMesh = (mesh: Mesh, offsetX: number, offsetY: number, offsetZ: number) => {
+	const vertexes = mesh.vertexes
+	const size = vertexes.length / FLOATS_PER_VERTEX | 0
+	for (let i = 0; i < size; i++) {
+		vertexes[i * FLOATS_PER_VERTEX] += offsetX
+		vertexes[i * FLOATS_PER_VERTEX + 1] += offsetY
+		vertexes[i * FLOATS_PER_VERTEX + 2] += offsetZ
 	}
 }
 

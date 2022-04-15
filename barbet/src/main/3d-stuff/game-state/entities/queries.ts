@@ -1,7 +1,9 @@
 import { ItemType } from '../../world/item'
+import { BuildingId, BuildingType, requireBuilding } from '../buildings/building'
 import EntityContainer, { ACTIVITY_MEMORY_SIZE } from './entity-container'
 import {
 	createEmptyTraitRecord,
+	DataOffsetBuildingData,
 	DataOffsetDrawables,
 	DataOffsetIds,
 	DataOffsetInterruptible,
@@ -131,4 +133,74 @@ export const getEntityById_drawableItem = function (container: EntityContainer, 
 		if (hasTrait(traits, EntityTrait.ItemHoldable)) record.itemHoldable += DataOffsetItemHoldable.SIZE
 	}
 	return null
+}
+
+export const queryBuildingDataById = (container: EntityContainer, id: number):
+	{ position: [number, number, number], type: BuildingType, buildingProgress: number } | null => {
+	const record = createEmptyTraitRecord()
+	const rawData = container.ids.rawData
+	for (let i = 0, l = container.ids.size; i < l; i++) {
+		const idIndex = i * DataOffsetIds.SIZE + 1
+		const thisId = rawData[idIndex + DataOffsetIds.ID]!
+		const traits = rawData[idIndex + DataOffsetIds.Traits]!
+
+		if (hasTrait(traits, EntityTrait.Alive) && thisId === id) {
+			const positionData = container.positions.rawData
+			const x = positionData[record.position + DataOffsetPositions.PositionX]!
+			const y = positionData[record.position + DataOffsetPositions.PositionY]!
+			const z = positionData[record.position + DataOffsetPositions.PositionZ]!
+
+			const buildingData = container.buildingData.rawData
+			const type = buildingData[record.buildingData + DataOffsetBuildingData.TypeId]! as BuildingId
+			const progress = buildingData[record.buildingData + DataOffsetBuildingData.ProgressPointsToFull]!
+
+			return {
+				position: [x, y, z],
+				type: requireBuilding(type),
+				buildingProgress: progress,
+			}
+		}
+
+		if (hasTrait(traits, EntityTrait.Position)) record.position += DataOffsetPositions.SIZE
+		if (hasTrait(traits, EntityTrait.BuildingData)) record.buildingData += DataOffsetBuildingData.SIZE
+	}
+	return null
+}
+
+export const queryBuildingProgress = (container: EntityContainer, id: number):
+	number | null => {
+	const record = createEmptyTraitRecord()
+	const rawData = container.ids.rawData
+	for (let i = 0, l = container.ids.size; i < l; i++) {
+		const idIndex = i * DataOffsetIds.SIZE + 1
+		const thisId = rawData[idIndex + DataOffsetIds.ID]!
+		const traits = rawData[idIndex + DataOffsetIds.Traits]!
+
+		if (hasTrait(traits, EntityTrait.Alive) && thisId === id) {
+			const buildingData = container.buildingData.rawData
+			return buildingData[record.buildingData + DataOffsetBuildingData.ProgressPointsToFull]!
+		}
+
+		if (hasTrait(traits, EntityTrait.BuildingData)) record.buildingData += DataOffsetBuildingData.SIZE
+	}
+	return null
+}
+
+export const updateBuildingProgress = (container: EntityContainer, id: number, newProgress: number): void => {
+	const record = createEmptyTraitRecord()
+	const rawData = container.ids.rawData
+	for (let i = 0, l = container.ids.size; i < l; i++) {
+		const idIndex = i * DataOffsetIds.SIZE + 1
+		const thisId = rawData[idIndex + DataOffsetIds.ID]!
+		const traits = rawData[idIndex + DataOffsetIds.Traits]!
+
+		if (hasTrait(traits, EntityTrait.Alive) && thisId === id) {
+			const buildingData = container.buildingData.rawData
+			buildingData[record.buildingData + DataOffsetBuildingData.ProgressPointsToFull] = newProgress
+
+			return
+		}
+
+		if (hasTrait(traits, EntityTrait.BuildingData)) record.buildingData += DataOffsetBuildingData.SIZE
+	}
 }

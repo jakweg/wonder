@@ -10,8 +10,7 @@ out vec3 v_vertexPosition;
 flat out vec3 v_color;
 flat out vec3 v_currentPosition;
 flat out vec3 v_normal;
-uniform mat4 u_projection;
-uniform mat4 u_view;
+uniform mat4 u_combinedMatrix;
 uniform float u_time;
 void main() {
 	int flags = int(a_flags);
@@ -23,7 +22,7 @@ void main() {
 	if (pos.y < 1.50) {
 		pos.y += sin(u_time * 2.1 + pos.x + pos.z * 100.0) * 0.15 + 0.5;
 	}
-    gl_Position = u_projection * u_view * vec4(pos, 1);
+    gl_Position = u_combinedMatrix * vec4(pos, 1);
     gl_PointSize = 10.0;
 }
 `
@@ -112,7 +111,7 @@ void main() {
 }
 `
 
-export type Uniforms = 'time' | 'projection' | 'view' | 'lightPosition'
+export type Uniforms = 'time' | 'combinedMatrix' | 'lightPosition'
 export type Attributes = 'position' | 'color' | 'flags'
 
 export type MousePickerAttributes = 'position' | 'flags'

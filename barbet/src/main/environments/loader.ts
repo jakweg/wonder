@@ -46,6 +46,10 @@ export interface SaveGameArguments {
 export interface TerminateGameArguments {
 }
 
+export interface DebugCommandArguments {
+	type: string
+}
+
 export interface EnvironmentConnection {
 	name: string
 
@@ -56,6 +60,8 @@ export interface EnvironmentConnection {
 	saveGame(args: SaveGameArguments): void
 
 	terminateGame(args: TerminateGameArguments): void
+
+	debugCommand(args: DebugCommandArguments): void
 }
 
 export const getSuggestedEnvironmentName = () => {

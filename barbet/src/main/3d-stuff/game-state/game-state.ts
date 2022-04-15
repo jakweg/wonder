@@ -1,4 +1,6 @@
 import Mutex, { createMutexFromReceived, isInWorker, Lock } from '../../util/mutex'
+import { decodeArray, encodeArray } from '../../util/persistance/serializers'
+import { createNewBuffer } from '../../util/shared-memory'
 import { ActivityId, requireActivity } from '../renderable/unit/activity'
 import { World } from '../world/world'
 import EntityContainer from './entities/entity-container'
@@ -7,16 +9,24 @@ import { DataOffsetWithActivity } from './entities/traits'
 import { GroundItemsIndex } from './ground-items-index'
 import { PathFinder } from './path-finder'
 import { SurfaceResourcesIndex } from './surface-resources-index'
+import { TileMetaDataIndex } from './tile-meta-data-index'
 
+export const enum MetadataField {
+	CurrentTick,
+	LastWorldChange,
+	LastBuildingsChange,
+	SIZE
+}
 
 export class GameState {
 	private isRunningLogic: boolean = false
 
 	private constructor(
-		private _currentTick: number,
+		public readonly metaData: Int32Array,
 		public readonly world: World,
 		public readonly groundItems: GroundItemsIndex,
 		public readonly entities: EntityContainer,
+		public readonly tileMetaDataIndex: TileMetaDataIndex,
 		public readonly pathFinder: PathFinder,
 		public readonly surfaceResources: SurfaceResourcesIndex,
 		private readonly mutex: Mutex,
@@ -24,38 +34,45 @@ export class GameState {
 	}
 
 	public get currentTick(): number {
-		return this._currentTick | 0
+		return this.metaData[MetadataField.CurrentTick]!
 	}
 
 	public static createNew(
 		world: World,
 		groundItems: GroundItemsIndex,
 		entities: EntityContainer,
+		tileMetaDataIndex: TileMetaDataIndex,
 		pathFinder: PathFinder,
 		surfaceResources: SurfaceResourcesIndex,
 		mutex: Mutex,
 		stateBroadcastCallback: () => void): GameState {
-		return new GameState(0, world, groundItems, entities, pathFinder, surfaceResources, mutex, stateBroadcastCallback)
+		return new GameState(
+			new Int32Array(createNewBuffer(MetadataField.SIZE * Int32Array.BYTES_PER_ELEMENT)),
+			world, groundItems, entities,
+			tileMetaDataIndex, pathFinder, surfaceResources,
+			mutex, stateBroadcastCallback)
 	}
 
 	public static deserialize(object: any, mutex: Mutex, stateBroadcastCallback: () => void): GameState {
 		const world = World.deserialize(object['world'])
+		const tileMetaDataIndex = TileMetaDataIndex.deserialize(object['tileMetaDataIndex'], world.rawHeightData)
 		return new GameState(
-			+object['tick'],
+			decodeArray(object['metadata'], true, Int32Array),
 			world,
 			GroundItemsIndex.deserialize(object['groundItems']),
 			EntityContainer.deserialize(object['entities']),
-			PathFinder.deserialize(world, object['pathFinder']),
+			tileMetaDataIndex, PathFinder.deserialize(tileMetaDataIndex, object['pathFinder']),
 			SurfaceResourcesIndex.deserialize(object['surfaceResources']),
 			mutex, stateBroadcastCallback)
 	}
 
 	public static forRenderer(object: any): GameState {
 		return new GameState(
-			-1,
+			new Int32Array(object['metadata']),
 			World.fromReceived(object['world']),
 			GroundItemsIndex.fromReceived(object['groundItems']),
 			EntityContainer.fromReceived(object['entities']),
+			TileMetaDataIndex.fromReceived(object['tileMetaDataIndex']),
 			null as unknown as PathFinder,
 			SurfaceResourcesIndex.fromReceived(object['surfaceResources']),
 			createMutexFromReceived(object['mutex']),
@@ -64,11 +81,13 @@ export class GameState {
 
 	public passForRenderer(): unknown {
 		return {
+			'metadata': this.metaData.buffer,
 			'mutex': this.mutex.pass(),
 			'world': this.world.pass(),
 			'groundItems': this.groundItems.pass(),
 			'entities': this.entities.pass(),
 			'surfaceResources': this.surfaceResources.pass(),
+			'tileMetaDataIndex': this.tileMetaDataIndex.pass()
 		}
 	}
 
@@ -76,11 +95,12 @@ export class GameState {
 		if (this.pathFinder == null)
 			throw new Error('Missing pathfinder')
 		return {
-			'tick': this._currentTick,
+			'metadata': encodeArray(this.metaData),
 			'world': this.world.serialize(),
 			'groundItems': this.groundItems.serialize(),
 			'entities': this.entities.serialize(),
 			'surfaceResources': this.surfaceResources.serialize(),
+			'tileMetaDataIndex': this.tileMetaDataIndex.serialize(),
 			'pathFinder': this.pathFinder.serialize(),
 		}
 	}
@@ -88,7 +108,7 @@ export class GameState {
 	public async advanceActivities() {
 		if (this.isRunningLogic) throw new Error()
 		this.isRunningLogic = true
-		this._currentTick++
+		this.metaData[MetadataField.CurrentTick]++
 
 		this.pathFinder.tick(this)
 

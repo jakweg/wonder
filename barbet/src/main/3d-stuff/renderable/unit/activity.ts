@@ -1,4 +1,6 @@
 import { freezeAndValidateOptionsList } from '../../../util/common'
+import activityBuilding from '../../game-state/activities/building'
+import activityBuildingRoot from '../../game-state/activities/buildingRoot'
 import activityIdle from '../../game-state/activities/idle'
 import activityItemPickup from '../../game-state/activities/item-pickup'
 import activityItemPickupRoot from '../../game-state/activities/item-pickup-root'
@@ -19,6 +21,8 @@ export enum ActivityId {
 	ItemPickUpRoot,
 	ItemPickUp,
 	MiningResource,
+	BuildingRoot,
+	Building,
 }
 
 export interface AdditionalRenderer<T = any, B = any> {
@@ -71,6 +75,8 @@ export const getAllActivities = (): ActivityType[] => {
 			activityItemPickupRoot,
 			activityItemPickup,
 			activityMiningResource,
+			activityBuildingRoot,
+			activityBuilding,
 		)
 		freezeAndValidateOptionsList(allActivities)
 	}

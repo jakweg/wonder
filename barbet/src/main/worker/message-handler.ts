@@ -1,4 +1,9 @@
-import { CreateGameArguments, SaveGameArguments, TerminateGameArguments } from '../environments/loader'
+import {
+	CreateGameArguments,
+	DebugCommandArguments,
+	SaveGameArguments,
+	TerminateGameArguments,
+} from '../environments/loader'
 
 export interface Message {
 	['error']: { message: string }
@@ -14,6 +19,7 @@ export interface Message {
 	['new-settings']: any
 	['save-game']: SaveGameArguments
 	['terminate-game']: TerminateGameArguments
+	['debug']: DebugCommandArguments
 	['save-game-result']: { url: string }
 }
 

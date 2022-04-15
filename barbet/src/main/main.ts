@@ -102,6 +102,10 @@ document.addEventListener('keydown', async event => {
 		if (file != null) {
 			await runGame({'fileToRead': file})
 		}
+	} else if (event['code'] === 'KeyD' && event['ctrlKey']) {
+		event.preventDefault()
+		event.stopPropagation()
+		state?.environment?.['debugCommand']({type: 'create-building-prototype'})
 	}
 })
 

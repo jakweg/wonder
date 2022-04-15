@@ -3,6 +3,7 @@ import { createNewBuffer } from '../../../util/shared-memory'
 import { ArrayAllocator, DataStore } from './data-store'
 import {
 	createEmptyTraitRecord,
+	DataOffsetBuildingData,
 	DataOffsetDrawables,
 	DataOffsetIds,
 	DataOffsetInterruptible,
@@ -71,6 +72,7 @@ class EntityContainer {
 	public readonly activitiesMemory = DataStore.create(this.allocator, ACTIVITY_MEMORY_SIZE)
 	public readonly itemHoldables = DataStore.create(this.allocator, DataOffsetItemHoldable.SIZE)
 	public readonly interruptibles = DataStore.create(this.allocator, DataOffsetInterruptible.SIZE)
+	public readonly buildingData = DataStore.create(this.allocator, DataOffsetBuildingData.SIZE)
 
 	public readonly allStores = Object.freeze([
 		this.ids,
@@ -155,6 +157,7 @@ class EntityContainer {
 			activityMemory: hasTrait(traits, EntityTrait.WithActivity) ? this.activitiesMemory.pushBack() : NO_INDEX,
 			itemHoldable: hasTrait(traits, EntityTrait.ItemHoldable) ? this.itemHoldables.pushBack() : NO_INDEX,
 			interruptible: hasTrait(traits, EntityTrait.Interruptible) ? this.interruptibles.pushBack() : NO_INDEX,
+			buildingData: hasTrait(traits, EntityTrait.BuildingData) ? this.buildingData.pushBack() : NO_INDEX,
 		}
 
 		let index = record.idIndex
@@ -175,7 +178,7 @@ class EntityContainer {
 
 		const rawData = this.ids.rawData
 		for (let i = 0, l = this.ids.size; i < l; i++) {
-			const idIndex = i * DataOffsetIds.SIZE
+			const idIndex = i * DataOffsetIds.SIZE + 1
 			const traits = rawData[idIndex + DataOffsetIds.Traits]!
 
 			if ((traits & requiredTraits) === requiredTraits) {
@@ -193,6 +196,7 @@ class EntityContainer {
 			}
 			if (hasTrait(traits, EntityTrait.ItemHoldable)) record.itemHoldable += DataOffsetItemHoldable.SIZE
 			if (hasTrait(traits, EntityTrait.Interruptible)) record.interruptible += DataOffsetInterruptible.SIZE
+			if (hasTrait(traits, EntityTrait.BuildingData)) record.buildingData += DataOffsetBuildingData.SIZE
 		}
 	}
 }

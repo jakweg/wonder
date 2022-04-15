@@ -16,6 +16,7 @@ import {
 	requireTrait,
 } from '../entities/traits'
 import { GameState } from '../game-state'
+import activityBuildingRoot from './buildingRoot'
 import { InterruptType } from './interrupt'
 import activityItemPickupRoot from './item-pickup-root'
 import walkingByPathRoot from './walking-by-path-root'
@@ -110,14 +111,19 @@ const activityIdle = {
 			case InterruptType.Walk: {
 				const x = memory[unit.interruptible + DataOffsetInterruptible.ValueA]!
 				const y = memory[unit.interruptible + DataOffsetInterruptible.ValueB]!
-				walkingByPathRoot.setup(game, unit, ActivityId.Idle, x, y, 0)
+				walkingByPathRoot.setup(game, unit, x, y, 0)
 				break
 			}
 			case InterruptType.ItemPickUp: {
 				const x = memory[unit.interruptible + DataOffsetInterruptible.ValueA]!
 				const y = memory[unit.interruptible + DataOffsetInterruptible.ValueB]!
 				const type = memory[unit.interruptible + DataOffsetInterruptible.ValueC]! as ItemType
-				activityItemPickupRoot.setup(game, unit, ActivityId.Idle, x, y, type)
+				activityItemPickupRoot.setup(game, unit, x, y, type)
+				break
+			}
+			case InterruptType.BuildSomeBuilding: {
+				const id = memory[unit.interruptible + DataOffsetInterruptible.ValueA]!
+				activityBuildingRoot.setup(game, unit, id)
 				break
 			}
 			default:

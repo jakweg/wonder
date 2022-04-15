@@ -3,6 +3,7 @@ import { ActivityId } from '../../renderable/unit/activity'
 import { UnitColorPaletteId } from '../../renderable/unit/unit-color'
 import { ItemType } from '../../world/item'
 import { InterruptType } from '../activities/interrupt'
+import { BuildingId } from '../buildings/building'
 import EntityContainer, { ACTIVITY_MEMORY_SIZE } from './entity-container'
 
 export const enum EntityTrait {
@@ -11,7 +12,8 @@ export const enum EntityTrait {
 	Drawable = Alive | Position | 1 << 1,
 	Interruptible = Alive | 1 << 2,
 	WithActivity = Alive | 1 << 3,
-	ItemHoldable = Alive | 1 << 4
+	ItemHoldable = Alive | 1 << 4,
+	BuildingData = Alive | 1 << 5,
 }
 
 export const enum DataOffsetIds {
@@ -53,6 +55,12 @@ export const enum DataOffsetInterruptible {
 	SIZE,
 }
 
+export const enum DataOffsetBuildingData {
+	TypeId,
+	ProgressPointsToFull,
+	SIZE,
+}
+
 export interface EntityTraitIndicesRecord {
 	thisId: number
 	thisTraits: number
@@ -63,6 +71,7 @@ export interface EntityTraitIndicesRecord {
 	activityMemory: number
 	itemHoldable: number
 	interruptible: number
+	buildingData: number
 }
 
 export const createEmptyTraitRecord = (): EntityTraitIndicesRecord => ({
@@ -75,6 +84,7 @@ export const createEmptyTraitRecord = (): EntityTraitIndicesRecord => ({
 	activityMemory: 1,
 	itemHoldable: 1,
 	interruptible: 1,
+	buildingData: 1,
 })
 
 export const hasTrait = (all: EntityTrait, required: EntityTrait): boolean => (all & required) === required
@@ -127,6 +137,13 @@ export const initializeTraitsOfNewEntity = (container: EntityContainer, record: 
 	if (index !== NO_INDEX) {
 		const data = container.interruptibles.rawData
 		data[index + DataOffsetInterruptible.InterruptType] = InterruptType.None
+	}
+
+	index = record.buildingData
+	if (index !== NO_INDEX) {
+		const data = container.buildingData.rawData
+		data[index + DataOffsetBuildingData.TypeId] = BuildingId.None
+		data[index + DataOffsetBuildingData.ProgressPointsToFull] = 0
 	}
 }
 

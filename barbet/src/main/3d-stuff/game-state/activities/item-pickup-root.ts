@@ -66,7 +66,7 @@ const activityItemPickupRoot = {
 		withActivitiesMemory[unit.withActivity + DataOffsetWithActivity.CurrentId] = memory[pointer - MemoryField.ReturnTo]!
 		withActivitiesMemory[unit.withActivity + DataOffsetWithActivity.MemoryPointer] -= MemoryField.SIZE
 	},
-	setup(game: GameState, unit: EntityTraitIndicesRecord, returnTo: ActivityId, x: number, z: number, type: ItemType) {
+	setup(game: GameState, unit: EntityTraitIndicesRecord, x: number, z: number, type: ItemType) {
 		if (type === ItemType.None)
 			throw new Error('Request of pick up none item')
 
@@ -74,6 +74,7 @@ const activityItemPickupRoot = {
 		const memory = game.entities.activitiesMemory.rawData
 		const pointer = (withActivitiesMemory[unit.withActivity + DataOffsetWithActivity.MemoryPointer] += MemoryField.SIZE) + unit.activityMemory
 
+		const returnTo = withActivitiesMemory[unit.withActivity + DataOffsetWithActivity.CurrentId]!
 		withActivitiesMemory[unit.withActivity + DataOffsetWithActivity.CurrentId] = ActivityId.ItemPickUpRoot
 
 		memory[pointer - MemoryField.ReturnTo] = returnTo
@@ -81,7 +82,7 @@ const activityItemPickupRoot = {
 		memory[pointer - MemoryField.DestinationZ] = z
 		memory[pointer - MemoryField.RequestedItemType] = type
 
-		walkingByPathRoot.setup(game, unit, ActivityId.ItemPickUpRoot, x, z, 1)
+		walkingByPathRoot.setup(game, unit, x, z, 1)
 	},
 }
 

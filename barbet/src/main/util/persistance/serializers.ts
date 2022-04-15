@@ -4,8 +4,8 @@ type ArrayToEncode = Uint8Array | Int8Array | Uint16Array | Int16Array | Uint32A
 
 export const enum ArrayEncodingType {
 	None,
-	ToString,
-	AsArray,
+	String,
+	Array,
 }
 
 let currentEncodingType: ArrayEncodingType = ArrayEncodingType.None
@@ -17,9 +17,9 @@ export const encodeArray = (array: ArrayToEncode): unknown => {
 	switch (currentEncodingType) {
 		case ArrayEncodingType.None:
 			throw new Error()
-		case ArrayEncodingType.ToString:
+		case ArrayEncodingType.String:
 			return btoa(String.fromCharCode(...new Uint8Array(array['buffer'])))
-		case ArrayEncodingType.AsArray: {
+		case ArrayEncodingType.Array: {
 			const fromArray = new Uint8Array(array['buffer'])
 			const length = fromArray.length
 			const copy = new Uint8Array(length)
@@ -34,7 +34,7 @@ export const decodeArray = <T>(data: any, makeShared: boolean, constructor: { ne
 	switch (currentEncodingType) {
 		case ArrayEncodingType.None:
 			throw new Error()
-		case ArrayEncodingType.ToString: {
+		case ArrayEncodingType.String: {
 			data = atob(data)
 			const length = data.length
 			const buffer = makeShared ? createNewBuffer(length) : new ArrayBuffer(length)
@@ -46,7 +46,7 @@ export const decodeArray = <T>(data: any, makeShared: boolean, constructor: { ne
 			// @ts-ignore
 			return Uint8Array === constructor ? array : (new constructor(buffer))
 		}
-		case ArrayEncodingType.AsArray: {
+		case ArrayEncodingType.Array: {
 			const length = data.length
 			const buffer = makeShared ? createNewBuffer(length) : new ArrayBuffer(length)
 
