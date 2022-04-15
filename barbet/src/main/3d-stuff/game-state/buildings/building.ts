@@ -13,7 +13,7 @@ export interface BuildingType {
 	readonly numericId: BuildingId
 
 	readonly maskSizeX: number
-	readonly maskSizeY: number
+	readonly maskSizeZ: number
 
 	readonly mask: Uint8Array
 
@@ -36,7 +36,7 @@ export const allBuilding: BuildingType[] = [
 	{
 		numericId: BuildingId.None,
 		maskSizeX: 0,
-		maskSizeY: 0,
+		maskSizeZ: 0,
 		mask: new Uint8Array(),
 		vertexes: new Float32Array(),
 		indices: new Uint32Array(),
@@ -44,7 +44,7 @@ export const allBuilding: BuildingType[] = [
 	{
 		numericId: BuildingId.Monument,
 		maskSizeX: 3,
-		maskSizeY: 3,
+		maskSizeZ: 3,
 		mask: new Uint8Array(5 * 5).fill(1),
 		...decodeVertexesAndIndices({
 			'sizes': [3, 3, 3],

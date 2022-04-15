@@ -122,19 +122,52 @@ const handlePick = (pickResult: MousePickerResultAny, event: EventHappened, game
 	}
 }
 
-const spawnBuilding = (game: GameState, x: number, y: number, z: number, type: BuildingId) => {
+const spawnBuilding = (game: GameState, centerX: number, centerY: number, centerZ: number, type: BuildingId) => {
+	const building = requireBuilding(type)
+
+	const areaStartX = centerX - (building.maskSizeX / 2 | 0)
+	const areaStartZ = centerZ - (building.maskSizeZ / 2 | 0)
+
+	let minY = game.world.size.sizeY
+	for (let x = 0; x < building.maskSizeX; x++) {
+		for (let z = 0; z < building.maskSizeZ; z++) {
+			const canPlaceBuilding = game.tileMetaDataIndex.canPlaceBuilding(areaStartX + x, areaStartZ + z)
+			if (!canPlaceBuilding)
+				return
+
+			const y = game.world.getHighestBlockHeightSafe(areaStartX + x, areaStartZ + z)
+			if (y < 0)
+				return
+
+			if (y < minY)
+				minY = y
+		}
+	}
+
+	for (let x = 0; x < building.maskSizeX; x++)
+		for (let z = 0; z < building.maskSizeZ; z++) {
+			const computedX = areaStartX + x
+			const computedZ = areaStartZ + z
+			for (let y = minY + 1, l = game.world.size.sizeY; y < l; y++)
+				game.world.setBlock(computedX, y, computedZ, AIR_ID)
+			for (let y = 0; y <= minY; y++)
+				game.world.setBlock(computedX, y, computedZ, BlockId.Stone)
+
+			game.tileMetaDataIndex.setBuildingPlacedAt(computedX, computedZ)
+		}
+
+
 	const entities = game.entities
 	const traits = EntityTrait.Position | EntityTrait.BuildingData
 	const entity = entities.createEntity(traits)
 
-	entities.positions.rawData[entity.position + DataOffsetPositions.PositionX] = x
-	entities.positions.rawData[entity.position + DataOffsetPositions.PositionY] = y
-	entities.positions.rawData[entity.position + DataOffsetPositions.PositionZ] = z
+	entities.positions.rawData[entity.position + DataOffsetPositions.PositionX] = centerX
+	entities.positions.rawData[entity.position + DataOffsetPositions.PositionY] = minY + 1
+	entities.positions.rawData[entity.position + DataOffsetPositions.PositionZ] = centerZ
 	entities.buildingData.rawData[entity.buildingData + DataOffsetBuildingData.TypeId] = type
 
 	game.metaData[MetadataField.LastBuildingsChange]++
 }
-
 
 const handlePickBlock = (result: MousePickerTerrainResult, event: EventHappened, game: GameState) => {
 	switch (event) {

@@ -71,7 +71,7 @@ export class GameState {
 			World.fromReceived(object['world']),
 			GroundItemsIndex.fromReceived(object['groundItems']),
 			EntityContainer.fromReceived(object['entities']),
-			null as unknown as TileMetaDataIndex,
+			TileMetaDataIndex.fromReceived(object['tileMetaDataIndex']),
 			null as unknown as PathFinder,
 			SurfaceResourcesIndex.fromReceived(object['surfaceResources']),
 			createMutexFromReceived(object['mutex']),
@@ -86,6 +86,7 @@ export class GameState {
 			'groundItems': this.groundItems.pass(),
 			'entities': this.entities.pass(),
 			'surfaceResources': this.surfaceResources.pass(),
+			'tileMetaDataIndex': this.tileMetaDataIndex.pass()
 		}
 	}
 

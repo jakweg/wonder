@@ -3,6 +3,7 @@ import { decodeArray, encodeArray } from '../../util/persistance/serializers'
 import { createNewBuffer } from '../../util/shared-memory'
 
 const enum TileFlag {
+	NoFlags = 0,
 	HasBuilding,
 }
 
@@ -29,6 +30,10 @@ export class TileMetaDataIndex {
 			decodeArray(data['tileFlags'], true, Uint8Array))
 	}
 
+	public static fromReceived(object: any): TileMetaDataIndex {
+		return new TileMetaDataIndex(object['sizeX'], object['sizeZ'], object['heightIndex'], object['tileFlags'])
+	}
+
 	public serialize(): unknown {
 		return {
 			'sizeX': this.sizeX,
@@ -37,18 +42,37 @@ export class TileMetaDataIndex {
 		}
 	}
 
+	public pass(): unknown {
+		return {
+			'sizeX': this.sizeX,
+			'sizeZ': this.sizeZ,
+			'heightIndex': this.heightIndex,
+			'tileFlags': this.tileFlags,
+		}
+	}
+
 	public readonly walkableTester: WalkableTester = (x, z) => {
-		if (x < 0 || x >= this.sizeX || (x | 0) !== x
-			|| z < 0 || z >= this.sizeZ || (z | 0) !== z)
+		if (!this.areCoordsValid(x, z))
 			return false
+
 		const index = x + z * this.sizeX
 		const height = this.heightIndex[index]
 		if (height !== 1)
 			return false
 
-		const flags = this.tileFlags[index]
+		const flags = this.tileFlags[index]! as TileFlag
 
-		return flags === 0
+		return flags === TileFlag.NoFlags
+	}
+
+	public canPlaceBuilding(x: number, z: number): boolean {
+		if (!this.areCoordsValid(x, z))
+			return false
+		return this.tileFlags[x + z * this.sizeX]! === TileFlag.NoFlags
+	}
+
+	public setBuildingPlacedAt(x: number, z: number): void {
+		this.addFlagForTile(x, z, TileFlag.HasBuilding)
 	}
 
 	private addFlagForTile(x: number, z: number, flag: TileFlag) {
@@ -57,8 +81,12 @@ export class TileMetaDataIndex {
 	}
 
 	private validateCoords(x: number, z: number): void {
-		if (x < 0 || x >= this.sizeX || (x | 0) !== x
-			|| z < 0 || z >= this.sizeZ || (z | 0) !== z)
+		if (!this.areCoordsValid(x, z))
 			throw new Error(`Invalid coords ${x} ${z}`)
+	}
+
+	private areCoordsValid(x: number, z: number) {
+		return !(x < 0 || x >= this.sizeX || (x | 0) !== x
+			|| z < 0 || z >= this.sizeZ || (z | 0) !== z)
 	}
 }
