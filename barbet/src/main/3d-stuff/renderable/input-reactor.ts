@@ -1,12 +1,12 @@
 import { AdditionalFrontedFlags, frontedVariables, FrontendVariable } from '../../util/frontend-variables'
 import { isInWorker, Lock } from '../../util/mutex'
 import { globalMutex } from '../../worker/worker-global-state'
-import { BuildingId } from '../game-state/buildings/building'
+import { BuildingId, requireBuilding } from '../game-state/buildings/building'
 import { DataOffsetBuildingData, DataOffsetPositions, EntityTrait } from '../game-state/entities/traits'
 import { GameState, MetadataField } from '../game-state/game-state'
 import { MainRenderer } from '../main-renderer'
 import { MousePickableType, MousePickerResultAny, MousePickerTerrainResult } from '../mouse-picker'
-import { BlockId } from '../world/block'
+import { AIR_ID, BlockId } from '../world/block'
 import { moveCameraByKeys } from './camera-keyboard-updater'
 import { RenderContext } from './render-context'
 
@@ -122,7 +122,7 @@ const handlePick = (pickResult: MousePickerResultAny, event: EventHappened, game
 	}
 }
 
-const spawnBuilding = (game: GameState, centerX: number, centerY: number, centerZ: number, type: BuildingId) => {
+export const spawnBuilding = (game: GameState, centerX: number, centerZ: number, type: BuildingId) => {
 	const building = requireBuilding(type)
 
 	const areaStartX = centerX - (building.maskSizeX / 2 | 0)
@@ -167,12 +167,14 @@ const spawnBuilding = (game: GameState, centerX: number, centerY: number, center
 	entities.buildingData.rawData[entity.buildingData + DataOffsetBuildingData.TypeId] = type
 
 	game.metaData[MetadataField.LastBuildingsChange]++
+
+	return entity.thisId
 }
 
 const handlePickBlock = (result: MousePickerTerrainResult, event: EventHappened, game: GameState) => {
 	switch (event) {
 		case EventHappened.LeftClick:
-			spawnBuilding(game, result.x, result.y, result.z, BuildingId.Monument)
+			spawnBuilding(game, result.x, result.z, BuildingId.Monument)
 			// game.world.setBlock(result.x + result.normals[0], result.y + result.normals[1], result.z + result.normals[2], BlockId.Gravel)
 			break
 		case EventHappened.RightClick:

@@ -1,7 +1,9 @@
 import { ItemType } from '../../world/item'
+import { BuildingId, BuildingType, requireBuilding } from '../buildings/building'
 import EntityContainer, { ACTIVITY_MEMORY_SIZE } from './entity-container'
 import {
 	createEmptyTraitRecord,
+	DataOffsetBuildingData,
 	DataOffsetDrawables,
 	DataOffsetIds,
 	DataOffsetInterruptible,
@@ -129,6 +131,36 @@ export const getEntityById_drawableItem = function (container: EntityContainer, 
 
 		if (hasTrait(traits, EntityTrait.Drawable)) record.drawable += DataOffsetDrawables.SIZE
 		if (hasTrait(traits, EntityTrait.ItemHoldable)) record.itemHoldable += DataOffsetItemHoldable.SIZE
+	}
+	return null
+}
+
+export const queryBuildingDataById = (container: EntityContainer, id: number):
+	{ position: [number, number, number], type: BuildingType } | null => {
+	const record = createEmptyTraitRecord()
+	const rawData = container.ids.rawData
+	for (let i = 0, l = container.ids.size; i < l; i++) {
+		const idIndex = i * DataOffsetIds.SIZE + 1
+		const thisId = rawData[idIndex + DataOffsetIds.ID]!
+		const traits = rawData[idIndex + DataOffsetIds.Traits]!
+
+		if (hasTrait(traits, EntityTrait.Alive) && thisId === id) {
+			const positionData = container.positions.rawData
+			const x = positionData[record.position + DataOffsetPositions.PositionX]!
+			const y = positionData[record.position + DataOffsetPositions.PositionY]!
+			const z = positionData[record.position + DataOffsetPositions.PositionZ]!
+
+			const buildingData = container.buildingData.rawData
+			const type = buildingData[record.buildingData + DataOffsetBuildingData.TypeId]! as BuildingId
+
+			return {
+				position: [x, y, z],
+				type: requireBuilding(type),
+			}
+		}
+
+		if (hasTrait(traits, EntityTrait.Position)) record.position += DataOffsetPositions.SIZE
+		if (hasTrait(traits, EntityTrait.BuildingData)) record.buildingData += DataOffsetBuildingData.SIZE
 	}
 	return null
 }

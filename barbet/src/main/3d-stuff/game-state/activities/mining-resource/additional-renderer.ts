@@ -8,11 +8,17 @@ import {
 	createProgramFromNewShaders,
 	PIConstantHeader,
 	PrecisionHeader,
+	RotationYMatrix,
 	RotationZMatrix,
 	VersionHeader,
 } from '../../../shader/common'
 import { DataStore } from '../../entities/data-store'
-import { DataOffsetPositions, DataOffsetWithActivity, EntityTraitIndicesRecord } from '../../entities/traits'
+import {
+	DataOffsetDrawables,
+	DataOffsetPositions,
+	DataOffsetWithActivity,
+	EntityTraitIndicesRecord,
+} from '../../entities/traits'
 import { GameState } from '../../game-state'
 
 export const singleMiningAnimationLoopDuration = 20
@@ -60,11 +66,12 @@ const initData = () => {
 
 	return {vertexes: finalVertexData, elements: finalElementsData, triangles: finalElementsData.length}
 }
-type Program = GlProgram<'modelPosition' | 'unitData' | 'modelNormals', 'time' | 'combinedMatrix'>
+type Program = GlProgram<'modelPosition' | 'unitData' | 'activityStart' | 'modelNormals', 'time' | 'combinedMatrix'>
 type T = {
 	vao: any,
 	batchBuffer: GPUBuffer,
 	positions: DataStore<Int32Array>,
+	drawables: DataStore<Int32Array>,
 	withActivities: DataStore<Int32Array>,
 	program: Program,
 	trianglesToRender: number
@@ -88,12 +95,13 @@ ${PIConstantHeader()}
 in vec3 a_modelPosition;
 in vec3 a_modelNormals;
 in vec4 a_unitData;
+in float a_activityStart;
 flat out vec3 v_normal;
 flat out vec3 v_currentPosition;
 uniform float u_time;
 uniform mat4 u_combinedMatrix;
 void main() {
-	float activityDuration = u_time - a_unitData.w;
+	float activityDuration = u_time - a_activityStart;
 	${HandRotationMatrix(false)};
 	
 	vec4 pos = vec4(a_modelPosition.x, a_modelPosition.y, a_modelPosition.z, 1);
@@ -102,9 +110,19 @@ void main() {
 	pos *= handRotation;
 	pos.x += 0.5;
 	pos.y += 1.1;
+	
+	pos.x -= 0.5;
+	pos.z -= 0.5;
+    float unitRotationAngle = PI * a_unitData.w / 4.0;
+    mat4 unitRotation = ${RotationYMatrix('unitRotationAngle')};
+    pos = unitRotation * pos;
+	pos.x += 0.5;
+	pos.z += 0.5;
+    
 	pos.x += a_unitData.x;
 	pos.y += a_unitData.y;
-	pos.z += a_unitData.z ;
+	pos.z += a_unitData.z;
+	
     gl_Position = u_combinedMatrix * pos;
     v_normal = (handRotation * vec4(a_modelNormals, 1.0)).xyz;
     v_currentPosition = gl_Position.xyz;
@@ -144,12 +162,14 @@ export const additionalRenderer: AdditionalRenderer<T, B> = {
 
 		const batchBuffer = renderer.createBuffer(true, true)
 		batchBuffer.bind()
-		program.enableAttribute(program.attributes['unitData'], 4, true, 4 * floatSize, 0, 1)
+		program.enableAttribute(program.attributes['unitData'], 4, true, 5 * floatSize, 0, 1)
+		program.enableAttribute(program.attributes['activityStart'], 1, true, 5 * floatSize, 4 * floatSize, 1)
 
 		return {
 			vao,
 			batchBuffer,
 			positions: game.entities.positions,
+			drawables: game.entities.drawables,
 			withActivities: game.entities.withActivities,
 			program,
 			trianglesToRender: data.triangles,
@@ -164,10 +184,12 @@ export const additionalRenderer: AdditionalRenderer<T, B> = {
 		const unitY = positions[unit.position + DataOffsetPositions.PositionY]!
 		const unitZ = positions[unit.position + DataOffsetPositions.PositionZ]!
 
+		const rotation = setup.drawables.rawData[unit.drawable + DataOffsetDrawables.Rotation]!
+
 		const activityStartTick = setup.withActivities.rawData[unit.withActivity + DataOffsetWithActivity.StartTick]!
 
 		batch.count++
-		batch.unitPositions.push(unitX, unitY, unitZ, activityStartTick)
+		batch.unitPositions.push(unitX, unitY, unitZ, rotation, activityStartTick)
 	},
 	executeBatch(setup: T, ctx: RenderContext, batch: B): void {
 		const count = batch.count
