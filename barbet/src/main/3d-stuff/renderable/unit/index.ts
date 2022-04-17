@@ -75,17 +75,18 @@ function preparePrograms(renderer: MainRenderer, modelBuffer: GPUBuffer, modelEl
 			}
 
 
+			vao.bind()
 			modelBuffer.bind()
-			program.enableAttribute(program.attributes['modelPosition'], 3, true, 7 * 4, 0, 0)
-			program.enableAttribute(program.attributes['flags'], 1, true, 7 * 4, 6 * 4, 0)
+			const floatSize = Float32Array.BYTES_PER_ELEMENT
+			program.enableAttribute(program.attributes['modelPosition'], 3, true, 7 * floatSize, 0, 0)
+			program.enableAttribute(program.attributes['flags'], 1, true, 7 * floatSize, 6 * floatSize, 0)
 
 
 			unitDataBuffer.bind()
-			program.enableAttribute(program.attributes['worldPosition'], 3, true, 6 * 4, 0, 1)
-			program.enableAttribute(program.attributes['unitId'], 1, true, 6 * 4, 3 * 4, 1)
-			program.enableAttribute(program.attributes['colorPaletteId'], 1, true, 6 * 4, 3 * 4, 1)
-			program.enableAttribute(program.attributes['activityStartTick'], 1, true, 6 * 4, 4 * 4, 1)
-			program.enableAttribute(program.attributes['unitRotation'], 1, true, 6 * 4, 5 * 4, 1)
+			program.enableAttribute(program.attributes['worldPosition'], 3, true, 6 * floatSize, 0, 1)
+			program.enableAttribute(program.attributes['unitId'], 1, true, 6 * floatSize, 3 * floatSize, 1)
+			program.enableAttribute(program.attributes['activityStartTick'], 1, true, 6 * floatSize, 4 * floatSize, 1)
+			program.enableAttribute(program.attributes['unitRotation'], 1, true, 6 * floatSize, 5 * floatSize, 1)
 
 			programs.push(program)
 		}
@@ -162,14 +163,16 @@ export const createNewUnitRenderable = (renderer: MainRenderer,
 			program.use()
 			const unitData = []
 
+			const argument = forMousePicker
+				? (record.thisId / 256)
+				: drawables[record.drawable + DataOffsetDrawables.ColorPaletteId]!
 			unitData.push(unitX, unitY, unitZ,
-				forMousePicker
-					? (record.thisId / 256)
-					: drawables[record.drawable + DataOffsetDrawables.ColorPaletteId]!,
+				argument,
 				activityStartTick,
 				drawables[record.drawable + DataOffsetDrawables.Rotation]!)
 
 			unitDataBuffer.setContent(new Float32Array(unitData))
+			modelBuffer.bind()
 
 
 			gl.uniformMatrix4fv(program.uniforms['combinedMatrix'], false, toGl(combinedMatrix))

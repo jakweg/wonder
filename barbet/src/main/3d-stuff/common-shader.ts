@@ -3,7 +3,7 @@ import { GlProgram, MainRenderer } from './main-renderer'
 
 export const VersionHeader = () => `#version 300 es`
 
-export const PrecisionHeader = () => `precision mediump float;`
+export const PrecisionHeader = () => `precision highp float;`
 
 export const PIConstantHeader = () => `const float PI = ${Math.PI};\nconst float PI_OVER1 = ${1 / Math.PI};`
 

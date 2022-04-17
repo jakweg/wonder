@@ -24,7 +24,7 @@ void main() {
 
 export const fragmentShaderSource = `${VersionHeader()}
 ${PrecisionHeader()}
-out vec4 finalColor;
+out vec3 finalColor;
 in vec3 v_vertexPosition;
 flat in vec3 v_normal;
 flat in vec3 v_color;
@@ -35,9 +35,8 @@ const float ambientLight = 0.3;
 void main() {
 	vec3 normal = v_normal;
 	vec3 lightDirection = normalize(lightPosition - v_currentPosition);
-	float diffuse = max(dot(normal, lightDirection), ambientLight);
-	vec3 lightColor = vec3(1,1,1);
-	finalColor = vec4(v_color * lightColor * diffuse, 1);
+	float diffuse = clamp(dot(normal, lightDirection), ambientLight, 1.0);
+	finalColor = v_color * diffuse;
 }
 `
 

@@ -1,6 +1,7 @@
 import { queryBuildingDataById } from '../entities/queries'
 import { DataOffsetPositions, DataOffsetWithActivity, EntityTraitIndicesRecord } from '../entities/traits'
 import { GameState } from '../game-state'
+import * as activityBuilding from './building'
 import { ActivityId } from './index'
 import * as activityWalkingByPathRoot from './walking-by-path-root'
 

@@ -51,17 +51,16 @@ in vec3 a_worldPosition;
 in float a_unitRotation;
 in float a_flags;
 in float a_activityStartTick;
+in float a_unitId; // or a_colorPaletteId
 uniform vec3 u_times; // time, gameTime, gameTick
 `)
 	if (forMousePicker) parts.push(`
 uniform mat4 u_combinedMatrix;
 flat out vec4 v_color0;
 flat out vec3 v_color1;
-in float a_unitId;
 `)
 	else parts.push(`
 uniform mat4 u_combinedMatrix;
-in float a_colorPaletteId;
 flat out vec3 v_currentPosition;
 flat out int v_colorPaletteId;
 flat out vec3 v_normal;
@@ -71,16 +70,16 @@ flat out vec3 v_normal;
 	parts.push(`
 void main() {
 	vec3 worldPosition = a_worldPosition;
-	int flagsAsInt = int(a_flags);
+	int flagsAsInt = int(a_flags) + int(a_unitId * 0.0);
 `)
 	if (!forMousePicker)
 		parts.push(`
 	v_normal = vec3(ivec3(((flagsAsInt >> 4) & 3) - 1, ((flagsAsInt >> 2) & 3) - 1, (flagsAsInt & 3) - 1));
 	if ((flagsAsInt & ${UnitBodyPart.MASK_BODY_PART}) == ${UnitBodyPart.FLAG_PART_FACE}) {
-		v_colorPaletteId = int(a_colorPaletteId) * 9 + 6;
+		v_colorPaletteId = int(int(a_unitId) * 9 + 6);
 	} else {
 		bool isProvokingTop = (flagsAsInt & ${UnitBodyPart.MASK_PROVOKING}) == ${UnitBodyPart.FLAG_PROVOKING_TOP};
-		v_colorPaletteId = (isProvokingTop ? (int(a_colorPaletteId) * 9 + 3) : int(a_colorPaletteId) * 9);
+		v_colorPaletteId = int((isProvokingTop ? (int(a_unitId) * 9 + 3) : int(a_unitId) * 9));
 	}
 	`)
 
@@ -153,18 +152,18 @@ void main() {
 
 export const standardFragmentShaderSource = `${VersionHeader()}
 ${PrecisionHeader()}
-out vec4 finalColor;
+out vec3 finalColor;
 flat in int v_colorPaletteId;
 flat in vec3 v_normal;
 flat in vec3 v_currentPosition;
 uniform vec3 u_lightPosition;
-const float ambientLight = 0.5;
+const float ambientLight = 0.4;
 ${buildShaderColorArray('unitColors')}
 void main() {
 	vec3 lightDirection = normalize(vec3(u_lightPosition) - v_currentPosition);
-	float diffuse = max(sqrt(dot(v_normal, lightDirection)), ambientLight);
+	float diffuse =  clamp(sqrt(dot(v_normal, lightDirection)), ambientLight, 1.0);
 	vec3 color = vec3(unitColors[v_colorPaletteId], unitColors[v_colorPaletteId + 1], unitColors[v_colorPaletteId + 2]);
-	finalColor = vec4(color * diffuse, 1);
+	finalColor = color * diffuse;
 }
 `
 
@@ -175,7 +174,6 @@ export type Attributes =
 	| 'worldPosition'
 	| 'flags'
 	| 'unitId'
-	| 'colorPaletteId'
 	| 'activityStartTick'
 	| 'unitRotation'
 
