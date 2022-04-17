@@ -1,12 +1,12 @@
-import activityBuildingRoot from '../3d-stuff/game-state/activities/buildingRoot'
-import activityIdle from '../3d-stuff/game-state/activities/idle'
-import activityItemPickupRoot from '../3d-stuff/game-state/activities/item-pickup-root'
-import { BuildingId } from '../3d-stuff/game-state/buildings/building'
-import { DataOffsetPositions, EntityTrait } from '../3d-stuff/game-state/entities/traits'
-import { GameState } from '../3d-stuff/game-state/game-state'
 import { spawnBuilding } from '../3d-stuff/renderable/input-reactor'
-import { BlockId } from '../3d-stuff/world/block'
-import { ItemType } from '../3d-stuff/world/item'
+import * as activityBuildingRoot from '../game-state/activities/buildingRoot'
+import * as activityIdle from '../game-state/activities/idle'
+import * as activityItemPickupRoot from '../game-state/activities/item-pickup-root'
+import { BuildingId } from '../game-state/buildings'
+import { DataOffsetPositions, EntityTrait } from '../game-state/entities/traits'
+import { GameState } from '../game-state/game-state'
+import { BlockId } from '../game-state/world/block'
+import { ItemType } from '../game-state/world/item'
 
 export function fillEmptyWorldWithDefaultData(gameState: GameState) {
 

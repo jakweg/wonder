@@ -1,4 +1,4 @@
-import { UnitBodyPart } from './unit-shaders'
+import { UnitBodyPart } from './shaders'
 
 export const buildUnitModel = () => {
 	const basicPositions: number[] = [

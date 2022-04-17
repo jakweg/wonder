@@ -1,5 +1,5 @@
-import * as mat4 from './util/matrix/mat4'
-import * as vec3 from './util/matrix/vec3'
+import * as mat4 from '@matrix//mat4'
+import * as vec3 from '@matrix//vec3'
 import { createNewBuffer } from './util/shared-memory'
 
 const FOV = Math.PI / 2

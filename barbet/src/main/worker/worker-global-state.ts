@@ -1,5 +1,5 @@
-import { GameState } from '../3d-stuff/game-state/game-state'
-import { createNewStateUpdater } from '../3d-stuff/game-state/state-updater'
+import { GameState } from '../game-state/game-state'
+import { createNewStateUpdater } from '../game-state/state-updater'
 import Mutex, { createMutexFromReceived, createNewMutex } from '../util/mutex'
 
 export let globalMutex: Mutex = createNewMutex()

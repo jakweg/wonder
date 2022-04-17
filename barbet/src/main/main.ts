@@ -1,4 +1,3 @@
-import { StateUpdater } from './3d-stuff/game-state/state-updater'
 import {
 	CreateGameArguments,
 	EnvironmentConnection,
@@ -6,6 +5,7 @@ import {
 	loadEnvironment,
 	SaveMethod,
 } from './environments/loader'
+import { StateUpdater } from './game-state/state-updater'
 import { bindSettingsListeners } from './html-controls/settings'
 import {
 	bindFrontendVariablesToCanvas,

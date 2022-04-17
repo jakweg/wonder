@@ -1,7 +1,7 @@
-import { GameState } from '../3d-stuff/game-state/game-state'
-import { StateUpdater, stateUpdaterFromReceived } from '../3d-stuff/game-state/state-updater'
 import { startRenderingGame } from '../3d-stuff/renderable/render-context'
 import { Camera } from '../camera'
+import { createGameStateForRenderer, GameState } from '../game-state/game-state'
+import { StateUpdater, stateUpdaterFromReceived } from '../game-state/state-updater'
 import { initFrontedVariablesFromReceived } from '../util/frontend-variables-updaters'
 import { setMessageHandler } from '../worker/message-handler'
 import SettingsContainer from '../worker/observable-settings'
@@ -10,6 +10,7 @@ import { WorkerController } from '../worker/worker-controller'
 import { globalMutex, globalWorkerDelay } from '../worker/worker-global-state'
 import {
 	ConnectArguments,
+	DebugCommandArguments,
 	EnvironmentConnection,
 	SaveGameArguments,
 	StartRenderArguments,
@@ -41,7 +42,7 @@ export const connect = async (args: ConnectArguments): Promise<EnvironmentConnec
 	})
 
 	setMessageHandler('game-snapshot-for-renderer', (data) => {
-		decodedGame = GameState.forRenderer(data['game'])
+		decodedGame = createGameStateForRenderer(data['game'])
 
 		updater = stateUpdaterFromReceived(globalMutex, data['updater'])
 		gameResolveCallback({'state': decodedGame, 'updater': updater})
@@ -69,6 +70,9 @@ export const connect = async (args: ConnectArguments): Promise<EnvironmentConnec
 			updateWorker.replier.send('terminate-game', args)
 			renderingCancelCallback?.()
 			renderingCancelCallback = decodedGame = updater = null
+		},
+		debugCommand(_: DebugCommandArguments) {
+			console.log('debug command not implemented')
 		},
 	}
 }

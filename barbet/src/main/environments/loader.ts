@@ -1,6 +1,6 @@
-import { GameState } from '../3d-stuff/game-state/game-state'
-import { StateUpdater } from '../3d-stuff/game-state/state-updater'
 import { DEBUG, FORCE_ENV_ZERO, JS_ROOT } from '../build-info'
+import { GameState } from '../game-state/game-state'
+import { StateUpdater } from '../game-state/state-updater'
 import { frontedVariablesBuffer } from '../util/frontend-variables'
 import { sharedMemoryIsAvailable } from '../util/shared-memory'
 import SettingsContainer from '../worker/observable-settings'

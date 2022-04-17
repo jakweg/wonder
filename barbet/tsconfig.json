@@ -9,10 +9,16 @@
     "noImplicitReturns": true,
     "noImplicitOverride": true,
     "noUncheckedIndexedAccess": true,
+    "moduleResolution": "Node",
     "lib": [
       "es2021",
       "dom",
       "webworker"
-    ]
+    ],
+    "paths": {
+      "@matrix/*": [
+        "./src/main/util/matrix/*"
+      ]
+    }
   }
 }

@@ -1,7 +1,7 @@
-import { GameState } from './3d-stuff/game-state/game-state'
-import { StateUpdater, stateUpdaterFromReceived } from './3d-stuff/game-state/state-updater'
 import { startRenderingGame } from './3d-stuff/renderable/render-context'
 import { Camera } from './camera'
+import { createGameStateForRenderer, GameState } from './game-state/game-state'
+import { StateUpdater, stateUpdaterFromReceived } from './game-state/state-updater'
 import { initFrontedVariablesFromReceived } from './util/frontend-variables-updaters'
 import { takeControlOverWorkerConnection } from './worker/connections-manager'
 import { Connection, setMessageHandler } from './worker/message-handler'
@@ -63,7 +63,7 @@ setMessageHandler('terminate-game', () => {
 const considerStartRendering = () => {
 	if (decodedGame === null && gameSnapshot !== null) {
 		const snapshot = gameSnapshot as any
-		decodedGame = GameState.forRenderer(snapshot['game'])
+		decodedGame = createGameStateForRenderer(snapshot['game'])
 		decodedUpdater = stateUpdaterFromReceived(globalMutex, snapshot['updater'])
 	}
 

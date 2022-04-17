@@ -1,4 +1,4 @@
-import { STANDARD_GAME_TICK_RATE } from '../3d-stuff/game-state/state-updater'
+import { STANDARD_GAME_TICK_RATE } from '../game-state/state-updater'
 import { getFromLocalStorage, putInLocalStorage } from './serializable-settings'
 
 const settingsToDefaults = {
