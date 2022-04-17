@@ -1,11 +1,11 @@
-import EntityContainer from '../3d-stuff/game-state/entities/entity-container'
-import { GameState } from '../3d-stuff/game-state/game-state'
-import { GroundItemsIndex } from '../3d-stuff/game-state/ground-items-index'
-import { PathFinder } from '../3d-stuff/game-state/path-finder'
-import { SurfaceResourcesIndex } from '../3d-stuff/game-state/surface-resources-index'
-import { TileMetaDataIndex } from '../3d-stuff/game-state/tile-meta-data-index'
-import { BlockId } from '../3d-stuff/world/block'
-import { World } from '../3d-stuff/world/world'
+import EntityContainer from '../game-state/entities/entity-container'
+import { GameState, GameStateImplementation } from '../game-state/game-state'
+import { GroundItemsIndex } from '../game-state/ground-items-index'
+import { PathFinder } from '../game-state/path-finder'
+import { SurfaceResourcesIndex } from '../game-state/surface-resources/surface-resources-index'
+import { TileMetaDataIndex } from '../game-state/tile-meta-data-index'
+import { BlockId } from '../game-state/world/block'
+import { World } from '../game-state/world/world'
 import { readSaveData } from '../util/persistance/saves-database'
 import { ArrayEncodingType, setArrayEncodingType } from '../util/persistance/serializers'
 import { fillEmptyWorldWithDefaultData } from './example-world-creator'
@@ -19,7 +19,7 @@ export const createEmptyGame = (stateBroadcastCallback: () => void): GameState =
 	const pathFinder = PathFinder.createNewQueue(tileMetaDataIndex)
 	const entityContainer = EntityContainer.createEmptyContainer()
 	const resources = SurfaceResourcesIndex.createNew(world.size)
-	const gameState = GameState.createNew(world, itemsOnGround,
+	const gameState = GameStateImplementation.createNew(world, itemsOnGround,
 		entityContainer, tileMetaDataIndex, pathFinder,
 		resources, mutex, stateBroadcastCallback)
 
@@ -32,7 +32,7 @@ export const loadGameFromDb = async (id: string, stateBroadcastCallback: () => v
 	const data = await readSaveData(id)
 	setArrayEncodingType(ArrayEncodingType.Array)
 	try {
-		return GameState.deserialize(data, globalMutex, stateBroadcastCallback)
+		return GameStateImplementation.deserialize(data, globalMutex, stateBroadcastCallback)
 	} finally {
 		setArrayEncodingType(ArrayEncodingType.None)
 	}
@@ -45,7 +45,7 @@ export const loadGameFromFile = async (file: File, stateBroadcastCallback: () =>
 		reader['onload'] = () => {
 			try {
 				setArrayEncodingType(ArrayEncodingType.String)
-				const state = GameState.deserialize(JSON.parse(reader['result'] as string), globalMutex, stateBroadcastCallback)
+				const state = GameStateImplementation.deserialize(JSON.parse(reader['result'] as string), globalMutex, stateBroadcastCallback)
 				setArrayEncodingType(ArrayEncodingType.None)
 				resolve(state)
 			} catch (e) {

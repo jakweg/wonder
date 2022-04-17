@@ -1,7 +1,8 @@
-import { createNewStateUpdater } from './3d-stuff/game-state/state-updater'
-import { computeWorldBoundingBox } from './3d-stuff/world/bounding-box'
-import { World } from './3d-stuff/world/world'
 import { SaveMethod } from './environments/loader'
+import { GameStateImplementation } from './game-state/game-state'
+import { createNewStateUpdater } from './game-state/state-updater'
+import { computeWorldBoundingBox } from './game-state/world/bounding-box'
+import { World } from './game-state/world/world'
 import { putSaveData } from './util/persistance/saves-database'
 import { ArrayEncodingType, setArrayEncodingType } from './util/persistance/serializers'
 import { takeControlOverWorkerConnection } from './worker/connections-manager'
@@ -56,14 +57,14 @@ setMessageHandler('create-game', async (args, connection) => {
 	setGlobalStateUpdater(updater)
 
 	connection.send('game-snapshot-for-renderer', {
-		'game': state.passForRenderer(),
+		'game': (state as GameStateImplementation).passForRenderer(),
 		'updater': updater.pass(),
 	})
 })
 
 setMessageHandler('save-game', async (data, connection) => {
 	const saveName = data['saveName']
-	const state = globalGameState
+	const state = globalGameState as GameStateImplementation
 	if (state === null) return
 	switch (data['method']) {
 		case SaveMethod.ToIndexedDatabase: {

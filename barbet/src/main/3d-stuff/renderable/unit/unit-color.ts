@@ -48,20 +48,21 @@ export const requireUnitColorPalette = (id: UnitColorPaletteId): UnitColorPalett
 }
 
 export const buildShaderColorArray = (variableName: string) => {
+	const fractionDigits = 8
 	const parts: string[] = []
 	const numberOfFloatsAsString = (allColorPalettes.length * 9).toString(10)
 	parts.push(`const float `, variableName, `[`, numberOfFloatsAsString, `] = float[`, numberOfFloatsAsString, `](`)
 	for (const color of allColorPalettes) {
 		parts.push(
-			color.primary[0].toFixed(8), ',',
-			color.primary[1].toFixed(8), ',',
-			color.primary[2].toFixed(8), ',',
-			color.secondary[0].toFixed(8), ',',
-			color.secondary[1].toFixed(8), ',',
-			color.secondary[2].toFixed(8), ',',
-			color.face[0].toFixed(8), ',',
-			color.face[1].toFixed(8), ',',
-			color.face[2].toFixed(8), ',',
+			color.primary[0].toFixed(fractionDigits), ',',
+			color.primary[1].toFixed(fractionDigits), ',',
+			color.primary[2].toFixed(fractionDigits), ',',
+			color.secondary[0].toFixed(fractionDigits), ',',
+			color.secondary[1].toFixed(fractionDigits), ',',
+			color.secondary[2].toFixed(fractionDigits), ',',
+			color.face[0].toFixed(fractionDigits), ',',
+			color.face[1].toFixed(fractionDigits), ',',
+			color.face[2].toFixed(fractionDigits), ',',
 		)
 	}
 	parts.pop() // remove last comma

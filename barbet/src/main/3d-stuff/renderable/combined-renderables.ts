@@ -1,13 +1,13 @@
-import { GameState } from '../game-state/game-state'
+import { GameState } from '../../game-state/game-state'
 import { MainRenderer } from '../main-renderer'
 import { createPicker } from '../mouse-picker'
-import createNewBuildingRenderable from './building/building-renderable'
-import createHeldItemRenderable from './held-item/held-item'
-import createNewItemOnGroundRenderable from './item-on-ground/item-on-ground'
+import createNewBuildingRenderable from './building'
+import createHeldItemRenderable from './held-item'
+import createNewItemOnGroundRenderable from './item-on-ground'
 import { RenderContext } from './render-context'
-import { createNewSurfaceResourcesRenderable } from './surface-resources/resource'
-import { createNewTerrainRenderable } from './terrain/terrain'
-import { createNewUnitRenderable } from './unit/unit'
+import { createNewSurfaceResourcesRenderable } from './surface-resources'
+import { createNewTerrainRenderable } from './terrain'
+import { createNewUnitRenderable } from './unit'
 
 export const createCombinedRenderable = (renderer: MainRenderer, state: GameState) => {
 	const units = createNewUnitRenderable(renderer, state)
