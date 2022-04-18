@@ -128,7 +128,7 @@ export const spawnBuilding = (game: GameState, centerX: number, centerZ: number,
 	const areaStartX = centerX - (building.maskSizeX / 2 | 0)
 	const areaStartZ = centerZ - (building.maskSizeZ / 2 | 0)
 
-	let minY = game.world.size.sizeY
+	let previousY = -1
 	for (let x = 0; x < building.maskSizeX; x++) {
 		for (let z = 0; z < building.maskSizeZ; z++) {
 			const canPlaceBuilding = game.tileMetaDataIndex.canPlaceBuilding(areaStartX + x, areaStartZ + z)
@@ -139,8 +139,10 @@ export const spawnBuilding = (game: GameState, centerX: number, centerZ: number,
 			if (y < 0)
 				return
 
-			if (y < minY)
-				minY = y
+			if (previousY !== -1 && previousY !== y)
+				return
+			if (previousY === -1)
+				previousY = y
 		}
 	}
 
@@ -148,9 +150,9 @@ export const spawnBuilding = (game: GameState, centerX: number, centerZ: number,
 		for (let z = 0; z < building.maskSizeZ; z++) {
 			const computedX = areaStartX + x
 			const computedZ = areaStartZ + z
-			for (let y = minY + 1, l = game.world.size.sizeY; y < l; y++)
+			for (let y = previousY + 1, l = game.world.size.sizeY; y < l; y++)
 				game.world.setBlock(computedX, y, computedZ, AIR_ID)
-			for (let y = 0; y <= minY; y++)
+			for (let y = 0; y <= previousY; y++)
 				game.world.setBlock(computedX, y, computedZ, BlockId.Stone)
 
 			game.tileMetaDataIndex.setBuildingPlacedAt(computedX, computedZ)
@@ -162,7 +164,7 @@ export const spawnBuilding = (game: GameState, centerX: number, centerZ: number,
 	const entity = entities.createEntity(traits)
 
 	entities.positions.rawData[entity.position + DataOffsetPositions.PositionX] = centerX
-	entities.positions.rawData[entity.position + DataOffsetPositions.PositionY] = minY + 1
+	entities.positions.rawData[entity.position + DataOffsetPositions.PositionY] = previousY + 1
 	entities.positions.rawData[entity.position + DataOffsetPositions.PositionZ] = centerZ
 	entities.buildingData.rawData[entity.buildingData + DataOffsetBuildingData.TypeId] = type
 	entities.buildingData.rawData[entity.buildingData + DataOffsetBuildingData.ProgressPointsToFull] = building.pointsToFullyBuild

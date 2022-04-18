@@ -1,6 +1,8 @@
 import { DEBUG } from '../build-info'
 import SettingsContainer from '../worker/observable-settings'
 
+const TEXTURE_PIXEL_MULTIPLIER = 1 // set 1 / 2 for half-resolution rendering
+
 type AllocatedResourceEntry = { id: any, type: 'shader' | 'program' | 'buffer' | 'vertex-array' }
 
 const obtainWebGl2ContextFromCanvas = (canvas: HTMLCanvasElement): WebGL2RenderingContext => {
@@ -201,10 +203,13 @@ export class MainRenderer {
 
 	private setUpFrameBeforeRender(gl: WebGL2RenderingContext) {
 		if (this.lastWidth !== this.width || this.lastHeight != this.height) {
-			this.canvas['width'] = this.lastWidth = this.width
-			this.canvas['height'] = this.lastHeight = this.height
+			this.lastWidth = this.width
+			this.lastHeight = this.height
+
+			this.canvas['width'] = this.width * TEXTURE_PIXEL_MULTIPLIER | 0
+			this.canvas['height'] = this.height * TEXTURE_PIXEL_MULTIPLIER | 0
 		}
-		gl.viewport(0, 0, this.width, this.height)
+		gl.viewport(0, 0, this.width * TEXTURE_PIXEL_MULTIPLIER | 0, this.height * TEXTURE_PIXEL_MULTIPLIER | 0)
 
 		gl.clearColor(0.15, 0.15, 0.15, 1)
 		gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)

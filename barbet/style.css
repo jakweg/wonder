@@ -12,6 +12,7 @@ canvas {
     box-sizing: border-box;
     background: black;
     color: #eee;
+    image-rendering: pixelated;
 }
 
 .not-loaded-body {

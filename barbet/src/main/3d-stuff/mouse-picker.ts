@@ -1,6 +1,8 @@
 import { frontedVariables, FrontendVariable } from '../util/frontend-variables'
 import { RenderContext } from './renderable/render-context'
 
+const TEXTURE_PIXEL_MULTIPLIER = 1 / 4
+
 export const enum MousePickableType {
 	Nothing,
 	Terrain,
@@ -36,8 +38,8 @@ export const createPicker = (gl: WebGL2RenderingContext,
 	let texture1: WebGLTexture | null = null
 
 	const preparePickerIfNeeded = () => {
-		const width = Atomics.load(frontedVariables, FrontendVariable.CanvasDrawingWidth)
-		const height = Atomics.load(frontedVariables, FrontendVariable.CanvasDrawingHeight)
+		const width = Atomics.load(frontedVariables, FrontendVariable.CanvasDrawingWidth) * TEXTURE_PIXEL_MULTIPLIER | 0
+		const height = Atomics.load(frontedVariables, FrontendVariable.CanvasDrawingHeight) * TEXTURE_PIXEL_MULTIPLIER | 0
 
 		if (width === textureWidth && height === textureHeight && fb !== null)
 			return
@@ -102,8 +104,8 @@ export const createPicker = (gl: WebGL2RenderingContext,
 
 			const readPixelsBuffer = new Uint8Array(8)
 			gl.readBuffer(gl.COLOR_ATTACHMENT0)
-			const pixelX = mouseX | 0
-			const pixelY = mouseY | 0
+			const pixelX = mouseX * TEXTURE_PIXEL_MULTIPLIER | 0
+			const pixelY = mouseY * TEXTURE_PIXEL_MULTIPLIER | 0
 			gl.readPixels(pixelX, pixelY, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, readPixelsBuffer, 0)
 			gl.readBuffer(gl.COLOR_ATTACHMENT1)
 			gl.readPixels(pixelX, pixelY, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, readPixelsBuffer, 4)
