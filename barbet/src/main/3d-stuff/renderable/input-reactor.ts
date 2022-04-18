@@ -1,4 +1,4 @@
-import { BuildingId, requireBuilding } from '../../game-state/buildings'
+import { BuildingId, getBuildingMask, getBuildingProgressInfo } from '../../game-state/buildings'
 import { DataOffsetBuildingData, DataOffsetPositions, EntityTrait } from '../../game-state/entities/traits'
 import { GameState, MetadataField } from '../../game-state/game-state'
 import { AIR_ID, BlockId } from '../../game-state/world/block'
@@ -123,14 +123,17 @@ const handlePick = (pickResult: MousePickerResultAny, event: EventHappened, game
 }
 
 export const spawnBuilding = (game: GameState, centerX: number, centerZ: number, type: BuildingId) => {
-	const building = requireBuilding(type)
+	const mask = getBuildingMask(type)
+	if (mask === null) return
+	const progressInfo = getBuildingProgressInfo(type)
+	if (progressInfo === null) return
 
-	const areaStartX = centerX - (building.maskSizeX / 2 | 0)
-	const areaStartZ = centerZ - (building.maskSizeZ / 2 | 0)
+	const areaStartX = centerX - (mask.sizeX / 2 | 0)
+	const areaStartZ = centerZ - (mask.sizeZ / 2 | 0)
 
 	let previousY = -1
-	for (let x = 0; x < building.maskSizeX; x++) {
-		for (let z = 0; z < building.maskSizeZ; z++) {
+	for (let x = 0; x < mask.sizeX; x++) {
+		for (let z = 0; z < mask.sizeZ; z++) {
 			const canPlaceBuilding = game.tileMetaDataIndex.canPlaceBuilding(areaStartX + x, areaStartZ + z)
 			if (!canPlaceBuilding)
 				return
@@ -146,8 +149,8 @@ export const spawnBuilding = (game: GameState, centerX: number, centerZ: number,
 		}
 	}
 
-	for (let x = 0; x < building.maskSizeX; x++)
-		for (let z = 0; z < building.maskSizeZ; z++) {
+	for (let x = 0; x < mask.sizeX; x++)
+		for (let z = 0; z < mask.sizeZ; z++) {
 			const computedX = areaStartX + x
 			const computedZ = areaStartZ + z
 			for (let y = previousY + 1, l = game.world.size.sizeY; y < l; y++)
@@ -167,7 +170,7 @@ export const spawnBuilding = (game: GameState, centerX: number, centerZ: number,
 	entities.positions.rawData[entity.position + DataOffsetPositions.PositionY] = previousY + 1
 	entities.positions.rawData[entity.position + DataOffsetPositions.PositionZ] = centerZ
 	entities.buildingData.rawData[entity.buildingData + DataOffsetBuildingData.TypeId] = type
-	entities.buildingData.rawData[entity.buildingData + DataOffsetBuildingData.ProgressPointsToFull] = building.pointsToFullyBuild
+	entities.buildingData.rawData[entity.buildingData + DataOffsetBuildingData.ProgressPointsToFull] = progressInfo.pointsToFullyBuild
 
 	game.metaData[MetadataField.LastWorldChange]++
 	game.metaData[MetadataField.LastBuildingsChange]++

@@ -1,4 +1,4 @@
-import { BuildingId, BuildingType, requireBuilding } from '../buildings'
+import { BuildingId } from '../buildings'
 import { ItemType } from '../world/item'
 import EntityContainer, { ACTIVITY_MEMORY_SIZE } from './entity-container'
 import {
@@ -136,7 +136,7 @@ export const getEntityById_drawableItem = function (container: EntityContainer, 
 }
 
 export const queryBuildingDataById = (container: EntityContainer, id: number):
-	{ position: [number, number, number], type: BuildingType, buildingProgress: number } | null => {
+	{ position: [number, number, number], typeId: BuildingId, buildingProgress: number } | null => {
 	const record = createEmptyTraitRecord()
 	const rawData = container.ids.rawData
 	for (let i = 0, l = container.ids.size; i < l; i++) {
@@ -156,7 +156,7 @@ export const queryBuildingDataById = (container: EntityContainer, id: number):
 
 			return {
 				position: [x, y, z],
-				type: requireBuilding(type),
+				typeId: type,
 				buildingProgress: progress,
 			}
 		}

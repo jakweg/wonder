@@ -1,5 +1,5 @@
 import { toGl } from '@matrix//common'
-import { BuildingId, requireBuilding } from '../../../game-state/buildings'
+import { BuildingId, getBuildingModel, getBuildingProgressInfo } from '../../../game-state/buildings'
 import { DataOffsetBuildingData, DataOffsetPositions, EntityTrait } from '../../../game-state/entities/traits'
 import { GameState, MetadataField } from '../../../game-state/game-state'
 import { createProgramFromNewShaders } from '../../common-shader'
@@ -45,7 +45,8 @@ const createNewBuildingRenderable = (renderer: MainRenderer,
 			for (const entity of game.entities
 				.iterate(EntityTrait.Position | EntityTrait.BuildingData)) {
 				const typeId = buildingData[entity.buildingData + DataOffsetBuildingData.TypeId] as BuildingId
-				const building = requireBuilding(typeId)
+				const model = getBuildingModel(typeId)
+				if (model === null) continue
 
 				const x = positions[entity.position + DataOffsetPositions.PositionX]!
 				const y = positions[entity.position + DataOffsetPositions.PositionY]!
@@ -53,12 +54,15 @@ const createNewBuildingRenderable = (renderer: MainRenderer,
 
 				const vertexCountBeforeAdd = vertexData.length / 7 | 0
 
-				const pointsToFullyBuild = buildingData[entity.buildingData + DataOffsetBuildingData.ProgressPointsToFull]!
-				let vertexes = building.vertexes
-				let indices = building.indices
+				const thisRemainingPoints = buildingData[entity.buildingData + DataOffsetBuildingData.ProgressPointsToFull]!
 
-				if (pointsToFullyBuild > 0) {
-					const state = building.inProgressStates[pointsToFullyBuild - 1]!
+				let vertexes = model.finished.vertexes
+				let indices = model.finished.indices
+				if (thisRemainingPoints > 0) {
+					const {pointsToFullyBuild} = getBuildingProgressInfo(typeId) ?? {pointsToFullyBuild: thisRemainingPoints}
+					let progress = (pointsToFullyBuild - thisRemainingPoints) / pointsToFullyBuild
+					let progressStatesCount = model.inProgressStates.length
+					const state = model.inProgressStates[progressStatesCount - 1 - (progress * progressStatesCount | 0)]!
 					vertexes = state.vertexes
 					indices = state.indices
 				}
