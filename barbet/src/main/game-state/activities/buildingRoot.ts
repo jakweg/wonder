@@ -38,7 +38,11 @@ export const perform = (game: GameState, unit: EntityTraitIndicesRecord) => {
 
 			const mask = getBuildingMask(data.typeId)
 			memory[pointer - MemoryField.Status] = Status.RequestedWalk
-			activityWalkingByPathRoot.setup(game, unit, buildingX, buildingZ, 1 + (mask?.sizeX ?? 0) / 2 | 0)
+			const xHalfMask = 1 + (mask?.sizeX ?? 0) / 2 | 0
+			const zHalfMask = 1 + (mask?.sizeZ ?? 0) / 2 | 0
+			activityWalkingByPathRoot.setup(game, unit, buildingX, buildingZ,
+				buildingX - xHalfMask, buildingX + xHalfMask,
+				buildingZ - zHalfMask, buildingZ + zHalfMask)
 			return
 		}
 		case Status.RequestedWalk: {
@@ -57,8 +61,8 @@ export const perform = (game: GameState, unit: EntityTraitIndicesRecord) => {
 			const buildingZ = data.position[2]!
 
 			const mask = getBuildingMask(data.typeId)
-			const isWithinBuildingRange = Math.abs(buildingX - meX) <= (mask?.sizeX ?? 0 / 2 | 0) + 1
-				&& Math.abs(buildingZ - meZ) <= (mask?.sizeZ ?? 0 / 2 | 0) + 1
+			const isWithinBuildingRange = Math.abs(buildingX - meX) <= ((mask?.sizeX ?? 0) / 2 | 0) + 1
+				&& Math.abs(buildingZ - meZ) <= ((mask?.sizeZ ?? 0) / 2 | 0) + 1
 
 			if (!isWithinBuildingRange) {
 				// outside the building zone, might have failed to find path, return to parent

@@ -1,3 +1,4 @@
+import { PathRequest } from '../game-state/delayed-computer'
 import { Direction } from './direction'
 import SortedList from './sorted-list'
 
@@ -35,18 +36,8 @@ interface Node extends Position {
 }
 
 export const findPathDirectionsToArea = (
-	sx: number, sy: number,
-	dx: number, dy: number,
-	areaSize: number,
+	req: PathRequest,
 	tester: WalkableTester): Direction[] | null => {
-	if ((sx | 0) !== sx || (sy | 0) !== sy || (dx | 0) !== dx || (dy | 0) !== dy)
-		throw new Error(`Invalid path finder arguments ${sx} ${sy} ${dx} ${dy}`)
-
-	const destinationRectLeft = (dx - areaSize) | 0
-	const destinationRectRight = (dx + areaSize) | 0
-	const destinationRectTop = (dy - areaSize) | 0
-	const destinationRectBottom = (dy + areaSize) | 0
-
 
 	const calculateCost = (x1: number, y1: number,
 	                       x2: number, y2: number): number => {
@@ -56,8 +47,8 @@ export const findPathDirectionsToArea = (
 		return nonDiagonalMoves * 10 + Math.min(offsetX, offsetY) * 14
 	}
 
-	const calculateCostG = (x: number, y: number) => calculateCost(x, y, sx, sy)
-	const calculateCostH = (x: number, y: number) => calculateCost(x, y, dx, dy)
+	const calculateCostG = (x: number, y: number) => calculateCost(x, y, req.startX, req.startZ)
+	const calculateCostH = (x: number, y: number) => calculateCost(x, y, req.destinationXCenter, req.destinationZCenter)
 
 	const createNode = (x: number, y: number, dir?: Direction): Node => {
 		const costG = calculateCostG(x, y)
@@ -110,7 +101,7 @@ export const findPathDirectionsToArea = (
 
 	}
 
-	openNodes.add(createNode(sx, sy))
+	openNodes.add(createNode(req.startX, req.startZ))
 
 	while (true) {
 		const current = openNodes.getAndRemoveFirst()
@@ -121,8 +112,8 @@ export const findPathDirectionsToArea = (
 
 		const cx = current.x
 		const cy = current.y
-		if (cx >= destinationRectLeft && cx <= destinationRectRight
-			&& cy >= destinationRectTop && cy <= destinationRectBottom) {
+		if (cx >= req.destinationXMin && cx <= req.destinationXMax
+			&& cy >= req.destinationZMin && cy <= req.destinationZMax) {
 			// found path!
 			const stack: Direction[] = []
 			let tmp: Node | undefined = current

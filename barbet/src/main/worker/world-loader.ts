@@ -1,7 +1,7 @@
+import { createNewDelayedComputer } from '../game-state/delayed-computer'
 import EntityContainer from '../game-state/entities/entity-container'
 import { GameState, GameStateImplementation } from '../game-state/game-state'
 import { GroundItemsIndex } from '../game-state/ground-items-index'
-import { PathFinder } from '../game-state/path-finder'
 import { SurfaceResourcesIndex } from '../game-state/surface-resources/surface-resources-index'
 import { TileMetaDataIndex } from '../game-state/tile-meta-data-index'
 import { BlockId } from '../game-state/world/block'
@@ -16,11 +16,11 @@ export const createEmptyGame = (stateBroadcastCallback: () => void): GameState =
 	const world = World.createEmpty(20, 30, 20, BlockId.Air)
 	const itemsOnGround = GroundItemsIndex.createNew(world.size)
 	const tileMetaDataIndex = TileMetaDataIndex.createNew(world.size.sizeX, world.size.sizeZ, world.rawHeightData)
-	const pathFinder = PathFinder.createNewQueue(tileMetaDataIndex)
+	const delayedComputer = createNewDelayedComputer()
 	const entityContainer = EntityContainer.createEmptyContainer()
 	const resources = SurfaceResourcesIndex.createNew(world.size)
 	const gameState = GameStateImplementation.createNew(world, itemsOnGround,
-		entityContainer, tileMetaDataIndex, pathFinder,
+		entityContainer, tileMetaDataIndex, delayedComputer,
 		resources, mutex, stateBroadcastCallback)
 
 	fillEmptyWorldWithDefaultData(gameState)

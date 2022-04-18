@@ -36,7 +36,7 @@ export const perform = (game: GameState, unit: EntityTraitIndicesRecord): void =
 		case InterruptType.Walk: {
 			const x = memory[unit.interruptible + DataOffsetInterruptible.ValueA]!
 			const y = memory[unit.interruptible + DataOffsetInterruptible.ValueB]!
-			walkingByPathRoot.setup(game, unit, x, y, 0)
+			walkingByPathRoot.setupToExact(game, unit, x, y)
 			break
 		}
 		case InterruptType.ItemPickUp: {

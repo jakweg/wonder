@@ -2,11 +2,11 @@ import Mutex, { isInWorker, Lock } from '../util/mutex'
 import { decodeArray, encodeArray } from '../util/persistance/serializers'
 import { createNewBuffer } from '../util/shared-memory'
 import { ActivityId, getActivityPerformFunction } from './activities'
+import { DelayedComputer, deserializeDelayedComputer } from './delayed-computer'
 import EntityContainer from './entities/entity-container'
 import { iterateOverEntitiesWithActivity } from './entities/queries'
 import { DataOffsetWithActivity } from './entities/traits'
 import { GroundItemsIndex } from './ground-items-index'
-import { PathFinder } from './path-finder'
 import { SurfaceResourcesIndex } from './surface-resources/surface-resources-index'
 import { TileMetaDataIndex } from './tile-meta-data-index'
 import { World } from './world/world'
@@ -54,7 +54,7 @@ export class GameStateImplementation implements GameState {
 		public readonly groundItems: GroundItemsIndex,
 		public readonly entities: EntityContainer,
 		public readonly tileMetaDataIndex: TileMetaDataIndex,
-		public readonly pathFinder: PathFinder,
+		public readonly delayedComputer: DelayedComputer,
 		public readonly surfaceResources: SurfaceResourcesIndex,
 		private readonly mutex: Mutex,
 		private readonly stateBroadcastCallback: () => void) {
@@ -69,14 +69,14 @@ export class GameStateImplementation implements GameState {
 		groundItems: GroundItemsIndex,
 		entities: EntityContainer,
 		tileMetaDataIndex: TileMetaDataIndex,
-		pathFinder: PathFinder,
+		delayedComputer: DelayedComputer,
 		surfaceResources: SurfaceResourcesIndex,
 		mutex: Mutex,
 		stateBroadcastCallback: () => void): GameStateImplementation {
 		return new GameStateImplementation(
 			new Int32Array(createNewBuffer(MetadataField.SIZE * Int32Array.BYTES_PER_ELEMENT)),
 			world, groundItems, entities,
-			tileMetaDataIndex, pathFinder, surfaceResources,
+			tileMetaDataIndex, delayedComputer, surfaceResources,
 			mutex, stateBroadcastCallback)
 	}
 
@@ -88,7 +88,7 @@ export class GameStateImplementation implements GameState {
 			world,
 			GroundItemsIndex.deserialize(object['groundItems']),
 			EntityContainer.deserialize(object['entities']),
-			tileMetaDataIndex, PathFinder.deserialize(tileMetaDataIndex, object['pathFinder']),
+			tileMetaDataIndex, deserializeDelayedComputer(object['delayedComputer']),
 			SurfaceResourcesIndex.deserialize(object['surfaceResources']),
 			mutex, stateBroadcastCallback)
 	}
@@ -106,8 +106,8 @@ export class GameStateImplementation implements GameState {
 	}
 
 	public serialize(): any {
-		if (this.pathFinder == null)
-			throw new Error('Missing pathfinder')
+		if (this.delayedComputer == null)
+			throw new Error('Missing delayedComputer')
 		return {
 			'metadata': encodeArray(this.metaData),
 			'world': this.world.serialize(),
@@ -115,7 +115,7 @@ export class GameStateImplementation implements GameState {
 			'entities': this.entities.serialize(),
 			'surfaceResources': this.surfaceResources.serialize(),
 			'tileMetaDataIndex': this.tileMetaDataIndex.serialize(),
-			'pathFinder': this.pathFinder.serialize(),
+			'delayedComputer': this.delayedComputer.serialize(),
 		}
 	}
 
@@ -124,7 +124,7 @@ export class GameStateImplementation implements GameState {
 		this.isRunningLogic = true
 		this.metaData[MetadataField.CurrentTick]++
 
-		this.pathFinder.tick(this)
+		this.delayedComputer.tick(this)
 
 		const container = this.entities
 		if (isInWorker)

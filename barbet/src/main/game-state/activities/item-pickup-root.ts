@@ -79,5 +79,5 @@ export const setup = (game: GameState, unit: EntityTraitIndicesRecord, x: number
 	memory[pointer - MemoryField.DestinationZ] = z
 	memory[pointer - MemoryField.RequestedItemType] = type
 
-	walkingByPathRoot.setup(game, unit, x, z, 1)
+	walkingByPathRoot.setupToRect(game, unit, x, z, 1)
 }
