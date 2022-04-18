@@ -1,4 +1,5 @@
 import { UnitShaderCreationOptions } from '../../3d-stuff/renderable/unit/shaders'
+import { queryForAnyUnfinishedBuildingId } from '../entities/queries'
 import {
 	DataOffsetInterruptible,
 	DataOffsetWithActivity,
@@ -7,12 +8,17 @@ import {
 	requireTrait,
 } from '../entities/traits'
 import { GameState } from '../game-state'
-import { ItemType } from '../world/item'
 import * as activityBuildingRoot from './buildingRoot'
 import { ActivityId } from './index'
-import { InterruptType } from './interrupt'
-import * as activityItemPickupRoot from './item-pickup-root'
+import { interruptBuild, InterruptType } from './interrupt'
 import * as walkingByPathRoot from './walking-by-path-root'
+
+const JOB_CHECK_INTERVAL = 5 * 20
+
+const enum MemoryField {
+	NextJobAttemptTick,
+	SIZE,
+}
 
 export const setup = (game: GameState, unit: EntityTraitIndicesRecord) => {
 	requireTrait(unit.thisTraits, EntityTrait.Interruptible)
@@ -21,38 +27,49 @@ export const setup = (game: GameState, unit: EntityTraitIndicesRecord) => {
 
 	withActivitiesMemory[unit.withActivity + DataOffsetWithActivity.CurrentId] = ActivityId.Idle
 	withActivitiesMemory[unit.withActivity + DataOffsetWithActivity.StartTick] = game.currentTick
-	withActivitiesMemory[unit.withActivity + DataOffsetWithActivity.MemoryPointer] = 0
+	withActivitiesMemory[unit.withActivity + DataOffsetWithActivity.MemoryPointer] = MemoryField.SIZE
+	const pointer = withActivitiesMemory[unit.withActivity + DataOffsetWithActivity.MemoryPointer]! + unit.activityMemory
+	const memory = game.entities.activitiesMemory.rawData
+	memory[pointer - MemoryField.NextJobAttemptTick] = 0
 }
 
 export const perform = (game: GameState, unit: EntityTraitIndicesRecord): void => {
+	const withActivitiesMemory = game.entities.withActivities.rawData
+	const interruptibles = game.entities.interruptibles.rawData
 
-	const memory = game.entities.interruptibles.rawData
-	const interrupt = memory[unit.interruptible + DataOffsetInterruptible.InterruptType]! as InterruptType
-	if (interrupt === InterruptType.None) return
+	const interrupt = interruptibles[unit.interruptible + DataOffsetInterruptible.InterruptType]! as InterruptType
+	if (interrupt !== InterruptType.None) {
 
-	memory[unit.interruptible + DataOffsetInterruptible.InterruptType]! = InterruptType.None
+		interruptibles[unit.interruptible + DataOffsetInterruptible.InterruptType]! = InterruptType.None
 
-	switch (interrupt) {
-		case InterruptType.Walk: {
-			const x = memory[unit.interruptible + DataOffsetInterruptible.ValueA]!
-			const y = memory[unit.interruptible + DataOffsetInterruptible.ValueB]!
-			walkingByPathRoot.setupToExact(game, unit, x, y)
-			break
+		switch (interrupt) {
+			case InterruptType.Walk: {
+				const x = interruptibles[unit.interruptible + DataOffsetInterruptible.ValueA]!
+				const y = interruptibles[unit.interruptible + DataOffsetInterruptible.ValueB]!
+				walkingByPathRoot.setupToExact(game, unit, x, y)
+				return
+			}
+			case InterruptType.BuildSomeBuilding: {
+				const id = interruptibles[unit.interruptible + DataOffsetInterruptible.ValueA]!
+				activityBuildingRoot.setup(game, unit, id)
+				return
+			}
+			default:
+				throw new Error(`Invalid interrupt ${interrupt}`)
 		}
-		case InterruptType.ItemPickUp: {
-			const x = memory[unit.interruptible + DataOffsetInterruptible.ValueA]!
-			const y = memory[unit.interruptible + DataOffsetInterruptible.ValueB]!
-			const type = memory[unit.interruptible + DataOffsetInterruptible.ValueC]! as ItemType
-			activityItemPickupRoot.setup(game, unit, x, y, type)
-			break
+	}
+
+	const pointer = withActivitiesMemory[unit.withActivity + DataOffsetWithActivity.MemoryPointer]! + unit.activityMemory
+	const memory = game.entities.activitiesMemory.rawData
+	const now = game.currentTick
+	if (memory[pointer - MemoryField.NextJobAttemptTick]! <= now) {
+		memory[pointer - MemoryField.NextJobAttemptTick] = now + JOB_CHECK_INTERVAL
+
+		const unfinishedBuildingId = queryForAnyUnfinishedBuildingId(game.entities)
+		if (unfinishedBuildingId !== null) {
+			interruptBuild(game.entities, unit, unfinishedBuildingId)
 		}
-		case InterruptType.BuildSomeBuilding: {
-			const id = memory[unit.interruptible + DataOffsetInterruptible.ValueA]!
-			activityBuildingRoot.setup(game, unit, id)
-			break
-		}
-		default:
-			throw new Error(`Invalid interrupt ${interrupt}`)
+
 	}
 }
 

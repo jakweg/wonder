@@ -1,14 +1,22 @@
 import { getBuildingMask } from '../buildings'
 import { queryBuildingDataById } from '../entities/queries'
-import { DataOffsetPositions, DataOffsetWithActivity, EntityTraitIndicesRecord } from '../entities/traits'
+import {
+	DataOffsetItemHoldable,
+	DataOffsetPositions,
+	DataOffsetWithActivity,
+	EntityTraitIndicesRecord,
+} from '../entities/traits'
 import { GameState } from '../game-state'
+import { ItemType } from '../world/item'
 import * as activityBuilding from './building'
 import { ActivityId } from './index'
+import * as activityItemPickRoot from './item-pickup-root'
 import * as activityWalkingByPathRoot from './walking-by-path-root'
 
 const enum Status {
-	None,
-	RequestedWalk,
+	Initial,
+	AfterRequestedItem,
+	AfterRequestedWalk,
 }
 
 const enum MemoryField {
@@ -27,31 +35,48 @@ export const perform = (game: GameState, unit: EntityTraitIndicesRecord) => {
 	const status = memory[pointer - MemoryField.Status]! as Status
 
 	switch (status) {
-		case Status.None: {
+		case Status.Initial: {
+			const itemHoldables = game.entities.itemHoldables.rawData
+			const hasItem = itemHoldables[unit.itemHoldable + DataOffsetItemHoldable.ItemId] !== ItemType.None
+
+			memory[pointer - MemoryField.Status] = Status.AfterRequestedItem
+			if (!hasItem) {
+				activityItemPickRoot.setupFindAndPickup(game, unit, ItemType.Box)
+			}
+			return
+		}
+		case Status.AfterRequestedItem: {
 			const data = queryBuildingDataById(game.entities, buildingId)
 			if (data === null) {
 				// this building doesn't exist, return to parent activity
 				break
 			}
+			const itemHoldables = game.entities.itemHoldables.rawData
+			const hasItem = itemHoldables[unit.itemHoldable + DataOffsetItemHoldable.ItemId] !== ItemType.None
+			if (!hasItem) break
+
 			const buildingX = data.position[0]!
 			const buildingZ = data.position[2]!
 
 			const mask = getBuildingMask(data.typeId)
-			memory[pointer - MemoryField.Status] = Status.RequestedWalk
 			const xHalfMask = 1 + (mask?.sizeX ?? 0) / 2 | 0
 			const zHalfMask = 1 + (mask?.sizeZ ?? 0) / 2 | 0
+			memory[pointer - MemoryField.Status] = Status.AfterRequestedWalk
 			activityWalkingByPathRoot.setup(game, unit, buildingX, buildingZ,
 				buildingX - xHalfMask, buildingX + xHalfMask,
 				buildingZ - zHalfMask, buildingZ + zHalfMask)
 			return
 		}
-		case Status.RequestedWalk: {
-
+		case Status.AfterRequestedWalk: {
 			const data = queryBuildingDataById(game.entities, buildingId)
 			if (data === null) {
 				// this building doesn't exist, return to parent activity
 				break
 			}
+
+			const itemHoldables = game.entities.itemHoldables.rawData
+			const hasItem = itemHoldables[unit.itemHoldable + DataOffsetItemHoldable.ItemId] !== ItemType.None
+			if (!hasItem) break
 
 			const positionsRawData = game.entities.positions.rawData
 			const meX = positionsRawData[unit.position + DataOffsetPositions.PositionX]!
@@ -97,6 +122,6 @@ export const setup = (game: GameState, unit: EntityTraitIndicesRecord, buildingI
 	withActivitiesMemory[unit.withActivity + DataOffsetWithActivity.CurrentId] = ActivityId.BuildingRoot
 
 	memory[pointer - MemoryField.ReturnTo] = returnTo
-	memory[pointer - MemoryField.Status] = Status.None
+	memory[pointer - MemoryField.Status] = Status.Initial
 	memory[pointer - MemoryField.BuildingId] = buildingId
 }

@@ -65,13 +65,18 @@ export class GroundItemsIndex {
 	}
 
 	public getItem(x: number, z: number): ItemType {
-		this.validateCoords(x, z)
+		if (this.areCoordsInvalid(x, z))
+			return ItemType.None
 		return this.rawItemData[z * this.sizeX + x + 1]! as ItemType
 	}
 
 	private validateCoords(x: number, z: number): void {
-		if (x < 0 || x >= this.sizeX || (x | 0) !== x
-			|| z < 0 || z >= this.sizeZ || (z | 0) !== z)
+		if (this.areCoordsInvalid(x, z))
 			throw new Error(`Invalid coords ${x} ${z}`)
+	}
+
+	private areCoordsInvalid(x: number, z: number) {
+		return x < 0 || x >= this.sizeX || (x | 0) !== x
+			|| z < 0 || z >= this.sizeZ || (z | 0) !== z
 	}
 }

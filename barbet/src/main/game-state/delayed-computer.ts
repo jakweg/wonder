@@ -1,6 +1,7 @@
 import { Direction } from '../util/direction'
 import { findPathDirectionsToArea } from '../util/path-finder'
 import { GameState } from './game-state'
+import { ItemType } from './world/item'
 
 const EMPTY_LIST = Object.freeze([] as Direction[])
 
@@ -23,14 +24,25 @@ export interface PathRequest {
 
 interface ItemRequest {
 	readonly type: RequestType.FindItem
+	readonly searchCenterX: number
+	readonly searchCenterZ: number
+	readonly filterType: ItemType
 }
 
 type Request = { readonly id: number } & (PathRequest | ItemRequest)
 
-interface Result {
+export interface PathResult {
 	readonly found: boolean
 	readonly directions: readonly Direction[]
 }
+
+export interface ItemResult {
+	readonly found: boolean
+	readonly foundAtX: number
+	readonly foundAtZ: number
+}
+
+type Result = PathResult | ItemResult
 
 export interface DelayedComputer {
 	tick(game: GameState): void
@@ -71,9 +83,13 @@ class DelayedComputerImpl implements DelayedComputer {
 				case RequestType.FindPath:
 					result = handlePathRequest(request, game)
 					break
+				case RequestType.FindItem:
+					result = handleItemRequest(request, game)
+					break
+				default:
+					throw new Error()
 			}
-			if (result !== null)
-				this.results.set(request.id, result)
+			this.results.set(request.id, result)
 		}
 	}
 
@@ -87,13 +103,32 @@ class DelayedComputerImpl implements DelayedComputer {
 }
 
 
-const handlePathRequest = (req: PathRequest, game: GameState): Result | null => {
+const handlePathRequest = (req: PathRequest, game: GameState): Result => {
 	const directions = findPathDirectionsToArea(req, game.tileMetaDataIndex.walkableTester)
 
 	if (directions === null)
 		return {found: false, directions: EMPTY_LIST}
 	else
 		return {found: true, directions: directions}
+}
+
+const handleItemRequest = (req: ItemRequest, game: GameState): Result => {
+	const maxSizeToSearch = Math.max(game.world.size.sizeX, game.world.size.sizeZ)
+	for (let i = 0; i < maxSizeToSearch; i++) {
+		for (let x = req.searchCenterX - i, tx = req.searchCenterX + i; x <= tx; x++) {
+			for (let z = req.searchCenterZ - i, tz = req.searchCenterZ + i; z < tz; z++) {
+				const item = game.groundItems.getItem(x, z)
+				if (item === req.filterType)
+					return {
+						found: true,
+						foundAtX: x,
+						foundAtZ: z,
+					}
+			}
+		}
+	}
+
+	return {found: false, foundAtX: -1, foundAtZ: -1}
 }
 
 export const createNewDelayedComputer = (): DelayedComputer => {

@@ -1,5 +1,5 @@
 import { Direction } from '../../util/direction'
-import { RequestType } from '../delayed-computer'
+import { PathResult, RequestType } from '../delayed-computer'
 import {
 	DataOffsetDrawables,
 	DataOffsetInterruptible,
@@ -42,7 +42,7 @@ export const perform = (game: GameState, unit: EntityTraitIndicesRecord) => {
 	const status: Status = memory[pointer - MemoryField.Status]!
 	const requestId = memory[pointer - MemoryField.PathRequestId]!
 	const path = (game as GameStateImplementation)
-		.delayedComputer.getResult(requestId)
+		.delayedComputer.getResult(requestId) as PathResult
 
 	switch (status) {
 		case Status.Initial: {

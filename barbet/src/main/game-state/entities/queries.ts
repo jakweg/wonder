@@ -204,3 +204,24 @@ export const updateBuildingProgress = (container: EntityContainer, id: number, n
 		if (hasTrait(traits, EntityTrait.BuildingData)) record.buildingData += DataOffsetBuildingData.SIZE
 	}
 }
+
+
+export const queryForAnyUnfinishedBuildingId = (container: EntityContainer): number | null => {
+	const record = createEmptyTraitRecord()
+	const rawData = container.ids.rawData
+	for (let i = 0, l = container.ids.size; i < l; i++) {
+		const idIndex = i * DataOffsetIds.SIZE + 1
+		const thisId = rawData[idIndex + DataOffsetIds.ID]!
+		const traits = rawData[idIndex + DataOffsetIds.Traits]!
+
+		if (hasTrait(traits, EntityTrait.Alive | EntityTrait.BuildingData)) {
+			const buildingData = container.buildingData.rawData
+			const points = buildingData[record.buildingData + DataOffsetBuildingData.ProgressPointsToFull]!
+			if (points > 0)
+				return thisId
+		}
+
+		if (hasTrait(traits, EntityTrait.BuildingData)) record.buildingData += DataOffsetBuildingData.SIZE
+	}
+	return null
+}

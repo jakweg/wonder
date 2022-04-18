@@ -83,9 +83,9 @@ class EntityContainer {
 		this.itemHoldables,
 		this.interruptibles,
 	])
-	private nextEntityId: number = 1
 
 	constructor(
+		private nextEntityId: number,
 		private readonly allocator: ContainerAllocator<Int32Array>,
 	) {
 	}
@@ -96,7 +96,7 @@ class EntityContainer {
 		const allocator = createInt32Allocator([],
 			() => container.buffersChanged = true)
 
-		return container = new EntityContainer(allocator)
+		return container = new EntityContainer(1, allocator)
 	}
 
 	public static fromReceived(object: any): EntityContainer {
@@ -104,7 +104,7 @@ class EntityContainer {
 		const allocator = createInt32Allocator(object['buffers'],
 			() => container.buffersChanged = true)
 
-		container = new EntityContainer(allocator)
+		container = new EntityContainer(-1, allocator)
 		return container
 	}
 
@@ -115,7 +115,9 @@ class EntityContainer {
 		const allocator = createInt32Allocator(buffers,
 			() => container.buffersChanged = true)
 
-		container = new EntityContainer(allocator)
+		container = new EntityContainer(
+			object['nextEntityId'],
+			allocator)
 		return container
 	}
 
@@ -140,6 +142,7 @@ class EntityContainer {
 
 	public serialize(): any {
 		return {
+			'nextEntityId': this.nextEntityId,
 			'buffers': this.allocator.buffers.map(array => encodeArray(new Uint8Array(array))),
 		}
 	}
