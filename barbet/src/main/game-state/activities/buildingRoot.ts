@@ -1,4 +1,9 @@
-import { getRotationByChangeInCoords } from '../../util/direction'
+import {
+	Direction,
+	getChangeInXByRotation,
+	getChangeInZByRotation,
+	getRotationByChangeInCoords,
+} from '../../util/direction'
 import { getBuildingMask } from '../buildings'
 import { queryBuildingDataById } from '../entities/queries'
 import {
@@ -82,15 +87,17 @@ export const perform = (game: GameState, unit: EntityTraitIndicesRecord) => {
 			if (!hasItem) break
 
 			const positionsRawData = game.entities.positions.rawData
-			const meX = positionsRawData[unit.position + DataOffsetPositions.PositionX]!
-			const meZ = positionsRawData[unit.position + DataOffsetPositions.PositionZ]!
+			const meX: number = positionsRawData[unit.position + DataOffsetPositions.PositionX]!
+			const meZ: number = positionsRawData[unit.position + DataOffsetPositions.PositionZ]!
 
 			const buildingX = data.position[0]!
 			const buildingZ = data.position[2]!
 
 			const mask = getBuildingMask(data.typeId)
-			const isWithinBuildingRange = Math.abs(buildingX - meX) <= ((mask?.sizeX ?? 0) / 2 | 0) + 1
-				&& Math.abs(buildingZ - meZ) <= ((mask?.sizeZ ?? 0) / 2 | 0) + 1
+			const maskX = mask?.sizeX ?? 0
+			const maskZ = mask?.sizeZ ?? 0
+			const isWithinBuildingRange = Math.abs(buildingX - meX) <= (maskX / 2 | 0) + 1
+				&& Math.abs(buildingZ - meZ) <= (maskZ / 2 | 0) + 1
 
 			if (!isWithinBuildingRange) {
 				// outside the building zone, might have failed to find path, return to parent
@@ -103,9 +110,23 @@ export const perform = (game: GameState, unit: EntityTraitIndicesRecord) => {
 			withActivitiesMemory[unit.withActivity + DataOffsetWithActivity.CurrentId] = returnTo
 
 			if ((unit.thisTraits & EntityTrait.Drawable) === EntityTrait.Drawable) {
-				const direction = getRotationByChangeInCoords(Math.sign(buildingX - meX), Math.sign(buildingZ - meZ))
 				const drawablesData = game.entities.drawables.rawData
-				drawablesData[unit.drawable + DataOffsetDrawables.Rotation] = direction
+				const currentDirection = (drawablesData[unit.drawable + DataOffsetDrawables.Rotation]! & Direction.MaskCurrentRotation) as Direction
+				const changeX = getChangeInXByRotation(currentDirection)
+				const changeZ = getChangeInZByRotation(currentDirection)
+
+				const isRotatedToBuilding = meX + changeX >= buildingX - (maskX / 2 | 0)
+					&& meX + changeX <= buildingX + (maskX / 2 | 0)
+					&& meZ + changeZ >= buildingZ - (maskZ / 2 | 0)
+					&& meZ + changeZ <= buildingZ + (maskZ / 2 | 0)
+
+				if (!isRotatedToBuilding) {
+					const changeX = Math.sign(buildingX - meX)
+					const changeZ = Math.sign(buildingZ - meZ)
+					if (changeX !== 0 && changeZ !== 0) {
+						drawablesData[unit.drawable + DataOffsetDrawables.Rotation] = getRotationByChangeInCoords(changeX, changeZ)
+					}
+				}
 			}
 
 			activityBuilding.setup(game, unit, buildingId)
