@@ -1,9 +1,12 @@
+import { getRotationByChangeInCoords } from '../../util/direction'
 import { getBuildingMask } from '../buildings'
 import { queryBuildingDataById } from '../entities/queries'
 import {
+	DataOffsetDrawables,
 	DataOffsetItemHoldable,
 	DataOffsetPositions,
 	DataOffsetWithActivity,
+	EntityTrait,
 	EntityTraitIndicesRecord,
 } from '../entities/traits'
 import { GameState } from '../game-state'
@@ -98,6 +101,12 @@ export const perform = (game: GameState, unit: EntityTraitIndicesRecord) => {
 			const returnTo = memory[pointer - MemoryField.ReturnTo]!
 			withActivitiesMemory[unit.withActivity + DataOffsetWithActivity.MemoryPointer] -= MemoryField.SIZE
 			withActivitiesMemory[unit.withActivity + DataOffsetWithActivity.CurrentId] = returnTo
+
+			if ((unit.thisTraits & EntityTrait.Drawable) === EntityTrait.Drawable) {
+				const direction = getRotationByChangeInCoords(Math.sign(buildingX - meX), Math.sign(buildingZ - meZ))
+				const drawablesData = game.entities.drawables.rawData
+				drawablesData[unit.drawable + DataOffsetDrawables.Rotation] = direction
+			}
 
 			activityBuilding.setup(game, unit, buildingId)
 			return

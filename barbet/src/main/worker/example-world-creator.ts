@@ -1,6 +1,4 @@
-import { spawnBuilding } from '../3d-stuff/renderable/input-reactor'
 import * as activityIdle from '../game-state/activities/idle'
-import { BuildingId } from '../game-state/buildings'
 import { DataOffsetPositions, EntityTrait } from '../game-state/entities/traits'
 import { GameState } from '../game-state/game-state'
 import { BlockId } from '../game-state/world/block'
@@ -28,6 +26,8 @@ export function fillEmptyWorldWithDefaultData(gameState: GameState) {
 	groundItems.setItem(16, 14, ItemType.Box)
 	groundItems.setItem(15, 14, ItemType.Box)
 	groundItems.setItem(14, 14, ItemType.Box)
+	groundItems.setItem(13, 14, ItemType.Box)
+	groundItems.setItem(3, 3, ItemType.Box)
 
 	const spawnUnit = (x: number, y: number, z: number) => {
 		const unitTraits = EntityTrait.Position | EntityTrait.Drawable | EntityTrait.ItemHoldable | EntityTrait.WithActivity | EntityTrait.Interruptible
@@ -37,12 +37,6 @@ export function fillEmptyWorldWithDefaultData(gameState: GameState) {
 		entities.positions.rawData[entity.position + DataOffsetPositions.PositionZ] = z
 
 		activityIdle.setup(gameState, entity)
-
-		setTimeout(() => {
-			const buildingId = spawnBuilding(gameState, 10, 10, BuildingId.Monument)
-			if (buildingId === undefined) return
-		}, 500)
-
 	}
 	spawnUnit(7, 2, 8)
 }
