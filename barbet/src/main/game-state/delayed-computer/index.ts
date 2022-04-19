@@ -35,23 +35,8 @@ class DelayedComputerImpl implements DelayedComputer {
 	}
 
 	public tick(game: GameState): void {
-		const requestsCount = this.requestsQueue.length
-		for (let i = 0; i < requestsCount; i++) {
-			const request = this.requestsQueue.shift()!
-
-			let result: Result
-			switch (request.type) {
-				case RequestType.FindPath:
-					result = handlePathRequest(request, game)
-					break
-				case RequestType.FindItem:
-					result = handleItemRequest(request, game)
-					break
-				default:
-					throw new Error()
-			}
-			this.results.set(request.id, {...result, id: request.id})
-		}
+		this.deleteOldResults(game)
+		this.processSomeRequests(game)
 	}
 
 	public serialize(): unknown {
@@ -71,6 +56,36 @@ class DelayedComputerImpl implements DelayedComputer {
 			'nextRequestId': this.nextRequestId,
 			'requestsQueue': encodeArray(new Int32Array(requestsArray)),
 			'results': encodeArray(new Int32Array(resultsArray)),
+		}
+	}
+
+	private deleteOldResults(game: GameState) {
+		const now = game.currentTick
+		const clearOlderThen = now - 20 * 60 * 2
+		for (const [key, value] of [...this.results.entries()]) {
+			if (value.computedAt < clearOlderThen)
+				this.results.delete(key)
+		}
+	}
+
+	private processSomeRequests(game: GameState) {
+		const now = game.currentTick
+		const requestsCount = this.requestsQueue.length
+		for (let i = 0; i < requestsCount; i++) {
+			const request = this.requestsQueue.shift()!
+
+			let result: any
+			switch (request.type) {
+				case RequestType.FindPath:
+					result = handlePathRequest(request, game)
+					break
+				case RequestType.FindItem:
+					result = handleItemRequest(request, game)
+					break
+				default:
+					throw new Error()
+			}
+			this.results.set(request.id, {...result, id: request.id, computedAt: now})
 		}
 	}
 }

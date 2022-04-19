@@ -14,13 +14,15 @@ export interface ItemResult {
 	readonly foundAtZ: number
 }
 
-export type Result = { readonly id: number } & (PathResult | ItemResult)
+export type Result = { readonly id: number, computedAt: number } & (PathResult | ItemResult)
 
 export const encode = (res: Result, destination: Int32Array, offset: number): number => {
 	const initialOffset = offset
 
 	destination[offset++] = res.type
 	destination[offset++] = res.id
+	destination[offset++] = res.computedAt
+
 	switch (res.type) {
 		case RequestType.FindPath: {
 			destination[offset++] = res.found ? 1 : 0
@@ -45,6 +47,7 @@ export const decode = (source: Int32Array, offset: number): [Result, number] => 
 
 	const type = source[offset++]!
 	const id = source[offset++]!
+	const computedAt = source[offset++]!
 
 	switch (type) {
 		case RequestType.FindPath: {
@@ -52,7 +55,7 @@ export const decode = (source: Int32Array, offset: number): [Result, number] => 
 			const directionsLength = source[offset++]!
 			const directions = [...new Array(directionsLength)].map(() => source[offset++]!)
 			object = {
-				id, type,
+				id, type, computedAt,
 				found: found,
 				directions,
 			}
@@ -61,7 +64,7 @@ export const decode = (source: Int32Array, offset: number): [Result, number] => 
 		case RequestType.FindItem: {
 			const found = source[offset++]! === 1
 			object = {
-				id, type, found,
+				id, type, found,computedAt,
 				foundAtX: source[offset++]!,
 				foundAtZ: source[offset++]!,
 			}
