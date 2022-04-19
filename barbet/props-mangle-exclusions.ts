@@ -14,6 +14,7 @@ const list = Object.freeze([
 	'getAllKeys',
 	'transaction',
 	'abs',
+	'sign',
 	'ACTIVE_ATTRIBUTES',
 	'ACTIVE_UNIFORMS',
 	'add',
