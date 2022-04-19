@@ -1,5 +1,6 @@
 import { Direction } from '../../util/direction'
-import { PathResult, RequestType } from '../delayed-computer'
+import { RequestType } from '../delayed-computer/request'
+import { PathResult } from '../delayed-computer/result'
 import {
 	DataOffsetDrawables,
 	DataOffsetInterruptible,

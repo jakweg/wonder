@@ -1,5 +1,6 @@
 import { Direction, getRotationByChangeInCoords } from '../../util/direction'
-import { ItemResult, RequestType } from '../delayed-computer'
+import { RequestType } from '../delayed-computer/request'
+import { ItemResult } from '../delayed-computer/result'
 import {
 	DataOffsetDrawables,
 	DataOffsetPositions,

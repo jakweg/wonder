@@ -1,4 +1,4 @@
-import { PathRequest } from '../game-state/delayed-computer'
+import { PathRequest } from '../game-state/delayed-computer/request'
 import { Direction } from './direction'
 import SortedList from './sorted-list'
 
