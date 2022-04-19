@@ -1,5 +1,5 @@
 import {
-	CreateGameArguments,
+	CreateGameArguments, Environment,
 	EnvironmentConnection,
 	getSuggestedEnvironmentName,
 	loadEnvironment,
@@ -111,7 +111,8 @@ document.addEventListener('keydown', async event => {
 
 
 const prepareEnvironment = (): Promise<EnvironmentConnection> => {
-	return loadEnvironment(getSuggestedEnvironmentName(), saveCallback)
+	const preferredEnvironment = SettingsContainer.INSTANCE.get('other/preferred-environment') as Environment
+	return loadEnvironment(getSuggestedEnvironmentName(preferredEnvironment), saveCallback)
 }
 
 const runGame = async (args: CreateGameArguments) => {

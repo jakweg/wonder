@@ -8,6 +8,7 @@ const settingsToDefaults = {
 	'rendering/fps-cap-on-blur': 15,
 	'rendering/antialias': true,
 	'rendering/show-tile-borders': true,
+	'other/preferred-environment': 'second',
 }
 
 type SettingName = keyof typeof settingsToDefaults

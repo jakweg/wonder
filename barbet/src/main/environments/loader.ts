@@ -64,11 +64,11 @@ export interface EnvironmentConnection {
 	debugCommand(args: DebugCommandArguments): void
 }
 
-export const getSuggestedEnvironmentName = () => {
+export const getSuggestedEnvironmentName = (preferredEnvironment: Environment) => {
 	let usedEnvironment: Environment = 'zero'
-	if (sharedMemoryIsAvailable) {
+	if (sharedMemoryIsAvailable && preferredEnvironment !== 'zero') {
 		const offscreenCanvasIsAvailable = !!((window as any).OffscreenCanvas)
-		if (offscreenCanvasIsAvailable)
+		if (offscreenCanvasIsAvailable && preferredEnvironment !== 'first')
 			usedEnvironment = 'second'
 		else {
 			usedEnvironment = 'first'

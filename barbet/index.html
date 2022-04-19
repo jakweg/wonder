@@ -91,6 +91,14 @@
                 <option value="999">Don't limit</option>
             </select>
         </label>
+        <label>
+            <span>Use multithreading model:</span>
+            <select id="input-multithreading">
+                <option value="none">Single thread for everything</option>
+                <option value="off-update">Offload game state update</option>
+                <option value="off-update-and-render">Offload updates and rendering in separate workers</option>
+            </select>
+        </label>
     </main>
 </div>
 </body>

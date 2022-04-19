@@ -67,6 +67,40 @@ function tps() {
 	})
 }
 
+function workers() {
+	const input = document.getElementById('input-multithreading') as HTMLSelectElement
+	observeSetting('other/preferred-environment', (value) => {
+		switch (value) {
+			case 'zero':
+				input['value'] = `none`
+				break
+			case 'first':
+				input['value'] = `off-update`
+				break
+			default:
+			case 'second':
+				input['value'] = `off-update-and-render`
+				break
+		}
+	})
+	input.addEventListener('change', () => {
+		let valueToSet
+		switch (input['value']) {
+			case 'off-update-and-render':
+				valueToSet = 'second'
+				break
+			case 'off-update':
+				valueToSet = 'first'
+				break
+			default:
+			case 'none':
+				valueToSet = 'zero'
+				break
+		}
+		SettingsContainer.INSTANCE.set('other/preferred-environment', valueToSet)
+	})
+}
+
 export const bindSettingsListeners = () => {
 	tps()
 
@@ -75,6 +109,7 @@ export const bindSettingsListeners = () => {
 	pauseOnBlur()
 	fpsCap()
 	fpsCapOnBlur()
+	workers()
 
 	closeAndOpenButton()
 }
