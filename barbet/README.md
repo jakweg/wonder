@@ -8,10 +8,6 @@
 
 ```deno run -A build.ts --serve```
 
-#### Run all tests:
-
-```deno test .```
-
 #### Build for production:
 
 ```deno run -A build.ts --prod```
