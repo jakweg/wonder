@@ -1,4 +1,5 @@
 import { GameState } from '../game-state/game-state'
+import { ActionsQueue } from '../game-state/scheduled-actions/queue'
 import { StateUpdaterImplementation } from '../game-state/state-updater/implementation'
 import Mutex, { createMutexFromReceived, createNewMutex } from '../util/mutex'
 
@@ -20,6 +21,11 @@ export const setGlobalStateUpdater = (u: StateUpdaterImplementation | null) => {
 	if (globalStateUpdater !== null && u !== null)
 		throw new Error('Updater is not null')
 	globalStateUpdater = u
+}
+
+export let globalActionsQueue: ActionsQueue | null = null
+export const setGlobalActionsQueue = (q: ActionsQueue | null) => {
+	globalActionsQueue = q
 }
 
 

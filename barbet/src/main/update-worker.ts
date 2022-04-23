@@ -1,5 +1,6 @@
 import { SaveMethod } from './environments/loader'
 import { GameStateImplementation } from './game-state/game-state'
+import { ReceiveActionsQueue } from './game-state/scheduled-actions/queue'
 import { createNewStateUpdater } from './game-state/state-updater'
 import { computeWorldBoundingBox } from './game-state/world/bounding-box'
 import { World } from './game-state/world/world'
@@ -9,8 +10,9 @@ import { takeControlOverWorkerConnection } from './worker/connections-manager'
 import { setMessageHandler } from './worker/message-handler'
 import SettingsContainer from './worker/observable-settings'
 import {
+	globalActionsQueue,
 	globalGameState,
-	globalStateUpdater,
+	globalStateUpdater, setGlobalActionsQueue,
 	setGlobalGameState,
 	setGlobalMutex,
 	setGlobalStateUpdater,
@@ -32,6 +34,7 @@ setMessageHandler('terminate-game', () => {
 	globalStateUpdater?.terminate()
 	setGlobalGameState(null)
 	setGlobalStateUpdater(null)
+	setGlobalActionsQueue(null)
 })
 
 setMessageHandler('create-game', async (args, connection) => {
@@ -45,11 +48,14 @@ setMessageHandler('create-game', async (args, connection) => {
 
 	const saveName = args['saveName']
 	const file = args['fileToRead']
+	const queue = ReceiveActionsQueue.create()
+	setGlobalActionsQueue(queue)
+
 	const state = file !== undefined
-		? await loadGameFromFile(file, stateBroadcastCallback)
+		? await loadGameFromFile(file, queue, stateBroadcastCallback)
 		: (saveName !== undefined
-			? await loadGameFromDb(saveName, stateBroadcastCallback)
-			: createEmptyGame(stateBroadcastCallback))
+			? await loadGameFromDb(saveName, queue, stateBroadcastCallback)
+			: createEmptyGame(queue, stateBroadcastCallback))
 	setGlobalGameState(state)
 
 	updater = createNewStateUpdater(() => (state as GameStateImplementation).advanceActivities(), state.currentTick)
@@ -108,4 +114,8 @@ setMessageHandler('debug', (data) => {
 	setArrayEncodingType(ArrayEncodingType.String)
 	console.log(newOne.serialize())
 	setArrayEncodingType(ArrayEncodingType.None)
+})
+
+setMessageHandler('scheduled-action', (action) => {
+	globalActionsQueue?.append(action)
 })

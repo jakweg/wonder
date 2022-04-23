@@ -1,6 +1,7 @@
 import { startRenderingGame } from '../3d-stuff/renderable/render-context'
 import { Camera } from '../camera'
 import { createGameStateForRenderer, GameState } from '../game-state/game-state'
+import { ActionsQueue, SendActionsQueue } from '../game-state/scheduled-actions/queue'
 import { createStateUpdaterControllerFromReceived, StateUpdater } from '../game-state/state-updater'
 import { initFrontedVariablesFromReceived } from '../util/frontend-variables-updaters'
 import { setMessageHandler } from '../worker/message-handler'
@@ -48,6 +49,8 @@ export const connect = async (args: ConnectArguments): Promise<EnvironmentConnec
 		gameResolveCallback({'state': decodedGame, 'updater': updater})
 	})
 
+	const queue: ActionsQueue = SendActionsQueue.create(a => updateWorker.replier.send('scheduled-action', a))
+
 	return {
 		'name': 'first',
 		async 'createNewGame'(gameArgs) {
@@ -61,7 +64,7 @@ export const connect = async (args: ConnectArguments): Promise<EnvironmentConnec
 			if (decodedGame === null) throw new Error('Start game first')
 			renderingCancelCallback?.()
 			const camera = Camera.newUsingBuffer(getCameraBuffer())
-			renderingCancelCallback = startRenderingGame(args['canvas'], decodedGame, updater!, camera)
+			renderingCancelCallback = startRenderingGame(args['canvas'], decodedGame, updater!, queue!, camera)
 		},
 		'saveGame'(args: SaveGameArguments): void {
 			updateWorker.replier?.send('save-game', args)

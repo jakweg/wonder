@@ -9,7 +9,7 @@ export class SendActionsQueue implements ActionsQueue {
 	private constructor(private readonly transporter: (a: ScheduledAction) => void) {
 	}
 
-	public static newEmpty(transporter: (a: ScheduledAction) => void): SendActionsQueue {
+	public static create(transporter: (a: ScheduledAction) => void): SendActionsQueue {
 		return new SendActionsQueue(transporter)
 	}
 
@@ -25,7 +25,7 @@ export class ReceiveActionsQueue implements ActionsQueue {
 	) {
 	}
 
-	public static newEmpty(): ReceiveActionsQueue {
+	public static create(): ReceiveActionsQueue {
 		return new ReceiveActionsQueue([])
 	}
 

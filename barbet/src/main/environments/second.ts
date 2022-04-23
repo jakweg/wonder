@@ -1,4 +1,5 @@
 import { createGameStateForRenderer, GameState } from '../game-state/game-state'
+import { ActionsQueue, SendActionsQueue } from '../game-state/scheduled-actions/queue'
 import { createStateUpdaterControllerFromReceived, StateUpdater } from '../game-state/state-updater'
 import { frontedVariablesBuffer } from '../util/frontend-variables'
 import { initFrontedVariablesFromReceived } from '../util/frontend-variables-updaters'
@@ -59,6 +60,8 @@ export const connect = async (args: ConnectArguments): Promise<EnvironmentConnec
 		renderWorker.replier.send('update-entity-container', data)
 	})
 
+	const queue: ActionsQueue = SendActionsQueue.create(a => updateWorker.replier.send('scheduled-action', a))
+	setMessageHandler('scheduled-action', action => queue.append(action))
 
 	return {
 		'name': 'second',

@@ -40,7 +40,7 @@ export const connect = (args: ConnectArguments): EnvironmentConnection => {
 		'name': 'zero',
 		async 'createNewGame'(args: CreateGameArguments) {
 			const stateBroadcastCallback = () => void 0 // ignore, since everything is locally anyway
-			actionsQueue = ReceiveActionsQueue.newEmpty()
+			actionsQueue = ReceiveActionsQueue.create()
 
 			const saveName = args['saveName']
 			const file = args['fileToRead']

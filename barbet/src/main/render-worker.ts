@@ -1,6 +1,7 @@
 import { startRenderingGame } from './3d-stuff/renderable/render-context'
 import { Camera } from './camera'
 import { createGameStateForRenderer, GameState } from './game-state/game-state'
+import { SendActionsQueue } from './game-state/scheduled-actions/queue'
 import { createStateUpdaterControllerFromReceived, StateUpdater } from './game-state/state-updater'
 import { initFrontedVariablesFromReceived } from './util/frontend-variables-updaters'
 import { takeControlOverWorkerConnection } from './worker/connections-manager'
@@ -70,7 +71,9 @@ const considerStartRendering = () => {
 	if (canvas !== null && decodedGame !== null && decodedUpdater !== null) {
 		const camera = cameraBuffer ? Camera.newUsingBuffer(cameraBuffer) : Camera.newPerspective()
 
+		const queue = SendActionsQueue.create(action => connectionWithParent.send('scheduled-action', action))
+
 		renderCancelCallback?.()
-		renderCancelCallback = startRenderingGame(canvas, decodedGame, decodedUpdater, camera)
+		renderCancelCallback = startRenderingGame(canvas, decodedGame, decodedUpdater, queue, camera)
 	}
 }
