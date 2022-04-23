@@ -148,6 +148,9 @@ class EntityContainer {
 	}
 
 	public createEntity(traits: EntityTrait): EntityTraitIndicesRecord {
+		if (this.nextEntityId === -1)
+			throw new Error('Attempt to create entity in non-update context')
+
 		const unitId = this.nextEntityId++
 
 		const record: EntityTraitIndicesRecord = {

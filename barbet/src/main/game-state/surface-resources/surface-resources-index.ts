@@ -9,6 +9,7 @@ export const MASK_AMOUNT = 0b111 << AMOUNT_SHIFT_BITS
 
 export class SurfaceResourcesIndex {
 	constructor(
+		private readonly isNonUpdatable: boolean,
 		public readonly sizeX: number,
 		public readonly sizeZ: number,
 		private readonly buffer: SharedArrayBuffer,
@@ -23,7 +24,7 @@ export class SurfaceResourcesIndex {
 		const buffer = createNewBuffer(size.blocksPerY * Uint8Array.BYTES_PER_ELEMENT + 1)
 		const rawIndex = new Uint8Array(buffer)
 
-		return new SurfaceResourcesIndex(size.sizeX, size.sizeZ, buffer, rawIndex)
+		return new SurfaceResourcesIndex(false, size.sizeX, size.sizeZ, buffer, rawIndex)
 	}
 
 	public static deserialize(object: any): SurfaceResourcesIndex {
@@ -32,14 +33,14 @@ export class SurfaceResourcesIndex {
 		const index = object['index']
 
 		const rawIndex = decodeArray(index, true, Uint8Array)
-		return new SurfaceResourcesIndex(sizeX, sizeZ, rawIndex['buffer'] as SharedArrayBuffer, rawIndex)
+		return new SurfaceResourcesIndex(false, sizeX, sizeZ, rawIndex['buffer'] as SharedArrayBuffer, rawIndex)
 	}
 
 	public static fromReceived(object: any): SurfaceResourcesIndex {
 		const buffer = object['buffer'] as SharedArrayBuffer
 		const rawIndex = new Uint8Array(buffer)
 
-		return new SurfaceResourcesIndex(object['sizes'][0], object['sizes'][1], buffer, rawIndex)
+		return new SurfaceResourcesIndex(true, object['sizes'][0], object['sizes'][1], buffer, rawIndex)
 	}
 
 	public pass(): unknown {
@@ -58,6 +59,9 @@ export class SurfaceResourcesIndex {
 	}
 
 	public setResource(x: number, z: number, type: SurfaceResourceType, amount: number): void {
+		if (this.isNonUpdatable)
+			throw new Error('updates are locked')
+
 		this.validateCoords(x, z)
 		const index = z * this.sizeX + x + 1
 		if (type === SurfaceResourceType.None)
@@ -71,6 +75,9 @@ export class SurfaceResourcesIndex {
 	}
 
 	public extractSingleResource(x: number, z: number): SurfaceResourceType {
+		if (this.isNonUpdatable)
+			throw new Error('updates are locked')
+
 		this.validateCoords(x, z)
 		const raw = this.rawData[z * this.sizeX + x + 1]!
 		const type = raw & MASK_RESOURCE_TYPE as SurfaceResourceType

@@ -24,6 +24,7 @@ export class World {
 		public readonly rawHeightData: Uint8ClampedArray,
 		public readonly chunkModificationIds: Uint16Array,
 		public readonly buffers: SharedArrayBuffer[],
+		public readonly isNonUpdatable: boolean,
 	) {
 	}
 
@@ -55,7 +56,7 @@ export class World {
 
 		const chunkModificationIds = new Uint16Array(buffers[2]!)
 
-		return new World(size, blockData, heightData, chunkModificationIds, buffers)
+		return new World(size, blockData, heightData, chunkModificationIds, buffers, false)
 	}
 
 	public static fromReceived(object: any): World {
@@ -75,7 +76,7 @@ export class World {
 		const heightData = new Uint8ClampedArray(buffers[1]!)
 		const chunkModificationIds = new Uint16Array(buffers[2]!)
 
-		return new World(size, blockData, heightData, chunkModificationIds, buffers)
+		return new World(size, blockData, heightData, chunkModificationIds, buffers, true)
 	}
 
 	public static deserialize(object: any): World {
@@ -99,7 +100,7 @@ export class World {
 			createNewBuffer(chunksSizeX * chunksSizeZ * Uint16Array.BYTES_PER_ELEMENT),
 		]
 
-		const world = new World(size, rawBlockData, new Uint8ClampedArray(buffers[1]!), new Uint16Array(buffers[2]!), buffers)
+		const world = new World(size, rawBlockData, new Uint8ClampedArray(buffers[1]!), new Uint16Array(buffers[2]!), buffers, false)
 		world.recalculateHeightIndex()
 		return world
 	}
@@ -110,6 +111,9 @@ export class World {
 	                           sizeX: number, sizeY: number, sizeZ: number): void {
 		if (from === to)
 			throw new Error('Cannot copy to self')
+
+		if (to.isNonUpdatable)
+			throw new Error('Destination is readonly')
 
 		const toSizeX = to.size.sizeX
 		const fromSizeX = from.size.sizeX
@@ -170,6 +174,9 @@ export class World {
 	}
 
 	public setBlock(x: number, y: number, z: number, blockId: BlockId) {
+		if (this.isNonUpdatable)
+			throw new Error('world is readonly')
+
 		this.validateCoords(x, y, z)
 		const sizeX = this.size.sizeX
 		const blocksPerY = this.size.blocksPerY

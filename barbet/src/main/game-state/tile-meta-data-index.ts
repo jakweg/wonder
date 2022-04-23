@@ -9,6 +9,7 @@ const enum TileFlag {
 
 export class TileMetaDataIndex {
 	private constructor(
+		private readonly isNonUpdatable: boolean,
 		private readonly sizeX: number,
 		private readonly sizeZ: number,
 		private readonly heightIndex: Uint8ClampedArray,
@@ -21,17 +22,17 @@ export class TileMetaDataIndex {
 	                        rawHeightData: Uint8ClampedArray)
 		: TileMetaDataIndex {
 		const tileFlags = new Uint8Array(createNewBuffer(sizeX * sizeZ * Uint8Array.BYTES_PER_ELEMENT))
-		return new TileMetaDataIndex(sizeX, sizeZ, rawHeightData, tileFlags)
+		return new TileMetaDataIndex(false, sizeX, sizeZ, rawHeightData, tileFlags)
 	}
 
 	public static deserialize(data: any,
 	                          rawHeightData: Uint8ClampedArray): TileMetaDataIndex {
-		return new TileMetaDataIndex(data['sizeX'], data['sizeZ'], rawHeightData,
+		return new TileMetaDataIndex(false, data['sizeX'], data['sizeZ'], rawHeightData,
 			decodeArray(data['tileFlags'], true, Uint8Array))
 	}
 
 	public static fromReceived(object: any): TileMetaDataIndex {
-		return new TileMetaDataIndex(object['sizeX'], object['sizeZ'], object['heightIndex'], object['tileFlags'])
+		return new TileMetaDataIndex(true, object['sizeX'], object['sizeZ'], object['heightIndex'], object['tileFlags'])
 	}
 
 	public serialize(): unknown {
@@ -76,6 +77,9 @@ export class TileMetaDataIndex {
 	}
 
 	private addFlagForTile(x: number, z: number, flag: TileFlag) {
+		if (this.isNonUpdatable)
+			throw new Error('updates are locked')
+
 		this.validateCoords(x, z)
 		this.tileFlags[x + z * this.sizeX] |= flag
 	}

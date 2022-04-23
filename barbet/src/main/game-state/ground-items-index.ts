@@ -5,10 +5,12 @@ import { WorldSize } from './world/world'
 
 
 export class GroundItemsIndex {
-	private constructor(public readonly rawItemData: Uint8Array,
-	                    private readonly buffer: SharedArrayBuffer,
-	                    public readonly sizeX: number,
-	                    public readonly sizeZ: number) {
+	private constructor(
+		private readonly isNonUpdatable: boolean,
+		public readonly rawItemData: Uint8Array,
+		private readonly buffer: SharedArrayBuffer,
+		public readonly sizeX: number,
+		public readonly sizeZ: number) {
 	}
 
 	public get lastDataChangeId(): number {
@@ -20,7 +22,7 @@ export class GroundItemsIndex {
 		const buffer = createNewBuffer((sizeX * sizeZ + 1) * Uint8Array.BYTES_PER_ELEMENT)
 
 		const itemIds = new Uint8Array(buffer)
-		return new GroundItemsIndex(itemIds, buffer, sizeX, sizeZ)
+		return new GroundItemsIndex(false, itemIds, buffer, sizeX, sizeZ)
 	}
 
 
@@ -30,7 +32,7 @@ export class GroundItemsIndex {
 		const buffer = object['buffer'] as SharedArrayBuffer
 
 		const itemIds = new Uint8Array(buffer)
-		return new GroundItemsIndex(itemIds, buffer, sizeX, sizeZ)
+		return new GroundItemsIndex(true, itemIds, buffer, sizeX, sizeZ)
 	}
 
 	public static deserialize(object: any): GroundItemsIndex {
@@ -39,7 +41,7 @@ export class GroundItemsIndex {
 		const index = object['index']
 
 		const itemIds = decodeArray(index, true, Uint8Array)
-		return new GroundItemsIndex(itemIds, itemIds['buffer'] as SharedArrayBuffer, sizeX, sizeZ)
+		return new GroundItemsIndex(false, itemIds, itemIds['buffer'] as SharedArrayBuffer, sizeX, sizeZ)
 	}
 
 	public pass(): unknown {
@@ -59,6 +61,9 @@ export class GroundItemsIndex {
 	}
 
 	public setItem(x: number, z: number, type: ItemType): void {
+		if (this.isNonUpdatable)
+			throw new Error('updates are locked')
+
 		this.validateCoords(x, z)
 		this.rawItemData[z * this.sizeX + x + 1] = type
 		this.rawItemData[0]++
