@@ -123,12 +123,14 @@ const loop = async (memory: Int32Array, func: Updatable) => {
 	}
 }
 
-export const createNewStateUpdater = (updatable: Updatable)
+export const createNewStateUpdater = (updatable: Updatable,
+                                      startFromTick: number)
 	: StateUpdaterImplementation => {
 
 	const memory = new Int32Array(createNewBuffer(BufferField.SIZE * Int32Array.BYTES_PER_ELEMENT))
 	memory.fill(0)
 	memory[BufferField.Status] = Status.Stopped
+	memory[BufferField.ExecutedTicksCounter] = startFromTick
 
 	// noinspection JSIgnoredPromiseFromCall
 	loop(memory, updatable)

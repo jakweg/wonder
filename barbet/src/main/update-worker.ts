@@ -52,7 +52,7 @@ setMessageHandler('create-game', async (args, connection) => {
 			: createEmptyGame(stateBroadcastCallback))
 	setGlobalGameState(state)
 
-	updater = createNewStateUpdater(() => (state as GameStateImplementation).advanceActivities())
+	updater = createNewStateUpdater(() => (state as GameStateImplementation).advanceActivities(), state.currentTick)
 	setGlobalStateUpdater(updater)
 
 	connection.send('game-snapshot-for-renderer', {

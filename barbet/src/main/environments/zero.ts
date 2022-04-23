@@ -46,7 +46,7 @@ export const connect = (args: ConnectArguments): EnvironmentConnection => {
 
 			setGlobalGameState(game)
 
-			const updaterInstance = createNewStateUpdater(() => (game as GameStateImplementation)?.advanceActivities())
+			const updaterInstance = createNewStateUpdater(() => (game as GameStateImplementation)?.advanceActivities(), game.currentTick)
 			setGlobalStateUpdater(updaterInstance)
 
 			updater = createStateUpdaterControllerFromReceived(updaterInstance.pass())
