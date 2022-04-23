@@ -43,11 +43,12 @@ export const setupSceneRendering = (canvas: HTMLCanvasElement,
 			await handleInputEvents(dt, renderer, lastContext)
 		camera.updateMatrixIfNeeded()
 
-		renderer.renderStarted()
 		if (isInWorker)
 			globalMutex.enter(Lock.Update)
 		else
 			await globalMutex.enterAsync(Lock.Update)
+
+		renderer.renderStarted()
 
 		const now = performance.now()
 		const secondsSinceFirstRender = (now - firstRenderTime) / 1000

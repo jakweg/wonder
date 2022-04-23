@@ -39,6 +39,8 @@ const performLogicUpdates = async (memory: Int32Array,
 	}
 
 	if (ticksToExecute > 0) {
+		Atomics.store(memory, BufferField.LastTickFinishTime, performance.now() * 100)
+		Atomics.store(memory, BufferField.ExecutedTicksCounter, currentTick + ticksToExecute)
 		for (let i = 0; i < ticksToExecute; i++) {
 			try {
 				await func()
@@ -48,8 +50,6 @@ const performLogicUpdates = async (memory: Int32Array,
 				Atomics.store(memory, BufferField.Status, Status.Terminated)
 				return
 			}
-			Atomics.store(memory, BufferField.LastTickFinishTime, performance.now() * 100)
-			Atomics.store(memory, BufferField.ExecutedTicksCounter, currentTick + i + 1)
 		}
 	}
 }
