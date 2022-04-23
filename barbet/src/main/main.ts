@@ -45,7 +45,7 @@ const state: PageState = {
 let pauseOnBlur = false
 observeSetting('other/pause-on-blur', v => pauseOnBlur = v)
 window.addEventListener('blur', () => pauseOnBlur && state?.updater?.stop())
-window.addEventListener('focus', () => pauseOnBlur && state?.updater?.start())
+window.addEventListener('focus', () => pauseOnBlur && state?.updater?.start(state!.updater!.getTickRate()))
 
 observeSetting('other/tps', tps => state?.updater?.changeTickRate(tps))
 observeSetting('rendering/antialias', () => state?.environment?.['startRender']({'canvas': recreateCanvas()}))

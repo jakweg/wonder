@@ -1,5 +1,5 @@
 import { GameState } from '../game-state/game-state'
-import { createNewStateUpdater } from '../game-state/state-updater'
+import { StateUpdaterImplementation } from '../game-state/state-updater/implementation'
 import Mutex, { createMutexFromReceived, createNewMutex } from '../util/mutex'
 
 export let globalMutex: Mutex = createNewMutex()
@@ -15,9 +15,8 @@ export const setGlobalGameState = (state: GameState | null) => {
 	globalGameState = state
 }
 
-type StateUpdater = ReturnType<typeof createNewStateUpdater>
-export let globalStateUpdater: StateUpdater | null = null
-export const setGlobalStateUpdater = (u: StateUpdater | null) => {
+export let globalStateUpdater: StateUpdaterImplementation | null = null
+export const setGlobalStateUpdater = (u: StateUpdaterImplementation | null) => {
 	if (globalStateUpdater !== null && u !== null)
 		throw new Error('Updater is not null')
 	globalStateUpdater = u

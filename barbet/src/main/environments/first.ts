@@ -1,7 +1,7 @@
 import { startRenderingGame } from '../3d-stuff/renderable/render-context'
 import { Camera } from '../camera'
 import { createGameStateForRenderer, GameState } from '../game-state/game-state'
-import { StateUpdater, stateUpdaterFromReceived } from '../game-state/state-updater'
+import { createStateUpdaterControllerFromReceived, StateUpdater } from '../game-state/state-updater'
 import { initFrontedVariablesFromReceived } from '../util/frontend-variables-updaters'
 import { setMessageHandler } from '../worker/message-handler'
 import SettingsContainer from '../worker/observable-settings'
@@ -44,7 +44,7 @@ export const connect = async (args: ConnectArguments): Promise<EnvironmentConnec
 	setMessageHandler('game-snapshot-for-renderer', (data) => {
 		decodedGame = createGameStateForRenderer(data['game'])
 
-		updater = stateUpdaterFromReceived(globalMutex, data['updater'])
+		updater = createStateUpdaterControllerFromReceived(data['updater'])
 		gameResolveCallback({'state': decodedGame, 'updater': updater})
 	})
 

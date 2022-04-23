@@ -1,12 +1,12 @@
 import { startRenderingGame } from './3d-stuff/renderable/render-context'
 import { Camera } from './camera'
 import { createGameStateForRenderer, GameState } from './game-state/game-state'
-import { StateUpdater, stateUpdaterFromReceived } from './game-state/state-updater'
+import { createStateUpdaterControllerFromReceived, StateUpdater } from './game-state/state-updater'
 import { initFrontedVariablesFromReceived } from './util/frontend-variables-updaters'
 import { takeControlOverWorkerConnection } from './worker/connections-manager'
 import { Connection, setMessageHandler } from './worker/message-handler'
 import SettingsContainer from './worker/observable-settings'
-import { globalMutex, globalWorkerDelay, setGlobalMutex } from './worker/worker-global-state'
+import { globalWorkerDelay, setGlobalMutex } from './worker/worker-global-state'
 
 SettingsContainer.INSTANCE = SettingsContainer.createEmpty()
 takeControlOverWorkerConnection()
@@ -64,7 +64,7 @@ const considerStartRendering = () => {
 	if (decodedGame === null && gameSnapshot !== null) {
 		const snapshot = gameSnapshot as any
 		decodedGame = createGameStateForRenderer(snapshot['game'])
-		decodedUpdater = stateUpdaterFromReceived(globalMutex, snapshot['updater'])
+		decodedUpdater = createStateUpdaterControllerFromReceived(snapshot['updater'])
 	}
 
 	if (canvas !== null && decodedGame !== null && decodedUpdater !== null) {

@@ -1,5 +1,5 @@
 import { createGameStateForRenderer, GameState } from '../game-state/game-state'
-import { StateUpdater, stateUpdaterFromReceived } from '../game-state/state-updater'
+import { createStateUpdaterControllerFromReceived, StateUpdater } from '../game-state/state-updater'
 import { frontedVariablesBuffer } from '../util/frontend-variables'
 import { initFrontedVariablesFromReceived } from '../util/frontend-variables-updaters'
 import { setMessageHandler } from '../worker/message-handler'
@@ -50,7 +50,7 @@ export const connect = async (args: ConnectArguments): Promise<EnvironmentConnec
 	setMessageHandler('game-snapshot-for-renderer', (data) => {
 		gameSnapshotForRenderer = data
 		decodedGame = createGameStateForRenderer(data['game'])
-		updater = stateUpdaterFromReceived(globalMutex, data['updater'])
+		updater = createStateUpdaterControllerFromReceived(data['updater'])
 		startGameCallback({'state': decodedGame, 'updater': updater})
 	})
 	setMessageHandler('update-entity-container', data => {

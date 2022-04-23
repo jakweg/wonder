@@ -1,17 +1,19 @@
 import { startRenderingGame } from '../3d-stuff/renderable/render-context'
 import { Camera } from '../camera'
-import { GameState } from '../game-state/game-state'
-import { createNewStateUpdater, StateUpdater, stateUpdaterFromReceived } from '../game-state/state-updater'
+import { GameState, GameStateImplementation } from '../game-state/game-state'
+import { createNewStateUpdater, createStateUpdaterControllerFromReceived } from '../game-state/state-updater'
+import { StateUpdater } from '../game-state/state-updater'
 import { initFrontedVariablesFromReceived } from '../util/frontend-variables-updaters'
 import { putSaveData } from '../util/persistance/saves-database'
 import { ArrayEncodingType, setArrayEncodingType } from '../util/persistance/serializers'
 import SettingsContainer from '../worker/observable-settings'
 import { getCameraBuffer, setCameraBuffer } from '../worker/serializable-settings'
-import { globalMutex, setGlobalGameState, setGlobalStateUpdater } from '../worker/worker-global-state'
+import { setGlobalGameState, setGlobalStateUpdater } from '../worker/worker-global-state'
 import { createEmptyGame, loadGameFromDb, loadGameFromFile } from '../worker/world-loader'
 import {
 	ConnectArguments,
 	CreateGameArguments,
+	DebugCommandArguments,
 	EnvironmentConnection,
 	SaveGameArguments,
 	SaveMethod,
@@ -44,10 +46,10 @@ export const connect = (args: ConnectArguments): EnvironmentConnection => {
 
 			setGlobalGameState(game)
 
-			const updaterInstance = createNewStateUpdater(globalMutex, game)
+			const updaterInstance = createNewStateUpdater(() => (game as GameStateImplementation)?.advanceActivities())
 			setGlobalStateUpdater(updaterInstance)
 
-			updater = stateUpdaterFromReceived(globalMutex, updaterInstance.pass())
+			updater = createStateUpdaterControllerFromReceived(updaterInstance.pass())
 			return {
 				'state': game,
 				'updater': updater,
@@ -73,7 +75,7 @@ export const connect = (args: ConnectArguments): EnvironmentConnection => {
 				case SaveMethod.ToIndexedDatabase: {
 					setArrayEncodingType(ArrayEncodingType.Array)
 					try {
-						void putSaveData(saveName, game.serialize())
+						void putSaveData(saveName, (game as GameStateImplementation).serialize())
 					} finally {
 						setArrayEncodingType(ArrayEncodingType.None)
 					}
@@ -81,7 +83,7 @@ export const connect = (args: ConnectArguments): EnvironmentConnection => {
 					break
 				case SaveMethod.ToDataUrl: {
 					setArrayEncodingType(ArrayEncodingType.String)
-					const asString = JSON.stringify(game.serialize())
+					const asString = JSON.stringify((game as GameStateImplementation).serialize())
 					setArrayEncodingType(ArrayEncodingType.None)
 
 					const length = asString.length
@@ -92,6 +94,9 @@ export const connect = (args: ConnectArguments): EnvironmentConnection => {
 					args['saveResultsCallback']({'url': url})
 				}
 			}
+		},
+		debugCommand(_: DebugCommandArguments) {
+			console.warn('not implemented')
 		},
 	}
 }

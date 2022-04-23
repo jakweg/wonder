@@ -10,7 +10,6 @@ import { setMessageHandler } from './worker/message-handler'
 import SettingsContainer from './worker/observable-settings'
 import {
 	globalGameState,
-	globalMutex,
 	globalStateUpdater,
 	setGlobalGameState,
 	setGlobalMutex,
@@ -53,7 +52,7 @@ setMessageHandler('create-game', async (args, connection) => {
 			: createEmptyGame(stateBroadcastCallback))
 	setGlobalGameState(state)
 
-	updater = createNewStateUpdater(globalMutex, state)
+	updater = createNewStateUpdater(() => (state as GameStateImplementation).advanceActivities())
 	setGlobalStateUpdater(updater)
 
 	connection.send('game-snapshot-for-renderer', {
