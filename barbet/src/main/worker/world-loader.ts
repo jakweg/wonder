@@ -2,6 +2,7 @@ import { createNewDelayedComputer } from '../game-state/delayed-computer'
 import EntityContainer from '../game-state/entities/entity-container'
 import { GameState, GameStateImplementation } from '../game-state/game-state'
 import { GroundItemsIndex } from '../game-state/ground-items-index'
+import { ReceiveActionsQueue } from '../game-state/scheduled-actions/queue'
 import { SurfaceResourcesIndex } from '../game-state/surface-resources/surface-resources-index'
 import { TileMetaDataIndex } from '../game-state/tile-meta-data-index'
 import { BlockId } from '../game-state/world/block'
@@ -11,7 +12,8 @@ import { ArrayEncodingType, setArrayEncodingType } from '../util/persistance/ser
 import { fillEmptyWorldWithDefaultData } from './example-world-creator'
 import { globalMutex } from './worker-global-state'
 
-export const createEmptyGame = (stateBroadcastCallback: () => void): GameState => {
+export const createEmptyGame = (actionsQueue: ReceiveActionsQueue,
+                                stateBroadcastCallback: () => void): GameState => {
 	const mutex = globalMutex
 	const world = World.createEmpty(20, 30, 20, BlockId.Air)
 	const itemsOnGround = GroundItemsIndex.createNew(world.size)
@@ -21,31 +23,34 @@ export const createEmptyGame = (stateBroadcastCallback: () => void): GameState =
 	const resources = SurfaceResourcesIndex.createNew(world.size)
 	const gameState = GameStateImplementation.createNew(world, itemsOnGround,
 		entityContainer, tileMetaDataIndex, delayedComputer,
-		resources, mutex, stateBroadcastCallback)
+		resources, actionsQueue, mutex, stateBroadcastCallback)
 
 	fillEmptyWorldWithDefaultData(gameState)
 
 	return gameState
 }
 
-export const loadGameFromDb = async (id: string, stateBroadcastCallback: () => void): Promise<GameState> => {
+export const loadGameFromDb = async (id: string, actionsQueue: ReceiveActionsQueue,
+                                     stateBroadcastCallback: () => void): Promise<GameState> => {
 	const data = await readSaveData(id)
 	setArrayEncodingType(ArrayEncodingType.Array)
 	try {
-		return GameStateImplementation.deserialize(data, globalMutex, stateBroadcastCallback)
+		return GameStateImplementation.deserialize(data, actionsQueue, globalMutex, stateBroadcastCallback)
 	} finally {
 		setArrayEncodingType(ArrayEncodingType.None)
 	}
 }
 
-export const loadGameFromFile = async (file: File, stateBroadcastCallback: () => void): Promise<GameState> => {
+export const loadGameFromFile = async (file: File,
+                                       actionsQueue: ReceiveActionsQueue,
+                                       stateBroadcastCallback: () => void): Promise<GameState> => {
 	return new Promise((resolve, reject) => {
 		const reader = new FileReader()
 		reader['onerror'] = reject
 		reader['onload'] = () => {
 			try {
 				setArrayEncodingType(ArrayEncodingType.String)
-				const state = GameStateImplementation.deserialize(JSON.parse(reader['result'] as string), globalMutex, stateBroadcastCallback)
+				const state = GameStateImplementation.deserialize(JSON.parse(reader['result'] as string), actionsQueue, globalMutex, stateBroadcastCallback)
 				setArrayEncodingType(ArrayEncodingType.None)
 				resolve(state)
 			} catch (e) {

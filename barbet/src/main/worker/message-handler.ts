@@ -4,6 +4,7 @@ import {
 	SaveGameArguments,
 	TerminateGameArguments,
 } from '../environments/loader'
+import { ScheduledAction } from '../game-state/scheduled-actions'
 
 export interface Message {
 	['error']: { message: string }
@@ -21,6 +22,7 @@ export interface Message {
 	['terminate-game']: TerminateGameArguments
 	['debug']: DebugCommandArguments
 	['save-game-result']: { url: string }
+	['scheduled-action']: ScheduledAction
 }
 
 export type MessageType = keyof Message

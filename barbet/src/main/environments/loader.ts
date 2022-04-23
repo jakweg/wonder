@@ -1,5 +1,6 @@
 import { DEBUG, FORCE_ENV_ZERO, JS_ROOT } from '../build-info'
 import { GameState } from '../game-state/game-state'
+import { ActionsQueue } from '../game-state/scheduled-actions/queue'
 import { StateUpdater } from '../game-state/state-updater'
 import { frontedVariablesBuffer } from '../util/frontend-variables'
 import { sharedMemoryIsAvailable } from '../util/shared-memory'
@@ -53,7 +54,7 @@ export interface DebugCommandArguments {
 export interface EnvironmentConnection {
 	name: string
 
-	createNewGame(args: CreateGameArguments): Promise<{ state: GameState, updater: StateUpdater }>
+	createNewGame(args: CreateGameArguments): Promise<{ state: GameState, updater: StateUpdater, queue: ActionsQueue }>
 
 	startRender(args: StartRenderArguments): Promise<void>
 

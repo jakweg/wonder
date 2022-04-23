@@ -7,6 +7,7 @@ import EntityContainer from './entities/entity-container'
 import { iterateOverEntitiesWithActivity } from './entities/queries'
 import { DataOffsetWithActivity } from './entities/traits'
 import { GroundItemsIndex } from './ground-items-index'
+import { ReceiveActionsQueue } from './scheduled-actions/queue'
 import { SurfaceResourcesIndex } from './surface-resources/surface-resources-index'
 import { TileMetaDataIndex } from './tile-meta-data-index'
 import { World } from './world/world'
@@ -56,6 +57,7 @@ export class GameStateImplementation implements GameState {
 		public readonly tileMetaDataIndex: TileMetaDataIndex,
 		public readonly delayedComputer: DelayedComputer,
 		public readonly surfaceResources: SurfaceResourcesIndex,
+		private readonly actionsQueue: ReceiveActionsQueue,
 		private readonly mutex: Mutex,
 		private readonly stateBroadcastCallback: () => void) {
 	}
@@ -71,16 +73,18 @@ export class GameStateImplementation implements GameState {
 		tileMetaDataIndex: TileMetaDataIndex,
 		delayedComputer: DelayedComputer,
 		surfaceResources: SurfaceResourcesIndex,
+		actionsQueue: ReceiveActionsQueue,
 		mutex: Mutex,
 		stateBroadcastCallback: () => void): GameStateImplementation {
 		return new GameStateImplementation(
 			new Int32Array(createNewBuffer(MetadataField.SIZE * Int32Array.BYTES_PER_ELEMENT)),
 			world, groundItems, entities,
 			tileMetaDataIndex, delayedComputer, surfaceResources,
-			mutex, stateBroadcastCallback)
+			actionsQueue, mutex, stateBroadcastCallback)
 	}
 
-	public static deserialize(object: any, mutex: Mutex, stateBroadcastCallback: () => void): GameStateImplementation {
+	public static deserialize(object: any, actionsQueue: ReceiveActionsQueue,
+	                          mutex: Mutex, stateBroadcastCallback: () => void): GameStateImplementation {
 		const world = World.deserialize(object['world'])
 		const tileMetaDataIndex = TileMetaDataIndex.deserialize(object['tileMetaDataIndex'], world.rawHeightData)
 		return new GameStateImplementation(
@@ -90,7 +94,7 @@ export class GameStateImplementation implements GameState {
 			EntityContainer.deserialize(object['entities']),
 			tileMetaDataIndex, deserializeDelayedComputer(object['delayedComputer']),
 			SurfaceResourcesIndex.deserialize(object['surfaceResources']),
-			mutex, stateBroadcastCallback)
+			actionsQueue, mutex, stateBroadcastCallback)
 	}
 
 	public passForRenderer(): unknown {
@@ -122,16 +126,17 @@ export class GameStateImplementation implements GameState {
 	public async advanceActivities() {
 		if (this.isRunningLogic) throw new Error()
 		this.isRunningLogic = true
-		this.metaData[MetadataField.CurrentTick]++
 
-		this.delayedComputer.tick(this)
-
-		const container = this.entities
 		if (isInWorker)
 			this.mutex.enter(Lock.Update)
 		else
 			await this.mutex.enterAsync(Lock.Update)
 
+		this.metaData[MetadataField.CurrentTick]++
+
+		this.actionsQueue.executeAll(this)
+
+		const container = this.entities
 		for (const entity of iterateOverEntitiesWithActivity(container)) {
 			const currentActivity = (container.withActivities.rawData)[entity.withActivity + DataOffsetWithActivity.CurrentId]! as ActivityId
 
@@ -145,7 +150,8 @@ export class GameStateImplementation implements GameState {
 		}
 
 		this.mutex.unlock(Lock.Update)
-
 		this.isRunningLogic = false
+
+		this.delayedComputer.tick(this)
 	}
 }

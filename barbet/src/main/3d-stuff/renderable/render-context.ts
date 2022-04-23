@@ -1,6 +1,7 @@
 import * as vec3 from '@matrix/vec3'
 import { Camera } from '../../camera'
 import { GameState } from '../../game-state/game-state'
+import { ActionsQueue } from '../../game-state/scheduled-actions/queue'
 import { STANDARD_GAME_TICK_RATE, StateUpdater } from '../../game-state/state-updater'
 import { AdditionalFrontedFlags, frontedVariables, FrontendVariable } from '../../util/frontend-variables'
 import { isInWorker, Lock } from '../../util/mutex'
@@ -94,10 +95,15 @@ export const setupSceneRendering = (canvas: HTMLCanvasElement,
 }
 
 
-export const startRenderingGame = (canvas: HTMLCanvasElement, game: GameState, updater: StateUpdater, camera: Camera): () => void => {
+export const startRenderingGame = (canvas: HTMLCanvasElement,
+                                   game: GameState,
+                                   updater: StateUpdater,
+								   actionsQueue: ActionsQueue,
+                                   camera: Camera): () => void => {
+
 	const gameTickEstimation = () => updater.estimateCurrentGameTickTime(globalWorkerDelay.difference)
 	const gameTickRate = () => updater.getTickRate()
-	const handleInputEvents = createInputReactor(game)
+	const handleInputEvents = createInputReactor(game, actionsQueue)
 
 	return setupSceneRendering(canvas, game, camera, gameTickEstimation, gameTickRate, handleInputEvents)
 }

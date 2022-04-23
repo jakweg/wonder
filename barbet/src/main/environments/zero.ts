@@ -1,8 +1,12 @@
 import { startRenderingGame } from '../3d-stuff/renderable/render-context'
 import { Camera } from '../camera'
 import { GameState, GameStateImplementation } from '../game-state/game-state'
-import { createNewStateUpdater, createStateUpdaterControllerFromReceived } from '../game-state/state-updater'
-import { StateUpdater } from '../game-state/state-updater'
+import { ReceiveActionsQueue } from '../game-state/scheduled-actions/queue'
+import {
+	createNewStateUpdater,
+	createStateUpdaterControllerFromReceived,
+	StateUpdater,
+} from '../game-state/state-updater'
 import { initFrontedVariablesFromReceived } from '../util/frontend-variables-updaters'
 import { putSaveData } from '../util/persistance/saves-database'
 import { ArrayEncodingType, setArrayEncodingType } from '../util/persistance/serializers'
@@ -28,6 +32,7 @@ export const connect = (args: ConnectArguments): EnvironmentConnection => {
 	setCameraBuffer(args['camera'])
 	SettingsContainer.INSTANCE = args['settings']
 
+	let actionsQueue: ReceiveActionsQueue | null = null
 	let game: GameState | null = null
 	let updater: StateUpdater | null = null
 	let renderCancelCallback: any = null
@@ -35,14 +40,15 @@ export const connect = (args: ConnectArguments): EnvironmentConnection => {
 		'name': 'zero',
 		async 'createNewGame'(args: CreateGameArguments) {
 			const stateBroadcastCallback = () => void 0 // ignore, since everything is locally anyway
+			actionsQueue = ReceiveActionsQueue.newEmpty()
 
 			const saveName = args['saveName']
 			const file = args['fileToRead']
 			game = file !== undefined
-				? await loadGameFromFile(file, stateBroadcastCallback)
+				? await loadGameFromFile(file, actionsQueue, stateBroadcastCallback)
 				: (saveName !== undefined
-					? await loadGameFromDb(saveName, stateBroadcastCallback)
-					: createEmptyGame(stateBroadcastCallback))
+					? await loadGameFromDb(saveName, actionsQueue, stateBroadcastCallback)
+					: createEmptyGame(actionsQueue, stateBroadcastCallback))
 
 			setGlobalGameState(game)
 
@@ -53,17 +59,18 @@ export const connect = (args: ConnectArguments): EnvironmentConnection => {
 			return {
 				'state': game,
 				'updater': updater,
+				'queue': actionsQueue,
 			}
 		},
 		async 'startRender'(args: StartRenderArguments): Promise<void> {
 			if (game === null) throw new Error('Start game first')
 			renderCancelCallback?.()
-			renderCancelCallback = startRenderingGame(args['canvas'], game, updater!, Camera.newUsingBuffer(getCameraBuffer()))
+			renderCancelCallback = startRenderingGame(args['canvas'], game, updater!, actionsQueue!, Camera.newUsingBuffer(getCameraBuffer()))
 		},
 		'terminateGame'(_: TerminateGameArguments) {
 			renderCancelCallback?.()
 			updater?.stop()
-			game = updater = null
+			actionsQueue = game = updater = null
 			setGlobalStateUpdater(null)
 			setGlobalGameState(null)
 		},
