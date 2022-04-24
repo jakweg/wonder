@@ -1,6 +1,6 @@
 import { calculateNormals } from '../../3d-stuff/common-shader'
+import { lazy } from '../../util/lazy'
 import { ItemType } from '../items'
-import { SurfaceResource, SurfaceResourceType } from '../world/surface-resource'
 
 const createVertexesAndElements = (size: number, scale: number) => {
 	if (size !== (size | 0) || size < 3 || size > 100)
@@ -31,20 +31,17 @@ const createVertexesAndElements = (size: number, scale: number) => {
 	return {vertexData, elementsData}
 }
 
-const {vertexData, elementsData} = createVertexesAndElements(6, 0.7)
-
-let initialized = false
-const initData = () => {
-	if (initialized) return
-	initialized = true
-	calculateNormals(elementsData, vertexData, 6, 3)
-}
+const vertexesAndElements = /* @__PURE__ */ lazy(() => {
+	const tmp = createVertexesAndElements(6, 0.7)
+	calculateNormals(tmp.elementsData, tmp.vertexData, 6, 3)
+	return tmp
+})
 
 function extracted(vertexDataToAppend: number[], elementsDataToAppend: number[],
                    x: number, y: number, z: number,
                    scale: number) {
 	const vertexCountBeforeAdd = vertexDataToAppend.length / 6 | 0
-	const vertexes = vertexData
+	const vertexes = vertexesAndElements().vertexData
 	for (let i = 0, s = vertexes.length; i < s;) {
 		const vx = vertexes[i++]! * scale + x
 		const vy = vertexes[i++]! * scale + y
@@ -55,30 +52,26 @@ function extracted(vertexDataToAppend: number[], elementsDataToAppend: number[],
 			vertexes[i++]!)
 	}
 
+	const elementsData = vertexesAndElements().elementsData
 	for (const index of elementsData) {
 		elementsDataToAppend.push(index + vertexCountBeforeAdd)
 	}
 }
 
-export default {
-	numericId: SurfaceResourceType.Stone,
-	gatheredItem: ItemType.Box,
+export const appendToMesh = (x: number, y: number, z: number,
+                             amount: number,
+                             vertexDataToAppend: number[],
+                             elementsDataToAppend: number[]): void => {
+	if (amount > 0)
+		extracted(vertexDataToAppend, elementsDataToAppend, x, y, z, 1)
+	if (amount > 1)
+		extracted(vertexDataToAppend, elementsDataToAppend, x - 0.1, y, z + 0.5, 0.5)
+	if (amount > 2)
+		extracted(vertexDataToAppend, elementsDataToAppend, x + 0.1, y, z, 0.4)
+	if (amount > 3)
+		extracted(vertexDataToAppend, elementsDataToAppend, x - 0.1, y, z, 0.3)
+	if (amount > 4)
+		extracted(vertexDataToAppend, elementsDataToAppend, x + 0.5, y, z + 0.4, 0.6)
+}
 
-	appendToMesh(x: number, y: number, z: number,
-	             amount: number,
-	             vertexDataToAppend: number[],
-	             elementsDataToAppend: number[]): void {
-		initData()
-
-		if (amount > 0)
-			extracted(vertexDataToAppend, elementsDataToAppend, x, y, z, 1)
-		if (amount > 1)
-			extracted(vertexDataToAppend, elementsDataToAppend, x - 0.1, y, z + 0.5, 0.5)
-		if (amount > 2)
-			extracted(vertexDataToAppend, elementsDataToAppend, x + 0.1, y, z, 0.4)
-		if (amount > 3)
-			extracted(vertexDataToAppend, elementsDataToAppend, x - 0.1, y, z, 0.3)
-		if (amount > 4)
-			extracted(vertexDataToAppend, elementsDataToAppend, x + 0.5, y, z + 0.4, 0.6)
-	},
-} as SurfaceResource
+export const gatheredItem = ItemType.Box

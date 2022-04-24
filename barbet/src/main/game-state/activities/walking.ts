@@ -20,7 +20,6 @@ export const walkingDurationByDirection: number[] = [
 	standardWalkingDuration, crossWalkingDuration,
 	standardWalkingDuration, crossWalkingDuration,
 ]
-Object.freeze(walkingDurationByDirection)
 
 export const walkingVertexTransformationsSource = (options: UnitShaderCreationOptions) => `
 if (isAnimatableElement && !isTopVertex) {

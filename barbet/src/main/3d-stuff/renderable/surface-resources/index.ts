@@ -1,12 +1,12 @@
 import { toGl } from '@matrix//common'
 import { fromValues } from '@matrix//vec3'
 import { GameState } from '../../../game-state/game-state'
+import { getAppendToMeshFunction, SurfaceResourceType } from '../../../game-state/surface-resources'
 import {
 	AMOUNT_SHIFT_BITS,
 	MASK_AMOUNT,
 	MASK_RESOURCE_TYPE,
 } from '../../../game-state/surface-resources/surface-resources-index'
-import { requireResource, SurfaceResourceType } from '../../../game-state/world/surface-resource'
 import { createProgramFromNewShaders } from '../../common-shader'
 import { MainRenderer } from '../../main-renderer'
 import { RenderContext } from '../render-context'
@@ -48,11 +48,11 @@ export const createNewSurfaceResourcesRenderable = (renderer: MainRenderer,
 					const type = raw & MASK_RESOURCE_TYPE as SurfaceResourceType
 					if (type === SurfaceResourceType.None) continue
 					const amount = ((raw & MASK_AMOUNT) >> AMOUNT_SHIFT_BITS) + 1
-					const resource = requireResource(type)
+					const appendToMesh = getAppendToMeshFunction(type)
 
 					const y = world.getHighestBlockHeight(x, z) + 1
 
-					resource.appendToMesh(x, y, z, amount, vertexData, elementsData)
+					appendToMesh(x, y, z, amount, vertexData, elementsData)
 				}
 			}
 

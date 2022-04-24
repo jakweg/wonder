@@ -10,7 +10,7 @@ import {
 } from '../entities/traits'
 import { GameState } from '../game-state'
 import { ItemType } from '../items'
-import { requireResource } from '../world/surface-resource'
+import { getGatheredItem } from '../surface-resources'
 import * as activityIdle from './idle'
 import { ActivityId } from './index'
 import * as activityItemPickupRoot from './item-pickup-root'
@@ -70,7 +70,7 @@ export const perform = (game: GameState, unit: EntityTraitIndicesRecord) => {
 	let itemToPickup: ItemType
 	if (getResource) {
 		const resource = game.surfaceResources.extractSingleResource(itemX, itemZ)
-		itemToPickup = requireResource(resource).gatheredItem
+		itemToPickup = getGatheredItem(resource)
 	} else {
 		itemToPickup = game.groundItems.getItem(itemX, itemZ)
 		game.groundItems.setItem(itemX, itemZ, ItemType.None)

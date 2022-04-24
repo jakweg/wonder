@@ -1,6 +1,6 @@
 import { decodeArray, encodeArray } from '../../util/persistance/serializers'
 import { createNewBuffer } from '../../util/shared-memory'
-import { SurfaceResourceType } from '../world/surface-resource'
+import { SurfaceResourceType } from './index'
 import { ComputedWorldSize } from '../world/world'
 
 export const MASK_RESOURCE_TYPE = 0b00011111
