@@ -10,7 +10,7 @@ import { World } from '../game-state/world/world'
 import { readSaveData } from '../util/persistance/saves-database'
 import { ArrayEncodingType, setArrayEncodingType } from '../util/persistance/serializers'
 import { fillEmptyWorldWithDefaultData } from './example-world-creator'
-import { globalMutex } from './worker-global-state'
+import { globalMutex } from './global-mutex'
 
 export const createEmptyGame = (actionsQueue: ReceiveActionsQueue,
                                 stateBroadcastCallback: () => void): GameState => {

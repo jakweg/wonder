@@ -6,7 +6,7 @@ import { STANDARD_GAME_TICK_RATE, StateUpdater } from '../../game-state/state-up
 import { AdditionalFrontedFlags, frontedVariables, FrontendVariable } from '../../util/frontend-variables'
 import { isInWorker, Lock } from '../../util/mutex'
 import { observeSetting } from '../../worker/observable-settings'
-import { globalMutex, globalWorkerDelay } from '../../worker/worker-global-state'
+import { globalMutex } from '../../worker/global-mutex'
 import { MainRenderer } from '../main-renderer'
 import { createPicker } from '../mouse-picker'
 import { createCombinedRenderable } from './combined-renderables'
@@ -98,10 +98,10 @@ export const setupSceneRendering = (canvas: HTMLCanvasElement,
 export const startRenderingGame = (canvas: HTMLCanvasElement,
                                    game: GameState,
                                    updater: StateUpdater,
-								   actionsQueue: ActionsQueue,
-                                   camera: Camera): () => void => {
+                                   actionsQueue: ActionsQueue,
+                                   camera: Camera,
+                                   gameTickEstimation: () => number): () => void => {
 
-	const gameTickEstimation = () => updater.estimateCurrentGameTickTime(globalWorkerDelay.difference)
 	const gameTickRate = () => updater.getTickRate()
 	const handleInputEvents = createInputReactor(game, actionsQueue)
 

@@ -12,7 +12,6 @@ import { putSaveData } from '../util/persistance/saves-database'
 import { ArrayEncodingType, setArrayEncodingType } from '../util/persistance/serializers'
 import SettingsContainer from '../worker/observable-settings'
 import { getCameraBuffer, setCameraBuffer } from '../worker/serializable-settings'
-import { setGlobalGameState, setGlobalStateUpdater } from '../worker/worker-global-state'
 import { createEmptyGame, loadGameFromDb, loadGameFromFile } from '../worker/world-loader'
 import {
 	ConnectArguments,
@@ -49,10 +48,7 @@ export const connect = (args: ConnectArguments): EnvironmentConnection => {
 					? await loadGameFromDb(saveName, actionsQueue, stateBroadcastCallback)
 					: createEmptyGame(actionsQueue, stateBroadcastCallback))
 
-			setGlobalGameState(game)
-
 			const updaterInstance = createNewStateUpdater(() => (game as GameStateImplementation)?.advanceActivities(), game.currentTick)
-			setGlobalStateUpdater(updaterInstance)
 
 			updater = createStateUpdaterControllerFromReceived(updaterInstance.pass())
 			return {
@@ -64,14 +60,13 @@ export const connect = (args: ConnectArguments): EnvironmentConnection => {
 		async 'startRender'(args: StartRenderArguments): Promise<void> {
 			if (game === null) throw new Error('Start game first')
 			renderCancelCallback?.()
-			renderCancelCallback = startRenderingGame(args['canvas'], game, updater!, actionsQueue!, Camera.newUsingBuffer(getCameraBuffer()))
+			const gameTickEstimation = () => updater!.estimateCurrentGameTickTime(0)
+			renderCancelCallback = startRenderingGame(args['canvas'], game, updater!, actionsQueue!, Camera.newUsingBuffer(getCameraBuffer()), gameTickEstimation)
 		},
 		'terminateGame'(_: TerminateGameArguments) {
 			renderCancelCallback?.()
 			updater?.stop()
 			actionsQueue = game = updater = null
-			setGlobalStateUpdater(null)
-			setGlobalGameState(null)
 		},
 		'saveGame'(saveArgs: SaveGameArguments): void {
 			if (game === null) return

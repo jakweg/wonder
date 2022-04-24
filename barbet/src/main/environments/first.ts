@@ -8,7 +8,7 @@ import { setMessageHandler } from '../worker/message-handler'
 import SettingsContainer from '../worker/observable-settings'
 import { getCameraBuffer, setCameraBuffer } from '../worker/serializable-settings'
 import { WorkerController } from '../worker/worker-controller'
-import { globalMutex, globalWorkerDelay } from '../worker/worker-global-state'
+import { globalMutex } from '../worker/global-mutex'
 import {
 	ConnectArguments,
 	EnvironmentConnection,
@@ -30,7 +30,6 @@ export const connect = async (args: ConnectArguments): Promise<EnvironmentConnec
 	let updater: StateUpdater | null = null
 	const updateWorker = await WorkerController.spawnNew('update-worker', 'update', globalMutex)
 
-	globalWorkerDelay.difference = updateWorker.workerStartDelay
 	args['settings'].observeEverything(snapshot => updateWorker.replier.send('new-settings', snapshot))
 
 	setMessageHandler('update-entity-container', data => {
@@ -64,7 +63,8 @@ export const connect = async (args: ConnectArguments): Promise<EnvironmentConnec
 			if (decodedGame === null) throw new Error('Start game first')
 			renderingCancelCallback?.()
 			const camera = Camera.newUsingBuffer(getCameraBuffer())
-			renderingCancelCallback = startRenderingGame(args['canvas'], decodedGame, updater!, queue!, camera)
+			const gameTickEstimation = () => updater!.estimateCurrentGameTickTime(updateWorker.workerStartDelay)
+			renderingCancelCallback = startRenderingGame(args['canvas'], decodedGame, updater!, queue!, camera, gameTickEstimation)
 		},
 		'saveGame'(args: SaveGameArguments): void {
 			updateWorker.replier?.send('save-game', args)

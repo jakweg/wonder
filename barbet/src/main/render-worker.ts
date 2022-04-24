@@ -7,12 +7,13 @@ import { initFrontedVariablesFromReceived } from './util/frontend-variables-upda
 import { takeControlOverWorkerConnection } from './worker/connections-manager'
 import { Connection, setMessageHandler } from './worker/message-handler'
 import SettingsContainer from './worker/observable-settings'
-import { globalWorkerDelay, setGlobalMutex } from './worker/worker-global-state'
+import { setGlobalMutex } from './worker/global-mutex'
 
 SettingsContainer.INSTANCE = SettingsContainer.createEmpty()
 takeControlOverWorkerConnection()
 
 let renderCancelCallback: () => void = () => void 0
+let workerStartDelayDifference = 0
 let canvas: HTMLCanvasElement | null = null
 let gameSnapshot: unknown | null = null
 let decodedGame: GameState | null = null
@@ -35,7 +36,7 @@ setMessageHandler('transfer-canvas', (data) => {
 })
 
 setMessageHandler('set-worker-load-delays', (data) => {
-	globalWorkerDelay.difference = data['update'] - data['render']
+	workerStartDelayDifference = data['update'] - data['render']
 })
 
 setMessageHandler('game-snapshot-for-renderer', (data) => {
@@ -74,6 +75,7 @@ const considerStartRendering = () => {
 		const queue = SendActionsQueue.create(action => connectionWithParent.send('scheduled-action', action))
 
 		renderCancelCallback?.()
-		renderCancelCallback = startRenderingGame(canvas, decodedGame, decodedUpdater, queue, camera)
+		const gameTickEstimation = () => decodedUpdater!.estimateCurrentGameTickTime(workerStartDelayDifference)
+		renderCancelCallback = startRenderingGame(canvas, decodedGame, decodedUpdater, queue, camera, gameTickEstimation)
 	}
 }

@@ -7,7 +7,7 @@ import { setMessageHandler } from '../worker/message-handler'
 import SettingsContainer from '../worker/observable-settings'
 import { getCameraBuffer, setCameraBuffer } from '../worker/serializable-settings'
 import { WorkerController } from '../worker/worker-controller'
-import { globalMutex } from '../worker/worker-global-state'
+import { globalMutex } from '../worker/global-mutex'
 import {
 	ConnectArguments,
 	EnvironmentConnection,

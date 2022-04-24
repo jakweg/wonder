@@ -2,24 +2,22 @@ import { SaveMethod } from './environments/loader'
 import { GameStateImplementation } from './game-state/game-state'
 import { ReceiveActionsQueue } from './game-state/scheduled-actions/queue'
 import { createNewStateUpdater } from './game-state/state-updater'
+import { StateUpdaterImplementation } from './game-state/state-updater/implementation'
 import { putSaveData } from './util/persistance/saves-database'
 import { ArrayEncodingType, setArrayEncodingType } from './util/persistance/serializers'
 import { takeControlOverWorkerConnection } from './worker/connections-manager'
 import { setMessageHandler } from './worker/message-handler'
 import SettingsContainer from './worker/observable-settings'
-import {
-	globalActionsQueue,
-	globalGameState,
-	globalStateUpdater,
-	setGlobalActionsQueue,
-	setGlobalGameState,
-	setGlobalMutex,
-	setGlobalStateUpdater,
-} from './worker/worker-global-state'
+import { setGlobalMutex } from './worker/global-mutex'
 import { createEmptyGame, loadGameFromDb, loadGameFromFile } from './worker/world-loader'
 
 SettingsContainer.INSTANCE = SettingsContainer.createEmpty()
 takeControlOverWorkerConnection()
+
+
+let gameState: GameStateImplementation | null = null
+let stateUpdater: StateUpdaterImplementation | null = null
+let actionsQueue: ReceiveActionsQueue | null = null
 
 setMessageHandler('set-global-mutex', (data) => {
 	setGlobalMutex(data['mutex'])
@@ -30,45 +28,39 @@ setMessageHandler('new-settings', settings => {
 })
 
 setMessageHandler('terminate-game', () => {
-	globalStateUpdater?.terminate()
-	setGlobalGameState(null)
-	setGlobalStateUpdater(null)
-	setGlobalActionsQueue(null)
+	stateUpdater?.terminate()
+	gameState = stateUpdater = actionsQueue = null
 })
 
 setMessageHandler('create-game', async (args, connection) => {
-	let updater
 	const stateBroadcastCallback = () => {
-		if (globalGameState === null) return
+		if (gameState === null) return
 		connection.send('update-entity-container', {
-			'buffers': globalGameState?.entities?.passBuffers(),
+			'buffers': gameState?.entities?.passBuffers(),
 		})
 	}
 
 	const saveName = args['saveName']
 	const file = args['fileToRead']
-	const queue = ReceiveActionsQueue.create()
-	setGlobalActionsQueue(queue)
+	actionsQueue = ReceiveActionsQueue.create()
 
-	const state = file !== undefined
-		? await loadGameFromFile(file, queue, stateBroadcastCallback)
+	gameState = (file !== undefined
+		? await loadGameFromFile(file, actionsQueue!, stateBroadcastCallback)
 		: (saveName !== undefined
-			? await loadGameFromDb(saveName, queue, stateBroadcastCallback)
-			: createEmptyGame(queue, stateBroadcastCallback))
-	setGlobalGameState(state)
+			? await loadGameFromDb(saveName, actionsQueue!, stateBroadcastCallback)
+			: createEmptyGame(actionsQueue!, stateBroadcastCallback))) as GameStateImplementation
 
-	updater = createNewStateUpdater(() => (state as GameStateImplementation).advanceActivities(), state.currentTick)
-	setGlobalStateUpdater(updater)
+	stateUpdater = createNewStateUpdater(() => gameState!.advanceActivities(), gameState.currentTick)
 
 	connection.send('game-snapshot-for-renderer', {
-		'game': (state as GameStateImplementation).passForRenderer(),
-		'updater': updater.pass(),
+		'game': gameState!.passForRenderer(),
+		'updater': stateUpdater!.pass(),
 	})
 })
 
 setMessageHandler('save-game', async (data, connection) => {
 	const saveName = data['saveName']
-	const state = globalGameState as GameStateImplementation
+	const state = gameState
 	if (state === null) return
 	switch (data['method']) {
 		case SaveMethod.ToIndexedDatabase: {
@@ -95,5 +87,5 @@ setMessageHandler('save-game', async (data, connection) => {
 })
 
 setMessageHandler('scheduled-action', (action) => {
-	globalActionsQueue?.append(action)
+	actionsQueue?.append(action)
 })
