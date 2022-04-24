@@ -13,7 +13,7 @@ void main() {
 	int flagsAsInt = int(a_flags);
 	v_normal = vec3(ivec3(((flagsAsInt >> 4) & 3) - 1, ((flagsAsInt >> 2) & 3) - 1, (flagsAsInt & 3) - 1));
 	
-	v_color = vec3(1,0,0);
+	v_color = vec3(sin(u_time) * 0.5 + 0.5,sin(u_time * 0.7) * 0.5 + 0.5,sin(u_time * 3.0) * 0.5 + 0.5);
 	vec3 pos = a_modelPosition;
     v_currentPosition = pos;
     gl_Position = u_combinedMatrix * vec4(pos, 1);
