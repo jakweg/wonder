@@ -1,26 +1,33 @@
 import * as activityIdle from '../game-state/activities/idle'
 import { DataOffsetPositions, EntityTrait } from '../game-state/entities/traits'
 import { GameState } from '../game-state/game-state'
-import { ItemType } from '../game-state/items'
+import fillTerrain from '../game-state/sync-operations/fill-terrain'
 import { BlockId } from '../game-state/world/block'
 
 export function fillEmptyWorldWithDefaultData(gameState: GameState) {
 
-	const {world, entities, groundItems} = gameState
+	const {world} = gameState
 
-	for (let i = 0, w = world.size.sizeX; i < w; i++)
-		for (let j = 0, h = world.size.sizeZ; j < h; j++)
-			world.setBlock(i, 0, j, BlockId.Water)
+	fillTerrain({
+		game: gameState, fillWith: BlockId.Grass,
+		x: 3, sx: world.size.sizeX - 6,
+		y: 0, sy: 2,
+		z: 3, sz: world.size.sizeZ - 6,
+	})
 
-	for (let i = 2, w = world.size.sizeX - 2; i < w; i++)
-		for (let j = 2, h = world.size.sizeZ - 2; j < h; j++)
-			world.setBlock(i, 1, j, BlockId.Sand)
-	for (let i = 3, w = world.size.sizeX - 3; i < w; i++)
-		for (let j = 3, h = world.size.sizeZ - 3; j < h; j++)
-			world.setBlock(i, 1, j, BlockId.Grass)
+	fillTerrain({
+		game: gameState, fillWith: BlockId.Sand, replace: BlockId.Air,
+		x: 2, sx: world.size.sizeX - 4,
+		y: 0, sy: 2,
+		z: 2, sz: world.size.sizeZ - 4,
+	})
 
-	world.recalculateHeightIndex()
-
+	fillTerrain({
+		game: gameState, fillWith: BlockId.Water, replace: BlockId.Air,
+		x: 0, sx: world.size.sizeX,
+		y: 0, sy: 1,
+		z: 0, sz: world.size.sizeZ,
+	})
 
 	groundItems.setItem(17, 14, ItemType.Box)
 	groundItems.setItem(16, 14, ItemType.Box)

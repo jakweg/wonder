@@ -15,7 +15,7 @@ import { globalMutex } from './global-mutex'
 export const createEmptyGame = (actionsQueue: ReceiveActionsQueue,
                                 stateBroadcastCallback: () => void): GameState => {
 	const mutex = globalMutex
-	const world = World.createEmpty(20, 30, 20, BlockId.Air)
+	const world = World.createEmpty(20, 10, 20, BlockId.Air)
 	const itemsOnGround = GroundItemsIndex.createNew(world.size)
 	const tileMetaDataIndex = TileMetaDataIndex.createNew(world.size.sizeX, world.size.sizeZ, world.rawHeightData)
 	const delayedComputer = createNewDelayedComputer()

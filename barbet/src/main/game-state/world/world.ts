@@ -202,9 +202,16 @@ export class World {
 		this.chunkModificationIds[((z / WORLD_CHUNK_SIZE) | 0) * this.size.chunksSizeX + ((x + 1) / WORLD_CHUNK_SIZE | 0)]++
 	}
 
-	public getLastChunkModificationId(x: number, z: number): number {
-		this.validateChunkCoords(x, z)
-		return this.chunkModificationIds[z * this.size.chunksSizeX + x]!
+	public replaceBlock(x: number, y: number, z: number, withBlock: BlockId, ifBlock: BlockId) {
+		if (this.isNonUpdatable)
+			throw new Error('world is readonly')
+
+		this.validateCoords(x, y, z)
+		const sizeX = this.size.sizeX
+		const blocksPerY = this.size.blocksPerY
+		const currentBlock = this.rawBlockData[y * blocksPerY + x * sizeX + z]! as BlockId
+		if (currentBlock === ifBlock)
+			this.setBlock(x, y, z, withBlock)
 	}
 
 	public recalculateHeightIndex(): void {
@@ -242,11 +249,5 @@ export class World {
 			|| y < 0 || y >= this.size.sizeY || (y | 0) !== y
 			|| z < 0 || z >= this.size.sizeZ || (z | 0) !== z)
 			throw new Error(`Invalid coords ${x} ${y} ${z}`)
-	}
-
-	private validateChunkCoords(x: number, z: number) {
-		if (x < 0 || x >= this.size.chunksSizeX || (x | 0) !== x
-			|| z < 0 || z >= this.size.chunksSizeZ || (z | 0) !== z)
-			throw new Error(`Invalid coords ${x} ${z}`)
 	}
 }
