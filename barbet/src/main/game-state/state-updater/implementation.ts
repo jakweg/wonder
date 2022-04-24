@@ -17,7 +17,7 @@ const waitForStatusNotStopped = async (memory: Int32Array): Promise<Status> => {
 		if (status !== Status.Stopped)
 			return status
 
-		await ((isInWorker ? Atomics.wait : waitAsyncCompat)(memory, BufferField.Status, status, 1000) as unknown as any)['value']
+		await ((isInWorker ? Atomics.wait : waitAsyncCompat)(memory, BufferField.Status, status, 50) as unknown as any)['value']
 	}
 }
 
