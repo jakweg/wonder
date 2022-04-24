@@ -1,6 +1,7 @@
 import { UnitColorPaletteId } from '../../3d-stuff/renderable/unit/unit-color'
+import { Direction } from '../../util/direction'
 import * as idle from '../activities/idle'
-import { DataOffsetPositions, EntityTrait } from '../entities/traits'
+import { DataOffsetDrawables, DataOffsetPositions, EntityTrait } from '../entities/traits'
 import { GameState } from '../game-state'
 
 interface Props {
@@ -8,6 +9,7 @@ interface Props {
 	x: number
 	z: number
 	color: UnitColorPaletteId
+	facing?: Direction
 }
 
 const enum ErrorReason {
@@ -37,6 +39,9 @@ export default (props: Props): Result => {
 	entities.positions.rawData[unit.position + DataOffsetPositions.PositionX] = x
 	entities.positions.rawData[unit.position + DataOffsetPositions.PositionY] = y + 1
 	entities.positions.rawData[unit.position + DataOffsetPositions.PositionZ] = z
+
+	entities.drawables.rawData[unit.drawable + DataOffsetDrawables.ColorPaletteId] = props.color
+	entities.drawables.rawData[unit.drawable + DataOffsetDrawables.Rotation] = props.facing ?? Direction.NegativeX
 
 	idle.setup(props.game, unit)
 
