@@ -2,8 +2,6 @@ import { SaveMethod } from './environments/loader'
 import { GameStateImplementation } from './game-state/game-state'
 import { ReceiveActionsQueue } from './game-state/scheduled-actions/queue'
 import { createNewStateUpdater } from './game-state/state-updater'
-import { computeWorldBoundingBox } from './game-state/world/bounding-box'
-import { World } from './game-state/world/world'
 import { putSaveData } from './util/persistance/saves-database'
 import { ArrayEncodingType, setArrayEncodingType } from './util/persistance/serializers'
 import { takeControlOverWorkerConnection } from './worker/connections-manager'
@@ -12,7 +10,8 @@ import SettingsContainer from './worker/observable-settings'
 import {
 	globalActionsQueue,
 	globalGameState,
-	globalStateUpdater, setGlobalActionsQueue,
+	globalStateUpdater,
+	setGlobalActionsQueue,
 	setGlobalGameState,
 	setGlobalMutex,
 	setGlobalStateUpdater,
@@ -93,27 +92,6 @@ setMessageHandler('save-game', async (data, connection) => {
 			connection.send('save-game-result', {'url': url})
 		}
 	}
-})
-
-setMessageHandler('debug', (data) => {
-	const type = data['type']
-	if (type !== 'create-building-prototype')
-		return
-
-	if (globalGameState == null) return
-	const world = globalGameState!.world
-	const box = computeWorldBoundingBox(world)
-
-	const newOne = World.createEmpty(box.maxX - box.minX + 1, box.maxY - box.minY, box.maxZ - box.minZ + 1)
-
-	World.copyFragment(world, newOne,
-		box.minX, box.minY, box.minZ,
-		0, 0, 0,
-		newOne.size.sizeX, newOne.size.sizeY, newOne.size.sizeZ)
-
-	setArrayEncodingType(ArrayEncodingType.String)
-	console.log(newOne.serialize())
-	setArrayEncodingType(ArrayEncodingType.None)
 })
 
 setMessageHandler('scheduled-action', (action) => {

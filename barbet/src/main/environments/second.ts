@@ -10,7 +10,6 @@ import { WorkerController } from '../worker/worker-controller'
 import { globalMutex } from '../worker/worker-global-state'
 import {
 	ConnectArguments,
-	DebugCommandArguments,
 	EnvironmentConnection,
 	SaveGameArguments,
 	StartRenderArguments,
@@ -48,11 +47,14 @@ export const connect = async (args: ConnectArguments): Promise<EnvironmentConnec
 		args['saveResultsCallback'](data)
 	})
 
+	const queue: ActionsQueue = SendActionsQueue.create(a => updateWorker.replier.send('scheduled-action', a))
+	setMessageHandler('scheduled-action', action => queue.append(action))
+
 	setMessageHandler('game-snapshot-for-renderer', (data) => {
 		gameSnapshotForRenderer = data
 		decodedGame = createGameStateForRenderer(data['game'])
 		updater = createStateUpdaterControllerFromReceived(data['updater'])
-		startGameCallback({'state': decodedGame, 'updater': updater})
+		startGameCallback({'state': decodedGame, 'updater': updater, 'queue': queue})
 	})
 	setMessageHandler('update-entity-container', data => {
 		decodedGame!.entities.replaceBuffersFromReceived(data)
@@ -60,8 +62,6 @@ export const connect = async (args: ConnectArguments): Promise<EnvironmentConnec
 		renderWorker.replier.send('update-entity-container', data)
 	})
 
-	const queue: ActionsQueue = SendActionsQueue.create(a => updateWorker.replier.send('scheduled-action', a))
-	setMessageHandler('scheduled-action', action => queue.append(action))
 
 	return {
 		'name': 'second',
@@ -90,9 +90,6 @@ export const connect = async (args: ConnectArguments): Promise<EnvironmentConnec
 			renderWorker.replier.send('terminate-game', args)
 			updateWorker.replier.send('terminate-game', args)
 			entityContainerSnapshotForRenderer = decodedGame = updater = null
-		},
-		'debugCommand'(args: DebugCommandArguments): void {
-			updateWorker.replier.send('debug', args)
 		},
 	}
 }

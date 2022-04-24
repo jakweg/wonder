@@ -11,7 +11,6 @@ import { WorkerController } from '../worker/worker-controller'
 import { globalMutex, globalWorkerDelay } from '../worker/worker-global-state'
 import {
 	ConnectArguments,
-	DebugCommandArguments,
 	EnvironmentConnection,
 	SaveGameArguments,
 	StartRenderArguments,
@@ -42,14 +41,15 @@ export const connect = async (args: ConnectArguments): Promise<EnvironmentConnec
 		args['saveResultsCallback'](data)
 	})
 
+	const queue: ActionsQueue = SendActionsQueue.create(a => updateWorker.replier.send('scheduled-action', a))
+
 	setMessageHandler('game-snapshot-for-renderer', (data) => {
 		decodedGame = createGameStateForRenderer(data['game'])
 
 		updater = createStateUpdaterControllerFromReceived(data['updater'])
-		gameResolveCallback({'state': decodedGame, 'updater': updater})
+		gameResolveCallback({'state': decodedGame, 'updater': updater, 'queue': queue})
 	})
 
-	const queue: ActionsQueue = SendActionsQueue.create(a => updateWorker.replier.send('scheduled-action', a))
 
 	return {
 		'name': 'first',
@@ -73,9 +73,6 @@ export const connect = async (args: ConnectArguments): Promise<EnvironmentConnec
 			updateWorker.replier.send('terminate-game', args)
 			renderingCancelCallback?.()
 			renderingCancelCallback = decodedGame = updater = null
-		},
-		debugCommand(_: DebugCommandArguments) {
-			console.log('debug command not implemented')
 		},
 	}
 }

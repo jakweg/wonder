@@ -1,9 +1,4 @@
-import {
-	CreateGameArguments,
-	DebugCommandArguments,
-	SaveGameArguments,
-	TerminateGameArguments,
-} from '../environments/loader'
+import { CreateGameArguments, SaveGameArguments, TerminateGameArguments } from '../environments/loader'
 import { ScheduledAction } from '../game-state/scheduled-actions'
 
 export interface Message {
@@ -20,7 +15,6 @@ export interface Message {
 	['new-settings']: any
 	['save-game']: SaveGameArguments
 	['terminate-game']: TerminateGameArguments
-	['debug']: DebugCommandArguments
 	['save-game-result']: { url: string }
 	['scheduled-action']: ScheduledAction
 }

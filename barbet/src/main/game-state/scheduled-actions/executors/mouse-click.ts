@@ -1,9 +1,9 @@
-import { MousePickableType, MousePickerResultAny, MousePickerTerrainResult } from '../../3d-stuff/mouse-picker'
-import { BuildingId, getBuildingMask, getBuildingProgressInfo } from '../buildings'
-import { DataOffsetBuildingData, DataOffsetPositions, EntityTrait } from '../entities/traits'
-import { GameState, MetadataField } from '../game-state'
-import { AIR_ID, BlockId } from '../world/block'
-import { ScheduledActionId } from './'
+import { MousePickableType, MousePickerResultAny, MousePickerTerrainResult } from '../../../3d-stuff/mouse-picker'
+import { BuildingId, getBuildingMask, getBuildingProgressInfo } from '../../buildings'
+import { DataOffsetBuildingData, DataOffsetPositions, EntityTrait } from '../../entities/traits'
+import { GameState, MetadataField } from '../../game-state'
+import { AIR_ID, BlockId } from '../../world/block'
+import { ScheduledActionId } from '../index'
 
 export type Action = {
 	type: ScheduledActionId.MouseClick

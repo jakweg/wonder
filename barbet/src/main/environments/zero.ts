@@ -17,7 +17,6 @@ import { createEmptyGame, loadGameFromDb, loadGameFromFile } from '../worker/wor
 import {
 	ConnectArguments,
 	CreateGameArguments,
-	DebugCommandArguments,
 	EnvironmentConnection,
 	SaveGameArguments,
 	SaveMethod,
@@ -101,9 +100,6 @@ export const connect = (args: ConnectArguments): EnvironmentConnection => {
 					args['saveResultsCallback']({'url': url})
 				}
 			}
-		},
-		debugCommand(_: DebugCommandArguments) {
-			console.warn('not implemented')
 		},
 	}
 }

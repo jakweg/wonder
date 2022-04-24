@@ -1,10 +1,13 @@
 import {
-	CreateGameArguments, Environment,
+	CreateGameArguments,
+	Environment,
 	EnvironmentConnection,
 	getSuggestedEnvironmentName,
 	loadEnvironment,
 	SaveMethod,
 } from './environments/loader'
+import { ScheduledActionId } from './game-state/scheduled-actions'
+import { ActionsQueue } from './game-state/scheduled-actions/queue'
 import { StateUpdater } from './game-state/state-updater'
 import { bindSettingsListeners } from './html-controls/settings'
 import {
@@ -35,11 +38,13 @@ const recreateCanvas = (): HTMLCanvasElement => {
 interface PageState {
 	updater: StateUpdater | null
 	environment: EnvironmentConnection | null
+	actionsQueue: ActionsQueue | null
 }
 
 const state: PageState = {
 	updater: null,
 	environment: null,
+	actionsQueue: null,
 }
 
 let pauseOnBlur = false
@@ -105,7 +110,7 @@ document.addEventListener('keydown', async event => {
 	} else if (event['code'] === 'KeyD' && event['ctrlKey']) {
 		event.preventDefault()
 		event.stopPropagation()
-		state?.environment?.['debugCommand']({type: 'create-building-prototype'})
+		state?.actionsQueue?.append({type: ScheduledActionId.DebugCreateBuildingPrototype})
 	}
 })
 
@@ -121,6 +126,7 @@ const runGame = async (args: CreateGameArguments) => {
 	const results = await state.environment['createNewGame'](args)
 	await state.environment['startRender']({'canvas': recreateCanvas()})
 	state.updater = results['updater']
+	state.actionsQueue = results['queue']
 	const speedToSet = +SettingsContainer.INSTANCE.get('other/tps')
 	state.updater.start(speedToSet)
 }
