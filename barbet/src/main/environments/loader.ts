@@ -82,10 +82,10 @@ export const loadEnvironment = async (name: Environment,
 	}
 	const connect = (await import((`${JS_ROOT}/environments/${name}.js`)))['connect']
 	const args: ConnectArguments = {
-		'frontendVariables': frontedVariablesBuffer,
-		'camera': getCameraBuffer(),
-		'settings': SettingsContainer.INSTANCE,
-		'saveResultsCallback': saveResultsCallback,
+		frontendVariables: frontedVariablesBuffer,
+		camera: getCameraBuffer(),
+		settings: SettingsContainer.INSTANCE,
+		saveResultsCallback,
 	}
 	return Object.freeze(await connect(args) as EnvironmentConnection)
 }

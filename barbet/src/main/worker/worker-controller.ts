@@ -21,7 +21,7 @@ export class WorkerController {
 
 		const replier = {
 			send<T extends MessageType>(type: T, extra: Message[T], transferable?: Transferable[]) {
-				worker['postMessage']({'type': type, 'extra': extra}, transferable ?? (EMPTY_LIST as Transferable[]))
+				worker['postMessage']({type, extra}, transferable ?? (EMPTY_LIST as Transferable[]))
 			},
 		}
 
@@ -29,10 +29,10 @@ export class WorkerController {
 
 		await new Promise<void>(resolve => {
 			setMessageHandler('connection-established', (data) => {
-				delay = performance.now() - data['now']
+				delay = performance.now() - data.now
 				resolve()
 			}, true)
-		}).then(() => replier?.send('set-global-mutex', {'mutex': mutex.pass()}))
+		}).then(() => replier?.send('set-global-mutex', {mutex: mutex.pass()}))
 
 		mutex.unlock(Lock.Update)
 		return new WorkerController(worker, replier, delay)

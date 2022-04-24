@@ -25,12 +25,12 @@ export interface GameState {
 
 export const createGameStateForRenderer = (object: any): GameState => {
 	return {
-		metaData: new Int32Array(object['metadata']),
-		world: World.fromReceived(object['world']),
-		groundItems: GroundItemsIndex.fromReceived(object['groundItems']),
-		entities: EntityContainer.fromReceived(object['entities']),
-		tileMetaDataIndex: TileMetaDataIndex.fromReceived(object['tileMetaDataIndex']),
-		surfaceResources: SurfaceResourcesIndex.fromReceived(object['surfaceResources']),
+		metaData: new Int32Array(object.metadata),
+		world: World.fromReceived(object.world),
+		groundItems: GroundItemsIndex.fromReceived(object.groundItems),
+		entities: EntityContainer.fromReceived(object.entities),
+		tileMetaDataIndex: TileMetaDataIndex.fromReceived(object.tileMetaDataIndex),
+		surfaceResources: SurfaceResourcesIndex.fromReceived(object.surfaceResources),
 
 		get currentTick(): number {
 			return this.metaData[MetadataField.CurrentTick]!
@@ -99,13 +99,13 @@ export class GameStateImplementation implements GameState {
 
 	public passForRenderer(): unknown {
 		return {
-			'metadata': this.metaData['buffer'],
-			'mutex': this.mutex.pass(),
-			'world': this.world.pass(),
-			'groundItems': this.groundItems.pass(),
-			'entities': this.entities.pass(),
-			'surfaceResources': this.surfaceResources.pass(),
-			'tileMetaDataIndex': this.tileMetaDataIndex.pass(),
+			metadata: this.metaData['buffer'],
+			mutex: this.mutex.pass(),
+			world: this.world.pass(),
+			groundItems: this.groundItems.pass(),
+			entities: this.entities.pass(),
+			surfaceResources: this.surfaceResources.pass(),
+			tileMetaDataIndex: this.tileMetaDataIndex.pass(),
 		}
 	}
 

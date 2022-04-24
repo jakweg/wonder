@@ -13,7 +13,7 @@ export interface StateUpdater {
 }
 
 export const createStateUpdaterControllerFromReceived = (data: any): StateUpdater => {
-	const memory = new Int32Array(data['buffer'])
+	const memory = new Int32Array(data.buffer)
 
 	return {
 		start(ticksPerSecond: number) {

@@ -19,9 +19,9 @@ import {
 // this function is always used
 // noinspection JSUnusedGlobalSymbols
 export const connect = async (args: ConnectArguments): Promise<EnvironmentConnection> => {
-	initFrontedVariablesFromReceived(args['frontendVariables'])
-	setCameraBuffer(args['camera'])
-	SettingsContainer.INSTANCE = args['settings']
+	initFrontedVariablesFromReceived(args.frontendVariables)
+	setCameraBuffer(args.camera)
+	SettingsContainer.INSTANCE = args.settings
 
 	let startGameCallback: any = null
 	let entityContainerSnapshotForRenderer: any = null
@@ -36,15 +36,15 @@ export const connect = async (args: ConnectArguments): Promise<EnvironmentConnec
 		renderWorker.replier.send('new-settings', snapshot)
 	})
 
-	renderWorker.replier.send('frontend-variables', {'buffer': frontedVariablesBuffer})
-	renderWorker.replier.send('camera-buffer', {'buffer': getCameraBuffer()})
+	renderWorker.replier.send('frontend-variables', {buffer: frontedVariablesBuffer})
+	renderWorker.replier.send('camera-buffer', {buffer: getCameraBuffer()})
 	renderWorker.replier.send('set-worker-load-delays', {
-		'render': renderWorker.workerStartDelay,
-		'update': updateWorker!.workerStartDelay,
+		render: renderWorker.workerStartDelay,
+		update: updateWorker!.workerStartDelay,
 	})
 
 	setMessageHandler('save-game-result', data => {
-		args['saveResultsCallback'](data)
+		args.saveResultsCallback(data)
 	})
 
 	const queue: ActionsQueue = SendActionsQueue.create(a => updateWorker.replier.send('scheduled-action', a))
@@ -52,9 +52,9 @@ export const connect = async (args: ConnectArguments): Promise<EnvironmentConnec
 
 	setMessageHandler('game-snapshot-for-renderer', (data) => {
 		gameSnapshotForRenderer = data
-		decodedGame = createGameStateForRenderer(data['game'])
-		updater = createStateUpdaterControllerFromReceived(data['updater'])
-		startGameCallback({'state': decodedGame, 'updater': updater, 'queue': queue})
+		decodedGame = createGameStateForRenderer(data.game)
+		updater = createStateUpdaterControllerFromReceived(data.updater)
+		startGameCallback({state: decodedGame, updater, queue})
 	})
 	setMessageHandler('update-entity-container', data => {
 		decodedGame!.entities.replaceBuffersFromReceived(data)
@@ -64,8 +64,8 @@ export const connect = async (args: ConnectArguments): Promise<EnvironmentConnec
 
 
 	return {
-		'name': 'second',
-		async 'createNewGame'(gameArgs) {
+		name: 'second',
+		async createNewGame(gameArgs) {
 			if (decodedGame !== null)
 				throw new Error('Game was already created')
 
@@ -73,20 +73,20 @@ export const connect = async (args: ConnectArguments): Promise<EnvironmentConnec
 
 			return new Promise(resolve => startGameCallback = resolve)
 		},
-		'startRender': async function (renderArguments: StartRenderArguments): Promise<void> {
+		startRender: async function (renderArguments: StartRenderArguments): Promise<void> {
 			if (gameSnapshotForRenderer === null)
 				throw new Error('Create game first')
 
-			const canvasControl = (renderArguments['canvas'] as any).transferControlToOffscreen()
-			renderWorker.replier.send('transfer-canvas', {'canvas': canvasControl}, [canvasControl])
+			const canvasControl = (renderArguments.canvas as any).transferControlToOffscreen()
+			renderWorker.replier.send('transfer-canvas', {canvas: canvasControl}, [canvasControl])
 			renderWorker.replier.send('game-snapshot-for-renderer', gameSnapshotForRenderer)
 			if (entityContainerSnapshotForRenderer !== null)
 				renderWorker.replier.send('update-entity-container', entityContainerSnapshotForRenderer)
 		},
-		'saveGame'(args: SaveGameArguments): void {
+		saveGame(args: SaveGameArguments): void {
 			updateWorker.replier?.send('save-game', args)
 		},
-		'terminateGame'(args: TerminateGameArguments): void {
+		terminateGame(args: TerminateGameArguments): void {
 			renderWorker.replier.send('terminate-game', args)
 			updateWorker.replier.send('terminate-game', args)
 			entityContainerSnapshotForRenderer = decodedGame = updater = null

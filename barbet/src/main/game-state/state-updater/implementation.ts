@@ -131,13 +131,14 @@ export const createNewStateUpdater = (updatable: Updatable,
 	memory.fill(0)
 	memory[BufferField.Status] = Status.Stopped
 	memory[BufferField.ExecutedTicksCounter] = startFromTick
+	// memory[BufferField.ExpectedTicksPerSecond] = memory[BufferField.TicksPerSecond] = 1
 
 	// noinspection JSIgnoredPromiseFromCall
 	loop(memory, updatable)
 
 	return {
 		pass(): unknown {
-			return {'buffer': memory['buffer']}
+			return {buffer: memory['buffer']}
 		},
 		terminate(): void {
 			Atomics.store(memory, BufferField.Status, Status.Terminated)

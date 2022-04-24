@@ -27,9 +27,9 @@ export class GroundItemsIndex {
 
 
 	public static fromReceived(object: any): GroundItemsIndex {
-		const sizeX = object['sizeX'] as number
-		const sizeZ = object['sizeZ'] as number
-		const buffer = object['buffer'] as SharedArrayBuffer
+		const sizeX = object.sizeX as number
+		const sizeZ = object.sizeZ as number
+		const buffer = object.buffer as SharedArrayBuffer
 
 		const itemIds = new Uint8Array(buffer)
 		return new GroundItemsIndex(true, itemIds, buffer, sizeX, sizeZ)
@@ -46,9 +46,9 @@ export class GroundItemsIndex {
 
 	public pass(): unknown {
 		return {
-			'sizeX': this.sizeX,
-			'sizeZ': this.sizeZ,
-			'buffer': this.buffer,
+			sizeX: this.sizeX,
+			sizeZ: this.sizeZ,
+			buffer: this.buffer,
 		}
 	}
 

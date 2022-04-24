@@ -32,7 +32,7 @@ export class TileMetaDataIndex {
 	}
 
 	public static fromReceived(object: any): TileMetaDataIndex {
-		return new TileMetaDataIndex(true, object['sizeX'], object['sizeZ'], object['heightIndex'], object['tileFlags'])
+		return new TileMetaDataIndex(true, object.sizeX, object.sizeZ, object.heightIndex, object.tileFlags)
 	}
 
 	public serialize(): unknown {
@@ -45,10 +45,10 @@ export class TileMetaDataIndex {
 
 	public pass(): unknown {
 		return {
-			'sizeX': this.sizeX,
-			'sizeZ': this.sizeZ,
-			'heightIndex': this.heightIndex,
-			'tileFlags': this.tileFlags,
+			sizeX: this.sizeX,
+			sizeZ: this.sizeZ,
+			heightIndex: this.heightIndex,
+			tileFlags: this.tileFlags,
 		}
 	}
 

@@ -37,16 +37,16 @@ export class SurfaceResourcesIndex {
 	}
 
 	public static fromReceived(object: any): SurfaceResourcesIndex {
-		const buffer = object['buffer'] as SharedArrayBuffer
+		const buffer = object.buffer as SharedArrayBuffer
 		const rawIndex = new Uint8Array(buffer)
 
-		return new SurfaceResourcesIndex(true, object['sizes'][0], object['sizes'][1], buffer, rawIndex)
+		return new SurfaceResourcesIndex(true, object.sizes[0], object.sizes[1], buffer, rawIndex)
 	}
 
 	public pass(): unknown {
 		return {
-			'buffer': this.buffer,
-			'sizes': [this.sizeX, this.sizeZ],
+			buffer: this.buffer,
+			sizes: [this.sizeX, this.sizeZ],
 		}
 	}
 

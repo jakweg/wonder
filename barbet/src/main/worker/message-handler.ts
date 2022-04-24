@@ -39,8 +39,8 @@ export interface Connection {
 
 export const createMessageHandler = (connection: Connection) => (e: MessageEvent): void => {
 	const data = e['data'] as CombinedMessage<MessageType>
-	const type = data['type']
-	const extra = data['extra']
+	const type = data.type
+	const extra = data.extra
 
 	const callback = messageHandlers[type]
 	if (callback === undefined) {

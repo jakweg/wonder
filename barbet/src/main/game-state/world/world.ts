@@ -60,7 +60,7 @@ export class World {
 	}
 
 	public static fromReceived(object: any): World {
-		const sizes = object['sizes']
+		const sizes = object.sizes
 		const sizeX = sizes[0]
 		const sizeY = sizes[1]
 		const sizeZ = sizes[2]
@@ -70,7 +70,7 @@ export class World {
 		const chunksSizeZ = Math.ceil(sizeZ / WORLD_CHUNK_SIZE)
 
 		const size: ComputedWorldSize = {sizeX, sizeY, sizeZ, totalBlocks, blocksPerY, chunksSizeX, chunksSizeZ}
-		const buffers = object['buffers'] as SharedArrayBuffer[]
+		const buffers = object.buffers as SharedArrayBuffer[]
 
 		const blockData = new Uint8Array(buffers[0]!)
 		const heightData = new Uint8ClampedArray(buffers[1]!)
@@ -161,8 +161,8 @@ export class World {
 
 	public pass(): unknown {
 		return {
-			'sizes': [this.size.sizeX, this.size.sizeY, this.size.sizeZ],
-			'buffers': this.buffers,
+			sizes: [this.size.sizeX, this.size.sizeY, this.size.sizeZ],
+			buffers: this.buffers,
 		}
 	}
 

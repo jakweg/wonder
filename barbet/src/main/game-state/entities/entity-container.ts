@@ -101,7 +101,7 @@ class EntityContainer {
 
 	public static fromReceived(object: any): EntityContainer {
 		let container: EntityContainer
-		const allocator = createInt32Allocator(object['buffers'],
+		const allocator = createInt32Allocator(object.buffers,
 			() => container.buffersChanged = true)
 
 		container = new EntityContainer(-1, allocator)
@@ -122,7 +122,7 @@ class EntityContainer {
 	}
 
 	public replaceBuffersFromReceived(data: any): void {
-		const buffers = data['buffers'] as SharedArrayBuffer[]
+		const buffers = data.buffers as SharedArrayBuffer[]
 
 		this.allocator.buffers = buffers
 		this.allocator.reuseCounter = buffers.length
@@ -136,7 +136,7 @@ class EntityContainer {
 
 	public pass(): unknown {
 		return {
-			'buffers': this.allocator.buffers,
+			buffers: this.allocator.buffers,
 		}
 	}
 

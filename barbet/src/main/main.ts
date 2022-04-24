@@ -50,10 +50,10 @@ const state: PageState = {
 let pauseOnBlur = false
 observeSetting('other/pause-on-blur', v => pauseOnBlur = v)
 window.addEventListener('blur', () => pauseOnBlur && state?.updater?.stop())
-window.addEventListener('focus', () => pauseOnBlur && state?.updater?.start(state!.updater!.getTickRate()))
+window.addEventListener('focus', () => pauseOnBlur && state?.updater?.start(SettingsContainer.INSTANCE.get('other/tps') as number))
 
 observeSetting('other/tps', tps => state?.updater?.changeTickRate(tps))
-observeSetting('rendering/antialias', () => state?.environment?.['startRender']({'canvas': recreateCanvas()}))
+observeSetting('rendering/antialias', () => state?.environment?.startRender({canvas: recreateCanvas()}))
 
 bindSettingsListeners()
 document['body'].classList['remove']('not-loaded-body')
@@ -77,7 +77,7 @@ const askForFile = async () => {
 }
 
 const saveCallback = (data: any) => {
-	const url = data['url']
+	const url = data.url
 	const anchor = document.createElement('a')
 	anchor['href'] = url
 	anchor['download'] = 'latest.map-save.json'
@@ -86,7 +86,7 @@ const saveCallback = (data: any) => {
 }
 
 window.addEventListener('beforeunload', async () => {
-	state.environment?.['saveGame']({'saveName': 'latest', 'method': SaveMethod.ToIndexedDatabase})
+	state.environment?.saveGame({saveName: 'latest', method: SaveMethod.ToIndexedDatabase})
 })
 
 const inputReset = document.getElementById('input-reset')!
@@ -99,13 +99,13 @@ document.addEventListener('keydown', async event => {
 	if (event['code'] === 'KeyS' && event['ctrlKey']) {
 		event.preventDefault()
 		event.stopPropagation()
-		state.environment?.['saveGame']({'saveName': 'latest', 'method': SaveMethod.ToDataUrl})
+		state.environment?.saveGame({saveName: 'latest', method: SaveMethod.ToDataUrl})
 	} else if (event['code'] === 'KeyO' && event['ctrlKey']) {
 		event.preventDefault()
 		event.stopPropagation()
 		const file = await askForFile()
 		if (file != null) {
-			await runGame({'fileToRead': file})
+			await runGame({fileToRead: file})
 		}
 	} else if (event['code'] === 'KeyD' && event['ctrlKey']) {
 		event.preventDefault()
@@ -122,11 +122,11 @@ const prepareEnvironment = (): Promise<EnvironmentConnection> => {
 
 const runGame = async (args: CreateGameArguments) => {
 	if (state.environment === null) return
-	await state.environment['terminateGame']({})
-	const results = await state.environment['createNewGame'](args)
-	await state.environment['startRender']({'canvas': recreateCanvas()})
-	state.updater = results['updater']
-	state.actionsQueue = results['queue']
+	await state.environment.terminateGame({})
+	const results = await state.environment.createNewGame(args)
+	await state.environment.startRender({canvas: recreateCanvas()})
+	state.updater = results.updater
+	state.actionsQueue = results.queue
 	const speedToSet = +SettingsContainer.INSTANCE.get('other/tps')
 	state.updater.start(speedToSet)
 }
@@ -135,7 +135,7 @@ const initPageState = async () => {
 	state.environment = await prepareEnvironment()
 
 	const anySaveName = await getSavesList().then(e => e[0])
-	await runGame({'saveName': anySaveName})
+	await runGame({saveName: anySaveName})
 }
 // noinspection JSIgnoredPromiseFromCall
 initPageState()

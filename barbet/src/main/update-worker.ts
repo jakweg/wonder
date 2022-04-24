@@ -6,9 +6,9 @@ import { StateUpdaterImplementation } from './game-state/state-updater/implement
 import { putSaveData } from './util/persistance/saves-database'
 import { ArrayEncodingType, setArrayEncodingType } from './util/persistance/serializers'
 import { takeControlOverWorkerConnection } from './worker/connections-manager'
+import { setGlobalMutex } from './worker/global-mutex'
 import { setMessageHandler } from './worker/message-handler'
 import SettingsContainer from './worker/observable-settings'
-import { setGlobalMutex } from './worker/global-mutex'
 import { createEmptyGame, loadGameFromDb, loadGameFromFile } from './worker/world-loader'
 
 SettingsContainer.INSTANCE = SettingsContainer.createEmpty()
@@ -20,7 +20,7 @@ let stateUpdater: StateUpdaterImplementation | null = null
 let actionsQueue: ReceiveActionsQueue | null = null
 
 setMessageHandler('set-global-mutex', (data) => {
-	setGlobalMutex(data['mutex'])
+	setGlobalMutex(data.mutex)
 })
 
 setMessageHandler('new-settings', settings => {
@@ -36,12 +36,12 @@ setMessageHandler('create-game', async (args, connection) => {
 	const stateBroadcastCallback = () => {
 		if (gameState === null) return
 		connection.send('update-entity-container', {
-			'buffers': gameState?.entities?.passBuffers(),
+			buffers: gameState?.entities?.passBuffers(),
 		})
 	}
 
-	const saveName = args['saveName']
-	const file = args['fileToRead']
+	const saveName = args.saveName
+	const file = args.fileToRead
 	actionsQueue = ReceiveActionsQueue.create()
 
 	gameState = (file !== undefined
@@ -53,16 +53,16 @@ setMessageHandler('create-game', async (args, connection) => {
 	stateUpdater = createNewStateUpdater(() => gameState!.advanceActivities(), gameState.currentTick)
 
 	connection.send('game-snapshot-for-renderer', {
-		'game': gameState!.passForRenderer(),
-		'updater': stateUpdater!.pass(),
+		game: gameState!.passForRenderer(),
+		updater: stateUpdater!.pass(),
 	})
 })
 
 setMessageHandler('save-game', async (data, connection) => {
-	const saveName = data['saveName']
+	const saveName = data.saveName
 	const state = gameState
 	if (state === null) return
-	switch (data['method']) {
+	switch (data.method) {
 		case SaveMethod.ToIndexedDatabase: {
 			setArrayEncodingType(ArrayEncodingType.Array)
 			const rawData = state.serialize()
@@ -81,7 +81,7 @@ setMessageHandler('save-game', async (data, connection) => {
 				bytes[i] = asString.charCodeAt(i)!
 			const url = URL.createObjectURL(new Blob([bytes]))
 
-			connection.send('save-game-result', {'url': url})
+			connection.send('save-game-result', {url: url})
 		}
 	}
 })
