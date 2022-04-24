@@ -53,7 +53,7 @@ window.addEventListener('blur', () => pauseOnBlur && state?.updater?.stop())
 window.addEventListener('focus', () => pauseOnBlur && state?.updater?.start(SettingsContainer.INSTANCE.get('other/tps') as number))
 
 observeSetting('other/tps', tps => state?.updater?.changeTickRate(tps))
-observeSetting('rendering/antialias', () => state?.environment?.startRender({canvas: recreateCanvas()}))
+observeSetting('rendering/antialias', () => setTimeout(() => state?.environment?.startRender({canvas: recreateCanvas()}), 10))
 
 bindSettingsListeners()
 document['body'].classList['remove']('not-loaded-body')

@@ -56,7 +56,6 @@ const elements = /* @__PURE__ */ lazy(() => new Uint8Array([
 ]))
 
 export const createMeshBuffer = (renderer: MainRenderer): MeshBuffer => {
-	console.log('created')
 	const array = renderer.createBuffer(true, false)
 	array.setContent(vertexesInHand())
 	const indices = renderer.createBuffer(false, false)
