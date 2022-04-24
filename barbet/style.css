@@ -4,6 +4,7 @@ body {
     place-items: center;
     color-scheme: light dark;
     margin: 0;
+    color: #EEE;
 }
 
 canvas {
@@ -45,6 +46,9 @@ label, .label {
 
 .controls svg {
     fill: #ffffff;
+}
+.controls button svg {
+    fill: #222;
 }
 
 .overlay {
