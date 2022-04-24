@@ -10,7 +10,7 @@ import {
 	EntityTrait,
 } from '../../../game-state/entities/traits'
 import { GameState } from '../../../game-state/game-state'
-import { allItems, ItemType } from '../../../game-state/world/item'
+import { getCreateMeshBuffer, ItemType } from '../../../game-state/items'
 import { createProgramFromNewShaders } from '../../common-shader'
 import { MainRenderer } from '../../main-renderer'
 import { RenderContext } from '../render-context'
@@ -32,9 +32,11 @@ const createHeldItemRenderable = (renderer: MainRenderer,
                                   game: GameState) => {
 	const {vao, program} = prepareRenderer(renderer)
 
-	const itemBuffers = allItems.map(item => item.createMeshBuffer(renderer))
-	for (const {array} of itemBuffers) {
-		if (array == null) continue
+	const itemBuffers = [...new Array(ItemType.SIZE)]
+		.map((_, itemId) => getCreateMeshBuffer(itemId)(renderer))
+
+	for (const {array, trianglesToRender} of itemBuffers) {
+		if (array === null || trianglesToRender === 0) continue
 		array.bind()
 		program.enableAttribute(program.attributes['modelPosition'], 3, true, 4 * 4, 0, 0)
 		program.enableAttribute(program.attributes['flags'], 1, true, 4 * 4, 3 * 4, 0)

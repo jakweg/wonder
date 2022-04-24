@@ -1,5 +1,5 @@
 import { calculateNormals } from '../../3d-stuff/common-shader'
-import { ItemType } from '../world/item'
+import { ItemType } from '../items'
 import { SurfaceResource, SurfaceResourceType } from '../world/surface-resource'
 
 const createVertexesAndElements = (size: number, scale: number) => {

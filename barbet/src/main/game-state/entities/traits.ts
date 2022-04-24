@@ -3,7 +3,7 @@ import { Direction } from '../../util/direction'
 import { ActivityId } from '../activities'
 import { InterruptType } from '../activities/interrupt'
 import { BuildingId } from '../buildings'
-import { ItemType } from '../world/item'
+import { ItemType } from '../items'
 import EntityContainer, { ACTIVITY_MEMORY_SIZE } from './entity-container'
 
 export const enum EntityTrait {

@@ -1,8 +1,9 @@
-import { EMPTY_LIST } from '../../../util/common'
 import { findPathDirectionsToArea } from '../../../util/path-finder'
 import { GameState } from '../../game-state'
 import { PathRequest, RequestType } from '../request'
 import { PathResult } from '../result'
+
+const EMPTY_LIST: ReadonlyArray<any> = Object.freeze([])
 
 export default (req: PathRequest, game: GameState): PathResult => {
 	const directions = findPathDirectionsToArea(req, game.tileMetaDataIndex.walkableTester)

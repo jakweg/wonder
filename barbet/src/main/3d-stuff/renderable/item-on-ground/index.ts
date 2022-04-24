@@ -1,7 +1,7 @@
 import { toGl } from '@matrix//common'
 import { add, clone, fromValues } from '@matrix//vec3'
 import { GameState } from '../../../game-state/game-state'
-import { ItemType, requireItem } from '../../../game-state/world/item'
+import { getAppendToMeshFunction, ItemType } from '../../../game-state/items'
 import { createProgramFromNewShaders } from '../../common-shader'
 import { MainRenderer } from '../../main-renderer'
 import { RenderContext } from '../render-context'
@@ -43,11 +43,11 @@ const createNewItemOnGroundRenderable = (renderer: MainRenderer,
 					const type = game.groundItems.rawItemData[fieldIndex++]! as ItemType
 					if (type === ItemType.None) continue
 
-					const item = requireItem(type)
+					const appendToMesh = getAppendToMeshFunction(type)
 
 					const y = game.world.getHighestBlockHeight(x, z) + 1
 
-					item.appendToMesh(x, y, z, vertexData, elementsData)
+					appendToMesh(x, y, z, vertexData, elementsData)
 				}
 			}
 

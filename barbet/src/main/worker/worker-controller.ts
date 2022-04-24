@@ -1,8 +1,8 @@
 import { JS_ROOT } from '../build-info'
-import { EMPTY_LIST } from '../util/common'
 import Mutex, { Lock } from '../util/mutex'
 import { Connection, createMessageHandler, Message, MessageType, setMessageHandler } from './message-handler'
 
+const EMPTY_LIST: ReadonlyArray<any> = Object.freeze([])
 
 export class WorkerController {
 	private constructor(private readonly worker: Worker,

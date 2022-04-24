@@ -1,4 +1,3 @@
-import { freezeAndValidateOptionsList } from '../../util/common'
 import { BlockId } from './block'
 
 export const enum BiomeId {
@@ -46,6 +45,4 @@ export const allBiomes: BiomeType[] = [
 		waterSurfaceMaterialId: BlockId.Ice,
 	},
 ]
-
-freezeAndValidateOptionsList(allBiomes)
 

@@ -1,8 +1,8 @@
 import * as activityIdle from '../game-state/activities/idle'
 import { DataOffsetPositions, EntityTrait } from '../game-state/entities/traits'
 import { GameState } from '../game-state/game-state'
+import { ItemType } from '../game-state/items'
 import { BlockId } from '../game-state/world/block'
-import { ItemType } from '../game-state/world/item'
 
 export function fillEmptyWorldWithDefaultData(gameState: GameState) {
 

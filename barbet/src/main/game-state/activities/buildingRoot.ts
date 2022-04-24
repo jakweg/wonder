@@ -15,7 +15,7 @@ import {
 	EntityTraitIndicesRecord,
 } from '../entities/traits'
 import { GameState } from '../game-state'
-import { ItemType } from '../world/item'
+import { ItemType } from '../items'
 import * as activityBuilding from './building'
 import { ActivityId } from './index'
 import * as activityItemPickRoot from './item-pickup-root'

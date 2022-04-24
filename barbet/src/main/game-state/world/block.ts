@@ -1,5 +1,3 @@
-import { freezeAndValidateOptionsList } from '../../util/common'
-
 export const enum BlockId {
 	Air,
 	Stone,
@@ -34,8 +32,6 @@ export const allBlocks: BlockType[] = [
 	{numericId: BlockId.Ice, colorR: 0.5625, colorG: 0.70703125, colorB: 0.98046875},
 	{numericId: BlockId.Gravel, colorR: 0.5234375, colorG: 0.5078125, colorB: 0.50390625},
 ]
-
-freezeAndValidateOptionsList(allBlocks)
 
 
 export const AIR_ID: BlockId = BlockId.Air

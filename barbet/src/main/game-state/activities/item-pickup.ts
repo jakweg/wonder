@@ -9,7 +9,7 @@ import {
 	requireTrait,
 } from '../entities/traits'
 import { GameState } from '../game-state'
-import { ItemType } from '../world/item'
+import { ItemType } from '../items'
 import { requireResource } from '../world/surface-resource'
 import * as activityIdle from './idle'
 import { ActivityId } from './index'

@@ -1,4 +1,4 @@
-import { ItemType } from '../world/item'
+import { ItemType } from '../items'
 
 export const enum RequestType {
 	FindPath,

@@ -1,5 +1,3 @@
-import { freezeAndValidateOptionsList } from '../../../util/common'
-
 export type Color = [number, number, number]
 
 
@@ -38,7 +36,6 @@ export const allColorPalettes: UnitColorPalette[] = [
 		face: [0.3984375, 0.234375, 0.0546875],
 	},
 ]
-freezeAndValidateOptionsList(allColorPalettes)
 
 export const requireUnitColorPalette = (id: UnitColorPaletteId): UnitColorPalette => {
 	const color = allColorPalettes[id]

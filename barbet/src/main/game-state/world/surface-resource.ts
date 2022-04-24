@@ -1,6 +1,5 @@
-import { freezeAndValidateOptionsList } from '../../util/common'
+import { ItemType } from '../items'
 import stone from '../surface-resources/stone'
-import { ItemType } from './item'
 
 export const enum SurfaceResourceType {
 	None,
@@ -28,8 +27,6 @@ const allSurfaceResources: SurfaceResource[] = [
 	},
 	stone,
 ]
-
-freezeAndValidateOptionsList(allSurfaceResources)
 
 export const requireResource = (id: SurfaceResourceType): SurfaceResource => {
 	const resource = allSurfaceResources[id]

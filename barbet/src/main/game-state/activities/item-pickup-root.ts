@@ -8,7 +8,7 @@ import {
 	EntityTraitIndicesRecord,
 } from '../entities/traits'
 import { GameState, GameStateImplementation } from '../game-state'
-import { ItemType } from '../world/item'
+import { ItemType } from '../items'
 import { ActivityId } from './index'
 import * as activityItemPickup from './item-pickup'
 import * as walkingByPathRoot from './walking-by-path-root'

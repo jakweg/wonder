@@ -18,7 +18,7 @@ import {
 } from './shaders'
 
 function setUpMousePicker(renderer: MainRenderer, vertexBuffer: GPUBuffer, indicesBuffer: GPUBuffer) {
-	const mouseProgram = createProgramFromNewShaders<MousePickerAttributes, MousePickerUniforms>(renderer, pickViaMouseVertexShaderSource, pickViaMouseDefaultFragmentShader)
+	const mouseProgram = createProgramFromNewShaders<MousePickerAttributes, MousePickerUniforms>(renderer, pickViaMouseVertexShaderSource(), pickViaMouseDefaultFragmentShader())
 	const mouseVao = renderer.createVAO()
 	mouseVao.bind()
 	vertexBuffer.bind()

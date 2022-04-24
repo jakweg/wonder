@@ -86,7 +86,7 @@ void main() {
 `
 
 
-export const pickViaMouseVertexShaderSource = `${VersionHeader()}
+export const pickViaMouseVertexShaderSource = () => `${VersionHeader()}
 ${PrecisionHeader()}
 in vec3 a_position;
 in float a_flags;

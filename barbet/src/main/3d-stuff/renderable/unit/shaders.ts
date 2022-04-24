@@ -150,7 +150,7 @@ void main() {
 }
 
 
-export const standardFragmentShaderSource = `${VersionHeader()}
+export const standardFragmentShaderSource = () => `${VersionHeader()}
 ${PrecisionHeader()}
 out vec3 finalColor;
 flat in int v_colorPaletteId;

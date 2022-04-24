@@ -89,7 +89,7 @@ if (isLeftArmVertex) {
 	pos = (handRotation * vec4(pos, 1.0)).xyz;
 }
 `
-const vertexSource = `${VersionHeader()}
+const vertexSource = () => `${VersionHeader()}
 ${PrecisionHeader()}
 ${PIConstantHeader()}
 in vec3 a_modelPosition;
@@ -128,7 +128,7 @@ void main() {
     v_currentPosition = gl_Position.xyz;
 }
 `
-const fragmentSource = `${VersionHeader()}
+const fragmentSource = () => `${VersionHeader()}
 ${PrecisionHeader()}
 out vec3 finalColor;
 flat in vec3 v_normal;
@@ -148,7 +148,7 @@ const hammer: AdditionalRenderer<T, B> = {
 
 		const vao = renderer.createVAO()
 		vao.bind()
-		const program = createProgramFromNewShaders(renderer, vertexSource, fragmentSource) as Program
+		const program = createProgramFromNewShaders(renderer, vertexSource(), fragmentSource()) as Program
 
 		const floatSize = Float32Array.BYTES_PER_ELEMENT
 

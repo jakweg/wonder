@@ -28,7 +28,7 @@ export const createProgramFromNewShaders = <A, U>(renderer: MainRenderer,
 }
 
 
-export const pickViaMouseDefaultFragmentShader = `${VersionHeader()}
+export const pickViaMouseDefaultFragmentShader = () => `${VersionHeader()}
 ${PrecisionHeader()}
 layout(location = 0) out vec4 finalColor0;
 layout(location = 1) out vec3 finalColor1;

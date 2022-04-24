@@ -2,7 +2,7 @@ import { singleMiningAnimationLoopDuration } from '../../3d-stuff/additional-ren
 import { queryBuildingDataById, queryBuildingProgress, updateBuildingProgress } from '../entities/queries'
 import { DataOffsetItemHoldable, DataOffsetWithActivity, EntityTraitIndicesRecord } from '../entities/traits'
 import { GameState, MetadataField } from '../game-state'
-import { ItemType } from '../world/item'
+import { ItemType } from '../items'
 import { ActivityId } from './index'
 
 const enum MemoryField {

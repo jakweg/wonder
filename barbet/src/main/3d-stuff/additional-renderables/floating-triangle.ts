@@ -11,7 +11,7 @@ import { RenderContext } from '../renderable/render-context'
 type Program = GlProgram<'modelPosition' | 'unitPosition', 'rotation' | 'combinedMatrix'>
 type T = { vao: any, batchBuffer: GPUBuffer, positions: DataStore<Int32Array>, program: Program }
 type B = { unitPositions: number[], count: number }
-const vertexSource = `${VersionHeader()}
+const vertexSource = () => `${VersionHeader()}
 ${PrecisionHeader()}
 in vec2 a_modelPosition;
 in vec3 a_unitPosition;
@@ -25,7 +25,7 @@ void main() {
     gl_Position = u_combinedMatrix * pos;
 }
 `
-const fragmentSource = `${VersionHeader()}
+const fragmentSource = () => `${VersionHeader()}
 ${PrecisionHeader()}
 out vec3 finalColor;
 void main() {
@@ -36,7 +36,7 @@ const idleAdditionalRenderer: AdditionalRenderer<T, B> = {
 	setup: function (renderer: MainRenderer, game: GameState): T {
 		const vao = renderer.createVAO()
 		vao.bind()
-		const program = createProgramFromNewShaders(renderer, vertexSource, fragmentSource) as Program
+		const program = createProgramFromNewShaders(renderer, vertexSource(), fragmentSource()) as Program
 
 		const triangleBuffer = renderer.createBuffer(true, false)
 		const r = 0.3

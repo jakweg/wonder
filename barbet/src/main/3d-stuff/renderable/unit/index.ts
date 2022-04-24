@@ -14,7 +14,7 @@ import {
 	EntityTrait,
 } from '../../../game-state/entities/traits'
 import { GameState } from '../../../game-state/game-state'
-import { ItemType } from '../../../game-state/world/item'
+import { ItemType } from '../../../game-state/items'
 import { pickViaMouseDefaultFragmentShader } from '../../common-shader'
 import { GlProgram, GPUBuffer, MainRenderer } from '../../main-renderer'
 import { RenderContext } from '../render-context'
@@ -45,8 +45,8 @@ function preparePrograms(renderer: MainRenderer, modelBuffer: GPUBuffer, modelEl
 	vao.bind()
 	modelElementsBuffer.bind()
 
-	const standardFragmentShader = renderer.createShader(false, standardFragmentShaderSource)
-	const mouseFragmentShader = renderer.createShader(false, pickViaMouseDefaultFragmentShader)
+	const standardFragmentShader = renderer.createShader(false, standardFragmentShaderSource())
+	const mouseFragmentShader = renderer.createShader(false, pickViaMouseDefaultFragmentShader())
 	const programs: GlProgram<Attributes, Uniforms>[] = []
 	const variants = [
 		{forMousePicker: false, holdingItem: false}, {forMousePicker: false, holdingItem: true},
