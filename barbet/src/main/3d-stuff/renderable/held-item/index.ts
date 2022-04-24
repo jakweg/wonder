@@ -92,6 +92,7 @@ const createHeldItemRenderable = (renderer: MainRenderer,
 				gl.uniformMatrix4fv(program.uniforms['combinedMatrix'], false, toGl(camera.combinedMatrix))
 				gl.uniform1f(program.uniforms['activityStartTick'], activityStartTick)
 				gl.uniform1i(program.uniforms['unitData'], unitData)
+				gl.uniform1f(program.uniforms['time'], ctx.secondsSinceFirstRender)
 				gl.uniform1f(program.uniforms['gameTick'], ctx.gameTickEstimation)
 				gl.uniform3fv(program.uniforms['lightPosition'], toGl(add(clone(ctx.sunPosition), ctx.sunPosition, fromValues(0, -400, 0))))
 

@@ -29,6 +29,7 @@ uniform vec3 u_unitPosition;
 uniform float u_activityStartTick;
 uniform int u_unitData;
 uniform mat4 u_combinedMatrix;
+uniform float u_time;
 uniform float u_gameTick;
 
 void main() {
@@ -48,7 +49,7 @@ void main() {
     a *= PI / 4.0;
     mat4 rotation = ${RotationYMatrix('a')};
 	
-	v_color = vec3(1,0,0);
+	v_color = vec3(sin(u_time * 5.0) * 0.5 + 0.5,sin(u_time * 2.7) * 0.5 + 0.5,sin(u_time * 8.3) * 0.5 + 0.5);
 	vec3 pos = a_modelPosition;
 	pos *= vec3(0.6);
 	
