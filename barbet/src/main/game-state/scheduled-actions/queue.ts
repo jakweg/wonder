@@ -33,13 +33,13 @@ export class ReceiveActionsQueue implements ActionsQueue {
 		this.actionsToExecute.push(action)
 	}
 
-	public executeAll(game: GameState): void {
+	public executeAllUntilEmpty(game: GameState): void {
 		const list = this.actionsToExecute
-		const length = list.length
 
-		for (let i = 0; i < length; i++)
+		// list.length may change during execution of this loop, do not cache it
+		for (let i = 0; i < list.length; i++)
 			execute(list[i]!, game)
 
-		list.splice(0, length)
+		list.splice(0)
 	}
 }

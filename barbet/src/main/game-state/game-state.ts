@@ -134,7 +134,7 @@ export class GameStateImplementation implements GameState {
 
 		this.metaData[MetadataField.CurrentTick]++
 
-		this.actionsQueue.executeAll(this)
+		this.actionsQueue.executeAllUntilEmpty(this)
 
 		const container = this.entities
 		for (const entity of iterateOverEntitiesWithActivity(container)) {
