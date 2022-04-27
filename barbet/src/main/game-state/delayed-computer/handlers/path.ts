@@ -6,7 +6,9 @@ import { PathResult } from '../result'
 const EMPTY_LIST: ReadonlyArray<any> = Object.freeze([])
 
 export default (req: PathRequest, game: GameState): PathResult => {
-	const directions = findPathDirectionsToArea(req, game.tileMetaDataIndex.walkableTester)
+	const y = game.world.getHighestBlockHeight(req.startX, req.startZ)
+
+	const directions = findPathDirectionsToArea(req, game.tileMetaDataIndex.createWalkableTester(y + 1))
 
 	if (directions === null)
 		return {type: RequestType.FindPath, found: false, directions: EMPTY_LIST}

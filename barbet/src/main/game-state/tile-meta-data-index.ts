@@ -51,19 +51,21 @@ export class TileMetaDataIndex {
 			tileFlags: this.tileFlags,
 		}
 	}
+	public createWalkableTester(unitY: number): WalkableTester {
+		const expectedHeight = unitY -1
+		return (x, z) => {
+			if (!this.areCoordsValid(x, z))
+				return false
 
-	public readonly walkableTester: WalkableTester = (x, z) => {
-		if (!this.areCoordsValid(x, z))
-			return false
+			const index = x + z * this.sizeX
+			const height = this.heightIndex[index]
+			if (height !== expectedHeight)
+				return false
 
-		const index = x + z * this.sizeX
-		const height = this.heightIndex[index]
-		if (height !== 1)
-			return false
+			const flags = this.tileFlags[index]! as TileFlag
 
-		const flags = this.tileFlags[index]! as TileFlag
-
-		return flags === TileFlag.NoFlags
+			return flags === TileFlag.NoFlags
+		}
 	}
 
 	public canPlaceBuilding(x: number, z: number): boolean {

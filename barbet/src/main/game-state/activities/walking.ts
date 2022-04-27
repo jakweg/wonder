@@ -59,12 +59,12 @@ export const perform = (game: GameState, unit: EntityTraitIndicesRecord) => {
 export const tryToContinueWalking = (game: GameState, unit: EntityTraitIndicesRecord, direction: Direction): boolean => {
 	const positionData = game.entities.positions.rawData
 	const posX = positionData[unit.position + DataOffsetPositions.PositionX]!
-	// const posY = positionData[unit.position + DataOffsetPositions.PositionY]!
+	const posY = positionData[unit.position + DataOffsetPositions.PositionY]!
 	const posZ = positionData[unit.position + DataOffsetPositions.PositionZ]!
 
 	const dx = posX + getChangeInXByRotation(direction)
 	const dz = posZ + getChangeInZByRotation(direction)
-	if (!game.tileMetaDataIndex.walkableTester(dx, dz))
+	if (!game.tileMetaDataIndex.createWalkableTester(posY)(dx, dz))
 		return false
 
 	positionData[unit.position + DataOffsetPositions.PositionX] = dx
