@@ -17,6 +17,9 @@ export const RotationXMatrix = (angleVariableName: string) => `mat4(1, 0, 0, 0, 
 
 export const RotationZMatrix = (angleVariableName: string) => `mat4(cos(${angleVariableName}), sin(${angleVariableName}), 0, 0, -sin(${angleVariableName}), cos(${angleVariableName}), 0, 0, 0, 0, 1, 0, 0, 0, 0, 1)`
 
+export const terrainHeightMultiplierValue = 0.4;
+export const TerrainHeightMultiplierDeclaration = (variableName: string = 'terrainHeightMultiplier') => `const float ${variableName} = ${terrainHeightMultiplierValue.toFixed(5)};`
+
 export const createProgramFromNewShaders = <A, U>(renderer: MainRenderer,
                                                   vertexSource: string,
                                                   fragmentSource: string)

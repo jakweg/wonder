@@ -4,7 +4,12 @@ import { AdditionalRenderer } from '../../game-state/activities'
 import { DataStore } from '../../game-state/entities/data-store'
 import { DataOffsetPositions, EntityTraitIndicesRecord } from '../../game-state/entities/traits'
 import { GameState } from '../../game-state/game-state'
-import { createProgramFromNewShaders, PrecisionHeader, VersionHeader } from '../common-shader'
+import {
+	createProgramFromNewShaders,
+	PrecisionHeader,
+	TerrainHeightMultiplierDeclaration,
+	VersionHeader,
+} from '../common-shader'
 import { GlProgram, GPUBuffer, MainRenderer } from '../main-renderer'
 import { RenderContext } from '../renderable/render-context'
 
@@ -13,6 +18,7 @@ type T = { vao: any, batchBuffer: GPUBuffer, positions: DataStore<Int32Array>, p
 type B = { unitPositions: number[], count: number }
 const vertexSource = () => `${VersionHeader()}
 ${PrecisionHeader()}
+${TerrainHeightMultiplierDeclaration()}
 in vec2 a_modelPosition;
 in vec3 a_unitPosition;
 uniform mat4 u_rotation;
@@ -20,7 +26,7 @@ uniform mat4 u_combinedMatrix;
 void main() {
 	vec4 pos = u_rotation * vec4(a_modelPosition.x, 1.0, a_modelPosition.y, 1);
 	pos.x += a_unitPosition.x + 0.5;
-	pos.y += a_unitPosition.y + 0.9;
+	pos.y += (a_unitPosition.y * terrainHeightMultiplier) + 0.9;
 	pos.z += a_unitPosition.z + 0.5;
     gl_Position = u_combinedMatrix * pos;
 }

@@ -14,7 +14,7 @@ import {
 	PIConstantHeader,
 	PrecisionHeader,
 	RotationYMatrix,
-	RotationZMatrix,
+	RotationZMatrix, TerrainHeightMultiplierDeclaration,
 	VersionHeader,
 } from '../common-shader'
 import { GlProgram, GPUBuffer, MainRenderer } from '../main-renderer'
@@ -92,6 +92,7 @@ if (isLeftArmVertex) {
 const vertexSource = () => `${VersionHeader()}
 ${PrecisionHeader()}
 ${PIConstantHeader()}
+${TerrainHeightMultiplierDeclaration()}
 in vec3 a_modelPosition;
 in vec3 a_modelNormals;
 in vec4 a_unitData;
@@ -120,7 +121,7 @@ void main() {
 	pos.z += 0.5;
     
 	pos.x += a_unitData.x;
-	pos.y += a_unitData.y;
+	pos.y += a_unitData.y * terrainHeightMultiplier;
 	pos.z += a_unitData.z;
 	
     gl_Position = u_combinedMatrix * pos;

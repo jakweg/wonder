@@ -2,7 +2,7 @@ import { toGl } from '@matrix//common'
 import { add, clone, fromValues } from '@matrix//vec3'
 import { GameState } from '../../../game-state/game-state'
 import { getAppendToMeshFunction, ItemType } from '../../../game-state/items'
-import { createProgramFromNewShaders } from '../../common-shader'
+import { createProgramFromNewShaders, terrainHeightMultiplierValue } from '../../common-shader'
 import { MainRenderer } from '../../main-renderer'
 import { RenderContext } from '../render-context'
 import { Attributes, itemFragmentShaderSource, onGroundVertexShader, Uniforms } from './shaders'
@@ -45,7 +45,7 @@ const createNewItemOnGroundRenderable = (renderer: MainRenderer,
 
 					const appendToMesh = getAppendToMeshFunction(type)
 
-					const y = game.world.getHighestBlockHeight(x, z) + 1
+					const y = (game.world.getHighestBlockHeight(x, z) + 1) * terrainHeightMultiplierValue
 
 					appendToMesh(x, y, z, vertexData, elementsData)
 				}

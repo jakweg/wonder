@@ -3,7 +3,7 @@ import {
 	PIConstantHeader,
 	PrecisionHeader,
 	RotationVectorsDeclaration,
-	RotationYMatrix,
+	RotationYMatrix, TerrainHeightMultiplierDeclaration,
 	VersionHeader,
 	WalkingDurationsByRotation,
 } from '../../common-shader'
@@ -20,6 +20,7 @@ ${PrecisionHeader()}
 ${PIConstantHeader()}
 ${RotationVectorsDeclaration()}
 ${WalkingDurationsByRotation()}
+${TerrainHeightMultiplierDeclaration()}
 in vec3 a_modelPosition;
 in float a_flags;
 flat out vec3 v_color;
@@ -54,7 +55,7 @@ void main() {
 	pos *= vec3(0.6);
 	
 	pos = (rotation * vec4(vec3(0.6, 0.75, 0.0) + pos, 1.0)).xyz + vec3(0.5, 0, 0.5);
-	pos += u_unitPosition + (moving ? (rotationVectors[unitRotationAsInt] * (activityDuration / walkingDurations[unitRotationAsInt]) - rotationVectors[unitRotationAsInt]) : vec3(0,0,0));
+	pos += vec3(u_unitPosition.x, u_unitPosition.y * terrainHeightMultiplier, u_unitPosition.z) + (moving ? (rotationVectors[unitRotationAsInt] * (activityDuration / walkingDurations[unitRotationAsInt]) - rotationVectors[unitRotationAsInt]) : vec3(0,0,0));
     v_currentPosition = pos;
     gl_Position = u_combinedMatrix * vec4(pos, 1);
     gl_PointSize = 10.0;

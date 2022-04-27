@@ -7,7 +7,7 @@ import {
 	PIConstantHeader,
 	PrecisionHeader,
 	RotationVectorsDeclaration,
-	RotationYMatrix,
+	RotationYMatrix, TerrainHeightMultiplierDeclaration,
 	VersionHeader,
 	WalkingDurationsByRotation,
 } from '../../common-shader'
@@ -43,7 +43,9 @@ export const constructUnitVertexShaderSource = (transformations: string,
 		PrecisionHeader(),
 		PIConstantHeader(),
 		RotationVectorsDeclaration(),
-		WalkingDurationsByRotation()]
+		WalkingDurationsByRotation(),
+		TerrainHeightMultiplierDeclaration(),
+	]
 
 	parts.push(`
 in vec3 a_modelPosition;
@@ -70,6 +72,7 @@ flat out vec3 v_normal;
 	parts.push(`
 void main() {
 	vec3 worldPosition = a_worldPosition;
+	worldPosition.y *= terrainHeightMultiplier;
 	int flagsAsInt = int(a_flags) + int(a_unitId * 0.0);
 `)
 	if (!forMousePicker)

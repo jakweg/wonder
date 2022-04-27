@@ -7,7 +7,7 @@ import {
 	MASK_AMOUNT,
 	MASK_RESOURCE_TYPE,
 } from '../../../game-state/surface-resources/surface-resources-index'
-import { createProgramFromNewShaders } from '../../common-shader'
+import { createProgramFromNewShaders, terrainHeightMultiplierValue } from '../../common-shader'
 import { MainRenderer } from '../../main-renderer'
 import { RenderContext } from '../render-context'
 import { Attributes, surfaceResourceFragmentShader, surfaceResourceVertexShader, Uniforms } from './shaders'
@@ -50,7 +50,7 @@ export const createNewSurfaceResourcesRenderable = (renderer: MainRenderer,
 					const amount = ((raw & MASK_AMOUNT) >> AMOUNT_SHIFT_BITS) + 1
 					const appendToMesh = getAppendToMeshFunction(type)
 
-					const y = world.getHighestBlockHeight(x, z) + 1
+					const y = (world.getHighestBlockHeight(x, z) + 1) * terrainHeightMultiplierValue
 
 					appendToMesh(x, y, z, amount, vertexData, elementsData)
 				}

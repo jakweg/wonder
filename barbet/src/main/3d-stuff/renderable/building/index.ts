@@ -2,7 +2,7 @@ import { toGl } from '@matrix//common'
 import { BuildingId, getBuildingModel, getBuildingProgressInfo } from '../../../game-state/buildings'
 import { DataOffsetBuildingData, DataOffsetPositions, EntityTrait } from '../../../game-state/entities/traits'
 import { GameState, MetadataField } from '../../../game-state/game-state'
-import { createProgramFromNewShaders } from '../../common-shader'
+import { createProgramFromNewShaders, terrainHeightMultiplierValue } from '../../common-shader'
 import { MainRenderer } from '../../main-renderer'
 import { RenderContext } from '../render-context'
 import { Attributes, fragmentShaderSource, Uniforms, vertexShaderSource } from './shaders'
@@ -49,7 +49,7 @@ const createNewBuildingRenderable = (renderer: MainRenderer,
 				if (model === null) continue
 
 				const x = positions[entity.position + DataOffsetPositions.PositionX]!
-				const y = positions[entity.position + DataOffsetPositions.PositionY]!
+				const y = (positions[entity.position + DataOffsetPositions.PositionY]!) * terrainHeightMultiplierValue
 				const z = positions[entity.position + DataOffsetPositions.PositionZ]!
 
 				const vertexCountBeforeAdd = vertexData.length / 7 | 0

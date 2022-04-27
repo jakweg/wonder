@@ -1,8 +1,9 @@
-import { PrecisionHeader, VersionHeader } from '../../common-shader'
+import { PrecisionHeader, TerrainHeightMultiplierDeclaration, VersionHeader } from '../../common-shader'
 import { MousePickableType } from '../../mouse-picker'
 
 export const vertexShaderSource = `${VersionHeader()}
 ${PrecisionHeader()}
+${TerrainHeightMultiplierDeclaration()}
 in vec3 a_position;
 in vec3 a_color;
 in float a_flags;
@@ -22,6 +23,7 @@ void main() {
 	if (pos.y < 1.50) {
 		pos.y += sin(u_time * 2.1 + pos.x + pos.z * 100.0) * 0.15 + 0.5;
 	}
+    pos.y *= terrainHeightMultiplier;
     gl_Position = u_combinedMatrix * vec4(pos, 1);
     gl_PointSize = 10.0;
 }
@@ -88,6 +90,7 @@ void main() {
 
 export const pickViaMouseVertexShaderSource = () => `${VersionHeader()}
 ${PrecisionHeader()}
+${TerrainHeightMultiplierDeclaration()}
 in vec3 a_position;
 in float a_flags;
 flat out vec4 v_color0;
@@ -105,7 +108,9 @@ void main() {
 	
 	v_color0 = vec4((x >> 8U) & 255U, x & 255U, (z >> 8U) & 255U, z & 255U) / 255.0;
 	v_color1 = vec3(y & 255U, uint(a_flags) & 255U, ${MousePickableType.Terrain}) / 255.0;
-    gl_Position = (u_combinedMatrix * vec4(a_position, 1));
+	vec3 pos = a_position;
+    pos.y *= terrainHeightMultiplier;
+    gl_Position = (u_combinedMatrix * vec4(pos, 1));
 }
 `
 
