@@ -89,11 +89,20 @@ window.addEventListener('beforeunload', async () => {
 	state.environment?.saveGame({saveName: 'latest', method: SaveMethod.ToIndexedDatabase})
 })
 
-const inputReset = document.getElementById('input-reset')!
-inputReset.addEventListener('click', async () => {
-	inputReset['blur']()
-	await runGame({})
-})
+document.getElementById('input-reset-normal')!
+	.addEventListener('click', async (event) => {
+		SettingsContainer.INSTANCE.set('other/generate-debug-world', false);
+		(event.target as HTMLElement)['blur']()
+		await runGame({})
+	})
+
+
+document.getElementById('input-reset-to-debug')!
+	.addEventListener('click', async (event) => {
+		SettingsContainer.INSTANCE.set('other/generate-debug-world', true);
+		(event.target as HTMLElement)['blur']()
+		await runGame({})
+	})
 
 document.addEventListener('keydown', async event => {
 	if (event['code'] === 'KeyS' && event['ctrlKey']) {

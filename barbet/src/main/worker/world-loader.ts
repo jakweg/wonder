@@ -11,11 +11,20 @@ import { readSaveData } from '../util/persistance/saves-database'
 import { ArrayEncodingType, setArrayEncodingType } from '../util/persistance/serializers'
 import { fillEmptyWorldWithDefaultData } from './example-world-creator'
 import { globalMutex } from './global-mutex'
+import ObservableSettings from './observable-settings'
 
 export const createEmptyGame = (actionsQueue: ReceiveActionsQueue,
                                 stateBroadcastCallback: () => void): GameState => {
 	const mutex = globalMutex
-	const world = World.createEmpty(200, 20, 200, BlockId.Air)
+	let sizeX = 1000
+	let sizeY = 50
+	let sizeZ = 1000
+	if (ObservableSettings.INSTANCE.get('other/generate-debug-world')) {
+		sizeX = 20
+		sizeY = 10
+		sizeZ = 20
+	}
+	const world = World.createEmpty(sizeX, sizeY, sizeZ, BlockId.Air)
 	const itemsOnGround = GroundItemsIndex.createNew(world.size)
 	const tileMetaDataIndex = TileMetaDataIndex.createNew(world.size.sizeX, world.size.sizeZ, world.rawHeightData)
 	const delayedComputer = createNewDelayedComputer()

@@ -9,6 +9,7 @@ const settingsToDefaults = {
 	'rendering/antialias': true,
 	'rendering/show-tile-borders': true,
 	'other/preferred-environment': 'second',
+	'other/generate-debug-world': true,
 }
 
 type SettingName = keyof typeof settingsToDefaults
