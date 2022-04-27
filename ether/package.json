@@ -2,7 +2,7 @@
   "type": "module",
   "scripts": {
     "build": "esbuild --outdir=dist src/websocket-server.ts",
-    "dev": "concurrently 'esbuild --bundle --outdir=dist src/websocket-server.ts --watch' 'nodemon dist/websocket-server.js'"
+    "dev": "concurrently 'esbuild --bundle --platform=node --format=esm --external:ws --outdir=dist src/websocket-server.ts --watch' 'nodemon dist/websocket-server.js'"
   },
   "dependencies": {
     "esbuild": "^0.14.38",
@@ -10,7 +10,8 @@
   },
   "devDependencies": {
     "@types/node": "^17.0.29",
-    "nodemon": "^2.0.15",
-    "concurrently": "^7.1.0"
+    "@types/ws": "^8.5.3",
+    "concurrently": "^7.1.0",
+    "nodemon": "^2.0.15"
   }
 }
