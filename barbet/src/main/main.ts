@@ -1,4 +1,4 @@
-import { JS_ROOT } from './build-info'
+import { DEFAULT_NETWORK_SERVER_ADDRESS, JS_ROOT } from './build-info'
 import {
 	CreateGameArguments,
 	Environment,
@@ -150,5 +150,5 @@ const initPageState = async () => {
 // noinspection JSIgnoredPromiseFromCall
 initPageState()
 
-
-new Worker(JS_ROOT + '/network-worker.js', {name: 'network'})
+if (DEFAULT_NETWORK_SERVER_ADDRESS !== undefined)
+	new Worker(`${JS_ROOT}/network-worker.js`, {'name': 'network'})

@@ -39,6 +39,7 @@ if (args.size > 0) {
 			_C_DEBUG: JSON.stringify(!buildForProduction),
 			_C_JS_ROOT: JSON.stringify(`/${jsOutRoot}`),
 			_C_FORCE_ENV_ZERO: JSON.stringify(forceSingleThread),
+			_C_DEFAULT_NETWORK_SERVER_ADDRESS: JSON.stringify(buildForProduction ? undefined : 'localhost:4575')
 		},
 		entryPoints: entryPoints.map(name => `src/main/${name}.ts`),
 		bundle: true,

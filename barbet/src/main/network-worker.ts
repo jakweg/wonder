@@ -1,3 +1,4 @@
+import { DEFAULT_NETWORK_SERVER_ADDRESS } from './build-info'
 import { connectToServer, createMessageMiddleware, createMessageReceiver } from './network/socket'
 
 type HandlersType = (Parameters<typeof createMessageMiddleware>[2])
@@ -13,7 +14,7 @@ const handlers: HandlersType = {
 };
 
 (async () => {
-	const url = 'ws://localhost:4575'
+	const url = 'ws://' + DEFAULT_NETWORK_SERVER_ADDRESS
 	try {
 		const socket = await connectToServer(url)
 		const receiver = createMessageMiddleware(createMessageReceiver(socket), socket, handlers)
