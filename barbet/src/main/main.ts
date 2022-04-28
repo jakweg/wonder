@@ -1,3 +1,4 @@
+import { JS_ROOT } from './build-info'
 import {
 	CreateGameArguments,
 	Environment,
@@ -148,3 +149,6 @@ const initPageState = async () => {
 }
 // noinspection JSIgnoredPromiseFromCall
 initPageState()
+
+
+new Worker(JS_ROOT + '/network-worker.js', {name: 'network'})

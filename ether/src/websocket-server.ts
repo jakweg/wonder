@@ -1,3 +1,4 @@
+import { performance } from 'perf_hooks'
 import { WebSocketServer } from 'ws'
 import { createClientFromSocket } from './client'
 
@@ -9,15 +10,35 @@ server.addListener('listening', () => {
 })
 
 server.addListener('connection', async (socket) => {
-	const client = createClientFromSocket(socket)
+	let client
+	try {
+		client = createClientFromSocket(socket)
+	} catch (e) {
+		console.error('Failed to create client, dropping connection', e)
+		socket.close()
+		return
+	}
+	console.info(`Connected client id=${client.id}`)
+
+	const pingInterval = setInterval(() => {
+		socket.send(JSON.stringify({type: 'ping', value: performance.now()}))
+	}, 2000)
 
 	try {
 		while (true) {
 			const message = await client.getMessage()
-			console.log(message)
+			if (message.type === 'ping')
+				client.send({type: 'pong', value: message.value})
+			else if (message.type === 'pong')
+				console.log('measured ping', performance.now() - message.value)
+			else
+				console.log('Unknown message', message)
+
+
 		}
 	} catch (e) {
-		console.log('lost connection', e)
+		console.log(`lost connection with client id=${client.id}:`, e)
 	}
+	clearInterval(pingInterval)
 })
 

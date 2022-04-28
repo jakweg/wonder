@@ -1,5 +1,5 @@
 import { WebSocket } from 'ws'
-import { Message } from './message'
+import { MessageInQueue } from './message'
 
 type ClientId = number
 let nextId = 0
@@ -10,7 +10,9 @@ interface Client {
 	readonly socket: WebSocket
 	readonly closePromise: Promise<void>
 
-	getMessage(): Promise<Message>
+	send(msg: MessageInQueue): void
+
+	getMessage(): Promise<MessageInQueue>
 }
 
 export const createClientFromSocket = (socket: WebSocket): Client => {
@@ -19,17 +21,29 @@ export const createClientFromSocket = (socket: WebSocket): Client => {
 	let closed = false
 
 	let currentGetMessagePromise: [any, any, any] | null = null
-	const messageQueue: Message[] = []
+	const messageQueue: MessageInQueue[] = []
 
 	socket.addEventListener('message', event => {
 		const message = event.data
+		if (typeof message !== 'string') {
+			socket.close()
+			return
+		}
+
+		let parsed
+		try {
+			parsed = JSON.parse(message)
+		} catch (e) {
+			socket.close()
+			return
+		}
 
 		const promiseCopy = currentGetMessagePromise
 		if (promiseCopy !== null) {
 			currentGetMessagePromise = null
-			promiseCopy[1](message)
+			promiseCopy[1](parsed)
 		} else {
-			messageQueue.push(message)
+			messageQueue.push(parsed)
 		}
 	})
 
@@ -47,17 +61,22 @@ export const createClientFromSocket = (socket: WebSocket): Client => {
 
 	return {
 		id, socket, closePromise,
-		getMessage(): Promise<Message> {
+		send(msg: MessageInQueue) {
+			if (closed)
+				console.warn('Socket already closed, dropping unsent message')
+			socket.send(JSON.stringify(msg))
+		},
+		getMessage(): Promise<MessageInQueue> {
 			if (closed)
 				return Promise.reject('Already closed')
 
 			if (messageQueue.length > 0)
-				return Promise.resolve(messageQueue.shift())
+				return Promise.resolve(messageQueue.shift()!)
 
 			if (currentGetMessagePromise !== null)
 				return currentGetMessagePromise[0]!
 
-			const promise = new Promise<Message>((resolve, reject) => {
+			const promise = new Promise<MessageInQueue>((resolve, reject) => {
 				currentGetMessagePromise = [null, resolve, reject]
 			})
 			currentGetMessagePromise![0] = promise

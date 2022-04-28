@@ -35,12 +35,15 @@ const handler = async (request: Request): Promise<Response> => {
 
 			contentType = extensionsToContentTypeMap[extension]
 		}
+
+		const csp = pathname === '/build-js/network-worker.js' ? '' : `upgrade-insecure-requests; default-src 'self';`
+
 		return new Response(await file, {
 			headers: {
 				'Content-Type': contentType ?? 'application/octet-stream',
 				'Cross-Origin-Opener-Policy': 'same-origin',
 				'Cross-Origin-Embedder-Policy': 'require-corp',
-				'Content-Security-Policy': `upgrade-insecure-requests; default-src 'self';`,
+				'Content-Security-Policy': csp,
 				'Cache-Control': 'public;must-revalidate;max-age=3;s-maxage=3',
 				'Last-Modified': mtime.toUTCString(),
 			},

@@ -26,6 +26,7 @@ if (args.size > 0) {
 	const entryPoints = [
 		'main',
 		'environments/zero',
+		'network-worker',
 		...(forceSingleThread ? [] : [
 			'update-worker',
 			'render-worker',
