@@ -10,6 +10,7 @@ import {
 import { initFrontedVariablesFromReceived } from '../util/frontend-variables-updaters'
 import { putSaveData } from '../util/persistance/saves-database'
 import { ArrayEncodingType, setArrayEncodingType } from '../util/persistance/serializers'
+import { setGlobalMutex } from '../worker/global-mutex'
 import SettingsContainer from '../worker/observable-settings'
 import { getCameraBuffer, setCameraBuffer } from '../worker/serializable-settings'
 import { createEmptyGame, loadGameFromDb, loadGameFromFile } from '../worker/world-loader'
@@ -25,7 +26,8 @@ import {
 
 // this function is always used
 // noinspection JSUnusedGlobalSymbols
-export const connect = (args: ConnectArguments): EnvironmentConnection => {
+export const bind = (args: ConnectArguments): EnvironmentConnection => {
+	setGlobalMutex(args.mutex.pass())
 	initFrontedVariablesFromReceived(args.frontendVariables)
 	setCameraBuffer(args.camera)
 	SettingsContainer.INSTANCE = args.settings
@@ -92,7 +94,7 @@ export const connect = (args: ConnectArguments): EnvironmentConnection => {
 					for (let i = 0; i < length; i++)
 						bytes[i] = asString.charCodeAt(i)!
 					const url = URL.createObjectURL(new Blob([bytes]))
-					args.saveResultsCallback({'url': url})
+					args.feedbackCallback({type: 'saved-to-url', url: url})
 				}
 			}
 		},

@@ -8,7 +8,7 @@ import { setMessageHandler } from '../worker/message-handler'
 import SettingsContainer from '../worker/observable-settings'
 import { getCameraBuffer, setCameraBuffer } from '../worker/serializable-settings'
 import { WorkerController } from '../worker/worker-controller'
-import { globalMutex } from '../worker/global-mutex'
+import { globalMutex, setGlobalMutex } from '../worker/global-mutex'
 import {
 	ConnectArguments,
 	EnvironmentConnection,
@@ -19,7 +19,8 @@ import {
 
 // this function is always used
 // noinspection JSUnusedGlobalSymbols
-export const connect = async (args: ConnectArguments): Promise<EnvironmentConnection> => {
+export const bind = async (args: ConnectArguments): Promise<EnvironmentConnection> => {
+	setGlobalMutex(args.mutex.pass())
 	initFrontedVariablesFromReceived(args.frontendVariables)
 	setCameraBuffer(args.camera)
 	SettingsContainer.INSTANCE = args.settings
@@ -36,8 +37,8 @@ export const connect = async (args: ConnectArguments): Promise<EnvironmentConnec
 		decodedGame!.entities.replaceBuffersFromReceived(data)
 	})
 
-	setMessageHandler('save-game-result', data => {
-		args.saveResultsCallback(data)
+	setMessageHandler('feedback', data => {
+		args.feedbackCallback(data)
 	})
 
 	const queue: ActionsQueue = SendActionsQueue.create(a => updateWorker.replier.send('scheduled-action', a))

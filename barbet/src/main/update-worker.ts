@@ -81,7 +81,7 @@ setMessageHandler('save-game', async (data, connection) => {
 				bytes[i] = asString.charCodeAt(i)!
 			const url = URL.createObjectURL(new Blob([bytes]))
 
-			connection.send('save-game-result', {url: url})
+			connection.send('feedback', {type: 'saved-to-url', url: url})
 		}
 	}
 })

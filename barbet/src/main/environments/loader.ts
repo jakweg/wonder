@@ -3,15 +3,25 @@ import { GameState } from '../game-state/game-state'
 import { ActionsQueue } from '../game-state/scheduled-actions/queue'
 import { StateUpdater } from '../game-state/state-updater'
 import { frontedVariablesBuffer } from '../util/frontend-variables'
+import Mutex from '../util/mutex'
 import { sharedMemoryIsAvailable } from '../util/shared-memory'
+import { globalMutex } from '../worker/global-mutex'
 import SettingsContainer from '../worker/observable-settings'
 import { getCameraBuffer } from '../worker/serializable-settings'
 
+type WaitingReason = 'waiting-for-leader' | 'loading-requested-game' | 'paused'
+export type FeedbackEvent =
+	{ type: 'saved-to-url', url: string }
+	| { type: 'became-session-leader' }
+	| { type: 'waiting-reason-update', reason: WaitingReason }
+	| { type: 'paused-status-changed', reason: 'resumed' | 'user-requested' | 'not-ready' }
+
 export interface ConnectArguments {
+	mutex: Mutex
 	frontendVariables: SharedArrayBuffer
 	camera: SharedArrayBuffer
 	settings: SettingsContainer
-	saveResultsCallback: ((data: { url: string }) => void)
+	feedbackCallback: ((event: FeedbackEvent) => void)
 }
 
 export type Environment =
@@ -73,19 +83,20 @@ export const getSuggestedEnvironmentName = (preferredEnvironment: Environment) =
 }
 
 export const loadEnvironment = async (name: Environment,
-                                      saveResultsCallback: ((data: { url: string }) => void))
+                                      feedbackCallback: (event: FeedbackEvent) => void)
 	: Promise<Readonly<EnvironmentConnection>> => {
 	if (FORCE_ENV_ZERO && name !== 'zero') {
 		if (!DEBUG)
 			console.error(`Forced environment change ${name} -> ${'zero' as Environment}`)
 		name = 'zero'
 	}
-	const connect = (await import((`${JS_ROOT}/environments/${name}.js`)))['connect']
+	const connect = (await import((`${JS_ROOT}/environments/${name}.js`)))['bind']
 	const args: ConnectArguments = {
+		mutex: globalMutex,
 		frontendVariables: frontedVariablesBuffer,
 		camera: getCameraBuffer(),
 		settings: SettingsContainer.INSTANCE,
-		saveResultsCallback,
+		feedbackCallback,
 	}
 	return Object.freeze(await connect(args) as EnvironmentConnection)
 }

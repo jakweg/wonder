@@ -1,21 +1,10 @@
-import { DEFAULT_NETWORK_SERVER_ADDRESS, JS_ROOT } from './build-info'
-import {
-	CreateGameArguments,
-	Environment,
-	EnvironmentConnection,
-	getSuggestedEnvironmentName,
-	loadEnvironment,
-	SaveMethod,
-} from './environments/loader'
-import { ScheduledActionId } from './game-state/scheduled-actions'
-import { ActionsQueue } from './game-state/scheduled-actions/queue'
-import { StateUpdater } from './game-state/state-updater'
+import { FeedbackEvent } from './environments/loader'
+import { createSession, GameSession } from './game-session'
 import { bindSettingsListeners } from './html-controls/settings'
 import {
 	bindFrontendVariablesToCanvas,
 	initFrontendVariableAndRegisterToWindow,
 } from './util/frontend-variables-updaters'
-import { getSavesList } from './util/persistance/saves-database'
 import SettingsContainer, { observeSetting } from './worker/observable-settings'
 import { addSaveCallback, registerSaveSettingsCallback } from './worker/serializable-settings'
 
@@ -35,26 +24,23 @@ const recreateCanvas = (): HTMLCanvasElement => {
 	return clone
 }
 
+let session: GameSession | null = null
 
-interface PageState {
-	updater: StateUpdater | null
-	environment: EnvironmentConnection | null
-	actionsQueue: ActionsQueue | null
-}
-
-const state: PageState = {
-	updater: null,
-	environment: null,
-	actionsQueue: null,
-}
 
 let pauseOnBlur = false
 observeSetting('other/pause-on-blur', v => pauseOnBlur = v)
-window.addEventListener('blur', () => pauseOnBlur && state?.updater?.stop())
-window.addEventListener('focus', () => pauseOnBlur && state?.updater?.start(SettingsContainer.INSTANCE.get('other/tps') as number))
+window.addEventListener('blur', () => pauseOnBlur && session?.invokeUpdaterAction({type: 'pause'}))
+window.addEventListener('focus', () => pauseOnBlur && session?.invokeUpdaterAction({
+	type: 'resume',
+	tickRate: SettingsContainer.INSTANCE.get('other/tps') as number,
+}))
 
-observeSetting('other/tps', tps => state?.updater?.changeTickRate(tps))
-observeSetting('rendering/antialias', () => setTimeout(() => state?.environment?.startRender({canvas: recreateCanvas()}), 10))
+observeSetting('other/tps', tps => session?.invokeUpdaterAction({
+	type: 'change-tick-rate',
+	tickRate: tps,
+}))
+
+observeSetting('rendering/antialias', () => setTimeout(() => session?.resetRendering(), 10))
 
 bindSettingsListeners()
 document['body'].classList['remove']('not-loaded-body')
@@ -77,8 +63,7 @@ const askForFile = async () => {
 	})
 }
 
-const saveCallback = (data: any) => {
-	const url = data.url
+const downloadSaveToDeviceStorage = (url: string) => {
 	const anchor = document.createElement('a')
 	anchor['href'] = url
 	anchor['download'] = 'latest.map-save.json'
@@ -87,14 +72,15 @@ const saveCallback = (data: any) => {
 }
 
 window.addEventListener('beforeunload', async () => {
-	state.environment?.saveGame({saveName: 'latest', method: SaveMethod.ToIndexedDatabase})
+	// TODO autosave?
+	// state.environment?.saveGame({saveName: 'latest', method: SaveMethod.ToIndexedDatabase})
 })
 
 document.getElementById('input-reset-normal')!
 	.addEventListener('click', async (event) => {
 		SettingsContainer.INSTANCE.set('other/generate-debug-world', false);
 		(event.target as HTMLElement)['blur']()
-		await runGame({})
+		// TODO: restart game
 	})
 
 
@@ -102,53 +88,64 @@ document.getElementById('input-reset-to-debug')!
 	.addEventListener('click', async (event) => {
 		SettingsContainer.INSTANCE.set('other/generate-debug-world', true);
 		(event.target as HTMLElement)['blur']()
-		await runGame({})
+		// TODO: restart game
 	})
 
 document.addEventListener('keydown', async event => {
 	if (event['code'] === 'KeyS' && event['ctrlKey']) {
 		event.preventDefault()
 		event.stopPropagation()
-		state.environment?.saveGame({saveName: 'latest', method: SaveMethod.ToDataUrl})
+		// TODO save to file?
+		// state.environment?.saveGame({saveName: 'latest', method: SaveMethod.ToDataUrl})
 	} else if (event['code'] === 'KeyO' && event['ctrlKey']) {
 		event.preventDefault()
 		event.stopPropagation()
 		const file = await askForFile()
 		if (file != null) {
-			await runGame({fileToRead: file})
+			// TODO: restart game from file {fileToRead: file}
 		}
 	} else if (event['code'] === 'KeyD' && event['ctrlKey']) {
 		event.preventDefault()
 		event.stopPropagation()
-		state?.actionsQueue?.append({type: ScheduledActionId.DebugCreateBuildingPrototype})
+		// TODO: invoke debug action
+		// state?.actionsQueue?.append({type: ScheduledActionId.DebugCreateBuildingPrototype})
 	}
 })
 
 
-const prepareEnvironment = (): Promise<EnvironmentConnection> => {
-	const preferredEnvironment = SettingsContainer.INSTANCE.get('other/preferred-environment') as Environment
-	return loadEnvironment(getSuggestedEnvironmentName(preferredEnvironment), saveCallback)
-}
-
-const runGame = async (args: CreateGameArguments) => {
-	if (state.environment === null) return
-	await state.environment.terminateGame({})
-	const results = await state.environment.createNewGame(args)
-	await state.environment.startRender({canvas: recreateCanvas()})
-	state.updater = results.updater
-	state.actionsQueue = results.queue
-	const speedToSet = +SettingsContainer.INSTANCE.get('other/tps')
-	state.updater.start(speedToSet)
+const feedbackMiddleware = async (event: FeedbackEvent) => {
+	switch (event.type) {
+		case 'became-session-leader':
+			console.log('Now everyone depends on me')
+			// const anySaveName = await getSavesList().then(e => e[0])
+			// session.provideStartGameArguments({saveName: anySaveName})
+			session?.provideStartGameArguments({})
+			break
+		case 'waiting-reason-update':
+			console.log('now waiting for:', event.reason)
+			if (event.reason === 'paused') {
+				const tickRate = +SettingsContainer.INSTANCE.get('other/tps')
+				session?.invokeUpdaterAction({type: 'resume', tickRate})
+			}
+			break
+		case 'paused-status-changed':
+			console.log('status', event.reason)
+			break
+		case 'saved-to-url':
+			downloadSaveToDeviceStorage(event.url)
+			break
+		default:
+			console.warn('Unknown feedback')
+			break
+	}
 }
 
 const initPageState = async () => {
-	state.environment = await prepareEnvironment()
-
-	const anySaveName = await getSavesList().then(e => e[0])
-	await runGame({saveName: anySaveName})
+	session = await createSession({
+		feedbackCallback: feedbackMiddleware,
+		remoteUrl: null,
+		canvasProvider: () => recreateCanvas(),
+	})
 }
-// noinspection JSIgnoredPromiseFromCall
-initPageState()
 
-if (DEFAULT_NETWORK_SERVER_ADDRESS !== undefined)
-	new Worker(`${JS_ROOT}/network-worker.js`, {'name': 'network'})
+initPageState().then(() => void 0)
