@@ -2,18 +2,18 @@
   "config": {
     "headers": [
       {
+        "glob": "/build-js/network-worker.js",
+        "headers": {
+          "Content-Security-Policy": "upgrade-insecure-requests;"
+        }
+      },
+      {
         "glob": "**",
         "headers": {
           "Cache-Control": "public;must-revalidate;max-age=172800;s-maxage=43200",
           "Cross-Origin-Opener-Policy": "same-origin",
           "Cross-Origin-Embedder-Policy": "require-corp",
           "Content-Security-Policy": "upgrade-insecure-requests; default-src 'self';"
-        }
-      },
-      {
-        "glob": "/build-js/network-worker.js",
-        "headers": {
-          "Content-Security-Policy": "upgrade-insecure-requests;"
         }
       }
     ]

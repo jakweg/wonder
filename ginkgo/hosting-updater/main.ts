@@ -15,6 +15,7 @@ const hostedFiles = [
 	'build-js/main.js',
 	'build-js/render-worker.js',
 	'build-js/update-worker.js',
+	'build-js/network-worker.js',
 	'build-js/environments/zero.js',
 	'build-js/environments/first.js',
 	'build-js/environments/second.js',
