@@ -9,6 +9,12 @@
           "Cross-Origin-Embedder-Policy": "require-corp",
           "Content-Security-Policy": "upgrade-insecure-requests; default-src 'self';"
         }
+      },
+      {
+        "glob": "/build-js/network-worker.js",
+        "headers": {
+          "Content-Security-Policy": "upgrade-insecure-requests;"
+        }
       }
     ]
   }
