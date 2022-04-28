@@ -14,7 +14,7 @@ export type FeedbackEvent =
 	{ type: 'saved-to-url', url: string }
 	| { type: 'became-session-leader' }
 	| { type: 'waiting-reason-update', reason: WaitingReason }
-	| { type: 'paused-status-changed', reason: 'resumed' | 'user-requested' | 'not-ready' }
+	| { type: 'paused-status-changed', reason: 'resumed' | 'initial-pause' | 'user-requested' | 'not-ready' }
 
 export interface ConnectArguments {
 	mutex: Mutex

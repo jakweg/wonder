@@ -47,7 +47,9 @@ export const createSession = async (props: Props): Promise<GameSession> => {
 
 	let synchronizer: GameSessionSynchronizer
 	if (props.remoteUrl !== null) {
-		synchronizer = await createRemote(props.remoteUrl)
+		synchronizer = await createRemote({
+			connectToUrl: props.remoteUrl,
+		})
 	} else {
 		synchronizer = await createLocal({})
 	}
@@ -82,12 +84,13 @@ export const createSession = async (props: Props): Promise<GameSession> => {
 		provideStartGameArguments(args: CreateGameArguments) {
 			props.feedbackCallback({type: 'waiting-reason-update', reason: 'loading-requested-game'})
 			environment.createNewGame(args).then((results) => {
+				synchronizer.setControlledUpdater(results.updater)
 				updater = results.updater
 				gameState = results.state
 				resetRendering()
 
 				props.feedbackCallback({type: 'waiting-reason-update', reason: 'paused'})
-				props.feedbackCallback({type: 'paused-status-changed', reason: 'user-requested'})
+				props.feedbackCallback({type: 'paused-status-changed', reason: 'initial-pause'})
 			})
 		},
 		invokeUpdaterAction(action: UpdaterAction) {

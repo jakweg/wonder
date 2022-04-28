@@ -1,3 +1,4 @@
+import { DEFAULT_NETWORK_SERVER_ADDRESS } from './build-info'
 import { FeedbackEvent } from './environments/loader'
 import { createSession, GameSession } from './game-session'
 import { bindSettingsListeners } from './html-controls/settings'
@@ -116,20 +117,17 @@ document.addEventListener('keydown', async event => {
 const feedbackMiddleware = async (event: FeedbackEvent) => {
 	switch (event.type) {
 		case 'became-session-leader':
-			console.log('Now everyone depends on me')
 			// const anySaveName = await getSavesList().then(e => e[0])
 			// session.provideStartGameArguments({saveName: anySaveName})
 			session?.provideStartGameArguments({})
 			break
 		case 'waiting-reason-update':
-			console.log('now waiting for:', event.reason)
-			if (event.reason === 'paused') {
+			break
+		case 'paused-status-changed':
+			if (event.reason === 'initial-pause') {
 				const tickRate = +SettingsContainer.INSTANCE.get('other/tps')
 				session?.invokeUpdaterAction({type: 'resume', tickRate})
 			}
-			break
-		case 'paused-status-changed':
-			console.log('status', event.reason)
 			break
 		case 'saved-to-url':
 			downloadSaveToDeviceStorage(event.url)
@@ -143,7 +141,7 @@ const feedbackMiddleware = async (event: FeedbackEvent) => {
 const initPageState = async () => {
 	session = await createSession({
 		feedbackCallback: feedbackMiddleware,
-		remoteUrl: null,
+		remoteUrl: DEFAULT_NETWORK_SERVER_ADDRESS ?? null,
 		canvasProvider: () => recreateCanvas(),
 	})
 }

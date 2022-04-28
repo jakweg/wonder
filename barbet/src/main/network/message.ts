@@ -1,7 +1,10 @@
 export interface Message {
 	'ping': number
 	'pong': number
-	'foo': { bar: string }
+	'successful-join': { yourId: number }
+	'leader-change': { newLeaderId: number }
+	'player-joined': { playerId: number }
+	'player-left': { playerId: number }
 }
 
 export type MessageInQueue = { type: keyof Message, value: any }

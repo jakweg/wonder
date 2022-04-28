@@ -43,3 +43,15 @@ export class ReceiveActionsQueue implements ActionsQueue {
 		list.splice(0)
 	}
 }
+
+export class ForwardActionsQueue implements ActionsQueue {
+	private constructor(private readonly destination: ActionsQueue) {
+	}
+	public static create(destination: ActionsQueue): ForwardActionsQueue {
+		return new ForwardActionsQueue(destination)
+	}
+
+	append(action: ScheduledAction) {
+		this.destination.append(action)
+	}
+}

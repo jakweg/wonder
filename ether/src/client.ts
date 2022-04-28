@@ -5,7 +5,7 @@ type ClientId = number
 let nextId = 0
 const getNextClientId = (): ClientId => ++nextId
 
-interface Client {
+export interface Client {
 	readonly id: ClientId
 	readonly socket: WebSocket
 	readonly closePromise: Promise<void>
