@@ -12,19 +12,19 @@ export const connectToServer = (url: string): Promise<ConnectedSocket> => {
 	const socket = new WebSocket(url)
 	return new Promise<ConnectedSocket>((resolve, reject) => {
 		socket.addEventListener('error', () => {
-			socket.close()
+			socket['close']()
 			reject()
-		}, {once: true})
+		}, {'once': true})
 		socket.addEventListener('close', () => reject(), {once: true})
 		socket.addEventListener('open', () => resolve({
 			socket,
 			send(data: MessageInQueue) {
-				socket.send(JSON.stringify(data))
+				socket['send'](JSON.stringify(data))
 			},
 			close() {
-				socket.close()
+				socket['close']()
 			},
-		}), {once: true})
+		}), {'once': true})
 	})
 }
 export const createMessageReceiver = <T>(socket: ConnectedSocket)
@@ -36,7 +36,7 @@ export const createMessageReceiver = <T>(socket: ConnectedSocket)
 	socket.socket.addEventListener('close', () => {
 		if (currentPromise !== null)
 			currentPromise[2]!()
-	}, {once: true})
+	}, {'once': true})
 
 
 	socket.socket.addEventListener('error', () => {
@@ -46,7 +46,7 @@ export const createMessageReceiver = <T>(socket: ConnectedSocket)
 
 
 	socket.socket.addEventListener('message', (event) => {
-		const msg = JSON.parse(event.data) as MessageInQueue
+		const msg = JSON.parse(event['data']) as MessageInQueue
 		if (currentPromise !== null) {
 			const copied = currentPromise
 			currentPromise = null
@@ -82,9 +82,9 @@ export const createMessageMiddleware = (receiver: ReturnType<typeof createMessag
 
 		while (true) {
 			message = await receiver()
-			const handler = handlers[message.type]
+			const handler = handlers[message['type']]
 			if (handler !== undefined)
-				handler(socket, message.value)
+				handler(socket, message['value'])
 			else
 				break
 		}

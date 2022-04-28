@@ -15,7 +15,6 @@ const handlers: HandlersType = {
 (async () => {
 	const url = 'ws://localhost:4575'
 	try {
-		console.log('connecting...')
 		const socket = await connectToServer(url)
 		const receiver = createMessageMiddleware(createMessageReceiver(socket), socket, handlers)
 

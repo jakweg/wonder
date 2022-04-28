@@ -24,7 +24,7 @@ export const createClientFromSocket = (socket: WebSocket): Client => {
 	const messageQueue: MessageInQueue[] = []
 
 	socket.addEventListener('message', event => {
-		const message = event.data
+		const message = event['data']
 		if (typeof message !== 'string') {
 			socket.close()
 			return
