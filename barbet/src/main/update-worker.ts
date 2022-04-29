@@ -9,7 +9,7 @@ import { takeControlOverWorkerConnection } from './worker/connections-manager'
 import { setGlobalMutex } from './worker/global-mutex'
 import { setMessageHandler } from './worker/message-handler'
 import SettingsContainer from './worker/observable-settings'
-import { createEmptyGame, loadGameFromDb, loadGameFromFile } from './worker/world-loader'
+import { loadGameFromArgs } from './worker/world-loader'
 
 SettingsContainer.INSTANCE = SettingsContainer.createEmpty()
 takeControlOverWorkerConnection()
@@ -40,15 +40,9 @@ setMessageHandler('create-game', async (args, connection) => {
 		})
 	}
 
-	const saveName = args.saveName
-	const file = args.fileToRead
 	actionsQueue = ReceiveActionsQueue.create()
 
-	gameState = (file !== undefined
-		? await loadGameFromFile(file, actionsQueue!, stateBroadcastCallback)
-		: (saveName !== undefined
-			? await loadGameFromDb(saveName, actionsQueue!, stateBroadcastCallback)
-			: createEmptyGame(actionsQueue!, stateBroadcastCallback))) as GameStateImplementation
+	gameState = await loadGameFromArgs(args, actionsQueue!, stateBroadcastCallback) as GameStateImplementation
 
 	stateUpdater = createNewStateUpdater(() => gameState!.advanceActivities(), gameState.currentTick)
 
@@ -68,6 +62,13 @@ setMessageHandler('save-game', async (data, connection) => {
 			const rawData = state.serialize()
 			setArrayEncodingType(ArrayEncodingType.None)
 			await putSaveData(saveName, rawData)
+		}
+			break
+		case SaveMethod.ToString: {
+			setArrayEncodingType(ArrayEncodingType.String)
+			const rawData = JSON.stringify(state.serialize())
+			setArrayEncodingType(ArrayEncodingType.None)
+			connection.send('feedback', {type: 'saved-to-string', value: rawData})
 		}
 			break
 		case SaveMethod.ToDataUrl: {

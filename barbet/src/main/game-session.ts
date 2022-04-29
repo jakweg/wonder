@@ -4,6 +4,7 @@ import {
 	FeedbackEvent,
 	getSuggestedEnvironmentName,
 	loadEnvironment,
+	SaveMethod,
 } from './environments/loader'
 import { GameState } from './game-state/game-state'
 import { StateUpdater } from './game-state/state-updater'
@@ -32,9 +33,13 @@ interface Props {
 
 export const createSession = async (props: Props): Promise<GameSession> => {
 	let terminated: boolean = false
+	let synchronizer: GameSessionSynchronizer
 
 	const feedbackMiddleware = (event: FeedbackEvent) => {
 		switch (event.type) {
+			case 'saved-to-string':
+				synchronizer.gameSnapshotCompleted(event.value)
+				break
 			default:
 				props.feedbackCallback(event)
 				break
@@ -44,11 +49,24 @@ export const createSession = async (props: Props): Promise<GameSession> => {
 	const suggestedName = getSuggestedEnvironmentName(SettingsContainer.INSTANCE.get('other/preferred-environment') as Environment)
 	const environment = await loadEnvironment(suggestedName, feedbackMiddleware)
 
+	let gameState: GameState | null = null
+	let updater: StateUpdater | null = null
 
-	let synchronizer: GameSessionSynchronizer
 	if (props.remoteUrl !== null) {
 		synchronizer = await createRemote({
 			connectToUrl: props.remoteUrl,
+			eventCallback: event => {
+				switch (event.type) {
+					case 'game-state-received':
+						loadGameFromArgs({stringToRead: event.value})
+						break
+					case 'game-state-request':
+						if (gameState !== null) {
+							environment.saveGame({method: SaveMethod.ToString, saveName: 'requested-by-other-player'})
+						}
+						break
+				}
+			},
 		})
 	} else {
 		synchronizer = await createLocal({})
@@ -57,8 +75,6 @@ export const createSession = async (props: Props): Promise<GameSession> => {
 	props.feedbackCallback({type: 'waiting-reason-update', reason: 'waiting-for-leader'})
 	props.feedbackCallback({type: 'paused-status-changed', reason: 'not-ready'})
 
-	let gameState: GameState | null = null
-	let updater: StateUpdater | null = null
 	let wasLeader = false
 	let intervalId = setInterval(() => {
 		if (terminated) {
@@ -73,6 +89,20 @@ export const createSession = async (props: Props): Promise<GameSession> => {
 		}
 	}, 100)
 
+	const loadGameFromArgs = (args: CreateGameArguments) => {
+		props.feedbackCallback({type: 'waiting-reason-update', reason: 'loading-requested-game'})
+		environment.createNewGame(args).then((results) => {
+			synchronizer.setControlledUpdater(results.updater)
+			updater = results.updater
+			gameState = results.state
+			resetRendering()
+
+			props.feedbackCallback({type: 'waiting-reason-update', reason: 'paused'})
+			props.feedbackCallback({type: 'paused-status-changed', reason: 'initial-pause'})
+		})
+	}
+
+
 	const resetRendering = () => {
 		environment.startRender({
 			canvas: props.canvasProvider(),
@@ -82,16 +112,7 @@ export const createSession = async (props: Props): Promise<GameSession> => {
 	return {
 		resetRendering,
 		provideStartGameArguments(args: CreateGameArguments) {
-			props.feedbackCallback({type: 'waiting-reason-update', reason: 'loading-requested-game'})
-			environment.createNewGame(args).then((results) => {
-				synchronizer.setControlledUpdater(results.updater)
-				updater = results.updater
-				gameState = results.state
-				resetRendering()
-
-				props.feedbackCallback({type: 'waiting-reason-update', reason: 'paused'})
-				props.feedbackCallback({type: 'paused-status-changed', reason: 'initial-pause'})
-			})
+			queueMicrotask(() => loadGameFromArgs(args))
 		},
 		invokeUpdaterAction(action: UpdaterAction) {
 			queueMicrotask(() => {

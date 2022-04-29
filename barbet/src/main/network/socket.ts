@@ -1,9 +1,9 @@
-import { Message, MessageInQueue } from './message'
+import { NetworkLayerMessage, NetworkMessageInQueue } from './message'
 
-interface ConnectedSocket {
+export interface ConnectedSocket {
 	readonly socket: WebSocket
 
-	send(data: MessageInQueue): void
+	send(data: NetworkMessageInQueue): void
 
 	close(): void
 }
@@ -18,7 +18,7 @@ export const connectToServer = (url: string): Promise<ConnectedSocket> => {
 		socket.addEventListener('close', () => reject(), {once: true})
 		socket.addEventListener('open', () => resolve({
 			socket,
-			send(data: MessageInQueue) {
+			send(data: NetworkMessageInQueue) {
 				socket['send'](JSON.stringify(data))
 			},
 			close() {
@@ -28,9 +28,9 @@ export const connectToServer = (url: string): Promise<ConnectedSocket> => {
 	})
 }
 export const createMessageReceiver = <T>(socket: ConnectedSocket)
-	: () => Promise<MessageInQueue> => {
+	: () => Promise<NetworkMessageInQueue> => {
 
-	const messageQueue: MessageInQueue[] = []
+	const messageQueue: NetworkMessageInQueue[] = []
 	let currentPromise: [any, any, any] | null = null
 
 	socket.socket.addEventListener('close', () => {
@@ -46,7 +46,7 @@ export const createMessageReceiver = <T>(socket: ConnectedSocket)
 
 
 	socket.socket.addEventListener('message', (event) => {
-		const msg = JSON.parse(event['data']) as MessageInQueue
+		const msg = JSON.parse(event['data']) as NetworkMessageInQueue
 		if (currentPromise !== null) {
 			const copied = currentPromise
 			currentPromise = null
@@ -63,7 +63,7 @@ export const createMessageReceiver = <T>(socket: ConnectedSocket)
 		if (messageQueue.length > 0)
 			return Promise.reject(messageQueue.shift())
 
-		const promise = new Promise<MessageInQueue>((resolve, reject) => {
+		const promise = new Promise<NetworkMessageInQueue>((resolve, reject) => {
 			currentPromise = [null, resolve, reject]
 		})
 		currentPromise![0] = promise
@@ -73,8 +73,8 @@ export const createMessageReceiver = <T>(socket: ConnectedSocket)
 export const createMessageMiddleware = (receiver: ReturnType<typeof createMessageReceiver>,
                                         socket: ConnectedSocket,
                                         handlers: {
-	                                        [key in keyof Message]?: (socket: ConnectedSocket,
-	                                                                  message: (Message[key])) => void
+	                                        [key in keyof NetworkLayerMessage]?: (socket: ConnectedSocket,
+	                                                                              message: (NetworkLayerMessage[key])) => void
                                         })
 	: ReturnType<typeof createMessageReceiver> => {
 	return async () => {

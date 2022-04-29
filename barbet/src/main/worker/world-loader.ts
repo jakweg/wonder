@@ -1,3 +1,4 @@
+import { CreateGameArguments } from '../environments/loader'
 import { createNewDelayedComputer } from '../game-state/delayed-computer'
 import EntityContainer from '../game-state/entities/entity-container'
 import { GameState, GameStateImplementation } from '../game-state/game-state'
@@ -50,6 +51,18 @@ export const loadGameFromDb = async (id: string, actionsQueue: ReceiveActionsQue
 	}
 }
 
+
+export const loadGameFromString = async (value: string, actionsQueue: ReceiveActionsQueue,
+                                     stateBroadcastCallback: () => void): Promise<GameState> => {
+	setArrayEncodingType(ArrayEncodingType.String)
+	try {
+		const object = JSON.parse(value)
+		return GameStateImplementation.deserialize(object, actionsQueue, globalMutex, stateBroadcastCallback)
+	} finally {
+		setArrayEncodingType(ArrayEncodingType.None)
+	}
+}
+
 export const loadGameFromFile = async (file: File,
                                        actionsQueue: ReceiveActionsQueue,
                                        stateBroadcastCallback: () => void): Promise<GameState> => {
@@ -68,4 +81,20 @@ export const loadGameFromFile = async (file: File,
 		}
 		reader['readAsText'](file)
 	})
+}
+
+
+export const loadGameFromArgs = async (args: CreateGameArguments, actionsQueue: ReceiveActionsQueue, stateBroadcastCallback: () => any) => {
+	const saveName = args.saveName
+	const file = args.fileToRead
+	const string = args.stringToRead
+
+	if (string !== undefined)
+		return await loadGameFromString(string, actionsQueue, stateBroadcastCallback)
+	else if (file !== undefined)
+		return await loadGameFromFile(file, actionsQueue, stateBroadcastCallback)
+	else if (saveName !== undefined)
+		return await loadGameFromDb(saveName, actionsQueue, stateBroadcastCallback)
+	else
+		return createEmptyGame(actionsQueue, stateBroadcastCallback)
 }

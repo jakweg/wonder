@@ -22,14 +22,23 @@ const broadcastToAllPlayers = (msg: MessageInQueue) => {
 		p.client.send(msg)
 }
 
+const sendCurrentStateToNewPlayer = (player: Player) => {
+	for (const other of allPlayers)
+		player.client.send({type: 'player-joined', value: {playerId: other.client.id}})
+
+	player.client.send({
+		type: 'leader-change',
+		value: {newLeaderId: allPlayers.find(e => e.isLeader)?.client?.id ?? 0},
+	})
+}
+
 const onClientConnected = (client: Client) => {
 	console.info(`Connected client id=${client.id}`)
 	const player: Player = {client, isLeader: false}
 
 	player.client.send({type: 'successful-join', value: {yourId: player.client.id}})
 
-	for (const other of allPlayers)
-		player.client.send({type: 'player-joined', value: {playerId: other.client.id}})
+	sendCurrentStateToNewPlayer(player)
 
 
 	broadcastToAllPlayers({
@@ -40,12 +49,8 @@ const onClientConnected = (client: Client) => {
 	allPlayers.push(player)
 	if (allPlayers.length === 1)
 		promoteToLeader(player)
-	else {
-		broadcastToAllPlayers({
-			type: 'leader-change',
-			value: {newLeaderId: allPlayers.find(e => e.isLeader)?.client?.id ?? 0},
-		})
-	}
+
+	return player
 }
 
 
@@ -90,19 +95,33 @@ server.addListener('connection', async (socket) => {
 	}
 
 	try {
-		onClientConnected(client)
+		const player = onClientConnected(client)
 
 
 		while (true) {
 			const message = await client.getMessage()
-			if (message.type === 'ping')
-				client.send({type: 'pong', value: message.value})
-			else if (message.type === 'pong')
-				console.log('measured ping', performance.now() - message.value)
-			else
-				console.log('Unknown message', message.type)
-
-
+			switch (message.type) {
+				case 'ping':
+					client.send({type: 'pong', value: message.value})
+					break
+				case 'pong':
+					console.log('measured ping', performance.now() - message.value)
+					break
+				case 'game-layer-message':
+					const to = +message.value.to
+					if (!isNaN(to) && player.isLeader) {
+						allPlayers.find(e => e.client.id === to)?.client.send({
+							type: 'game-layer-message',
+							value: message.value.value
+						})
+					} else {
+						console.error('Invalid game layer message, dropping')
+					}
+					break
+				default:
+					console.log('Unknown message', message.type)
+					break
+			}
 		}
 	} catch (e) {
 		console.log(`lost connection with client id=${client.id}:`, e)

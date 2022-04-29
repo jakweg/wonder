@@ -13,7 +13,7 @@ import { ArrayEncodingType, setArrayEncodingType } from '../util/persistance/ser
 import { setGlobalMutex } from '../worker/global-mutex'
 import SettingsContainer from '../worker/observable-settings'
 import { getCameraBuffer, setCameraBuffer } from '../worker/serializable-settings'
-import { createEmptyGame, loadGameFromDb, loadGameFromFile } from '../worker/world-loader'
+import { loadGameFromArgs } from '../worker/world-loader'
 import {
 	ConnectArguments,
 	CreateGameArguments,
@@ -42,13 +42,7 @@ export const bind = (args: ConnectArguments): EnvironmentConnection => {
 			const stateBroadcastCallback = () => void 0 // ignore, since everything is locally anyway
 			actionsQueue = ReceiveActionsQueue.create()
 
-			const saveName = args.saveName
-			const file = args.fileToRead
-			game = file !== undefined
-				? await loadGameFromFile(file, actionsQueue, stateBroadcastCallback)
-				: (saveName !== undefined
-					? await loadGameFromDb(saveName, actionsQueue, stateBroadcastCallback)
-					: createEmptyGame(actionsQueue, stateBroadcastCallback))
+			game = await loadGameFromArgs(args, actionsQueue!, stateBroadcastCallback) as GameStateImplementation
 
 			const updaterInstance = createNewStateUpdater(() => (game as GameStateImplementation)?.advanceActivities(), game.currentTick)
 
@@ -79,6 +73,16 @@ export const bind = (args: ConnectArguments): EnvironmentConnection => {
 					setArrayEncodingType(ArrayEncodingType.Array)
 					try {
 						void putSaveData(saveName, (game as GameStateImplementation).serialize())
+					} finally {
+						setArrayEncodingType(ArrayEncodingType.None)
+					}
+				}
+					break
+				case SaveMethod.ToString: {
+					setArrayEncodingType(ArrayEncodingType.String)
+					try {
+						const data = JSON.stringify((game as GameStateImplementation).serialize())
+						args.feedbackCallback({type: 'saved-to-string', value: data})
 					} finally {
 						setArrayEncodingType(ArrayEncodingType.None)
 					}
