@@ -6,7 +6,7 @@ import { frontedVariablesBuffer } from '../util/frontend-variables'
 import Mutex from '../util/mutex'
 import { sharedMemoryIsAvailable } from '../util/shared-memory'
 import { globalMutex } from '../worker/global-mutex'
-import SettingsContainer from '../worker/observable-settings'
+import CONFIG from '../worker/observable-settings'
 import { getCameraBuffer } from '../worker/serializable-settings'
 
 type WaitingReason = 'waiting-for-leader' | 'loading-requested-game' | 'paused'
@@ -21,7 +21,7 @@ export interface ConnectArguments {
 	mutex: Mutex
 	frontendVariables: SharedArrayBuffer
 	camera: SharedArrayBuffer
-	settings: SettingsContainer
+	settings: typeof CONFIG
 	feedbackCallback: ((event: FeedbackEvent) => void)
 }
 
@@ -98,7 +98,7 @@ export const loadEnvironment = async (name: Environment,
 		mutex: globalMutex,
 		frontendVariables: frontedVariablesBuffer,
 		camera: getCameraBuffer(),
-		settings: SettingsContainer.INSTANCE,
+		settings: CONFIG,
 		feedbackCallback,
 	}
 	return Object.freeze(await connect(args) as EnvironmentConnection)

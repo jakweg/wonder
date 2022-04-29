@@ -1,4 +1,5 @@
 import { STANDARD_GAME_TICK_RATE } from '../game-state/state-updater'
+import State from '../util/state'
 import { getFromLocalStorage, putInLocalStorage } from './serializable-settings'
 
 const settingsToDefaults = {
@@ -14,101 +15,32 @@ const settingsToDefaults = {
 
 type SettingName = keyof typeof settingsToDefaults
 
-class SettingsContainer {
-	public static INSTANCE: SettingsContainer
-	private readonly listeners: Map<SettingName, any[]> = new Map<SettingName, any[]>()
-	private readonly everythingListeners: any[] = []
+const CONFIG = State.fromInitial(settingsToDefaults)
+export default CONFIG
 
-	private constructor(private readonly values: Map<SettingName, any>) {
-	}
-
-	public static fromLocalstorage() {
-		const values = new Map<SettingName, any>()
-		for (const [key, value] of Object.entries(settingsToDefaults)) {
-			let fromLocalStorage = getFromLocalStorage(key)
-			const invalidType = fromLocalStorage != null && typeof fromLocalStorage !== typeof value
-			if (fromLocalStorage == null || invalidType) {
-				if (invalidType)
-					console.error(`Invalid value for key ${key} in localstorage`)
-				fromLocalStorage = value
-			}
-			values.set(key as SettingName, fromLocalStorage)
+export const initSettingsFromLocalStorage = () => {
+	const values = new Map<SettingName, any>()
+	for (const [key, value] of Object.entries(settingsToDefaults)) {
+		let fromLocalStorage = getFromLocalStorage(key)
+		const invalidType = fromLocalStorage != null && typeof fromLocalStorage !== typeof value
+		if (fromLocalStorage == null || invalidType) {
+			if (invalidType)
+				console.error(`Invalid value for key ${key} in localstorage`)
+			fromLocalStorage = value
 		}
-
-		return new SettingsContainer(values)
+		values.set(key as SettingName, fromLocalStorage)
 	}
 
-	public static createEmpty() {
-		return new SettingsContainer(new Map<SettingName, any>())
-	}
-
-	public update(object: any): void {
-		for (const [key, newValue] of Object.entries(object)) {
-			const oldValue = this.values.get(key as SettingName)
-			if (oldValue !== newValue) {
-				this.values.set(key as SettingName, newValue)
-				this.listeners.get(key as SettingName)?.forEach(e => e(newValue))
-			}
-		}
-	}
-
-	public pass(): any {
-		return Object.fromEntries(this.values.entries())
-	}
-
-	public saveToLocalStorage(): void {
-		for (const [key, value] of this.values.entries())
-			putInLocalStorage(key as string, value)
-	}
-
-	public set<T extends SettingName>(key: SettingName, value: typeof settingsToDefaults[T]): void {
-		const oldValue = this.values.get(key)
-		if (oldValue === undefined || oldValue !== value) {
-			this.values.set(key, value)
-			this.listeners.get(key)?.forEach(e => e(value))
-			const snapshot = this.pass()
-			this.everythingListeners.forEach(e => e(snapshot))
-		}
-	}
-
-	public get<T extends SettingName>(key: SettingName): typeof settingsToDefaults[T] {
-		return this.values.get(key)
-	}
-
-	public observe(key: SettingName,
-	               callback: (value: any) => any,
-	               initialCall: boolean): any {
-
-		let value = this.values.get(key)
-		let list = this.listeners.get(key)
-		if (list === undefined) {
-			list = []
-			this.listeners.set(key, list)
-		}
-		if (initialCall)
-			callback(value)
-		list.push(callback)
-		return () => {
-			const index = list?.indexOf(callback) ?? -1
-			if (index >= 0)
-				list?.splice(index, 1)
-		}
-	}
-
-	public observeEverything(callback: (snapshot: any) => any): any {
-		this.everythingListeners.push(callback)
-		callback(this.pass())
-		return () => {
-			const index = this.everythingListeners.indexOf(callback) ?? -1
-			if (index >= 0)
-				this.everythingListeners.splice(index, 1)
-		}
-	}
+	CONFIG.replace(Object.fromEntries(values.entries()) as any)
 }
 
-export default SettingsContainer
+export const saveSettingsToLocalStorage = () => {
+	for (const [key, value] of Object.entries(CONFIG.pass()))
+		putInLocalStorage(key as string, value)
+}
+
 export const observeSetting = <T extends SettingName>(
 	key: T,
 	callback: (value: typeof settingsToDefaults[T]) => any) => {
-	return SettingsContainer.INSTANCE.observe(key, callback, true)
+	return CONFIG.observe(key, callback, true)
 }

@@ -5,11 +5,10 @@ import { SendActionsQueue } from './game-state/scheduled-actions/queue'
 import { createStateUpdaterControllerFromReceived, StateUpdater } from './game-state/state-updater'
 import { initFrontedVariablesFromReceived } from './util/frontend-variables-updaters'
 import { takeControlOverWorkerConnection } from './worker/connections-manager'
-import { Connection, setMessageHandler } from './worker/message-handler'
-import SettingsContainer from './worker/observable-settings'
 import { setGlobalMutex } from './worker/global-mutex'
+import { Connection, setMessageHandler } from './worker/message-handler'
+import CONFIG from './worker/observable-settings'
 
-SettingsContainer.INSTANCE = SettingsContainer.createEmpty()
 takeControlOverWorkerConnection()
 
 let renderCancelCallback: () => void = () => void 0
@@ -27,7 +26,7 @@ setMessageHandler('set-global-mutex', (data, connection) => {
 })
 
 setMessageHandler('new-settings', settings => {
-	SettingsContainer.INSTANCE.update(settings)
+	CONFIG.update(settings)
 })
 
 setMessageHandler('transfer-canvas', (data) => {

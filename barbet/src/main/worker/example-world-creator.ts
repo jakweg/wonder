@@ -8,7 +8,7 @@ import { BlockId } from '../game-state/world/block'
 import { generateBiomeMap, generateHeightMap } from '../game-state/world/generator'
 import { World } from '../game-state/world/world'
 import { Direction } from '../util/direction'
-import ObservableSettings from './observable-settings'
+import CONFIG from './observable-settings'
 
 const placeDebugFeatures = (game: GameState) => {
 	const {world, groundItems} = game
@@ -52,7 +52,7 @@ const placeMoreRealTerrain = (game: GameState) => {
 }
 
 export function fillEmptyWorldWithDefaultData(game: GameState) {
-	if (ObservableSettings.INSTANCE.get('other/generate-debug-world'))
+	if (CONFIG.get('other/generate-debug-world'))
 		placeDebugFeatures(game)
 	else
 		placeMoreRealTerrain(game)

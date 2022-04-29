@@ -3,11 +3,11 @@ import { ActionsQueue, SendActionsQueue } from '../game-state/scheduled-actions/
 import { createStateUpdaterControllerFromReceived, StateUpdater } from '../game-state/state-updater'
 import { frontedVariablesBuffer } from '../util/frontend-variables'
 import { initFrontedVariablesFromReceived } from '../util/frontend-variables-updaters'
+import { globalMutex, setGlobalMutex } from '../worker/global-mutex'
 import { setMessageHandler } from '../worker/message-handler'
-import SettingsContainer from '../worker/observable-settings'
+import CONFIG from '../worker/observable-settings'
 import { getCameraBuffer, setCameraBuffer } from '../worker/serializable-settings'
 import { WorkerController } from '../worker/worker-controller'
-import { globalMutex, setGlobalMutex } from '../worker/global-mutex'
 import {
 	ConnectArguments,
 	EnvironmentConnection,
@@ -22,7 +22,7 @@ export const bind = async (args: ConnectArguments): Promise<EnvironmentConnectio
 	setGlobalMutex(args.mutex.pass())
 	initFrontedVariablesFromReceived(args.frontendVariables)
 	setCameraBuffer(args.camera)
-	SettingsContainer.INSTANCE = args.settings
+	args.settings.observeEverything(s => CONFIG.replace(s))
 
 	let startGameCallback: any = null
 	let entityContainerSnapshotForRenderer: any = null
@@ -32,7 +32,7 @@ export const bind = async (args: ConnectArguments): Promise<EnvironmentConnectio
 
 	const updateWorker = await WorkerController.spawnNew('update-worker', 'update', globalMutex)
 	const renderWorker = await WorkerController.spawnNew('render-worker', 'render', globalMutex)
-	SettingsContainer.INSTANCE.observeEverything(snapshot => {
+	CONFIG.observeEverything(snapshot => {
 		updateWorker.replier.send('new-settings', snapshot)
 		renderWorker.replier.send('new-settings', snapshot)
 	})

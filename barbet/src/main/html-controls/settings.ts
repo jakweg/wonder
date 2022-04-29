@@ -1,11 +1,11 @@
-import SettingsContainer, { observeSetting } from '../worker/observable-settings'
+import CONFIG, { observeSetting } from '../worker/observable-settings'
 
 function antiAlias() {
 	const input = document.getElementById('input-enable-antialias') as HTMLSelectElement
 	observeSetting('rendering/antialias', (value) => input['value'] = value ? '1' : '0')
 	input.addEventListener('change', () => {
 		input.disabled = true
-		SettingsContainer.INSTANCE.set('rendering/antialias', input['value'] === '1')
+		CONFIG.set('rendering/antialias', input['value'] === '1')
 		setTimeout(() => input.disabled = false, 500)
 	})
 }
@@ -14,7 +14,7 @@ function tileBorders() {
 	const input = document.getElementById('input-enable-tile-borders') as HTMLSelectElement
 	observeSetting('rendering/show-tile-borders', (value) => input['value'] = value ? '1' : '0')
 	input.addEventListener('change', () => {
-		SettingsContainer.INSTANCE.set('rendering/show-tile-borders', input['value'] === '1')
+		CONFIG.set('rendering/show-tile-borders', input['value'] === '1')
 	})
 }
 
@@ -22,7 +22,7 @@ function pauseOnBlur() {
 	const input = document.getElementById('input-pause-on-blur') as HTMLSelectElement
 	observeSetting('other/pause-on-blur', (value) => input['value'] = value ? '1' : '0')
 	input.addEventListener('change', () => {
-		SettingsContainer.INSTANCE.set('other/pause-on-blur', input['value'] === '1')
+		CONFIG.set('other/pause-on-blur', input['value'] === '1')
 	})
 }
 
@@ -30,7 +30,7 @@ function fpsCap() {
 	const input = document.getElementById('input-fps-cap') as HTMLSelectElement
 	observeSetting('rendering/fps-cap', (value) => input['value'] = `${value}`)
 	input.addEventListener('change', () => {
-		SettingsContainer.INSTANCE.set('rendering/fps-cap', +input['value'])
+		CONFIG.set('rendering/fps-cap', +input['value'])
 	})
 }
 
@@ -39,7 +39,7 @@ function fpsCapOnBlur() {
 	const input = document.getElementById('input-fps-cap-blur') as HTMLSelectElement
 	observeSetting('rendering/fps-cap-on-blur', (value) => input['value'] = `${value}`)
 	input.addEventListener('change', () => {
-		SettingsContainer.INSTANCE.set('rendering/fps-cap-on-blur', +input['value'])
+		CONFIG.set('rendering/fps-cap-on-blur', +input['value'])
 	})
 }
 
@@ -63,7 +63,7 @@ function tps() {
 	const input = document.getElementById('input-ticksPerSecond') as HTMLSelectElement
 	observeSetting('other/tps', (value) => input['value'] = `${value}`)
 	input.addEventListener('change', () => {
-		SettingsContainer.INSTANCE.set('other/tps', +input['value'])
+		CONFIG.set('other/tps', +input['value'])
 	})
 }
 
@@ -97,7 +97,7 @@ function workers() {
 				valueToSet = 'zero'
 				break
 		}
-		SettingsContainer.INSTANCE.set('other/preferred-environment', valueToSet)
+		CONFIG.set('other/preferred-environment', valueToSet)
 	})
 }
 

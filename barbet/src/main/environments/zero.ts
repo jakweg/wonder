@@ -11,7 +11,7 @@ import { initFrontedVariablesFromReceived } from '../util/frontend-variables-upd
 import { putSaveData } from '../util/persistance/saves-database'
 import { ArrayEncodingType, setArrayEncodingType } from '../util/persistance/serializers'
 import { setGlobalMutex } from '../worker/global-mutex'
-import SettingsContainer from '../worker/observable-settings'
+import CONFIG from '../worker/observable-settings'
 import { getCameraBuffer, setCameraBuffer } from '../worker/serializable-settings'
 import { loadGameFromArgs } from '../worker/world-loader'
 import {
@@ -30,7 +30,7 @@ export const bind = (args: ConnectArguments): EnvironmentConnection => {
 	setGlobalMutex(args.mutex.pass())
 	initFrontedVariablesFromReceived(args.frontendVariables)
 	setCameraBuffer(args.camera)
-	SettingsContainer.INSTANCE = args.settings
+	args.settings.observeEverything(s => CONFIG.replace(s))
 
 	let actionsQueue: ReceiveActionsQueue | null = null
 	let game: GameState | null = null

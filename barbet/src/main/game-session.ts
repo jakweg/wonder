@@ -9,7 +9,7 @@ import {
 import { GameState } from './game-state/game-state'
 import { StateUpdater } from './game-state/state-updater'
 import { createLocal, createRemote, GameSessionSynchronizer } from './network/game-session-synchronizer'
-import SettingsContainer from './worker/observable-settings'
+import CONFIG from './worker/observable-settings'
 
 type UpdaterAction = { type: 'resume' | 'change-tick-rate', tickRate: number } | { type: 'pause' }
 
@@ -46,7 +46,7 @@ export const createSession = async (props: Props): Promise<GameSession> => {
 		}
 	}
 
-	const suggestedName = getSuggestedEnvironmentName(SettingsContainer.INSTANCE.get('other/preferred-environment') as Environment)
+	const suggestedName = getSuggestedEnvironmentName(CONFIG.get('other/preferred-environment') as Environment)
 	const environment = await loadEnvironment(suggestedName, feedbackMiddleware)
 
 	let gameState: GameState | null = null

@@ -6,11 +6,15 @@ import {
 	bindFrontendVariablesToCanvas,
 	initFrontendVariableAndRegisterToWindow,
 } from './util/frontend-variables-updaters'
-import SettingsContainer, { observeSetting } from './worker/observable-settings'
+import CONFIG, {
+	initSettingsFromLocalStorage,
+	observeSetting,
+	saveSettingsToLocalStorage,
+} from './worker/observable-settings'
 import { addSaveCallback, registerSaveSettingsCallback } from './worker/serializable-settings'
 
-SettingsContainer.INSTANCE = SettingsContainer.fromLocalstorage()
-addSaveCallback(() => SettingsContainer.INSTANCE.saveToLocalStorage())
+initSettingsFromLocalStorage()
+addSaveCallback(() => saveSettingsToLocalStorage())
 registerSaveSettingsCallback()
 initFrontendVariableAndRegisterToWindow()
 
@@ -33,7 +37,7 @@ observeSetting('other/pause-on-blur', v => pauseOnBlur = v)
 window.addEventListener('blur', () => pauseOnBlur && session?.invokeUpdaterAction({type: 'pause'}))
 window.addEventListener('focus', () => pauseOnBlur && session?.invokeUpdaterAction({
 	type: 'resume',
-	tickRate: SettingsContainer.INSTANCE.get('other/tps') as number,
+	tickRate: CONFIG.get('other/tps') as number,
 }))
 
 observeSetting('other/tps', tps => session?.invokeUpdaterAction({
@@ -79,7 +83,7 @@ window.addEventListener('beforeunload', async () => {
 
 document.getElementById('input-reset-normal')!
 	.addEventListener('click', async (event) => {
-		SettingsContainer.INSTANCE.set('other/generate-debug-world', false);
+		CONFIG.set('other/generate-debug-world', false);
 		(event.target as HTMLElement)['blur']()
 		// TODO: restart game
 	})
@@ -87,7 +91,7 @@ document.getElementById('input-reset-normal')!
 
 document.getElementById('input-reset-to-debug')!
 	.addEventListener('click', async (event) => {
-		SettingsContainer.INSTANCE.set('other/generate-debug-world', true);
+		CONFIG.set('other/generate-debug-world', true);
 		(event.target as HTMLElement)['blur']()
 		// TODO: restart game
 	})
@@ -125,7 +129,7 @@ const feedbackMiddleware = async (event: FeedbackEvent) => {
 			break
 		case 'paused-status-changed':
 			if (event.reason === 'initial-pause') {
-				const tickRate = +SettingsContainer.INSTANCE.get('other/tps')
+				const tickRate = +CONFIG.get('other/tps')
 				session?.invokeUpdaterAction({type: 'resume', tickRate})
 			}
 			break

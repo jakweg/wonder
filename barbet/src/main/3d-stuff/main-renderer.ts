@@ -1,5 +1,5 @@
 import { DEBUG } from '../build-info'
-import SettingsContainer from '../worker/observable-settings'
+import CONFIG from '../worker/observable-settings'
 
 const TEXTURE_PIXEL_MULTIPLIER = 1 // set 1 / 2 for half-resolution rendering
 
@@ -8,7 +8,7 @@ type AllocatedResourceEntry = { id: any, type: 'shader' | 'program' | 'buffer' |
 const obtainWebGl2ContextFromCanvas = (canvas: HTMLCanvasElement): WebGL2RenderingContext => {
 	const context = canvas.getContext('webgl2', {
 		'alpha': false,
-		'antialias': SettingsContainer.INSTANCE.get('rendering/antialias'),
+		'antialias': CONFIG.get('rendering/antialias'),
 		'depth': true,
 		'stencil': false,
 		'failIfMajorPerformanceCaveat': true,

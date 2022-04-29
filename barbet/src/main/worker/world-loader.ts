@@ -12,7 +12,7 @@ import { readSaveData } from '../util/persistance/saves-database'
 import { ArrayEncodingType, setArrayEncodingType } from '../util/persistance/serializers'
 import { fillEmptyWorldWithDefaultData } from './example-world-creator'
 import { globalMutex } from './global-mutex'
-import ObservableSettings from './observable-settings'
+import CONFIG from './observable-settings'
 
 export const createEmptyGame = (actionsQueue: ReceiveActionsQueue,
                                 stateBroadcastCallback: () => void): GameState => {
@@ -20,7 +20,7 @@ export const createEmptyGame = (actionsQueue: ReceiveActionsQueue,
 	let sizeX = 1000
 	let sizeY = 50
 	let sizeZ = 1000
-	if (ObservableSettings.INSTANCE.get('other/generate-debug-world')) {
+	if (CONFIG.get('other/generate-debug-world')) {
 		sizeX = 20
 		sizeY = 10
 		sizeZ = 20
@@ -53,7 +53,7 @@ export const loadGameFromDb = async (id: string, actionsQueue: ReceiveActionsQue
 
 
 export const loadGameFromString = async (value: string, actionsQueue: ReceiveActionsQueue,
-                                     stateBroadcastCallback: () => void): Promise<GameState> => {
+                                         stateBroadcastCallback: () => void): Promise<GameState> => {
 	setArrayEncodingType(ArrayEncodingType.String)
 	try {
 		const object = JSON.parse(value)

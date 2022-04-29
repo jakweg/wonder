@@ -2,17 +2,16 @@ import { ConnectedSocket, connectToServer, createMessageMiddleware, createMessag
 import { takeControlOverWorkerConnection } from './worker/connections-manager'
 import { setGlobalMutex } from './worker/global-mutex'
 import { Connection, setMessageHandler } from './worker/message-handler'
-import SettingsContainer from './worker/observable-settings'
+import CONFIG from './worker/observable-settings'
 
 let connection: Connection
-SettingsContainer.INSTANCE = SettingsContainer.createEmpty()
 takeControlOverWorkerConnection()
 setMessageHandler('set-global-mutex', (data, c) => {
 	setGlobalMutex(data.mutex)
 	connection = c
 })
 setMessageHandler('new-settings', settings => {
-	SettingsContainer.INSTANCE.update(settings)
+	CONFIG.update(settings)
 })
 
 type HandlersType = (Parameters<typeof createMessageMiddleware>[2])
