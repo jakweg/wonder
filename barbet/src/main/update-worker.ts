@@ -1,15 +1,13 @@
-import { SaveMethod } from './environments/loader'
 import { GameStateImplementation } from './game-state/game-state'
 import { ReceiveActionsQueue } from './game-state/scheduled-actions/queue'
 import { createNewStateUpdater } from './game-state/state-updater'
 import { StateUpdaterImplementation } from './game-state/state-updater/implementation'
-import { putSaveData } from './util/persistance/saves-database'
-import { ArrayEncodingType, setArrayEncodingType } from './util/persistance/serializers'
 import { takeControlOverWorkerConnection } from './worker/connections-manager'
 import { setGlobalMutex } from './worker/global-mutex'
 import { setMessageHandler } from './worker/message-handler'
 import CONFIG from './worker/observable-settings'
 import { loadGameFromArgs } from './worker/world-loader'
+import { performGameSave } from './worker/world-saver'
 
 takeControlOverWorkerConnection()
 
@@ -52,38 +50,7 @@ setMessageHandler('create-game', async (args, connection) => {
 })
 
 setMessageHandler('save-game', async (data, connection) => {
-	const saveName = data.saveName
-	const state = gameState
-	if (state === null) return
-	switch (data.method) {
-		case SaveMethod.ToIndexedDatabase: {
-			setArrayEncodingType(ArrayEncodingType.Array)
-			const rawData = state.serialize()
-			setArrayEncodingType(ArrayEncodingType.None)
-			await putSaveData(saveName, rawData)
-		}
-			break
-		case SaveMethod.ToString: {
-			setArrayEncodingType(ArrayEncodingType.String)
-			const rawData = JSON.stringify(state.serialize())
-			setArrayEncodingType(ArrayEncodingType.None)
-			connection.send('feedback', {type: 'saved-to-string', value: rawData})
-		}
-			break
-		case SaveMethod.ToDataUrl: {
-			setArrayEncodingType(ArrayEncodingType.String)
-			const asString = JSON.stringify(state.serialize())
-			setArrayEncodingType(ArrayEncodingType.None)
-
-			const length = asString.length
-			const bytes = new Uint8Array(length)
-			for (let i = 0; i < length; i++)
-				bytes[i] = asString.charCodeAt(i)!
-			const url = URL.createObjectURL(new Blob([bytes]))
-
-			connection.send('feedback', {type: 'saved-to-url', url: url})
-		}
-	}
+	performGameSave(gameState, data, value => connection.send('feedback', value))
 })
 
 setMessageHandler('scheduled-action', (action) => {

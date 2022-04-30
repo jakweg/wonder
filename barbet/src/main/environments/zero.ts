@@ -8,18 +8,16 @@ import {
 	StateUpdater,
 } from '../game-state/state-updater'
 import { initFrontedVariablesFromReceived } from '../util/frontend-variables-updaters'
-import { putSaveData } from '../util/persistance/saves-database'
-import { ArrayEncodingType, setArrayEncodingType } from '../util/persistance/serializers'
 import { setGlobalMutex } from '../worker/global-mutex'
 import CONFIG from '../worker/observable-settings'
 import { getCameraBuffer, setCameraBuffer } from '../worker/serializable-settings'
 import { loadGameFromArgs } from '../worker/world-loader'
+import { performGameSave } from '../worker/world-saver'
 import {
 	ConnectArguments,
 	CreateGameArguments,
 	EnvironmentConnection,
 	SaveGameArguments,
-	SaveMethod,
 	StartRenderArguments,
 	TerminateGameArguments,
 } from './loader'
@@ -65,42 +63,7 @@ export const bind = (args: ConnectArguments): EnvironmentConnection => {
 			actionsQueue = game = updater = null
 		},
 		saveGame(saveArgs: SaveGameArguments): void {
-			if (game === null) return
-
-			const saveName = saveArgs.saveName
-			switch (saveArgs.method) {
-				case SaveMethod.ToIndexedDatabase: {
-					setArrayEncodingType(ArrayEncodingType.Array)
-					try {
-						void putSaveData(saveName, (game as GameStateImplementation).serialize())
-					} finally {
-						setArrayEncodingType(ArrayEncodingType.None)
-					}
-				}
-					break
-				case SaveMethod.ToString: {
-					setArrayEncodingType(ArrayEncodingType.String)
-					try {
-						const data = JSON.stringify((game as GameStateImplementation).serialize())
-						args.feedbackCallback({type: 'saved-to-string', value: data})
-					} finally {
-						setArrayEncodingType(ArrayEncodingType.None)
-					}
-				}
-					break
-				case SaveMethod.ToDataUrl: {
-					setArrayEncodingType(ArrayEncodingType.String)
-					const asString = JSON.stringify((game as GameStateImplementation).serialize())
-					setArrayEncodingType(ArrayEncodingType.None)
-
-					const length = asString.length
-					const bytes = new Uint8Array(length)
-					for (let i = 0; i < length; i++)
-						bytes[i] = asString.charCodeAt(i)!
-					const url = URL.createObjectURL(new Blob([bytes]))
-					args.feedbackCallback({type: 'saved-to-url', url: url})
-				}
-			}
+			performGameSave(game, saveArgs, args.feedbackCallback)
 		},
 	}
 }
