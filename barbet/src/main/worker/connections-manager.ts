@@ -7,9 +7,10 @@ const replyPort = {
 	},
 } as Connection
 
-export const takeControlOverWorkerConnection = () => {
+export const takeControlOverWorkerConnection = (): Connection => {
 	if (hasControl) throw new Error()
 	hasControl = true
 	onmessage = createMessageHandler(replyPort)
 	replyPort.send('connection-established', {now: performance.now()})
+	return replyPort
 }

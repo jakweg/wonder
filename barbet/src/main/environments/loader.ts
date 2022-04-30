@@ -9,13 +9,9 @@ import { globalMutex } from '../worker/global-mutex'
 import CONFIG from '../worker/observable-settings'
 import { getCameraBuffer } from '../worker/serializable-settings'
 
-type WaitingReason = 'waiting-for-leader' | 'loading-requested-game' | 'paused'
 export type FeedbackEvent =
 	{ type: 'saved-to-url', url: string }
 	| { type: 'saved-to-string', value: string }
-	| { type: 'became-session-leader' }
-	| { type: 'waiting-reason-update', reason: WaitingReason }
-	| { type: 'paused-status-changed', reason: 'resumed' | 'initial-pause' | 'user-requested' | 'not-ready' }
 
 export interface ConnectArguments {
 	mutex: Mutex

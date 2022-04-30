@@ -42,12 +42,12 @@ export default class State<T> {
 		}
 		const snapshot = this.current = {...current, ...update}
 		for (const l of listenersToCall) l()
-		for (const l of this.everythingListeners) l(snapshot)
+		for (const l of [...this.everythingListeners]) l(snapshot)
 	}
 
 	public observe<K extends keyof T>(key: K,
-	                                  callback: (value: T[K]) => any,
-	                                  initialCall: boolean = true): any {
+	                                  callback: (value: T[K]) => void,
+	                                  initialCall: boolean = true): () => void {
 
 		const value = this.current[key]
 		let list = this.listeners.get(key)
@@ -65,8 +65,8 @@ export default class State<T> {
 		}
 	}
 
-	public observeEverything(callback: (snapshot: any) => any,
-	                         initialCall: boolean = true): any {
+	public observeEverything(callback: (snapshot: T) => void,
+	                         initialCall: boolean = true): () => void {
 		this.everythingListeners.push(callback)
 		if (initialCall)
 			callback(this.current)

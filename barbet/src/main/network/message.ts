@@ -5,18 +5,23 @@ export interface NetworkLayerMessage {
 	'leader-change': { newLeaderId: number }
 	'player-joined': { playerId: number }
 	'player-left': { playerId: number }
-	'game-layer-message': { broadcast: true, value: GameLayerMessage } | { to: number, value: GameLayerMessage }
+	'game-layer-message': { to: number | 'broadcast', extra: GameLayerMessageWithType<any> } | { from: number, extra: GameLayerMessageWithType<any> }
 }
 
-export type NetworkMessageInQueue = { type: keyof NetworkLayerMessage, value: any }
+export type NetworkMessageInQueue = { type: keyof NetworkLayerMessage, extra: any }
 
-interface GameLayerMessageType {
+export interface GameLayerMessage {
+	'game-snapshot-request': {}
 	'game-snapshot': { gameState: string }
 }
 
-type GameMessageType = keyof GameLayerMessageType
+export interface GameLayerMessageWithType<T extends keyof GameLayerMessage> {
+	'type': T
+	'extra': GameLayerMessage[T]
+}
 
-export interface GameLayerMessage<T extends GameMessageType = GameMessageType> {
-	type: T
-	extra: GameLayerMessageType[T]
+export interface ReceivedGameLayerMessage<T extends keyof GameLayerMessage> {
+	'type': T
+	'extra': GameLayerMessage[T]
+	'origin': number
 }

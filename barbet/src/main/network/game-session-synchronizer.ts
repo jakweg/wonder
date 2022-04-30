@@ -1,22 +1,21 @@
-import { StateUpdater } from '../game-state/state-updater'
+import State from '../util/state'
 import { globalMutex } from '../worker/global-mutex'
 import { setMessageHandler } from '../worker/message-handler'
 import { WorkerController } from '../worker/worker-controller'
+import { GameLayerMessage } from './message'
+import { defaultNetworkState, NetworkStateType } from './network-state'
 
 export interface GameSessionSynchronizer {
-	amILeader(): boolean
+	networkState: State<NetworkStateType>
 
-	setControlledUpdater(updater: StateUpdater): void
-
-	gameSnapshotCompleted(value: string): void
+	provideGameStateAsRequested(state: string): void
 
 	terminate(): void
 }
 
 
-type NetworkEvent =
-	{ type: 'connection-closed' }
-	| { type: 'game-state-request' }
+export type NetworkEvent =
+	{ type: 'game-state-request', from: number }
 	| { type: 'game-state-received', value: string }
 
 interface NetworkEnvironmentConfiguration {
@@ -26,20 +25,21 @@ interface NetworkEnvironmentConfiguration {
 }
 
 export const createRemote = async (config: NetworkEnvironmentConfiguration): Promise<GameSessionSynchronizer> => {
+	const mirroredState = State.fromInitial(defaultNetworkState)
 	const worker = await WorkerController.spawnNew('network-worker', 'network', globalMutex)
-	worker.replier.send('connect-to', {url: config.connectToUrl, forceEncryption: false})
 
-	let iAmLeader = false
-	setMessageHandler('players-update', data => {
-		iAmLeader = data.nowIAmLeader
+	setMessageHandler('network-state', state => {
+		mirroredState.update(state)
 	})
 
-	setMessageHandler('game-state-request', () => {
-		config.eventCallback({type: 'game-state-request'})
-	})
-
+	const requestedStateForPlayerIds = new Set<number>()
 	setMessageHandler('network-message-received', message => {
-		switch (message.type) {
+		switch (message.type as keyof GameLayerMessage) {
+			case 'game-snapshot-request':
+				requestedStateForPlayerIds.add(message.origin)
+				if (requestedStateForPlayerIds.size === 1)
+					config.eventCallback({type: 'game-state-request', from: message.origin})
+				break
 			case 'game-snapshot':
 				config.eventCallback({type: 'game-state-received', value: message.extra.gameState})
 				break
@@ -48,45 +48,34 @@ export const createRemote = async (config: NetworkEnvironmentConfiguration): Pro
 		}
 	})
 
-	let wasConnected: boolean = false
-	await new Promise<void>((resolve, reject) => {
-		setMessageHandler('server-connection-update', data => {
-			if (!wasConnected) {
-				if (data.connected)
-					resolve()
-				else
-					reject('connection to server failed')
-			} else config.eventCallback({type: 'connection-closed'})
+	worker.replier.send('connect-to', {url: config.connectToUrl, forceEncryption: false})
 
-			wasConnected = true
-		})
+	await new Promise<void>((resolve, reject) => {
+		const cancel = mirroredState.observeEverything(snapshot => {
+			if (!snapshot['connected'] && snapshot['error']) {
+				cancel()
+				reject()
+			} else if (snapshot['connected'] && snapshot['error'] === null) {
+				cancel()
+				resolve()
+			}
+		}, false)
 	})
+
+	worker.replier.send('network-worker-dispatch-action', {type: 'set-state-requested', requested: true})
+
 	return {
-		amILeader(): boolean {
-			return iAmLeader
-		},
-		gameSnapshotCompleted(value: string) {
-			worker.replier.send('game-state-request', {gameState: value})
-		},
-		setControlledUpdater(updater: StateUpdater): void {
+		networkState: mirroredState,
+		provideGameStateAsRequested(state: string) {
+			worker.replier.send('network-worker-dispatch-action', {
+				type: 'send-state-to-others',
+				to: [...requestedStateForPlayerIds.values()],
+				gameState: state,
+			})
+			requestedStateForPlayerIds.clear()
 		},
 		terminate() {
 			worker.terminate()
-		},
-	}
-}
-
-export const createLocal = async (config: {})
-	: Promise<GameSessionSynchronizer> => {
-	return {
-		amILeader(): boolean {
-			return true
-		},
-		gameSnapshotCompleted(value: string) {
-		},
-		setControlledUpdater(updater: StateUpdater): void {
-		},
-		terminate() {
 		},
 	}
 }

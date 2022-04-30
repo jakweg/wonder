@@ -1,6 +1,7 @@
 import { CreateGameArguments, FeedbackEvent, SaveGameArguments, TerminateGameArguments } from '../environments/loader'
 import { ScheduledAction } from '../game-state/scheduled-actions'
-import { GameLayerMessage } from '../network/message'
+import { ReceivedGameLayerMessage } from '../network/message'
+import { NetworkStateType } from '../network/network-state'
 
 export interface Message {
 	['error']: { message: string }
@@ -18,11 +19,10 @@ export interface Message {
 	['terminate-game']: TerminateGameArguments
 	['feedback']: FeedbackEvent
 	['scheduled-action']: ScheduledAction
+	['network-worker-dispatch-action']: {type: 'set-state-requested', requested: boolean} | {type: 'send-state-to-others', to: number[], gameState: string}
 	['connect-to']: { url: string, forceEncryption: boolean }
-	['server-connection-update']: { connected: boolean }
-	['players-update']: { nowIAmLeader: boolean }
-	['game-state-request']: { gameState?: string }
-	['network-message-received']: GameLayerMessage
+	['network-message-received']: ReceivedGameLayerMessage<any>
+	['network-state']: NetworkStateType
 }
 
 export type MessageType = keyof Message

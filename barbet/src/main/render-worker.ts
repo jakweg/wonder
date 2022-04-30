@@ -6,10 +6,10 @@ import { createStateUpdaterControllerFromReceived, StateUpdater } from './game-s
 import { initFrontedVariablesFromReceived } from './util/frontend-variables-updaters'
 import { takeControlOverWorkerConnection } from './worker/connections-manager'
 import { setGlobalMutex } from './worker/global-mutex'
-import { Connection, setMessageHandler } from './worker/message-handler'
+import { setMessageHandler } from './worker/message-handler'
 import CONFIG from './worker/observable-settings'
 
-takeControlOverWorkerConnection()
+const connectionWithParent = takeControlOverWorkerConnection()
 
 let renderCancelCallback: () => void = () => void 0
 let workerStartDelayDifference = 0
@@ -18,11 +18,9 @@ let gameSnapshot: unknown | null = null
 let decodedGame: GameState | null = null
 let decodedUpdater: StateUpdater | null = null
 let cameraBuffer: SharedArrayBuffer | null = null
-let connectionWithParent: Connection
 
-setMessageHandler('set-global-mutex', (data, connection) => {
+setMessageHandler('set-global-mutex', (data) => {
 	setGlobalMutex(data.mutex)
-	connectionWithParent = connection
 })
 
 setMessageHandler('new-settings', settings => {

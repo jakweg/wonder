@@ -3,7 +3,7 @@ import { NetworkLayerMessage, NetworkMessageInQueue } from './message'
 export interface ConnectedSocket {
 	readonly socket: WebSocket
 
-	send(data: NetworkMessageInQueue): void
+	send<T extends keyof NetworkLayerMessage>(type: T, extra: NetworkLayerMessage[T]): void
 
 	close(): void
 }
@@ -15,11 +15,13 @@ export const connectToServer = (url: string): Promise<ConnectedSocket> => {
 			socket['close']()
 			reject()
 		}, {'once': true})
-		socket.addEventListener('close', () => reject(), {once: true})
+
+		socket.addEventListener('close', () => reject(), {'once': true})
+
 		socket.addEventListener('open', () => resolve({
 			socket,
-			send(data: NetworkMessageInQueue) {
-				socket['send'](JSON.stringify(data))
+			send<T extends keyof NetworkLayerMessage>(type: T, extra: NetworkLayerMessage[T]): void {
+				socket['send'](JSON.stringify({'type': type, 'extra': extra}))
 			},
 			close() {
 				socket['close']()
@@ -42,7 +44,7 @@ export const createMessageReceiver = <T>(socket: ConnectedSocket)
 	socket.socket.addEventListener('error', () => {
 		if (currentPromise !== null)
 			currentPromise[2]!()
-	}, {once: true})
+	}, {'once': true})
 
 
 	socket.socket.addEventListener('message', (event) => {
@@ -84,7 +86,7 @@ export const createMessageMiddleware = (receiver: ReturnType<typeof createMessag
 			message = await receiver()
 			const handler = handlers[message['type']]
 			if (handler !== undefined)
-				handler(socket, message['value'])
+				handler(socket, message['extra'])
 			else
 				break
 		}

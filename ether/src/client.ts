@@ -1,5 +1,5 @@
 import { WebSocket } from 'ws'
-import { MessageInQueue } from './message'
+import { Message, MessageInQueue } from './message'
 
 type ClientId = number
 let nextId = 0
@@ -10,7 +10,7 @@ export interface Client {
 	readonly socket: WebSocket
 	readonly closePromise: Promise<void>
 
-	send(msg: MessageInQueue): void
+	send<T extends keyof Message>(type: T, extra: Message[T]): void
 
 	getMessage(): Promise<MessageInQueue>
 }
@@ -24,7 +24,7 @@ export const createClientFromSocket = (socket: WebSocket): Client => {
 	const messageQueue: MessageInQueue[] = []
 
 	socket.addEventListener('message', event => {
-		const message = event['data']
+		const message = event.data
 		if (typeof message !== 'string') {
 			socket.close()
 			return
@@ -56,15 +56,17 @@ export const createClientFromSocket = (socket: WebSocket): Client => {
 				promiseCopy[2]('Socket got closed')
 			}
 			resolve()
-		})
+		}, {once: true})
 	})
 
 	return {
 		id, socket, closePromise,
-		send(msg: MessageInQueue) {
-			if (closed)
+		send<T extends keyof Message>(type: T, extra: Message[T]): void {
+			if (closed) {
 				console.warn('Socket already closed, dropping unsent message')
-			socket.send(JSON.stringify(msg))
+				return
+			}
+			socket.send(JSON.stringify({type, extra}))
 		},
 		getMessage(): Promise<MessageInQueue> {
 			if (closed)

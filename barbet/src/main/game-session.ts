@@ -8,17 +8,29 @@ import {
 } from './environments/loader'
 import { GameState } from './game-state/game-state'
 import { StateUpdater } from './game-state/state-updater'
-import { createLocal, createRemote, GameSessionSynchronizer } from './network/game-session-synchronizer'
+import { createRemote, GameSessionSynchronizer, NetworkEvent } from './network/game-session-synchronizer'
+import { NetworkStateType } from './network/network-state'
+import State from './util/state'
 import CONFIG from './worker/observable-settings'
+
+const defaultSessionState = {
+	'terminated': false,
+	'world-status': 'none' as ('none' | 'creating' | 'loaded'),
+}
 
 type UpdaterAction = { type: 'resume' | 'change-tick-rate', tickRate: number } | { type: 'pause' }
 
+type Action =
+	{ type: 'create-game', args: CreateGameArguments }
+
 export interface GameSession {
+	readonly sessionState: State<typeof defaultSessionState>
+
+	readonly networkState: State<NetworkStateType>
+
 	resetRendering(): void
 
-	invokeUpdaterAction(action: UpdaterAction): void
-
-	provideStartGameArguments(args: CreateGameArguments): void
+	dispatchAction(action: Action): void
 
 	terminate(): void
 }
@@ -32,13 +44,17 @@ interface Props {
 }
 
 export const createSession = async (props: Props): Promise<GameSession> => {
-	let terminated: boolean = false
+	if (props.remoteUrl === null)
+		throw new Error('Local not supported')
+
+	const sessionState = State.fromInitial(defaultSessionState)
+
 	let synchronizer: GameSessionSynchronizer
 
 	const feedbackMiddleware = (event: FeedbackEvent) => {
 		switch (event.type) {
 			case 'saved-to-string':
-				synchronizer.gameSnapshotCompleted(event.value)
+				synchronizer.provideGameStateAsRequested(event.value)
 				break
 			default:
 				props.feedbackCallback(event)
@@ -49,99 +65,87 @@ export const createSession = async (props: Props): Promise<GameSession> => {
 	const suggestedName = getSuggestedEnvironmentName(CONFIG.get('other/preferred-environment') as Environment)
 	const environment = await loadEnvironment(suggestedName, feedbackMiddleware)
 
+	let networkState: State<NetworkStateType> | null = null
 	let gameState: GameState | null = null
 	let updater: StateUpdater | null = null
 
-	if (props.remoteUrl !== null) {
-		synchronizer = await createRemote({
-			connectToUrl: props.remoteUrl,
-			eventCallback: event => {
-				switch (event.type) {
-					case 'game-state-received':
-						loadGameFromArgs({stringToRead: event.value})
-						break
-					case 'game-state-request':
-						if (gameState !== null) {
-							environment.saveGame({method: SaveMethod.ToString, saveName: 'requested-by-other-player'})
-						}
-						break
-				}
-			},
-		})
-	} else {
-		synchronizer = await createLocal({})
+
+	const eventCallback = (event: NetworkEvent) => {
+		switch (event.type) {
+			case 'game-state-received':
+				loadGameFromArgs({stringToRead: event.value})
+				break
+			case 'game-state-request':
+				if (gameState !== null)
+					environment.saveGame({method: SaveMethod.ToString, saveName: 'requested-by-other-player'})
+				break
+		}
 	}
 
-	props.feedbackCallback({type: 'waiting-reason-update', reason: 'waiting-for-leader'})
-	props.feedbackCallback({type: 'paused-status-changed', reason: 'not-ready'})
-
-	let wasLeader = false
-	let intervalId = setInterval(() => {
-		if (terminated) {
-			clearInterval(intervalId)
-			return
-		}
-
-
-		if (synchronizer.amILeader() && !wasLeader) {
-			wasLeader = true
-			props.feedbackCallback({type: 'became-session-leader'})
-		}
-	}, 100)
+	synchronizer = await createRemote({
+		connectToUrl: props.remoteUrl!,
+		eventCallback: eventCallback,
+	})
+	networkState = synchronizer.networkState
 
 	const loadGameFromArgs = (args: CreateGameArguments) => {
-		props.feedbackCallback({type: 'waiting-reason-update', reason: 'loading-requested-game'})
+		sessionState.set('world-status', 'creating')
 		environment.createNewGame(args).then((results) => {
-			synchronizer.setControlledUpdater(results.updater)
 			updater = results.updater
 			gameState = results.state
 			resetRendering()
-
-			props.feedbackCallback({type: 'waiting-reason-update', reason: 'paused'})
-			props.feedbackCallback({type: 'paused-status-changed', reason: 'initial-pause'})
+			sessionState.set('world-status', 'loaded')
 		})
 	}
 
-
 	const resetRendering = () => {
-		environment.startRender({
-			canvas: props.canvasProvider(),
-		})
+		environment.startRender({canvas: props.canvasProvider()})
 	}
 
 	return {
+		sessionState: sessionState,
+		networkState: networkState,
 		resetRendering,
-		provideStartGameArguments(args: CreateGameArguments) {
-			queueMicrotask(() => loadGameFromArgs(args))
-		},
-		invokeUpdaterAction(action: UpdaterAction) {
-			queueMicrotask(() => {
-				if (terminated)
-					return console.warn('terminated')
-
-				if (!synchronizer.amILeader())
-					return console.warn('not a leader')
-
-				if (updater === null)
-					return console.warn('missing updater')
-
+		dispatchAction(action: Action) {
+			queueMicrotask(async () => {
 				switch (action.type) {
-					case 'resume':
-						updater.start(action.tickRate)
-						props.feedbackCallback({type: 'paused-status-changed', reason: 'resumed'})
-						break
-					case 'change-tick-rate':
-						updater.changeTickRate(action.tickRate)
-						break
-					case 'pause':
-						updater.stop()
-						props.feedbackCallback({type: 'paused-status-changed', reason: 'user-requested'})
+					case 'create-game':
+						loadGameFromArgs(action.args)
 						break
 				}
 			})
 		},
+		// provideStartGameArguments(args: CreateGameArguments) {
+		// 	queueMicrotask(() => loadGameFromArgs(args))
+		// },
+		// invokeUpdaterAction(action: UpdaterAction) {
+		// 	queueMicrotask(() => {
+		// 		if (terminated)
+		// 			return console.warn('terminated')
+		//
+		// 		if (updater === null)
+		// 			return console.warn('missing updater')
+		//
+		// 		switch (action.type) {
+		// 			case 'resume':
+		// 				updater.start(action.tickRate)
+		// 				props.feedbackCallback({type: 'paused-status-changed', reason: 'resumed'})
+		// 				break
+		// 			case 'change-tick-rate':
+		// 				updater.changeTickRate(action.tickRate)
+		// 				break
+		// 			case 'pause':
+		// 				updater.stop()
+		// 				props.feedbackCallback({type: 'paused-status-changed', reason: 'user-requested'})
+		// 				break
+		// 		}
+		// 	})
+		// },
 		terminate() {
-			terminated = true
+			sessionState.update({
+				'terminated': true,
+				'world-status': 'none',
+			})
 			environment.terminateGame({})
 			synchronizer.terminate()
 		},

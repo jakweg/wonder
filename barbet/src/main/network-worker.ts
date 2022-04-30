@@ -1,117 +1,124 @@
+import { GameLayerMessage } from './network/message'
+import { defaultNetworkState } from './network/network-state'
 import { ConnectedSocket, connectToServer, createMessageMiddleware, createMessageReceiver } from './network/socket'
+import State from './util/state'
 import { takeControlOverWorkerConnection } from './worker/connections-manager'
 import { setGlobalMutex } from './worker/global-mutex'
-import { Connection, setMessageHandler } from './worker/message-handler'
+import { setMessageHandler } from './worker/message-handler'
 import CONFIG from './worker/observable-settings'
 
-let connection: Connection
-takeControlOverWorkerConnection()
-setMessageHandler('set-global-mutex', (data, c) => {
+const connectionWithMainThread = takeControlOverWorkerConnection()
+setMessageHandler('set-global-mutex', (data) => {
 	setGlobalMutex(data.mutex)
-	connection = c
 })
 setMessageHandler('new-settings', settings => {
 	CONFIG.update(settings)
 })
 
+let socket: ConnectedSocket
+const networkState = State.fromInitial(defaultNetworkState)
+
 type HandlersType = (Parameters<typeof createMessageMiddleware>[2])
 
+const sendGameMessage = <T extends keyof GameLayerMessage>(to: 'leader' | 'broadcast' | number, type: T, extra: GameLayerMessage[T]): void => {
+	const effectiveTo = to === 'leader' ? networkState.get('leaderID') : to
+	socket?.send('game-layer-message', {
+		'to': effectiveTo,
+		'extra': {
+			type,
+			extra,
+		},
+	})
+}
 
-let socket: ConnectedSocket
-let isConnectingOrConnected = false
-let myPlayerId: number = -1
-let leaderPlayerId: number = -1
-
-let alreadyRequestedGameSnapshot = false
-const playerIdsWaitingForGameSnapshot = new Set<number>()
+const considerSendWorldRequest = () => {
+	if (networkState.get('isRequestingWorld') && networkState.get('myID') !== networkState.get('leaderID') && networkState.get('leaderID') > 0) {
+		sendGameMessage('leader', 'game-snapshot-request', {})
+	}
+}
 
 const handlers: HandlersType = {
-	ping: (socket, value) => {
-		socket.send({'type': 'pong', 'value': value})
+	'ping': (socket, value) => {
+		socket.send('pong', value)
 	},
 	'successful-join': (_, message) => {
-		myPlayerId = message.yourId
+		networkState.set('myID', message['yourId'])
 	},
 	'player-left': (_, message) => {
-		playerIdsWaitingForGameSnapshot.delete(message.playerId)
+		const playerId = message['playerId']
+		networkState.update({
+			'joinedPlayerIds': networkState.get('joinedPlayerIds').filter(e => e !== playerId),
+		})
 	},
 	'leader-change': (_, message) => {
-		const newLeaderId = message.newLeaderId
-
-		const iWasLeader = leaderPlayerId === myPlayerId
-		const iAmLeader = newLeaderId === myPlayerId
-		leaderPlayerId = newLeaderId
-
-		if (iWasLeader !== iAmLeader) {
-			connection.send('players-update', {nowIAmLeader: iAmLeader})
-
-			if (iAmLeader && playerIdsWaitingForGameSnapshot.size > 0 && !alreadyRequestedGameSnapshot) {
-				alreadyRequestedGameSnapshot = true
-				connection.send('game-state-request', {})
-			}
-		}
+		networkState.set('leaderID', message['newLeaderId'])
+		considerSendWorldRequest()
 	},
 	'player-joined': (_, message) => {
-		console.info('Someone else joined with id', message.playerId)
-		const iAmLeader = leaderPlayerId === myPlayerId
-		if (iAmLeader && !alreadyRequestedGameSnapshot) {
-			console.info('I should send them game snapshot')
-			connection.send('game-state-request', {})
-			playerIdsWaitingForGameSnapshot.add(message.playerId)
-			alreadyRequestedGameSnapshot = true
-		}
+		networkState.set('joinedPlayerIds', [...networkState.get('joinedPlayerIds'), message['playerId']])
 	},
 }
 
-setMessageHandler('game-state-request', (data) => {
-	alreadyRequestedGameSnapshot = false
-	const iAmLeader = leaderPlayerId === myPlayerId
-	if (iAmLeader && playerIdsWaitingForGameSnapshot.size > 0) {
-		for (let id of playerIdsWaitingForGameSnapshot.values()) {
-			socket.send({
-				'type': 'game-layer-message',
-				'value': {
-					'to': id,
-					'value': {type: 'game-snapshot', extra: {gameState: data.gameState}},
-				},
-			})
-		}
-		playerIdsWaitingForGameSnapshot.clear()
+setMessageHandler('network-worker-dispatch-action', (data) => {
+	switch (data.type) {
+		case 'set-state-requested':
+			networkState.set('isRequestingWorld', data.requested)
+			break
+		case 'send-state-to-others':
+			for (const playerId of data.to) {
+				sendGameMessage(playerId, 'game-snapshot', {gameState: data.gameState})
+			}
+			break
 	}
 })
 
 setMessageHandler('connect-to', async (params) => {
-	if (isConnectingOrConnected)
+	if (networkState.get('connected') || networkState.get('connecting'))
 		throw new Error('Already made connection')
-	isConnectingOrConnected = true
+	networkState.set('connecting', true)
 
 	const url = `ws${params.forceEncryption ? 's' : ''}://${params.url}`
 
 	try {
 		socket = await connectToServer(url)
-		connection.send('server-connection-update', {connected: true})
+		networkState.update({
+			'connected': true,
+			'connecting': false,
+		})
 
 		const receiver = createMessageMiddleware(createMessageReceiver(socket), socket, handlers)
 
 		while (true) {
 			const message = await receiver()
-			switch (message.type) {
+			switch (message['type']) {
 				case 'game-layer-message':
-					connection.send('network-message-received', message.value)
+					connectionWithMainThread.send('network-message-received', {
+						origin: message['extra']['from'],
+						type: message['extra']['extra']['type'],
+						extra: message['extra']['extra']['extra'],
+					})
 					break
 				default:
-					console.error('unknown message', message.type, {message})
+					console.error('unknown message', message['type'], {message})
 					socket.close()
 					break
 			}
 		}
-
 	} catch (e) {
+		socket?.close()
 		console.error('Connection failed')
-		connection.send('server-connection-update', {connected: false})
+		networkState.update({
+			'error': 'connection failed',
+			'connecting': false,
+			'connected': false,
+		})
 	}
-	isConnectingOrConnected = false
 })
 
+networkState.observeEverything(snapshot => {
+	connectionWithMainThread.send('network-state', snapshot)
+})
+
+networkState.observe('isRequestingWorld', considerSendWorldRequest)
 
 

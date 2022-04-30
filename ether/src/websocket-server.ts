@@ -1,7 +1,7 @@
 import { performance } from 'perf_hooks'
 import { WebSocketServer } from 'ws'
 import { Client, createClientFromSocket } from './client'
-import { MessageInQueue } from './message'
+import { Message } from './message'
 
 const port = 4575
 
@@ -17,34 +17,28 @@ interface Player {
 
 const allPlayers: Player[] = []
 
-const broadcastToAllPlayers = (msg: MessageInQueue) => {
+const broadcastToAllPlayers = <T extends keyof Message>(type: T, extra: Message[T]) => {
 	for (const p of allPlayers)
-		p.client.send(msg)
+		p.client.send(type, extra)
 }
 
 const sendCurrentStateToNewPlayer = (player: Player) => {
 	for (const other of allPlayers)
-		player.client.send({type: 'player-joined', value: {playerId: other.client.id}})
+		player.client.send('player-joined', {playerId: other.client.id})
 
-	player.client.send({
-		type: 'leader-change',
-		value: {newLeaderId: allPlayers.find(e => e.isLeader)?.client?.id ?? 0},
-	})
+	const newLeaderId = allPlayers.find(e => e.isLeader)?.client?.id ?? 0
+	player.client.send('leader-change', {newLeaderId})
 }
 
 const onClientConnected = (client: Client) => {
 	console.info(`Connected client id=${client.id}`)
 	const player: Player = {client, isLeader: false}
 
-	player.client.send({type: 'successful-join', value: {yourId: player.client.id}})
+	player.client.send('successful-join', {yourId: player.client.id})
 
 	sendCurrentStateToNewPlayer(player)
 
-
-	broadcastToAllPlayers({
-		type: 'player-joined',
-		value: {playerId: player.client.id},
-	})
+	broadcastToAllPlayers('player-joined', {playerId: player.client.id})
 
 	allPlayers.push(player)
 	if (allPlayers.length === 1)
@@ -64,7 +58,7 @@ const promoteToLeader = (player: Player) => {
 	player.isLeader = true
 	const newLeaderId = player.client.id
 
-	broadcastToAllPlayers({type: 'leader-change', value: {newLeaderId: newLeaderId}})
+	broadcastToAllPlayers('leader-change', {newLeaderId: newLeaderId})
 }
 
 const onClientDisconnected = (client: Client) => {
@@ -74,10 +68,7 @@ const onClientDisconnected = (client: Client) => {
 	const player = allPlayers[index]!
 	allPlayers.splice(index, 1)
 
-	broadcastToAllPlayers({
-		type: 'player-left',
-		value: {playerId: player.client.id},
-	})
+	broadcastToAllPlayers('player-left', {playerId: player.client.id})
 
 	if (player.isLeader && allPlayers.length > 0)
 		promoteToLeader(allPlayers[0]!)
@@ -102,20 +93,21 @@ server.addListener('connection', async (socket) => {
 			const message = await client.getMessage()
 			switch (message.type) {
 				case 'ping':
-					client.send({type: 'pong', value: message.value})
+					client.send('pong', message.extra)
 					break
 				case 'pong':
-					console.log('measured ping', performance.now() - message.value)
+					console.log('measured ping', performance.now() - message.extra)
 					break
 				case 'game-layer-message':
-					const to = +message.value.to
-					if (!isNaN(to) && player.isLeader) {
-						allPlayers.find(e => e.client.id === to)?.client.send({
-							type: 'game-layer-message',
-							value: message.value.value
+					const forwardTo = message.extra.to
+					console.log('forward', player.client.id, '->', forwardTo, 'of type', message.extra?.extra?.type)
+					if (typeof forwardTo === 'number') {
+						allPlayers.find(e => e.client.id === forwardTo)
+							?.client?.send('game-layer-message', {
+							from: client.id, extra: message.extra.extra,
 						})
 					} else {
-						console.error('Invalid game layer message, dropping')
+						console.log('invalid forward to value', {forwardTo})
 					}
 					break
 				default:

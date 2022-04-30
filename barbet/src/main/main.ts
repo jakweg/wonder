@@ -34,16 +34,16 @@ let session: GameSession | null = null
 
 let pauseOnBlur = false
 observeSetting('other/pause-on-blur', v => pauseOnBlur = v)
-window.addEventListener('blur', () => pauseOnBlur && session?.invokeUpdaterAction({type: 'pause'}))
-window.addEventListener('focus', () => pauseOnBlur && session?.invokeUpdaterAction({
-	type: 'resume',
-	tickRate: CONFIG.get('other/tps') as number,
-}))
+// window.addEventListener('blur', () => pauseOnBlur && session?.invokeUpdaterAction({type: 'pause'}))
+// window.addEventListener('focus', () => pauseOnBlur && session?.invokeUpdaterAction({
+// 	type: 'resume',
+// 	tickRate: CONFIG.get('other/tps') as number,
+// }))
 
-observeSetting('other/tps', tps => session?.invokeUpdaterAction({
-	type: 'change-tick-rate',
-	tickRate: tps,
-}))
+// observeSetting('other/tps', tps => session?.invokeUpdaterAction({
+// 	type: 'change-tick-rate',
+// 	tickRate: tps,
+// }))
 
 observeSetting('rendering/antialias', () => setTimeout(() => session?.resetRendering(), 10))
 
@@ -118,35 +118,40 @@ document.addEventListener('keydown', async event => {
 })
 
 
-const feedbackMiddleware = async (event: FeedbackEvent) => {
+const feedbackFinalHandler = async (event: FeedbackEvent) => {
 	switch (event.type) {
-		case 'became-session-leader':
-			// const anySaveName = await getSavesList().then(e => e[0])
-			// session.provideStartGameArguments({saveName: anySaveName})
-			session?.provideStartGameArguments({})
-			break
-		case 'waiting-reason-update':
-			break
-		case 'paused-status-changed':
-			if (event.reason === 'initial-pause') {
-				const tickRate = +CONFIG.get('other/tps')
-				session?.invokeUpdaterAction({type: 'resume', tickRate})
-			}
-			break
 		case 'saved-to-url':
 			downloadSaveToDeviceStorage(event.url)
 			break
 		default:
-			console.warn('Unknown feedback')
+			console.warn('Unknown feedback', event.type)
 			break
 	}
 }
 
 const initPageState = async () => {
 	session = await createSession({
-		feedbackCallback: feedbackMiddleware,
+		feedbackCallback: feedbackFinalHandler,
 		remoteUrl: DEFAULT_NETWORK_SERVER_ADDRESS ?? null,
 		canvasProvider: () => recreateCanvas(),
+	})
+
+	let iWasLeader: boolean = false
+	session.networkState.observeEverything(values => {
+		if (!iWasLeader && values['myID'] === values['leaderID']) {
+			iWasLeader = true
+			console.log('i am a leader now')
+			if (session?.sessionState?.get('world-status') === 'none') {
+				session?.dispatchAction({
+					type: 'create-game',
+					args: {}, // it'll generate new world
+				})
+			}
+		}
+	})
+
+	session.sessionState.observeEverything(values => {
+		// console.log(values)
 	})
 }
 
