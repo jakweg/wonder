@@ -22,43 +22,23 @@ const broadcastToAllPlayers = <T extends keyof Message>(type: T, extra: Message[
 		p.client.send(type, extra)
 }
 
-const sendCurrentStateToNewPlayer = (player: Player) => {
-	for (const other of allPlayers)
-		player.client.send('player-joined', {playerId: other.client.id})
-
-	const newLeaderId = allPlayers.find(e => e.isLeader)?.client?.id ?? 0
-	player.client.send('leader-change', {newLeaderId})
-}
-
 const onClientConnected = (client: Client) => {
 	console.info(`Connected client id=${client.id}`)
-	const player: Player = {client, isLeader: false}
 
-	player.client.send('successful-join', {yourId: player.client.id})
+	const shouldBecomeLeader = allPlayers.length === 0
 
-	sendCurrentStateToNewPlayer(player)
+	const player: Player = {client, isLeader: shouldBecomeLeader}
+
+	const leaderId = shouldBecomeLeader ? player.client.id : allPlayers.find(e => e.isLeader)?.client?.id ?? -1
+	player.client.send('successful-join', {yourId: player.client.id, leaderId})
+	for (const other of allPlayers)
+		player.client.send('player-joined', {playerId: other.client.id})
 
 	broadcastToAllPlayers('player-joined', {playerId: player.client.id})
 
 	allPlayers.push(player)
-	if (allPlayers.length === 1)
-		promoteToLeader(player)
 
 	return player
-}
-
-
-const promoteToLeader = (player: Player) => {
-	if (player.isLeader)
-		return
-
-	if (allPlayers.find(e => e.isLeader))
-		throw new Error('There is already a leader')
-
-	player.isLeader = true
-	const newLeaderId = player.client.id
-
-	broadcastToAllPlayers('leader-change', {newLeaderId: newLeaderId})
 }
 
 const onClientDisconnected = (client: Client) => {
@@ -70,8 +50,11 @@ const onClientDisconnected = (client: Client) => {
 
 	broadcastToAllPlayers('player-left', {playerId: player.client.id})
 
-	if (player.isLeader && allPlayers.length > 0)
-		promoteToLeader(allPlayers[0]!)
+	if (player.isLeader && allPlayers.length > 0) {
+		console.info('Leader disconnected, dropping other players')
+		for (const p of allPlayers)
+			p.client.socket.close()
+	}
 
 }
 
@@ -89,6 +72,7 @@ server.addListener('connection', async (socket) => {
 		const player = onClientConnected(client)
 
 
+		// noinspection InfiniteLoopJS
 		while (true) {
 			const message = await client.getMessage()
 			switch (message.type) {

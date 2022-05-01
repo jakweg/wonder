@@ -52,17 +52,19 @@ export const createRemote = async (config: NetworkEnvironmentConfiguration): Pro
 
 	await new Promise<void>((resolve, reject) => {
 		const cancel = mirroredState.observeEverything(snapshot => {
-			if (!snapshot['connected'] && snapshot['error']) {
+			if (snapshot['error']) {
 				cancel()
 				reject()
-			} else if (snapshot['connected'] && snapshot['error'] === null) {
+			} else if (snapshot['status'] === 'joined' && snapshot['error'] === null) {
 				cancel()
 				resolve()
 			}
 		}, false)
 	})
 
-	worker.replier.send('network-worker-dispatch-action', {type: 'set-state-requested', requested: true})
+	if (mirroredState.get('myId') !== mirroredState.get('leaderId')) {
+		worker.replier.send('network-worker-dispatch-action', {type: 'set-state-requested', requested: true})
+	}
 
 	return {
 		networkState: mirroredState,

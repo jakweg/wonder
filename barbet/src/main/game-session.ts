@@ -22,6 +22,7 @@ type UpdaterAction = { type: 'resume' | 'change-tick-rate', tickRate: number } |
 
 type Action =
 	{ type: 'create-game', args: CreateGameArguments }
+	| { type: 'invoke-updater-action', action: UpdaterAction }
 
 export interface GameSession {
 	readonly sessionState: State<typeof defaultSessionState>
@@ -102,6 +103,21 @@ export const createSession = async (props: Props): Promise<GameSession> => {
 		environment.startRender({canvas: props.canvasProvider()})
 	}
 
+	const dispatchUpdaterAction = (action: UpdaterAction) => {
+		if (updater === null) return
+		switch (action.type) {
+			case 'resume':
+				updater.start(action.tickRate)
+				break
+			case 'change-tick-rate':
+				updater.changeTickRate(action.tickRate)
+				break
+			case 'pause':
+				updater.stop()
+				break
+		}
+	}
+
 	return {
 		sessionState: sessionState,
 		networkState: networkState,
@@ -111,6 +127,9 @@ export const createSession = async (props: Props): Promise<GameSession> => {
 				switch (action.type) {
 					case 'create-game':
 						loadGameFromArgs(action.args)
+						break
+					case 'invoke-updater-action':
+						dispatchUpdaterAction(action.action)
 						break
 				}
 			})
@@ -126,19 +145,7 @@ export const createSession = async (props: Props): Promise<GameSession> => {
 		// 		if (updater === null)
 		// 			return console.warn('missing updater')
 		//
-		// 		switch (action.type) {
-		// 			case 'resume':
-		// 				updater.start(action.tickRate)
-		// 				props.feedbackCallback({type: 'paused-status-changed', reason: 'resumed'})
-		// 				break
-		// 			case 'change-tick-rate':
-		// 				updater.changeTickRate(action.tickRate)
-		// 				break
-		// 			case 'pause':
-		// 				updater.stop()
-		// 				props.feedbackCallback({type: 'paused-status-changed', reason: 'user-requested'})
-		// 				break
-		// 		}
+		//
 		// 	})
 		// },
 		terminate() {

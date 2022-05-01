@@ -83,6 +83,8 @@ window.addEventListener('beforeunload', async () => {
 
 document.getElementById('input-reset-normal')!
 	.addEventListener('click', async (event) => {
+		session?.terminate()
+		session = null
 		CONFIG.set('other/generate-debug-world', false);
 		(event.target as HTMLElement)['blur']()
 		// TODO: restart game
@@ -138,7 +140,7 @@ const initPageState = async () => {
 
 	let iWasLeader: boolean = false
 	session.networkState.observeEverything(values => {
-		if (!iWasLeader && values['myID'] === values['leaderID']) {
+		if (!iWasLeader && values['myId'] === values['leaderId']) {
 			iWasLeader = true
 			console.log('i am a leader now')
 			if (session?.sessionState?.get('world-status') === 'none') {
@@ -146,12 +148,22 @@ const initPageState = async () => {
 					type: 'create-game',
 					args: {}, // it'll generate new world
 				})
+				setTimeout(() => {
+					session?.dispatchAction({
+						type: 'invoke-updater-action',
+						action: {type: 'resume', tickRate: 20}
+					})
+				}, 3000)
 			}
 		}
 	})
 
-	session.sessionState.observeEverything(values => {
-		// console.log(values)
+	session.networkState.observe('error', error => {
+		if (error) {
+			console.error('Session terminated:', error)
+			session?.terminate()
+			session = null
+		}
 	})
 }
 
