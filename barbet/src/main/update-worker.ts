@@ -6,9 +6,9 @@ import TickQueue from './network/tick-queue'
 import { takeControlOverWorkerConnection } from './worker/connections-manager'
 import { setGlobalMutex } from './worker/global-mutex'
 import { setMessageHandler } from './worker/message-handler'
-import CONFIG from './worker/observable-settings'
-import { loadGameFromArgs } from './worker/world-loader'
-import { performGameSave } from './worker/world-saver'
+import CONFIG from './util/persistance/observable-settings'
+import { loadGameFromArgs } from './game-state/world/world-loader'
+import { performGameSave } from './game-state/world/world-saver'
 
 takeControlOverWorkerConnection()
 

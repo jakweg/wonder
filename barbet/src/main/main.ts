@@ -10,8 +10,8 @@ import CONFIG, {
 	initSettingsFromLocalStorage,
 	observeSetting,
 	saveSettingsToLocalStorage,
-} from './worker/observable-settings'
-import { addSaveCallback, registerSaveSettingsCallback } from './worker/serializable-settings'
+} from './util/persistance/observable-settings'
+import { addSaveCallback, registerSaveSettingsCallback } from './util/persistance/serializable-settings'
 
 initSettingsFromLocalStorage()
 addSaveCallback(() => saveSettingsToLocalStorage())
@@ -144,12 +144,10 @@ const initPageState = async () => {
 		if (!iWasLeader && values['myId'] === values['leaderId']) {
 			iWasLeader = true
 			console.log('i am a leader now')
-			if (session?.sessionState?.get('world-status') === 'none') {
-				session?.dispatchAction({
-					type: 'create-game',
-					args: {}, // it'll generate new world
-				})
-			}
+			session?.dispatchAction({
+				type: 'create-game',
+				args: {}, // it'll generate new world
+			})
 		}
 	})
 

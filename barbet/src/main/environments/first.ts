@@ -6,8 +6,8 @@ import { createStateUpdaterControllerFromReceived, StateUpdater } from '../game-
 import { initFrontedVariablesFromReceived } from '../util/frontend-variables-updaters'
 import { globalMutex, setGlobalMutex } from '../worker/global-mutex'
 import { setMessageHandler } from '../worker/message-handler'
-import CONFIG from '../worker/observable-settings'
-import { getCameraBuffer, setCameraBuffer } from '../worker/serializable-settings'
+import CONFIG from '../util/persistance/observable-settings'
+import { getCameraBuffer, setCameraBuffer } from '../util/persistance/serializable-settings'
 import { WorkerController } from '../worker/worker-controller'
 import {
 	ConnectArguments,

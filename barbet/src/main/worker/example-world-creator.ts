@@ -8,7 +8,7 @@ import { BlockId } from '../game-state/world/block'
 import { generateBiomeMap, generateHeightMap } from '../game-state/world/generator'
 import { World } from '../game-state/world/world'
 import { Direction } from '../util/direction'
-import CONFIG from './observable-settings'
+import CONFIG from '../util/persistance/observable-settings'
 
 const placeDebugFeatures = (game: GameState) => {
 	const {world, groundItems} = game

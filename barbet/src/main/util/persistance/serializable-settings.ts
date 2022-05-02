@@ -1,5 +1,5 @@
-import { isInWorker } from '../util/mutex'
-import { createNewBuffer } from '../util/shared-memory'
+import { isInWorker } from '../mutex'
+import { createNewBuffer } from '../shared-memory'
 
 export const getFromLocalStorage = (key: string): any => {
 	if (isInWorker) throw new Error('Attempt to read storage in worker')

@@ -1,5 +1,5 @@
 import { DEBUG } from '../build-info'
-import CONFIG from '../worker/observable-settings'
+import CONFIG from '../util/persistance/observable-settings'
 
 const TEXTURE_PIXEL_MULTIPLIER = 1 // set 1 / 2 for half-resolution rendering
 

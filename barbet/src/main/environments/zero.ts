@@ -9,10 +9,10 @@ import {
 } from '../game-state/state-updater'
 import { initFrontedVariablesFromReceived } from '../util/frontend-variables-updaters'
 import { setGlobalMutex } from '../worker/global-mutex'
-import CONFIG from '../worker/observable-settings'
-import { getCameraBuffer, setCameraBuffer } from '../worker/serializable-settings'
-import { loadGameFromArgs } from '../worker/world-loader'
-import { performGameSave } from '../worker/world-saver'
+import CONFIG from '../util/persistance/observable-settings'
+import { getCameraBuffer, setCameraBuffer } from '../util/persistance/serializable-settings'
+import { loadGameFromArgs } from '../game-state/world/world-loader'
+import { performGameSave } from '../game-state/world/world-saver'
 import {
 	ConnectArguments,
 	CreateGameArguments,

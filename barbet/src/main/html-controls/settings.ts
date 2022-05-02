@@ -1,4 +1,4 @@
-import CONFIG, { observeSetting } from '../worker/observable-settings'
+import CONFIG, { observeSetting } from '../util/persistance/observable-settings'
 
 function antiAlias() {
 	const input = document.getElementById('input-enable-antialias') as HTMLSelectElement

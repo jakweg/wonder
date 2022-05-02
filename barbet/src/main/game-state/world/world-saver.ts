@@ -1,7 +1,7 @@
-import { FeedbackEvent, SaveGameArguments, SaveMethod } from '../environments/loader'
-import { GameState, GameStateImplementation } from '../game-state/game-state'
-import { putSaveData } from '../util/persistance/saves-database'
-import { ArrayEncodingType, setArrayEncodingType } from '../util/persistance/serializers'
+import { FeedbackEvent, SaveGameArguments, SaveMethod } from '../../environments/loader'
+import { GameState, GameStateImplementation } from '../game-state'
+import { putSaveData } from '../../util/persistance/saves-database'
+import { ArrayEncodingType, setArrayEncodingType } from '../../util/persistance/serializers'
 
 const saveToIndexedDb = (saveName: string, game: GameState) => {
 	setArrayEncodingType(ArrayEncodingType.Array)

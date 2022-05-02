@@ -4,8 +4,6 @@ export interface NetworkLayerMessage {
 	'ping': number
 	'pong': number
 	'successful-join': { yourId: number, leaderId: number, }
-	'player-joined': { playerId: number }
-	'player-left': { playerId: number }
 	'game-layer-message': { to: number | 'broadcast', extra: GameLayerMessageWithType<any> } | { from: number, extra: GameLayerMessageWithType<any> }
 }
 

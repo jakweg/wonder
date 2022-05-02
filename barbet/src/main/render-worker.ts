@@ -7,7 +7,7 @@ import { initFrontedVariablesFromReceived } from './util/frontend-variables-upda
 import { takeControlOverWorkerConnection } from './worker/connections-manager'
 import { setGlobalMutex } from './worker/global-mutex'
 import { setMessageHandler } from './worker/message-handler'
-import CONFIG from './worker/observable-settings'
+import CONFIG from './util/persistance/observable-settings'
 
 const connectionWithParent = takeControlOverWorkerConnection()
 

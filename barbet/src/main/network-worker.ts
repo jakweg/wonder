@@ -5,7 +5,7 @@ import State from './util/state'
 import { takeControlOverWorkerConnection } from './worker/connections-manager'
 import { setGlobalMutex } from './worker/global-mutex'
 import { setMessageHandler } from './worker/message-handler'
-import CONFIG from './worker/observable-settings'
+import CONFIG from './util/persistance/observable-settings'
 
 const connectionWithMainThread = takeControlOverWorkerConnection()
 setMessageHandler('set-global-mutex', (data) => {
@@ -35,15 +35,6 @@ const handlers: HandlersType = {
 	'ping': (socket, value) => {
 		socket.send('pong', value)
 	},
-	'player-left': (_, message) => {
-		const playerId = message['playerId']
-		networkState.update({
-			'joinedPlayerIds': networkState.get('joinedPlayerIds').filter(e => e !== playerId),
-		})
-	},
-	'player-joined': (_, message) => {
-		networkState.set('joinedPlayerIds', [...networkState.get('joinedPlayerIds'), message['playerId']])
-	},
 }
 
 setMessageHandler('network-worker-dispatch-action', (data) => {
@@ -64,13 +55,17 @@ setMessageHandler('network-worker-dispatch-action', (data) => {
 				actorIds: data.inputActorIds,
 			})
 			break
+		case 'connect':
+			// noinspection JSIgnoredPromiseFromCall
+			doConnection(data)
+			break
 		default:
 			console.warn('Unknown action to dispatch', type)
 			break
 	}
 })
 
-setMessageHandler('connect-to', async (params) => {
+const doConnection = async (params: any) => {
 	if (networkState.get('status') !== 'none')
 		throw new Error('Already made connection')
 	networkState.set('status', 'connecting')
@@ -119,7 +114,7 @@ setMessageHandler('connect-to', async (params) => {
 			'status': 'none',
 		})
 	}
-})
+}
 
 networkState.observeEverything(snapshot => {
 	connectionWithMainThread.send('network-state', snapshot)

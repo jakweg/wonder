@@ -6,7 +6,7 @@ import { GameLayerMessage } from './message'
 import { defaultNetworkState, NetworkStateType } from './network-state'
 import { TickQueueAction } from './tick-queue-action'
 
-export interface GameSessionSynchronizer {
+export interface WebsocketConnection {
 	networkState: State<NetworkStateType>
 
 	broadcastMyActions(tick: number, actions: TickQueueAction[]): void
@@ -28,7 +28,7 @@ interface NetworkEnvironmentConfiguration {
 	eventCallback: (event: NetworkEvent) => void
 }
 
-export const createRemote = async (config: NetworkEnvironmentConfiguration): Promise<GameSessionSynchronizer> => {
+export const createWebsocketConnectionWithServer = async (config: NetworkEnvironmentConfiguration): Promise<WebsocketConnection> => {
 	const mirroredState = State.fromInitial(defaultNetworkState)
 	const worker = await WorkerController.spawnNew('network-worker', 'network', globalMutex)
 
@@ -65,7 +65,11 @@ export const createRemote = async (config: NetworkEnvironmentConfiguration): Pro
 		}
 	})
 
-	worker.replier.send('connect-to', {url: config.connectToUrl, forceEncryption: false})
+	worker.replier.send('network-worker-dispatch-action', {
+		type: 'connect',
+		url: config.connectToUrl,
+		forceEncryption: false,
+	})
 
 	await new Promise<void>((resolve, reject) => {
 		const cancel = mirroredState.observeEverything(snapshot => {

@@ -1,7 +1,6 @@
 import { performance } from 'perf_hooks'
 import { WebSocketServer } from 'ws'
 import { Client, createClientFromSocket } from './client'
-import { Message } from './message'
 
 const port = 4575
 
@@ -17,11 +16,6 @@ interface Player {
 
 const allPlayers: Player[] = []
 
-const broadcastToAllPlayers = <T extends keyof Message>(type: T, extra: Message[T]) => {
-	for (const p of allPlayers)
-		p.client.send(type, extra)
-}
-
 const onClientConnected = (client: Client) => {
 	console.info(`Connected client id=${client.id}`)
 
@@ -31,10 +25,6 @@ const onClientConnected = (client: Client) => {
 
 	const leaderId = shouldBecomeLeader ? player.client.id : allPlayers.find(e => e.isLeader)?.client?.id ?? -1
 	player.client.send('successful-join', {yourId: player.client.id, leaderId})
-	for (const other of allPlayers)
-		player.client.send('player-joined', {playerId: other.client.id})
-
-	broadcastToAllPlayers('player-joined', {playerId: player.client.id})
 
 	allPlayers.push(player)
 
@@ -47,8 +37,6 @@ const onClientDisconnected = (client: Client) => {
 		throw new Error('Failed to find disconnected client')
 	const player = allPlayers[index]!
 	allPlayers.splice(index, 1)
-
-	broadcastToAllPlayers('player-left', {playerId: player.client.id})
 
 	if (player.isLeader && allPlayers.length > 0) {
 		console.info('Leader disconnected, dropping other players')

@@ -7,8 +7,8 @@ import { frontedVariablesBuffer } from '../util/frontend-variables'
 import Mutex from '../util/mutex'
 import { sharedMemoryIsAvailable } from '../util/shared-memory'
 import { globalMutex } from '../worker/global-mutex'
-import CONFIG from '../worker/observable-settings'
-import { getCameraBuffer } from '../worker/serializable-settings'
+import CONFIG from '../util/persistance/observable-settings'
+import { getCameraBuffer } from '../util/persistance/serializable-settings'
 
 export type FeedbackEvent =
 	{ type: 'saved-to-url', url: string }
