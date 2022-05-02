@@ -2,6 +2,8 @@ import { CreateGameArguments, FeedbackEvent, SaveGameArguments, TerminateGameArg
 import { ScheduledAction } from '../game-state/scheduled-actions'
 import { ReceivedGameLayerMessage } from '../network/message'
 import { NetworkStateType } from '../network/network-state'
+import { TickQueueAction } from '../network/tick-queue-action'
+import { NetworkWorkerDispatchAction } from './network-worker-dispatch-action'
 
 export interface Message {
 	['error']: { message: string }
@@ -19,7 +21,8 @@ export interface Message {
 	['terminate-game']: TerminateGameArguments
 	['feedback']: FeedbackEvent
 	['scheduled-action']: ScheduledAction
-	['network-worker-dispatch-action']: {type: 'set-state-requested', requested: boolean} | {type: 'send-state-to-others', to: number[], gameState: string}
+	['append-to-tick-queue']: { actions: TickQueueAction[], forTick: number }
+	['network-worker-dispatch-action']: NetworkWorkerDispatchAction
 	['connect-to']: { url: string, forceEncryption: boolean }
 	['network-message-received']: ReceivedGameLayerMessage<any>
 	['network-state']: NetworkStateType

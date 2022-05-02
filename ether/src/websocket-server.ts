@@ -85,11 +85,12 @@ server.addListener('connection', async (socket) => {
 				case 'game-layer-message':
 					const forwardTo = message.extra.to
 					console.log('forward', player.client.id, '->', forwardTo, 'of type', message.extra?.extra?.type)
+					const messageObject = {from: client.id, extra: message.extra.extra}
+
 					if (typeof forwardTo === 'number') {
-						allPlayers.find(e => e.client.id === forwardTo)
-							?.client?.send('game-layer-message', {
-							from: client.id, extra: message.extra.extra,
-						})
+						allPlayers.find(e => e.client.id === forwardTo)?.client?.send('game-layer-message', messageObject)
+					} else if (forwardTo === 'broadcast') {
+						allPlayers.forEach(other => other.client.send('game-layer-message', messageObject))
 					} else {
 						console.log('invalid forward to value', {forwardTo})
 					}

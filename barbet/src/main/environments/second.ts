@@ -1,6 +1,6 @@
 import { createGameStateForRenderer, GameState } from '../game-state/game-state'
-import { ActionsQueue, SendActionsQueue } from '../game-state/scheduled-actions/queue'
 import { createStateUpdaterControllerFromReceived, StateUpdater } from '../game-state/state-updater'
+import { TickQueueAction } from '../network/tick-queue-action'
 import { frontedVariablesBuffer } from '../util/frontend-variables'
 import { initFrontedVariablesFromReceived } from '../util/frontend-variables-updaters'
 import { globalMutex, setGlobalMutex } from '../worker/global-mutex'
@@ -10,6 +10,7 @@ import { getCameraBuffer, setCameraBuffer } from '../worker/serializable-setting
 import { WorkerController } from '../worker/worker-controller'
 import {
 	ConnectArguments,
+	CreateGameResult,
 	EnvironmentConnection,
 	SaveGameArguments,
 	StartRenderArguments,
@@ -24,7 +25,7 @@ export const bind = async (args: ConnectArguments): Promise<EnvironmentConnectio
 	setCameraBuffer(args.camera)
 	args.settings.observeEverything(s => CONFIG.replace(s))
 
-	let startGameCallback: any = null
+	let startGameCallback: ((results: CreateGameResult) => void) | null = null
 	let entityContainerSnapshotForRenderer: any = null
 	let gameSnapshotForRenderer: any = null
 	let decodedGame: GameState | null = null
@@ -48,14 +49,22 @@ export const bind = async (args: ConnectArguments): Promise<EnvironmentConnectio
 		args.feedbackCallback(data)
 	})
 
-	const queue: ActionsQueue = SendActionsQueue.create(a => updateWorker.replier.send('scheduled-action', a))
-	setMessageHandler('scheduled-action', action => queue.append(action))
+	setMessageHandler('scheduled-action', action => {
+		args.feedbackCallback({type: 'input-action', value: action})
+	})
+
+	const setActionsCallback = (tick: number, actions: TickQueueAction[]) => {
+		updateWorker.replier.send('append-to-tick-queue', {
+			forTick: tick,
+			actions,
+		})
+	}
 
 	setMessageHandler('game-snapshot-for-renderer', (data) => {
 		gameSnapshotForRenderer = data
 		decodedGame = createGameStateForRenderer(data.game)
 		updater = createStateUpdaterControllerFromReceived(data.updater)
-		startGameCallback({state: decodedGame, updater, queue})
+		startGameCallback?.({state: decodedGame, updater, setActionsCallback})
 	})
 	setMessageHandler('update-entity-container', data => {
 		decodedGame!.entities.replaceBuffersFromReceived(data)

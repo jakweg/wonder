@@ -4,7 +4,6 @@ export const defaultNetworkState = {
 	'myId': -1,
 	'leaderId': -2,
 	'joinedPlayerIds': [] as number[],
-	'isRequestingWorld': false,
 }
 
 export type NetworkStateType = typeof defaultNetworkState

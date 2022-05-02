@@ -31,14 +31,6 @@ const sendGameMessage = <T extends keyof GameLayerMessage>(to: 'leader' | 'broad
 	})
 }
 
-const considerSendWorldRequest = () => {
-	if (networkState.get('isRequestingWorld')
-		&& networkState.get('myId') !== networkState.get('leaderId')
-		&& networkState.get('leaderId') > 0) {
-		sendGameMessage('leader', 'game-snapshot-request', {})
-	}
-}
-
 const handlers: HandlersType = {
 	'ping': (socket, value) => {
 		socket.send('pong', value)
@@ -55,14 +47,24 @@ const handlers: HandlersType = {
 }
 
 setMessageHandler('network-worker-dispatch-action', (data) => {
-	switch (data.type) {
-		case 'set-state-requested':
-			networkState.set('isRequestingWorld', data.requested)
+	const type = data.type
+	switch (type) {
+		case 'request-become-input-actor':
+			sendGameMessage('leader', 'become-input-actor-request', {})
 			break
-		case 'send-state-to-others':
-			for (const playerId of data.to) {
-				sendGameMessage(playerId, 'game-snapshot', {gameState: data.gameState})
+		case 'broadcast-my-actions':
+			sendGameMessage('broadcast', 'actions-broadcast', {
+				tick: data.tick,
+				actions: data.actions,
+			})
+			break
+		case 'become-actor-completed':
+			for (const destination of data.to) {
+				sendGameMessage(destination, 'become-input-actor-complete', {gameState: data.gameState})
 			}
+			break
+		default:
+			console.warn('Unknown action to dispatch', type)
 			break
 	}
 })
@@ -121,7 +123,3 @@ setMessageHandler('connect-to', async (params) => {
 networkState.observeEverything(snapshot => {
 	connectionWithMainThread.send('network-state', snapshot)
 })
-
-networkState.observe('isRequestingWorld', considerSendWorldRequest)
-
-

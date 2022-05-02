@@ -1,6 +1,6 @@
 import { DEFAULT_NETWORK_SERVER_ADDRESS } from './build-info'
 import { FeedbackEvent } from './environments/loader'
-import { createSession, GameSession } from './game-session'
+import { createRemoteSession, GameSession } from './game-session'
 import { bindSettingsListeners } from './html-controls/settings'
 import {
 	bindFrontendVariablesToCanvas,
@@ -132,9 +132,10 @@ const feedbackFinalHandler = async (event: FeedbackEvent) => {
 }
 
 const initPageState = async () => {
-	session = await createSession({
+	if (DEFAULT_NETWORK_SERVER_ADDRESS === undefined) return
+	session = await createRemoteSession({
 		feedbackCallback: feedbackFinalHandler,
-		remoteUrl: DEFAULT_NETWORK_SERVER_ADDRESS ?? null,
+		remoteUrl: DEFAULT_NETWORK_SERVER_ADDRESS,
 		canvasProvider: () => recreateCanvas(),
 	})
 
@@ -148,12 +149,6 @@ const initPageState = async () => {
 					type: 'create-game',
 					args: {}, // it'll generate new world
 				})
-				setTimeout(() => {
-					session?.dispatchAction({
-						type: 'invoke-updater-action',
-						action: {type: 'resume', tickRate: 20}
-					})
-				}, 3000)
 			}
 		}
 	})

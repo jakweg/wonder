@@ -1,3 +1,5 @@
+import { TickQueueAction } from './tick-queue-action'
+
 export interface NetworkLayerMessage {
 	'ping': number
 	'pong': number
@@ -10,8 +12,9 @@ export interface NetworkLayerMessage {
 export type NetworkMessageInQueue = { type: keyof NetworkLayerMessage, extra: any }
 
 export interface GameLayerMessage {
-	'game-snapshot-request': {}
-	'game-snapshot': { gameState: string }
+	'become-input-actor-request': {},
+	'actions-broadcast': { tick: number, actions: TickQueueAction[] },
+	'become-input-actor-complete': { gameState: string },
 }
 
 export interface GameLayerMessageWithType<T extends keyof GameLayerMessage> {

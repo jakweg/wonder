@@ -4,9 +4,12 @@ import { setMessageHandler } from '../worker/message-handler'
 import { WorkerController } from '../worker/worker-controller'
 import { GameLayerMessage } from './message'
 import { defaultNetworkState, NetworkStateType } from './network-state'
+import { TickQueueAction } from './tick-queue-action'
 
 export interface GameSessionSynchronizer {
 	networkState: State<NetworkStateType>
+
+	broadcastMyActions(tick: number, actions: TickQueueAction[]): void
 
 	provideGameStateAsRequested(state: string): void
 
@@ -15,8 +18,9 @@ export interface GameSessionSynchronizer {
 
 
 export type NetworkEvent =
-	{ type: 'game-state-request', from: number }
-	| { type: 'game-state-received', value: string }
+	{ type: 'player-wants-to-become-input-actor', from: number }
+	| { type: 'actions-received-from-player', from: number, tick: number, actions: TickQueueAction[] }
+	| { type: 'became-input-actor', gameState: string }
 
 interface NetworkEnvironmentConfiguration {
 	connectToUrl: string
@@ -32,17 +36,31 @@ export const createRemote = async (config: NetworkEnvironmentConfiguration): Pro
 		mirroredState.update(state)
 	})
 
-	const requestedStateForPlayerIds = new Set<number>()
+	const playerIdsThatWantsToBecomeInputActors = new Set<number>()
 	setMessageHandler('network-message-received', message => {
 		switch (message.type as keyof GameLayerMessage) {
-			case 'game-snapshot-request':
-				requestedStateForPlayerIds.add(message.origin)
-				if (requestedStateForPlayerIds.size === 1)
-					config.eventCallback({type: 'game-state-request', from: message.origin})
+			case 'become-input-actor-request':
+				playerIdsThatWantsToBecomeInputActors.add(message.origin)
+				config.eventCallback({type: 'player-wants-to-become-input-actor', from: message.origin})
 				break
-			case 'game-snapshot':
-				config.eventCallback({type: 'game-state-received', value: message.extra.gameState})
+			case 'actions-broadcast': {
+				const payload = message.extra as GameLayerMessage['actions-broadcast']
+				config.eventCallback({
+					type: 'actions-received-from-player',
+					from: message.origin,
+					actions: payload.actions,
+					tick: payload.tick,
+				})
 				break
+			}
+			case 'become-input-actor-complete': {
+				const payload = message.extra as GameLayerMessage['become-input-actor-complete']
+				config.eventCallback({
+					type: 'became-input-actor',
+					gameState: payload.gameState,
+				})
+				break
+			}
 			default:
 				console.error('Invalid message', message.type)
 		}
@@ -63,18 +81,24 @@ export const createRemote = async (config: NetworkEnvironmentConfiguration): Pro
 	})
 
 	if (mirroredState.get('myId') !== mirroredState.get('leaderId')) {
-		worker.replier.send('network-worker-dispatch-action', {type: 'set-state-requested', requested: true})
+		worker.replier.send('network-worker-dispatch-action', {type: 'request-become-input-actor'})
 	}
 
 	return {
 		networkState: mirroredState,
 		provideGameStateAsRequested(state: string) {
 			worker.replier.send('network-worker-dispatch-action', {
-				type: 'send-state-to-others',
-				to: [...requestedStateForPlayerIds.values()],
+				type: 'become-actor-completed',
+				to: [...playerIdsThatWantsToBecomeInputActors.values()],
 				gameState: state,
 			})
-			requestedStateForPlayerIds.clear()
+			playerIdsThatWantsToBecomeInputActors.clear()
+		},
+		broadcastMyActions(tick: number, actions: TickQueueAction[]) {
+			worker.replier.send('network-worker-dispatch-action', {
+				type: 'broadcast-my-actions',
+				tick, actions,
+			})
 		},
 		terminate() {
 			worker.terminate()

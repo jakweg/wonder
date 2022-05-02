@@ -1,7 +1,8 @@
 import { DEBUG, FORCE_ENV_ZERO, JS_ROOT } from '../build-info'
 import { GameState } from '../game-state/game-state'
-import { ActionsQueue } from '../game-state/scheduled-actions/queue'
+import { ScheduledAction } from '../game-state/scheduled-actions'
 import { StateUpdater } from '../game-state/state-updater'
+import { TickQueueAction, UpdaterAction } from '../network/tick-queue-action'
 import { frontedVariablesBuffer } from '../util/frontend-variables'
 import Mutex from '../util/mutex'
 import { sharedMemoryIsAvailable } from '../util/shared-memory'
@@ -11,7 +12,9 @@ import { getCameraBuffer } from '../worker/serializable-settings'
 
 export type FeedbackEvent =
 	{ type: 'saved-to-url', url: string }
+	| { type: 'tick-completed', tick: number, updaterActions: UpdaterAction[] }
 	| { type: 'saved-to-string', value: string }
+	| { type: 'input-action', value: ScheduledAction }
 
 export interface ConnectArguments {
 	mutex: Mutex
@@ -56,10 +59,16 @@ export interface SaveGameArguments {
 export interface TerminateGameArguments {
 }
 
+export interface CreateGameResult {
+	state: GameState,
+	updater: StateUpdater,
+	setActionsCallback: (tick: number, actions: TickQueueAction[]) => void
+}
+
 export interface EnvironmentConnection {
 	name: string
 
-	createNewGame(args: CreateGameArguments): Promise<{ state: GameState, updater: StateUpdater, queue: ActionsQueue }>
+	createNewGame(args: CreateGameArguments): Promise<CreateGameResult>
 
 	startRender(args: StartRenderArguments): Promise<void>
 

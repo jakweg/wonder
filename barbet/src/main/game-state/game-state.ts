@@ -7,6 +7,7 @@ import EntityContainer from './entities/entity-container'
 import { iterateOverEntitiesWithActivity } from './entities/queries'
 import { DataOffsetWithActivity } from './entities/traits'
 import { GroundItemsIndex } from './ground-items-index'
+import { execute, ScheduledAction } from './scheduled-actions'
 import { ReceiveActionsQueue } from './scheduled-actions/queue'
 import { SurfaceResourcesIndex } from './surface-resources/surface-resources-index'
 import { TileMetaDataIndex } from './tile-meta-data-index'
@@ -123,7 +124,7 @@ export class GameStateImplementation implements GameState {
 		}
 	}
 
-	public async advanceActivities() {
+	public async advanceActivities(additionalActions: ScheduledAction[]) {
 		if (this.isRunningLogic) throw new Error()
 		this.isRunningLogic = true
 
@@ -133,6 +134,10 @@ export class GameStateImplementation implements GameState {
 			await this.mutex.enterAsync(Lock.Update)
 
 		this.metaData[MetadataField.CurrentTick]++
+
+		for (const action of additionalActions) {
+			execute(action, this)
+		}
 
 		this.actionsQueue.executeAllUntilEmpty(this)
 

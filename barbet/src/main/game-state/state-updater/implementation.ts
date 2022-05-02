@@ -1,8 +1,9 @@
+import TickQueue from '../../network/tick-queue'
+import { TickQueueActionType, UpdaterAction } from '../../network/tick-queue-action'
 import { isInWorker, waitAsyncCompat } from '../../util/mutex'
 import { createNewBuffer } from '../../util/shared-memory'
+import { ScheduledAction } from '../scheduled-actions'
 import { BufferField, Status } from './'
-
-type Updatable = () => Promise<void>
 
 export interface StateUpdaterImplementation {
 	pass(): unknown
@@ -22,7 +23,7 @@ const waitForStatusNotStopped = async (memory: Int32Array): Promise<Status> => {
 }
 
 const performLogicUpdates = async (memory: Int32Array,
-                                   func: Updatable): Promise<void> => {
+                                   func: (tick: number) => Promise<boolean>): Promise<boolean> => {
 	const now = performance.now()
 	const firstExecutedAt = Atomics.load(memory, BufferField.FirstTickExecutedAt)
 	const tps = Atomics.load(memory, BufferField.TicksPerSecond)
@@ -33,28 +34,40 @@ const performLogicUpdates = async (memory: Int32Array,
 	const ticksToExecute = shouldBeNowAtTick - currentTick
 
 	if (ticksToExecute > 100 || ticksToExecute < 0) {
-		console.error(`Lag? expected ${ticksToExecute} ticks to execute at once`)
+		const message = `Lag? expected ${ticksToExecute} ticks to execute at once`
+		console.error(message)
 		Atomics.store(memory, BufferField.Status, Status.Terminated)
-		return
+		throw new Error(message)
 	}
 
 	if (ticksToExecute > 0) {
-		Atomics.store(memory, BufferField.LastTickFinishTime, performance.now() * 100)
-		Atomics.store(memory, BufferField.ExecutedTicksCounter, currentTick + ticksToExecute)
 		for (let i = 0; i < ticksToExecute; i++) {
 			try {
-				await func()
+				if (Atomics.load(memory, BufferField.Status) !== Status.Running)
+					break
+
+				const nowWas = performance.now() * 100
+				const tickNumberToExecute = currentTick + i + 1
+				const executedTick = await func(tickNumberToExecute)
+				if (executedTick) {
+					Atomics.store(memory, BufferField.LastTickFinishTime, nowWas)
+					Atomics.store(memory, BufferField.ExecutedTicksCounter, tickNumberToExecute)
+				} else {
+					console.warn('Skipped tick execution', tickNumberToExecute)
+					return false
+				}
 			} catch (e) {
 				console.error(e)
 				console.error('Terminating state updater')
 				Atomics.store(memory, BufferField.Status, Status.Terminated)
-				return
+				throw new Error(e)
 			}
 		}
 	}
+	return true
 }
 
-const runNow = async (memory: Int32Array, func: Updatable) => {
+const runNow = async (memory: Int32Array, func: (tick: number) => Promise<boolean>) => {
 	const previousValue = Atomics.compareExchange(memory, BufferField.Status, Status.RequestedStart, Status.Running)
 	if (Status.RequestedStart !== previousValue && Status.Running !== previousValue)
 		return
@@ -92,7 +105,15 @@ const runNow = async (memory: Int32Array, func: Updatable) => {
 				return
 			}
 
-			await performLogicUpdates(memory, func)
+			const everythingOk = await performLogicUpdates(memory, func)
+			if (!everythingOk) {
+				// probably lacking network data, wait some time and then try again
+				clearInterval(intervalId)
+				new Promise(resolve => setTimeout(resolve, 50))
+					.then(() => runNow(memory, func))
+					.then(resolve)
+				return
+			}
 			executing = false
 		}
 		intervalId = setInterval(executeLogic, millisPerTick)
@@ -101,7 +122,7 @@ const runNow = async (memory: Int32Array, func: Updatable) => {
 
 }
 
-const loop = async (memory: Int32Array, func: Updatable) => {
+const loop = async (memory: Int32Array, func: (tick: number) => Promise<boolean>) => {
 	while (true) {
 		const status = await waitForStatusNotStopped(memory)
 		if (status === Status.Terminated)
@@ -123,8 +144,9 @@ const loop = async (memory: Int32Array, func: Updatable) => {
 	}
 }
 
-export const createNewStateUpdater = (updatable: Updatable,
-                                      startFromTick: number)
+export const createNewStateUpdater = (updatable: (gameActions: ScheduledAction[], updaterActions: UpdaterAction[]) => Promise<void>,
+                                      startFromTick: number,
+                                      tickQueue: TickQueue)
 	: StateUpdaterImplementation => {
 
 	const memory = new Int32Array(createNewBuffer(BufferField.SIZE * Int32Array.BYTES_PER_ELEMENT))
@@ -133,8 +155,30 @@ export const createNewStateUpdater = (updatable: Updatable,
 	memory[BufferField.ExecutedTicksCounter] = startFromTick
 	// memory[BufferField.ExpectedTicksPerSecond] = memory[BufferField.TicksPerSecond] = 1
 
+	const tryRun = async (tick: number): Promise<boolean> => {
+		const actions = tickQueue.popActionsForTick(tick)
+		if (actions !== undefined) {
+
+			const updaterActions = actions.filter(e => e.type === TickQueueActionType.UpdaterAction).map(e => e.action) as UpdaterAction[]
+			const gameActions = actions.filter(e => e.type === TickQueueActionType.GameAction).map(e => e.action) as ScheduledAction[]
+
+			await updatable(gameActions, updaterActions)
+			if (updaterActions.length > 0) {
+				for (const action of updaterActions) {
+					switch (action.type) {
+						case 'pause':
+							Atomics.compareExchange(memory, BufferField.Status, Status.Running, Status.RequestedStop)
+							break
+					}
+				}
+			}
+			return true
+		}
+		return false
+	}
+
 	// noinspection JSIgnoredPromiseFromCall
-	loop(memory, updatable)
+	loop(memory, tryRun)
 
 	return {
 		pass(): unknown {
