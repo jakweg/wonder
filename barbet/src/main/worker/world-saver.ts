@@ -31,7 +31,8 @@ const saveToUrl = (game: GameState) => {
 
 export const performGameSave = (game: GameState | null,
                                 saveArgs: SaveGameArguments,
-                                feedbackCallback: (value: FeedbackEvent) => void) => {
+                                feedbackCallback: (value: FeedbackEvent) => void,
+                                inputActorIds: number[]) => {
 	if (game === null) return
 
 	const saveName = saveArgs.saveName
@@ -41,7 +42,11 @@ export const performGameSave = (game: GameState | null,
 			break
 		case SaveMethod.ToString:
 			const string = saveToString(game)
-			feedbackCallback({type: 'saved-to-string', value: string})
+			feedbackCallback({
+				type: 'saved-to-string',
+				serializedState: string, name: saveName,
+				inputActorIds,
+			})
 			break
 		case SaveMethod.ToDataUrl:
 			const url = saveToUrl(game)

@@ -71,7 +71,7 @@ setMessageHandler('create-game', async (args, connection) => {
 })
 
 setMessageHandler('save-game', async (data, connection) => {
-	performGameSave(gameState, data, value => connection.send('feedback', value))
+	performGameSave(gameState, data, value => connection.send('feedback', value), tickQueue!.getActorIds())
 })
 
 setMessageHandler('append-to-tick-queue', ({actions, playerId, forTick}) => {

@@ -69,7 +69,7 @@ export const createRemoteSession = async (props: Props): Promise<GameSession> =>
 				})
 				break
 			case 'saved-to-string':
-				synchronizer.provideGameStateAsRequested(event.value)
+				synchronizer.provideGameStateAsRequested(+event.name, event.inputActorIds, event.serializedState)
 				break
 			case 'tick-completed':
 				for (const action of event.updaterActions)
@@ -107,7 +107,7 @@ export const createRemoteSession = async (props: Props): Promise<GameSession> =>
 					temporaryActionsQueue.push([event.tick, event.from, event.actions])
 				break
 			case 'became-input-actor':
-				loadGameFromArgs({stringToRead: event.gameState})
+				loadGameFromArgs({stringToRead: event.gameState,existingInputActorIds: event.actorsIds})
 				break
 			default:
 				console.warn('Unknown event', type)
@@ -123,7 +123,7 @@ export const createRemoteSession = async (props: Props): Promise<GameSession> =>
 
 	const loadGameFromArgs = (args: CreateGameArguments) => {
 		sessionState.set('world-status', 'creating')
-		const existingPlayerIds = [...networkState!.get('joinedPlayerIds'), networkState!.get('myId')]
+		const existingPlayerIds = args.existingInputActorIds ?? [networkState!.get('myId')]
 		environment.createNewGame({
 			...args,
 			existingInputActorIds: existingPlayerIds,
@@ -147,8 +147,9 @@ export const createRemoteSession = async (props: Props): Promise<GameSession> =>
 	const resumeGame = (tickRate: number) => {
 		if (updater !== null) {
 			const lastTick = updater.getExecutedTicksCount()
-			for (let i = 0; i < TICKS_TO_TAKE_ACTION; i++)
+			for (let i = 0; i < TICKS_TO_TAKE_ACTION; i++) {
 				synchronizer.broadcastMyActions(lastTick + i + 1, [])
+			}
 
 			updater.start(tickRate)
 		}
@@ -159,7 +160,7 @@ export const createRemoteSession = async (props: Props): Promise<GameSession> =>
 		switch (action.type) {
 			case 'new-player-joins':
 				if (networkState!.get('myId') === networkState!.get('leaderId'))
-					environment.saveGame({saveName: 'for-player', method: SaveMethod.ToString})
+					environment.saveGame({saveName: action.playerId.toString(), method: SaveMethod.ToString})
 				break
 			case 'resume':
 				resumeGame(action.tickRate)
@@ -189,20 +190,6 @@ export const createRemoteSession = async (props: Props): Promise<GameSession> =>
 				}
 			})
 		},
-		// provideStartGameArguments(args: CreateGameArguments) {
-		// 	queueMicrotask(() => loadGameFromArgs(args))
-		// },
-		// invokeUpdaterAction(action: UpdaterAction) {
-		// 	queueMicrotask(() => {
-		// 		if (terminated)
-		// 			return console.warn('terminated')
-		//
-		// 		if (updater === null)
-		// 			return console.warn('missing updater')
-		//
-		//
-		// 	})
-		// },
 		terminate() {
 			sessionState.update({
 				'terminated': true,

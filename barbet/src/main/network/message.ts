@@ -14,7 +14,7 @@ export type NetworkMessageInQueue = { type: keyof NetworkLayerMessage, extra: an
 export interface GameLayerMessage {
 	'become-input-actor-request': {},
 	'actions-broadcast': { tick: number, actions: TickQueueAction[] },
-	'become-input-actor-complete': { gameState: string },
+	'become-input-actor-complete': { actorIds: number[], gameState: string },
 }
 
 export interface GameLayerMessageWithType<T extends keyof GameLayerMessage> {

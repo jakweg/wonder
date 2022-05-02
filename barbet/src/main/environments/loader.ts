@@ -13,7 +13,7 @@ import { getCameraBuffer } from '../worker/serializable-settings'
 export type FeedbackEvent =
 	{ type: 'saved-to-url', url: string }
 	| { type: 'tick-completed', tick: number, updaterActions: UpdaterAction[] }
-	| { type: 'saved-to-string', value: string }
+	| { type: 'saved-to-string', serializedState: string, name: string, inputActorIds: number[] }
 	| { type: 'input-action', value: ScheduledAction }
 
 export interface ConnectArguments {

@@ -59,9 +59,10 @@ setMessageHandler('network-worker-dispatch-action', (data) => {
 			})
 			break
 		case 'become-actor-completed':
-			for (const destination of data.to) {
-				sendGameMessage(destination, 'become-input-actor-complete', {gameState: data.gameState})
-			}
+			sendGameMessage(data.to, 'become-input-actor-complete', {
+				gameState: data.gameState,
+				actorIds: data.inputActorIds,
+			})
 			break
 		default:
 			console.warn('Unknown action to dispatch', type)

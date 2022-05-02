@@ -15,10 +15,11 @@ export default class TickQueue {
 		this.requiredPlayerIds.set(playerId, sinceTick)
 	}
 
-	public setForTick(tick: number, playerId: number, actions: TickQueueAction[]): void {
-		if (!this.requiredPlayerIds.has(playerId))
-			throw new Error(`Unexpected player id ${playerId}`)
+	public getActorIds(): number[] {
+		return [...this.requiredPlayerIds.keys()]
+	}
 
+	public setForTick(tick: number, playerId: number, actions: TickQueueAction[]): void {
 		let actionsToDoAtThisTick = this.ticksMap.get(tick)
 		if (actionsToDoAtThisTick === undefined) {
 			actionsToDoAtThisTick = new Map<number, TickQueueAction[]>()

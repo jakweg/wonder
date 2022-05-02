@@ -53,7 +53,7 @@ const performLogicUpdates = async (memory: Int32Array,
 					Atomics.store(memory, BufferField.LastTickFinishTime, nowWas)
 					Atomics.store(memory, BufferField.ExecutedTicksCounter, tickNumberToExecute)
 				} else {
-					console.warn('Skipped tick execution', tickNumberToExecute)
+					// console.warn('Skipped tick execution', tickNumberToExecute)
 					return false
 				}
 			} catch (e) {

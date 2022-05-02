@@ -11,7 +11,7 @@ export interface GameSessionSynchronizer {
 
 	broadcastMyActions(tick: number, actions: TickQueueAction[]): void
 
-	provideGameStateAsRequested(state: string): void
+	provideGameStateAsRequested(forPlayer: number, inputActorIds: number[], state: string): void
 
 	terminate(): void
 }
@@ -20,7 +20,7 @@ export interface GameSessionSynchronizer {
 export type NetworkEvent =
 	{ type: 'player-wants-to-become-input-actor', from: number }
 	| { type: 'actions-received-from-player', from: number, tick: number, actions: TickQueueAction[] }
-	| { type: 'became-input-actor', gameState: string }
+	| { type: 'became-input-actor', gameState: string, actorsIds: number[], }
 
 interface NetworkEnvironmentConfiguration {
 	connectToUrl: string
@@ -36,11 +36,9 @@ export const createRemote = async (config: NetworkEnvironmentConfiguration): Pro
 		mirroredState.update(state)
 	})
 
-	const playerIdsThatWantsToBecomeInputActors = new Set<number>()
 	setMessageHandler('network-message-received', message => {
 		switch (message.type as keyof GameLayerMessage) {
 			case 'become-input-actor-request':
-				playerIdsThatWantsToBecomeInputActors.add(message.origin)
 				config.eventCallback({type: 'player-wants-to-become-input-actor', from: message.origin})
 				break
 			case 'actions-broadcast': {
@@ -58,6 +56,7 @@ export const createRemote = async (config: NetworkEnvironmentConfiguration): Pro
 				config.eventCallback({
 					type: 'became-input-actor',
 					gameState: payload.gameState,
+					actorsIds: payload.actorIds,
 				})
 				break
 			}
@@ -86,13 +85,13 @@ export const createRemote = async (config: NetworkEnvironmentConfiguration): Pro
 
 	return {
 		networkState: mirroredState,
-		provideGameStateAsRequested(state: string) {
+		provideGameStateAsRequested(forPlayer: number, inputActorIds: number[], state: string) {
 			worker.replier.send('network-worker-dispatch-action', {
 				type: 'become-actor-completed',
-				to: [...playerIdsThatWantsToBecomeInputActors.values()],
+				to: forPlayer,
+				inputActorIds,
 				gameState: state,
 			})
-			playerIdsThatWantsToBecomeInputActors.clear()
 		},
 		broadcastMyActions(tick: number, actions: TickQueueAction[]) {
 			worker.replier.send('network-worker-dispatch-action', {
