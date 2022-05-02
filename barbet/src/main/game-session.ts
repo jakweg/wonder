@@ -5,6 +5,7 @@ import {
 	getSuggestedEnvironmentName,
 	loadEnvironment,
 	SaveMethod,
+	SetActionsCallback,
 } from './environments/loader'
 import { GameState } from './game-state/game-state'
 import { StateUpdater } from './game-state/state-updater'
@@ -54,8 +55,9 @@ export const createRemoteSession = async (props: Props): Promise<GameSession> =>
 	let networkState: State<NetworkStateType> | null
 	let gameState: GameState | null = null
 	let updater: StateUpdater | null = null
-	let setActionsCallback: ((tick: number, actions: TickQueueAction[]) => void) | null = null
+	let setActionsCallback: SetActionsCallback | null = null
 	let myActions: TickQueueAction[] = []
+	const temporaryActionsQueue: any[] = []
 
 	const feedbackMiddleware = (event: FeedbackEvent) => {
 		switch (event.type) {
@@ -63,6 +65,7 @@ export const createRemoteSession = async (props: Props): Promise<GameSession> =>
 				myActions.push({
 					type: TickQueueActionType.GameAction,
 					action: event.value,
+					initiatorId: networkState!.get('myId'),
 				})
 				break
 			case 'saved-to-string':
@@ -90,6 +93,7 @@ export const createRemoteSession = async (props: Props): Promise<GameSession> =>
 			case 'player-wants-to-become-input-actor':
 				myActions.push({
 					type: TickQueueActionType.UpdaterAction,
+					initiatorId: event.from,
 					action: {
 						type: 'new-player-joins',
 						playerId: event.from,
@@ -97,7 +101,10 @@ export const createRemoteSession = async (props: Props): Promise<GameSession> =>
 				})
 				break
 			case 'actions-received-from-player':
-				setActionsCallback?.(event.tick, event.actions)
+				if (setActionsCallback !== null)
+					setActionsCallback(event.tick, event.from, event.actions)
+				else
+					temporaryActionsQueue.push([event.tick, event.from, event.actions])
 				break
 			case 'became-input-actor':
 				loadGameFromArgs({stringToRead: event.gameState})
@@ -105,13 +112,6 @@ export const createRemoteSession = async (props: Props): Promise<GameSession> =>
 			default:
 				console.warn('Unknown event', type)
 				break
-			// case 'game-state-received':
-			// 	loadGameFromArgs({stringToRead: event.value})
-			// 	break
-			// case 'game-state-request':
-			// 	if (gameState !== null)
-			// 		environment.saveGame({method: SaveMethod.ToString, saveName: 'requested-by-other-player'})
-			// 	break
 		}
 	}
 
@@ -123,10 +123,17 @@ export const createRemoteSession = async (props: Props): Promise<GameSession> =>
 
 	const loadGameFromArgs = (args: CreateGameArguments) => {
 		sessionState.set('world-status', 'creating')
-		environment.createNewGame(args).then((results) => {
+		const existingPlayerIds = [...networkState!.get('joinedPlayerIds'), networkState!.get('myId')]
+		environment.createNewGame({
+			...args,
+			existingInputActorIds: existingPlayerIds,
+		}).then((results) => {
 			updater = results.updater
 			gameState = results.state
 			setActionsCallback = results.setActionsCallback
+			for (const element of temporaryActionsQueue)
+				setActionsCallback(element[0]!, element[1]!, element[2]!)
+
 			resetRendering()
 			sessionState.set('world-status', 'loaded')
 			resumeGame(20)
@@ -151,7 +158,8 @@ export const createRemoteSession = async (props: Props): Promise<GameSession> =>
 		if (updater === null) return
 		switch (action.type) {
 			case 'new-player-joins':
-				environment.saveGame({saveName: 'for-player', method: SaveMethod.ToString})
+				if (networkState!.get('myId') === networkState!.get('leaderId'))
+					environment.saveGame({saveName: 'for-player', method: SaveMethod.ToString})
 				break
 			case 'resume':
 				resumeGame(action.tickRate)

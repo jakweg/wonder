@@ -21,7 +21,7 @@ export interface Message {
 	['terminate-game']: TerminateGameArguments
 	['feedback']: FeedbackEvent
 	['scheduled-action']: ScheduledAction
-	['append-to-tick-queue']: { actions: TickQueueAction[], forTick: number }
+	['append-to-tick-queue']: { actions: TickQueueAction[], playerId: number, forTick: number }
 	['network-worker-dispatch-action']: NetworkWorkerDispatchAction
 	['connect-to']: { url: string, forceEncryption: boolean }
 	['network-message-received']: ReceivedGameLayerMessage<any>

@@ -53,11 +53,8 @@ export const bind = async (args: ConnectArguments): Promise<EnvironmentConnectio
 		args.feedbackCallback({type: 'input-action', value: action})
 	})
 
-	const setActionsCallback = (tick: number, actions: TickQueueAction[]) => {
-		updateWorker.replier.send('append-to-tick-queue', {
-			forTick: tick,
-			actions,
-		})
+	const setActionsCallback = (forTick: number, playerId: number, actions: TickQueueAction[]) => {
+		updateWorker.replier.send('append-to-tick-queue', {forTick, playerId, actions})
 	}
 
 	setMessageHandler('game-snapshot-for-renderer', (data) => {

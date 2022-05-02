@@ -44,12 +44,23 @@ setMessageHandler('create-game', async (args, connection) => {
 	gameState = await loadGameFromArgs(args, actionsQueue!, stateBroadcastCallback) as GameStateImplementation
 
 	tickQueue = TickQueue.createEmpty()
+
+	if (args.existingInputActorIds)
+		args.existingInputActorIds.forEach(id => tickQueue!.addRequiredPlayer(id, 0))
+
 	stateUpdater = createNewStateUpdater(
 		async (gameActions, updaterActions) => {
 
 			await gameState!.advanceActivities(gameActions)
 
-			connection.send('feedback', {type: 'tick-completed', tick: gameState!.currentTick, updaterActions})
+			const currentTick = gameState!.currentTick
+			for (const a of updaterActions) {
+				if (a.type === 'new-player-joins') {
+					tickQueue!.addRequiredPlayer(a.playerId, currentTick)
+				}
+			}
+
+			connection.send('feedback', {type: 'tick-completed', tick: currentTick, updaterActions})
 		},
 		gameState.currentTick, tickQueue)
 
@@ -63,10 +74,6 @@ setMessageHandler('save-game', async (data, connection) => {
 	performGameSave(gameState, data, value => connection.send('feedback', value))
 })
 
-// setMessageHandler('scheduled-action', (action) => {
-// 	actionsQueue?.append(action)
-// })
-
-setMessageHandler('append-to-tick-queue', ({actions, forTick}) => {
-	tickQueue?.setForTick(forTick, actions)
+setMessageHandler('append-to-tick-queue', ({actions, playerId, forTick}) => {
+	tickQueue?.setForTick(forTick, playerId, actions)
 })

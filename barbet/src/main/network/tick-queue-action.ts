@@ -11,5 +11,5 @@ export const enum TickQueueActionType {
 }
 
 export type TickQueueAction =
-	{ type: TickQueueActionType.GameAction, action: ScheduledAction }
-	| { type: TickQueueActionType.UpdaterAction, action: UpdaterAction }
+	{ type: TickQueueActionType.GameAction, initiatorId: number, action: ScheduledAction }
+	| { type: TickQueueActionType.UpdaterAction, initiatorId: number, action: UpdaterAction }

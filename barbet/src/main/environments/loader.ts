@@ -43,6 +43,7 @@ export interface CreateGameArguments {
 	saveName?: string
 	fileToRead?: File
 	stringToRead?: string
+	existingInputActorIds?: number[]
 }
 
 export const enum SaveMethod {
@@ -59,10 +60,12 @@ export interface SaveGameArguments {
 export interface TerminateGameArguments {
 }
 
+export type SetActionsCallback = (forTick: number, playerId: number, actions: TickQueueAction[]) => void
+
 export interface CreateGameResult {
 	state: GameState,
 	updater: StateUpdater,
-	setActionsCallback: (tick: number, actions: TickQueueAction[]) => void
+	setActionsCallback: SetActionsCallback
 }
 
 export interface EnvironmentConnection {
