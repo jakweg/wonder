@@ -1,5 +1,4 @@
 import { GameStateImplementation } from '../game-state/game-state'
-import { ReceiveActionsQueue } from '../game-state/scheduled-actions/queue'
 import { createNewStateUpdater } from '../game-state/state-updater'
 import { StateUpdaterImplementation } from '../game-state/state-updater/implementation'
 import { loadGameFromArgs } from '../game-state/world/world-loader'
@@ -14,7 +13,6 @@ const connectionWithParent = takeControlOverWorkerConnection()
 
 let gameState: GameStateImplementation | null = null
 let stateUpdater: StateUpdaterImplementation | null = null
-let actionsQueue: ReceiveActionsQueue | null = null
 let tickQueue: TickQueue | null = null
 
 connectionWithParent.listen('set-global-mutex', (data) => {
@@ -27,7 +25,7 @@ connectionWithParent.listen('new-settings', settings => {
 
 connectionWithParent.listen('terminate-game', () => {
 	stateUpdater?.terminate()
-	gameState = stateUpdater = actionsQueue = null
+	gameState = stateUpdater = null
 })
 
 connectionWithParent.listen('create-game', async (args) => {
@@ -38,9 +36,7 @@ connectionWithParent.listen('create-game', async (args) => {
 		})
 	}
 
-	actionsQueue = ReceiveActionsQueue.create()
-
-	gameState = await loadGameFromArgs(args, actionsQueue!, stateBroadcastCallback) as GameStateImplementation
+	gameState = await loadGameFromArgs(args, stateBroadcastCallback) as GameStateImplementation
 
 	tickQueue = TickQueue.createEmpty()
 

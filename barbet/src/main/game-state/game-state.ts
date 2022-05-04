@@ -48,6 +48,8 @@ export const enum MetadataField {
 }
 
 export class GameStateImplementation implements GameState {
+	/** @deprecated remove it? it may be used in the future */
+	public readonly actionsQueue: ReceiveActionsQueue = ReceiveActionsQueue.create()
 	private isRunningLogic: boolean = false
 
 	private constructor(
@@ -58,7 +60,6 @@ export class GameStateImplementation implements GameState {
 		public readonly tileMetaDataIndex: TileMetaDataIndex,
 		public readonly delayedComputer: DelayedComputer,
 		public readonly surfaceResources: SurfaceResourcesIndex,
-		private readonly actionsQueue: ReceiveActionsQueue,
 		private readonly mutex: Mutex,
 		private readonly stateBroadcastCallback: () => void) {
 	}
@@ -74,18 +75,16 @@ export class GameStateImplementation implements GameState {
 		tileMetaDataIndex: TileMetaDataIndex,
 		delayedComputer: DelayedComputer,
 		surfaceResources: SurfaceResourcesIndex,
-		actionsQueue: ReceiveActionsQueue,
 		mutex: Mutex,
 		stateBroadcastCallback: () => void): GameStateImplementation {
 		return new GameStateImplementation(
 			new Int32Array(createNewBuffer(MetadataField.SIZE * Int32Array.BYTES_PER_ELEMENT)),
 			world, groundItems, entities,
 			tileMetaDataIndex, delayedComputer, surfaceResources,
-			actionsQueue, mutex, stateBroadcastCallback)
+			mutex, stateBroadcastCallback)
 	}
 
-	public static deserialize(object: any, actionsQueue: ReceiveActionsQueue,
-	                          mutex: Mutex, stateBroadcastCallback: () => void): GameStateImplementation {
+	public static deserialize(object: any, mutex: Mutex, stateBroadcastCallback: () => void): GameStateImplementation {
 		const world = World.deserialize(object['world'])
 		const tileMetaDataIndex = TileMetaDataIndex.deserialize(object['tileMetaDataIndex'], world.rawHeightData)
 		return new GameStateImplementation(
@@ -95,7 +94,7 @@ export class GameStateImplementation implements GameState {
 			EntityContainer.deserialize(object['entities']),
 			tileMetaDataIndex, deserializeDelayedComputer(object['delayedComputer']),
 			SurfaceResourcesIndex.deserialize(object['surfaceResources']),
-			actionsQueue, mutex, stateBroadcastCallback)
+			mutex, stateBroadcastCallback)
 	}
 
 	public passForRenderer(): unknown {
@@ -139,8 +138,6 @@ export class GameStateImplementation implements GameState {
 			execute(action, this)
 		}
 
-		this.actionsQueue.executeAllUntilEmpty(this)
-
 		const container = this.entities
 		for (const entity of iterateOverEntitiesWithActivity(container)) {
 			const currentActivity = (container.withActivities.rawData)[entity.withActivity + DataOffsetWithActivity.CurrentId]! as ActivityId
@@ -148,6 +145,8 @@ export class GameStateImplementation implements GameState {
 			const perform = getActivityPerformFunction(currentActivity)
 			perform?.(this, entity)
 		}
+
+		this.actionsQueue.executeAllUntilEmpty(this)
 
 		if (container.buffersChanged) {
 			container.buffersChanged = false

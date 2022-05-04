@@ -40,7 +40,7 @@ export const bind = (args: ConnectArguments): EnvironmentConnection => {
 			const stateBroadcastCallback = () => void 0 // ignore, since everything is locally anyway
 			actionsQueue = ReceiveActionsQueue.create()
 
-			game = await loadGameFromArgs(args, actionsQueue!, stateBroadcastCallback) as GameStateImplementation
+			game = await loadGameFromArgs(args, stateBroadcastCallback) as GameStateImplementation
 
 			const updaterInstance = createNewStateUpdater(() => (game as GameStateImplementation)?.advanceActivities(), game.currentTick)
 
