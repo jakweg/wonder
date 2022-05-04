@@ -26,6 +26,7 @@ connectionWithParent.listen('new-settings', settings => {
 connectionWithParent.listen('terminate-game', () => {
 	stateUpdater?.terminate()
 	gameState = stateUpdater = null
+	close()
 })
 
 connectionWithParent.listen('create-game', async (args) => {

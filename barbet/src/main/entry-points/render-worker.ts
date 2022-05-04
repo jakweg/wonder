@@ -55,6 +55,7 @@ connectionWithParent.listen('frontend-variables', (data) => {
 connectionWithParent.listen('terminate-game', () => {
 	renderCancelCallback?.()
 	canvas = decodedUpdater = decodedGame = gameSnapshot = null
+	close()
 })
 
 

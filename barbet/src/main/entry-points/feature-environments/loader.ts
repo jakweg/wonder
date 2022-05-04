@@ -1,20 +1,22 @@
-import { DEBUG, FORCE_ENV_ZERO, JS_ROOT } from '../../util/build-info'
 import { GameState } from '../../game-state/game-state'
 import { ScheduledAction } from '../../game-state/scheduled-actions'
 import { StateUpdater } from '../../game-state/state-updater'
 import { TickQueueAction, UpdaterAction } from '../../network/tick-queue-action'
+import { DEBUG, FORCE_ENV_ZERO, JS_ROOT } from '../../util/build-info'
 import { frontedVariablesBuffer } from '../../util/frontend-variables'
 import Mutex from '../../util/mutex'
-import { sharedMemoryIsAvailable } from '../../util/shared-memory'
-import { globalMutex } from '../../util/worker/global-mutex'
 import CONFIG from '../../util/persistance/observable-settings'
 import { getCameraBuffer } from '../../util/persistance/serializable-settings'
+import { sharedMemoryIsAvailable } from '../../util/shared-memory'
+import { globalMutex } from '../../util/worker/global-mutex'
 
 export type FeedbackEvent =
 	{ type: 'saved-to-url', url: string }
 	| { type: 'tick-completed', tick: number, updaterActions: UpdaterAction[] }
 	| { type: 'saved-to-string', serializedState: string, name: string, inputActorIds: number[] }
 	| { type: 'input-action', value: ScheduledAction }
+	| { type: 'error' }
+	| { type: 'became-leader' }
 
 export interface ConnectArguments {
 	mutex: Mutex
@@ -77,7 +79,7 @@ export interface EnvironmentConnection {
 
 	saveGame(args: SaveGameArguments): void
 
-	terminateGame(args: TerminateGameArguments): void
+	terminate(args: TerminateGameArguments): void
 }
 
 export const getSuggestedEnvironmentName = (preferredEnvironment: Environment) => {

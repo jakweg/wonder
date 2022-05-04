@@ -76,10 +76,12 @@ export const bind = async (args: ConnectArguments): Promise<EnvironmentConnectio
 		saveGame(args: SaveGameArguments): void {
 			updateWorker.replier?.send('save-game', args)
 		},
-		terminateGame(args: TerminateGameArguments) {
+		terminate(args: TerminateGameArguments) {
 			updateWorker.replier.send('terminate-game', args)
 			renderingCancelCallback?.()
 			renderingCancelCallback = decodedGame = updater = null
+
+			setTimeout(() => updateWorker.terminate(), 10_000)
 		},
 	}
 }

@@ -98,10 +98,13 @@ export const bind = async (args: ConnectArguments): Promise<EnvironmentConnectio
 		saveGame(args: SaveGameArguments): void {
 			updateWorker.replier?.send('save-game', args)
 		},
-		terminateGame(args: TerminateGameArguments): void {
+		terminate(args: TerminateGameArguments): void {
 			renderWorker.replier.send('terminate-game', args)
 			updateWorker.replier.send('terminate-game', args)
 			entityContainerSnapshotForRenderer = decodedGame = updater = null
+
+			setTimeout(() => updateWorker.terminate(), 10_000)
+			setTimeout(() => renderWorker.terminate(), 10_000)
 		},
 	}
 }

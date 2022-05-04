@@ -1,7 +1,6 @@
-import { DEFAULT_NETWORK_SERVER_ADDRESS } from '../util/build-info'
-import { FeedbackEvent } from './feature-environments/loader'
-import { createRemoteSession, GameSession } from '../game-session'
+import { createLocalSession, createRemoteSession, GameSession } from '../game-session/'
 import { bindSettingsListeners } from '../html-controls/settings'
+import { DEFAULT_NETWORK_SERVER_ADDRESS } from '../util/build-info'
 import {
 	bindFrontendVariablesToCanvas,
 	initFrontendVariableAndRegisterToWindow,
@@ -12,6 +11,7 @@ import CONFIG, {
 	saveSettingsToLocalStorage,
 } from '../util/persistance/observable-settings'
 import { addSaveCallback, registerSaveSettingsCallback } from '../util/persistance/serializable-settings'
+import { FeedbackEvent } from './feature-environments/loader'
 
 initSettingsFromLocalStorage()
 addSaveCallback(() => saveSettingsToLocalStorage())
@@ -125,39 +125,49 @@ const feedbackFinalHandler = async (event: FeedbackEvent) => {
 		case 'saved-to-url':
 			downloadSaveToDeviceStorage(event.url)
 			break
+		case 'error':
+			session?.terminate()
+			session = null
+			break
+		case 'became-leader':
+			setTimeout(() => {
+				console.log('i am a leader now')
+				session?.dispatchAction({
+					type: 'create-game',
+					args: {}, // it'll generate new world
+				})
+			}, 0)
+			break
 		default:
 			console.warn('Unknown feedback', event.type)
 			break
 	}
 }
 
-const initPageState = async () => {
-	if (DEFAULT_NETWORK_SERVER_ADDRESS === undefined) return
+const startRemoteSession = async (url: string) => {
 	session = await createRemoteSession({
 		feedbackCallback: feedbackFinalHandler,
-		remoteUrl: DEFAULT_NETWORK_SERVER_ADDRESS,
-		canvasProvider: () => recreateCanvas(),
+		remoteUrl: url,
+		canvasProvider: recreateCanvas,
 	})
+}
 
-	let iWasLeader: boolean = false
-	session.networkState.observeEverything(values => {
-		if (!iWasLeader && values['myId'] === values['leaderId']) {
-			iWasLeader = true
-			console.log('i am a leader now')
-			session?.dispatchAction({
-				type: 'create-game',
-				args: {}, // it'll generate new world
-			})
-		}
+const startLocalSession = async () => {
+	session = await createLocalSession({
+		canvasProvider: recreateCanvas,
+		feedbackCallback: feedbackFinalHandler,
 	})
+	session.dispatchAction({
+		type: 'create-game',
+		args: {},
+	})
+}
 
-	session.networkState.observe('error', error => {
-		if (error) {
-			console.error('Session terminated:', error)
-			session?.terminate()
-			session = null
-		}
-	})
+const initPageState = async () => {
+	if (DEFAULT_NETWORK_SERVER_ADDRESS !== undefined)
+		await startRemoteSession(DEFAULT_NETWORK_SERVER_ADDRESS)
+	else
+		await startLocalSession()
 }
 
 initPageState().then(() => void 0)

@@ -81,7 +81,7 @@ export const bind = (args: ConnectArguments): EnvironmentConnection => {
 			const gameTickEstimation = () => updater!.estimateCurrentGameTickTime(0)
 			renderCancelCallback = startRenderingGame(args.canvas, game, updater!, actionsQueue!, Camera.newUsingBuffer(getCameraBuffer()), gameTickEstimation)
 		},
-		terminateGame(_: TerminateGameArguments) {
+		terminate(_: TerminateGameArguments) {
 			renderCancelCallback?.()
 			updater?.stop()
 			actionsQueue = game = updater = null
