@@ -14,6 +14,19 @@ if (buildForProduction && forceSingleThread)
 if (!buildForProduction && produceMappings)
 	console.warn('Mappings are only produced in production mode')
 
+async function getOutputFromProcess(cmd: string[]): Promise<string> {
+	const process = Deno.run({cmd, stdout: 'piped'})
+
+	const output = await process.output()
+	const outputString = new TextDecoder().decode(output)
+
+	if (!(await process.status()).success)
+		return ''
+	return outputString
+}
+
+const commitHash = (await getOutputFromProcess(['git', 'rev-parse', '--short', 'HEAD'])).trim()
+
 if (args.size > 0) {
 	console.log('Received unknown options: ', args)
 } else {
@@ -39,7 +52,8 @@ if (args.size > 0) {
 			_C_DEBUG: JSON.stringify(!buildForProduction),
 			_C_JS_ROOT: JSON.stringify(`/${jsOutRoot}`),
 			_C_FORCE_ENV_ZERO: JSON.stringify(forceSingleThread),
-			_C_DEFAULT_NETWORK_SERVER_ADDRESS: JSON.stringify(buildForProduction ? undefined : 'localhost:4575')
+			_C_COMMIT_HASH: JSON.stringify(commitHash),
+			_C_DEFAULT_NETWORK_SERVER_ADDRESS: JSON.stringify(buildForProduction ? undefined : 'localhost:4575'),
 		},
 		entryPoints: entryPoints.map(name => `src/main/entry-points/${name}.ts`),
 		bundle: true,
