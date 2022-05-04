@@ -1,6 +1,6 @@
 import * as mat4 from '@matrix//mat4'
 import * as vec3 from '@matrix//vec3'
-import { createNewBuffer } from './util/shared-memory'
+import { createNewBuffer } from '../util/shared-memory'
 
 const FOV = Math.PI / 2
 export const universalUpVector = vec3.fromValues(0, 1, 0)

@@ -1,4 +1,4 @@
-import { FeedbackEvent, SaveGameArguments, SaveMethod } from '../../environments/loader'
+import { FeedbackEvent, SaveGameArguments, SaveMethod } from '../../entry-points/feature-environments/loader'
 import { GameState, GameStateImplementation } from '../game-state'
 import { putSaveData } from '../../util/persistance/saves-database'
 import { ArrayEncodingType, setArrayEncodingType } from '../../util/persistance/serializers'

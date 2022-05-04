@@ -1,17 +1,17 @@
-import { DEFAULT_NETWORK_SERVER_ADDRESS } from './build-info'
-import { FeedbackEvent } from './environments/loader'
-import { createRemoteSession, GameSession } from './game-session'
-import { bindSettingsListeners } from './html-controls/settings'
+import { DEFAULT_NETWORK_SERVER_ADDRESS } from '../util/build-info'
+import { FeedbackEvent } from './feature-environments/loader'
+import { createRemoteSession, GameSession } from '../game-session'
+import { bindSettingsListeners } from '../html-controls/settings'
 import {
 	bindFrontendVariablesToCanvas,
 	initFrontendVariableAndRegisterToWindow,
-} from './util/frontend-variables-updaters'
+} from '../util/frontend-variables-updaters'
 import CONFIG, {
 	initSettingsFromLocalStorage,
 	observeSetting,
 	saveSettingsToLocalStorage,
-} from './util/persistance/observable-settings'
-import { addSaveCallback, registerSaveSettingsCallback } from './util/persistance/serializable-settings'
+} from '../util/persistance/observable-settings'
+import { addSaveCallback, registerSaveSettingsCallback } from '../util/persistance/serializable-settings'
 
 initSettingsFromLocalStorage()
 addSaveCallback(() => saveSettingsToLocalStorage())

@@ -1,4 +1,4 @@
-import Mutex, { createMutexFromReceived, createNewMutex } from '../util/mutex'
+import Mutex, { createMutexFromReceived, createNewMutex } from '../mutex'
 
 export let globalMutex: Mutex = createNewMutex()
 export const setGlobalMutex = (data: unknown) => {

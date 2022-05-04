@@ -6,7 +6,7 @@ import {
 	loadEnvironment,
 	SaveMethod,
 	SetActionsCallback,
-} from './environments/loader'
+} from './entry-points/feature-environments/loader'
 import { StateUpdater } from './game-state/state-updater'
 import { NetworkStateType } from './network/network-state'
 import { TickQueueAction, TickQueueActionType, UpdaterAction } from './network/tick-queue-action'

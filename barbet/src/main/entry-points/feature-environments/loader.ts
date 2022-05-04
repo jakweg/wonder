@@ -1,14 +1,14 @@
-import { DEBUG, FORCE_ENV_ZERO, JS_ROOT } from '../build-info'
-import { GameState } from '../game-state/game-state'
-import { ScheduledAction } from '../game-state/scheduled-actions'
-import { StateUpdater } from '../game-state/state-updater'
-import { TickQueueAction, UpdaterAction } from '../network/tick-queue-action'
-import { frontedVariablesBuffer } from '../util/frontend-variables'
-import Mutex from '../util/mutex'
-import { sharedMemoryIsAvailable } from '../util/shared-memory'
-import { globalMutex } from '../worker/global-mutex'
-import CONFIG from '../util/persistance/observable-settings'
-import { getCameraBuffer } from '../util/persistance/serializable-settings'
+import { DEBUG, FORCE_ENV_ZERO, JS_ROOT } from '../../util/build-info'
+import { GameState } from '../../game-state/game-state'
+import { ScheduledAction } from '../../game-state/scheduled-actions'
+import { StateUpdater } from '../../game-state/state-updater'
+import { TickQueueAction, UpdaterAction } from '../../network/tick-queue-action'
+import { frontedVariablesBuffer } from '../../util/frontend-variables'
+import Mutex from '../../util/mutex'
+import { sharedMemoryIsAvailable } from '../../util/shared-memory'
+import { globalMutex } from '../../util/worker/global-mutex'
+import CONFIG from '../../util/persistance/observable-settings'
+import { getCameraBuffer } from '../../util/persistance/serializable-settings'
 
 export type FeedbackEvent =
 	{ type: 'saved-to-url', url: string }
@@ -101,7 +101,7 @@ export const loadEnvironment = async (name: Environment,
 			console.error(`Forced environment change ${name} -> ${'zero' as Environment}`)
 		name = 'zero'
 	}
-	const connect = (await import((`${JS_ROOT}/environments/${name}.js`)))['bind']
+	const connect = (await import((`${JS_ROOT}/feature-environments/${name}.js`)))['bind']
 	const args: ConnectArguments = {
 		mutex: globalMutex,
 		frontendVariables: frontedVariablesBuffer,

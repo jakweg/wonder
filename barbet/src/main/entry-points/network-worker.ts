@@ -1,17 +1,16 @@
-import { GameLayerMessage } from './network/message'
-import { defaultNetworkState } from './network/network-state'
-import { ConnectedSocket, connectToServer, createMessageMiddleware, createMessageReceiver } from './network/socket'
-import State from './util/state'
-import { takeControlOverWorkerConnection } from './worker/connections-manager'
-import { setGlobalMutex } from './worker/global-mutex'
-import { setMessageHandler } from './worker/message-handler'
-import CONFIG from './util/persistance/observable-settings'
+import { GameLayerMessage } from '../network/message'
+import { defaultNetworkState } from '../network/network-state'
+import { ConnectedSocket, connectToServer, createMessageMiddleware, createMessageReceiver } from '../network/socket'
+import CONFIG from '../util/persistance/observable-settings'
+import State from '../util/state'
+import { takeControlOverWorkerConnection } from '../util/worker/connections-manager'
+import { setGlobalMutex } from '../util/worker/global-mutex'
 
 const connectionWithMainThread = takeControlOverWorkerConnection()
-setMessageHandler('set-global-mutex', (data) => {
+connectionWithMainThread.listen('set-global-mutex', (data) => {
 	setGlobalMutex(data.mutex)
 })
-setMessageHandler('new-settings', settings => {
+connectionWithMainThread.listen('new-settings', settings => {
 	CONFIG.update(settings)
 })
 
@@ -37,7 +36,7 @@ const handlers: HandlersType = {
 	},
 }
 
-setMessageHandler('network-worker-dispatch-action', (data) => {
+connectionWithMainThread.listen('network-worker-dispatch-action', (data) => {
 	const type = data.type
 	switch (type) {
 		case 'request-become-input-actor':

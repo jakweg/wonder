@@ -1,6 +1,6 @@
-import { makeNoise2D } from '../../util/noise/2d'
-import { BiomeId } from './biome'
-import { WorldSize } from './world'
+import { makeNoise2D } from '../../../util/noise/2d'
+import { BiomeId } from '../biome'
+import { WorldSize } from '../world'
 
 export interface GeneratorSettings extends WorldSize {
 	biomeSeed: number

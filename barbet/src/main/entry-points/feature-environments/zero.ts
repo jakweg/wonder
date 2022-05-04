@@ -1,18 +1,18 @@
-import { startRenderingGame } from '../3d-stuff/renderable/render-context'
-import { Camera } from '../camera'
-import { GameState, GameStateImplementation } from '../game-state/game-state'
-import { ReceiveActionsQueue } from '../game-state/scheduled-actions/queue'
+import { startRenderingGame } from '../../3d-stuff/renderable/render-context'
+import { Camera } from '../../3d-stuff/camera'
+import { GameState, GameStateImplementation } from '../../game-state/game-state'
+import { ReceiveActionsQueue } from '../../game-state/scheduled-actions/queue'
 import {
 	createNewStateUpdater,
 	createStateUpdaterControllerFromReceived,
 	StateUpdater,
-} from '../game-state/state-updater'
-import { initFrontedVariablesFromReceived } from '../util/frontend-variables-updaters'
-import { setGlobalMutex } from '../worker/global-mutex'
-import CONFIG from '../util/persistance/observable-settings'
-import { getCameraBuffer, setCameraBuffer } from '../util/persistance/serializable-settings'
-import { loadGameFromArgs } from '../game-state/world/world-loader'
-import { performGameSave } from '../game-state/world/world-saver'
+} from '../../game-state/state-updater'
+import { initFrontedVariablesFromReceived } from '../../util/frontend-variables-updaters'
+import { setGlobalMutex } from '../../util/worker/global-mutex'
+import CONFIG from '../../util/persistance/observable-settings'
+import { getCameraBuffer, setCameraBuffer } from '../../util/persistance/serializable-settings'
+import { loadGameFromArgs } from '../../game-state/world/world-loader'
+import { performGameSave } from '../../game-state/world/world-saver'
 import {
 	ConnectArguments,
 	CreateGameArguments,

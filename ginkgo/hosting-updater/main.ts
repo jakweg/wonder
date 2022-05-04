@@ -16,9 +16,9 @@ const hostedFiles = [
 	'build-js/render-worker.js',
 	'build-js/update-worker.js',
 	'build-js/network-worker.js',
-	'build-js/environments/zero.js',
-	'build-js/environments/first.js',
-	'build-js/environments/second.js',
+	'build-js/feature-environments/zero.js',
+	'build-js/feature-environments/first.js',
+	'build-js/feature-environments/second.js',
 ]
 
 async function cleanTmpFolder() {

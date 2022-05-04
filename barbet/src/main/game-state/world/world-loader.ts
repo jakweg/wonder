@@ -1,4 +1,4 @@
-import { CreateGameArguments } from '../../environments/loader'
+import { CreateGameArguments } from '../../entry-points/feature-environments/loader'
 import { createNewDelayedComputer } from '../delayed-computer'
 import EntityContainer from '../entities/entity-container'
 import { GameState, GameStateImplementation } from '../game-state'
@@ -10,8 +10,8 @@ import { BlockId } from './block'
 import { World } from './world'
 import { readSaveData } from '../../util/persistance/saves-database'
 import { ArrayEncodingType, setArrayEncodingType } from '../../util/persistance/serializers'
-import { fillEmptyWorldWithDefaultData } from '../../worker/example-world-creator'
-import { globalMutex } from '../../worker/global-mutex'
+import { fillEmptyWorldWithDefaultData } from './generator/example-world-creator'
+import { globalMutex } from '../../util/worker/global-mutex'
 import CONFIG from '../../util/persistance/observable-settings'
 
 export const createEmptyGame = (actionsQueue: ReceiveActionsQueue,

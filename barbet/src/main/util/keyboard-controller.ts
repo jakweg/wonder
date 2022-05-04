@@ -1,4 +1,4 @@
-import { FrontendVariable, PressedKey } from './util/frontend-variables'
+import { FrontendVariable, PressedKey } from './frontend-variables'
 
 const defaultKeyMapping: { [key: string]: PressedKey } = {
 	'KeyW': PressedKey.Forward,

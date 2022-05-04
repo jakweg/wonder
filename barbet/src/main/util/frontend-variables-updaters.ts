@@ -1,4 +1,4 @@
-import KeyboardController from '../keyboard-controller'
+import KeyboardController from './keyboard-controller'
 import { AdditionalFrontedFlags, frontedVariables, FrontendVariable, setFrontendVariables } from './frontend-variables'
 import { createNewBuffer } from './shared-memory'
 

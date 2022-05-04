@@ -1,7 +1,6 @@
 import State from '../util/state'
-import { globalMutex } from '../worker/global-mutex'
-import { setMessageHandler } from '../worker/message-handler'
-import { WorkerController } from '../worker/worker-controller'
+import { globalMutex } from '../util/worker/global-mutex'
+import { WorkerController } from '../util/worker/worker-controller'
 import { GameLayerMessage } from './message'
 import { defaultNetworkState, NetworkStateType } from './network-state'
 import { TickQueueAction } from './tick-queue-action'
@@ -32,11 +31,11 @@ export const createWebsocketConnectionWithServer = async (config: NetworkEnviron
 	const mirroredState = State.fromInitial(defaultNetworkState)
 	const worker = await WorkerController.spawnNew('network-worker', 'network', globalMutex)
 
-	setMessageHandler('network-state', state => {
+	worker.handler.listen('network-state', state => {
 		mirroredState.update(state)
 	})
 
-	setMessageHandler('network-message-received', message => {
+	worker.handler.listen('network-message-received', message => {
 		switch (message.type as keyof GameLayerMessage) {
 			case 'become-input-actor-request':
 				config.eventCallback({type: 'player-wants-to-become-input-actor', from: message.origin})

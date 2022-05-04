@@ -1,14 +1,13 @@
-import { startRenderingGame } from '../3d-stuff/renderable/render-context'
-import { Camera } from '../camera'
-import { createGameStateForRenderer, GameState } from '../game-state/game-state'
-import { ActionsQueue, SendActionsQueue } from '../game-state/scheduled-actions/queue'
-import { createStateUpdaterControllerFromReceived, StateUpdater } from '../game-state/state-updater'
-import { initFrontedVariablesFromReceived } from '../util/frontend-variables-updaters'
-import { globalMutex, setGlobalMutex } from '../worker/global-mutex'
-import { setMessageHandler } from '../worker/message-handler'
-import CONFIG from '../util/persistance/observable-settings'
-import { getCameraBuffer, setCameraBuffer } from '../util/persistance/serializable-settings'
-import { WorkerController } from '../worker/worker-controller'
+import { Camera } from '../../3d-stuff/camera'
+import { startRenderingGame } from '../../3d-stuff/renderable/render-context'
+import { createGameStateForRenderer, GameState } from '../../game-state/game-state'
+import { ActionsQueue, SendActionsQueue } from '../../game-state/scheduled-actions/queue'
+import { createStateUpdaterControllerFromReceived, StateUpdater } from '../../game-state/state-updater'
+import { initFrontedVariablesFromReceived } from '../../util/frontend-variables-updaters'
+import CONFIG from '../../util/persistance/observable-settings'
+import { getCameraBuffer, setCameraBuffer } from '../../util/persistance/serializable-settings'
+import { globalMutex, setGlobalMutex } from '../../util/worker/global-mutex'
+import { WorkerController } from '../../util/worker/worker-controller'
 import {
 	ConnectArguments,
 	EnvironmentConnection,
@@ -33,17 +32,20 @@ export const bind = async (args: ConnectArguments): Promise<EnvironmentConnectio
 
 	CONFIG.observeEverything(snapshot => updateWorker.replier.send('new-settings', snapshot))
 
-	setMessageHandler('update-entity-container', data => {
+	updateWorker.handler.listen('update-entity-container', data => {
 		decodedGame!.entities.replaceBuffersFromReceived(data)
 	})
 
-	setMessageHandler('feedback', data => {
+	updateWorker.handler.listen('feedback', data => {
+		args.feedbackCallback(data)
+	})
+	updateWorker.handler.listen('feedback', data => {
 		args.feedbackCallback(data)
 	})
 
 	const queue: ActionsQueue = SendActionsQueue.create(a => updateWorker.replier.send('scheduled-action', a))
 
-	setMessageHandler('game-snapshot-for-renderer', (data) => {
+	updateWorker.handler.listen('game-snapshot-for-renderer', (data) => {
 		decodedGame = createGameStateForRenderer(data.game)
 
 		updater = createStateUpdaterControllerFromReceived(data.updater)

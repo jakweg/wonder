@@ -25,13 +25,13 @@ if (args.size > 0) {
 
 	const entryPoints = [
 		'main',
-		'environments/zero',
+		'feature-environments/zero',
 		'network-worker',
 		...(forceSingleThread ? [] : [
 			'update-worker',
 			'render-worker',
-			'environments/first',
-			'environments/second',
+			'feature-environments/first',
+			'feature-environments/second',
 		]),
 	]
 	const config = {
@@ -41,7 +41,7 @@ if (args.size > 0) {
 			_C_FORCE_ENV_ZERO: JSON.stringify(forceSingleThread),
 			_C_DEFAULT_NETWORK_SERVER_ADDRESS: JSON.stringify(buildForProduction ? undefined : 'localhost:4575')
 		},
-		entryPoints: entryPoints.map(name => `src/main/${name}.ts`),
+		entryPoints: entryPoints.map(name => `src/main/entry-points/${name}.ts`),
 		bundle: true,
 		treeShaking: buildForProduction,
 		sourcemap: (buildForProduction ? false : 'inline') as 'inline',

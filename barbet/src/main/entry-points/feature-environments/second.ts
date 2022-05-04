@@ -1,13 +1,12 @@
-import { createGameStateForRenderer, GameState } from '../game-state/game-state'
-import { createStateUpdaterControllerFromReceived, StateUpdater } from '../game-state/state-updater'
-import { TickQueueAction } from '../network/tick-queue-action'
-import { frontedVariablesBuffer } from '../util/frontend-variables'
-import { initFrontedVariablesFromReceived } from '../util/frontend-variables-updaters'
-import { globalMutex, setGlobalMutex } from '../worker/global-mutex'
-import { setMessageHandler } from '../worker/message-handler'
-import CONFIG from '../util/persistance/observable-settings'
-import { getCameraBuffer, setCameraBuffer } from '../util/persistance/serializable-settings'
-import { WorkerController } from '../worker/worker-controller'
+import { createGameStateForRenderer, GameState } from '../../game-state/game-state'
+import { createStateUpdaterControllerFromReceived, StateUpdater } from '../../game-state/state-updater'
+import { TickQueueAction } from '../../network/tick-queue-action'
+import { frontedVariablesBuffer } from '../../util/frontend-variables'
+import { initFrontedVariablesFromReceived } from '../../util/frontend-variables-updaters'
+import CONFIG from '../../util/persistance/observable-settings'
+import { getCameraBuffer, setCameraBuffer } from '../../util/persistance/serializable-settings'
+import { globalMutex, setGlobalMutex } from '../../util/worker/global-mutex'
+import { WorkerController } from '../../util/worker/worker-controller'
 import {
 	ConnectArguments,
 	CreateGameResult,
@@ -45,11 +44,17 @@ export const bind = async (args: ConnectArguments): Promise<EnvironmentConnectio
 		update: updateWorker!.workerStartDelay,
 	})
 
-	setMessageHandler('feedback', data => {
+	updateWorker.handler.listen('feedback', data => {
+		args.feedbackCallback(data)
+	})
+	renderWorker.handler.listen('feedback', data => {
 		args.feedbackCallback(data)
 	})
 
-	setMessageHandler('scheduled-action', action => {
+	updateWorker.handler.listen('scheduled-action', action => {
+		args.feedbackCallback({type: 'input-action', value: action})
+	})
+	renderWorker.handler.listen('scheduled-action', action => {
 		args.feedbackCallback({type: 'input-action', value: action})
 	})
 
@@ -57,13 +62,13 @@ export const bind = async (args: ConnectArguments): Promise<EnvironmentConnectio
 		updateWorker.replier.send('append-to-tick-queue', {forTick, playerId, actions})
 	}
 
-	setMessageHandler('game-snapshot-for-renderer', (data) => {
+	updateWorker.handler.listen('game-snapshot-for-renderer', (data) => {
 		gameSnapshotForRenderer = data
 		decodedGame = createGameStateForRenderer(data.game)
 		updater = createStateUpdaterControllerFromReceived(data.updater)
 		startGameCallback?.({state: decodedGame, updater, setActionsCallback})
 	})
-	setMessageHandler('update-entity-container', data => {
+	updateWorker.handler.listen('update-entity-container', data => {
 		decodedGame!.entities.replaceBuffersFromReceived(data)
 		entityContainerSnapshotForRenderer = data
 		renderWorker.replier.send('update-entity-container', data)

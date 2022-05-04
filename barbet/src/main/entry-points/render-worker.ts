@@ -1,13 +1,12 @@
-import { startRenderingGame } from './3d-stuff/renderable/render-context'
-import { Camera } from './camera'
-import { createGameStateForRenderer, GameState } from './game-state/game-state'
-import { SendActionsQueue } from './game-state/scheduled-actions/queue'
-import { createStateUpdaterControllerFromReceived, StateUpdater } from './game-state/state-updater'
-import { initFrontedVariablesFromReceived } from './util/frontend-variables-updaters'
-import { takeControlOverWorkerConnection } from './worker/connections-manager'
-import { setGlobalMutex } from './worker/global-mutex'
-import { setMessageHandler } from './worker/message-handler'
-import CONFIG from './util/persistance/observable-settings'
+import { Camera } from '../3d-stuff/camera'
+import { startRenderingGame } from '../3d-stuff/renderable/render-context'
+import { createGameStateForRenderer, GameState } from '../game-state/game-state'
+import { SendActionsQueue } from '../game-state/scheduled-actions/queue'
+import { createStateUpdaterControllerFromReceived, StateUpdater } from '../game-state/state-updater'
+import { initFrontedVariablesFromReceived } from '../util/frontend-variables-updaters'
+import CONFIG from '../util/persistance/observable-settings'
+import { takeControlOverWorkerConnection } from '../util/worker/connections-manager'
+import { setGlobalMutex } from '../util/worker/global-mutex'
 
 const connectionWithParent = takeControlOverWorkerConnection()
 
@@ -19,41 +18,41 @@ let decodedGame: GameState | null = null
 let decodedUpdater: StateUpdater | null = null
 let cameraBuffer: SharedArrayBuffer | null = null
 
-setMessageHandler('set-global-mutex', (data) => {
+connectionWithParent.listen('set-global-mutex', (data) => {
 	setGlobalMutex(data.mutex)
 })
 
-setMessageHandler('new-settings', settings => {
+connectionWithParent.listen('new-settings', settings => {
 	CONFIG.update(settings)
 })
 
-setMessageHandler('transfer-canvas', (data) => {
+connectionWithParent.listen('transfer-canvas', (data) => {
 	canvas = data.canvas as HTMLCanvasElement
 	considerStartRendering()
 })
 
-setMessageHandler('set-worker-load-delays', (data) => {
+connectionWithParent.listen('set-worker-load-delays', (data) => {
 	workerStartDelayDifference = data.update - data.render
 })
 
-setMessageHandler('game-snapshot-for-renderer', (data) => {
+connectionWithParent.listen('game-snapshot-for-renderer', (data) => {
 	gameSnapshot = data
 	considerStartRendering()
 })
 
-setMessageHandler('update-entity-container', (data) => {
+connectionWithParent.listen('update-entity-container', (data) => {
 	decodedGame!.entities.replaceBuffersFromReceived(data)
 })
 
-setMessageHandler('camera-buffer', (data) => {
+connectionWithParent.listen('camera-buffer', (data) => {
 	cameraBuffer = data.buffer
 })
 
-setMessageHandler('frontend-variables', (data) => {
+connectionWithParent.listen('frontend-variables', (data) => {
 	initFrontedVariablesFromReceived(data.buffer)
 })
 
-setMessageHandler('terminate-game', () => {
+connectionWithParent.listen('terminate-game', () => {
 	renderCancelCallback?.()
 	canvas = decodedUpdater = decodedGame = gameSnapshot = null
 })

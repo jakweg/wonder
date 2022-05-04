@@ -1,4 +1,4 @@
-import { TickQueueAction } from '../network/tick-queue-action'
+import { TickQueueAction } from '../../network/tick-queue-action'
 
 export type NetworkWorkerDispatchAction =
 	{ type: 'request-become-input-actor' }
