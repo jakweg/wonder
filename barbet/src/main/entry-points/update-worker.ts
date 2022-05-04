@@ -41,7 +41,7 @@ connectionWithParent.listen('create-game', async (args) => {
 	tickQueue = TickQueue.createEmpty()
 
 	if (args.existingInputActorIds)
-		args.existingInputActorIds.forEach(id => tickQueue!.addRequiredPlayer(id, 0))
+		args.existingInputActorIds.forEach(id => tickQueue!.addRequiredPlayer(id))
 
 	stateUpdater = createNewStateUpdater(
 		async (gameActions, updaterActions) => {
@@ -51,7 +51,7 @@ connectionWithParent.listen('create-game', async (args) => {
 			const currentTick = gameState!.currentTick
 			for (const a of updaterActions) {
 				if (a.type === 'new-player-joins') {
-					tickQueue!.addRequiredPlayer(a.playerId, currentTick)
+					tickQueue!.addRequiredPlayer(a.playerId)
 				}
 			}
 

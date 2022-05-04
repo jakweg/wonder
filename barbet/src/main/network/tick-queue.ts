@@ -3,16 +3,16 @@ import { TickQueueAction } from './tick-queue-action'
 export default class TickQueue {
 	private constructor(
 		private readonly ticksMap: Map<number, Map<number, TickQueueAction[]>>,
-		private readonly requiredPlayerIds: Map<number, number>,
+		private readonly requiredPlayerIds: Set<number>,
 	) {
 	}
 
 	public static createEmpty(): TickQueue {
-		return new TickQueue(new Map(), new Map())
+		return new TickQueue(new Map(), new Set<number>())
 	}
 
-	public addRequiredPlayer(playerId: number, sinceTick: number): void {
-		this.requiredPlayerIds.set(playerId, sinceTick)
+	public addRequiredPlayer(playerId: number): void {
+		this.requiredPlayerIds.add(playerId)
 	}
 
 	public getActorIds(): number[] {
@@ -38,14 +38,11 @@ export default class TickQueue {
 		if (value === undefined)
 			return
 
-		if (value.size !== this.requiredPlayerIds.size) {
-			// investigate more
-			if ([...this.requiredPlayerIds.values()].filter(since => since <= tick).length !== value.size)
-				return
-		}
+		if (value['size'] !== this.requiredPlayerIds['size'])
+			return
 
 		const actions = [...value.values()].flatMap(e => e)
-		actions.sort((a, b) => a.initiatorId - b.initiatorId)
+		actions['sort']((a, b) => a.initiatorId - b.initiatorId)
 		return actions
 	}
 }

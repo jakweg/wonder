@@ -78,7 +78,7 @@ const doConnection = async (params: any) => {
 		const receiver = createMessageMiddleware(createMessageReceiver(socket), socket, handlers)
 
 		const message = await receiver()
-		if (message.type !== 'successful-join') {
+		if (message['type'] !== 'successful-join') {
 			// noinspection ExceptionCaughtLocallyJS
 			throw new Error('Expected successful-join')
 		}
@@ -95,8 +95,8 @@ const doConnection = async (params: any) => {
 				case 'game-layer-message':
 					connectionWithMainThread.send('network-message-received', {
 						origin: message['extra']['from'],
-						type: message['extra']['extra']['type'],
-						extra: message['extra']['extra']['extra'],
+						type: message['extra']['extra'].type,
+						extra: message['extra']['extra'].extra,
 					})
 					break
 				default:

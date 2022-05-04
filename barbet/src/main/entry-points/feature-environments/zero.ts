@@ -1,18 +1,20 @@
-import { startRenderingGame } from '../../3d-stuff/renderable/render-context'
 import { Camera } from '../../3d-stuff/camera'
-import { GameState, GameStateImplementation } from '../../game-state/game-state'
-import { ReceiveActionsQueue } from '../../game-state/scheduled-actions/queue'
+import { startRenderingGame } from '../../3d-stuff/renderable/render-context'
+import { GameStateImplementation } from '../../game-state/game-state'
+import { ActionsQueue, SendActionsQueue } from '../../game-state/scheduled-actions/queue'
 import {
 	createNewStateUpdater,
 	createStateUpdaterControllerFromReceived,
 	StateUpdater,
 } from '../../game-state/state-updater'
-import { initFrontedVariablesFromReceived } from '../../util/frontend-variables-updaters'
-import { setGlobalMutex } from '../../util/worker/global-mutex'
-import CONFIG from '../../util/persistance/observable-settings'
-import { getCameraBuffer, setCameraBuffer } from '../../util/persistance/serializable-settings'
 import { loadGameFromArgs } from '../../game-state/world/world-loader'
 import { performGameSave } from '../../game-state/world/world-saver'
+import TickQueue from '../../network/tick-queue'
+import { TickQueueAction } from '../../network/tick-queue-action'
+import { initFrontedVariablesFromReceived } from '../../util/frontend-variables-updaters'
+import CONFIG from '../../util/persistance/observable-settings'
+import { getCameraBuffer, setCameraBuffer } from '../../util/persistance/serializable-settings'
+import { setGlobalMutex } from '../../util/worker/global-mutex'
 import {
 	ConnectArguments,
 	CreateGameArguments,
@@ -30,25 +32,47 @@ export const bind = (args: ConnectArguments): EnvironmentConnection => {
 	setCameraBuffer(args.camera)
 	args.settings.observeEverything(s => CONFIG.replace(s))
 
-	let actionsQueue: ReceiveActionsQueue | null = null
-	let game: GameState | null = null
+	let tickQueue: TickQueue | null = null
+	let actionsQueue: ActionsQueue | null = null
+	let game: GameStateImplementation | null = null
 	let updater: StateUpdater | null = null
 	let renderCancelCallback: any = null
 	return {
 		name: 'zero',
-		async createNewGame(args: CreateGameArguments) {
+		async createNewGame(gameArgs: CreateGameArguments) {
 			const stateBroadcastCallback = () => void 0 // ignore, since everything is locally anyway
-			actionsQueue = ReceiveActionsQueue.create()
+			actionsQueue = SendActionsQueue.create(action => {
+				args.feedbackCallback({type: 'input-action', value: action})
+			})
 
-			game = await loadGameFromArgs(args, stateBroadcastCallback) as GameStateImplementation
+			game = await loadGameFromArgs(gameArgs, stateBroadcastCallback) as GameStateImplementation
+			tickQueue = TickQueue.createEmpty()
+			if (gameArgs.existingInputActorIds)
+				gameArgs.existingInputActorIds.forEach(id => tickQueue!.addRequiredPlayer(id))
 
-			const updaterInstance = createNewStateUpdater(() => (game as GameStateImplementation)?.advanceActivities(), game.currentTick)
+			const updaterInstance = createNewStateUpdater(
+				async (gameActions, updaterActions) => {
+
+					await game!.advanceActivities(gameActions)
+
+					const currentTick = game!.currentTick
+					for (const a of updaterActions) {
+						if (a.type === 'new-player-joins') {
+							tickQueue!.addRequiredPlayer(a.playerId)
+						}
+					}
+
+					args.feedbackCallback({type: 'tick-completed', tick: currentTick, updaterActions})
+				},
+				game.currentTick, tickQueue)
 
 			updater = createStateUpdaterControllerFromReceived(updaterInstance.pass())
 			return {
 				state: game,
 				updater,
-				queue: actionsQueue,
+				setActionsCallback: (forTick: number, playerId: number, actions: TickQueueAction[]) => {
+					tickQueue!.setForTick(forTick, playerId, actions)
+				},
 			}
 		},
 		async startRender(args: StartRenderArguments): Promise<void> {
@@ -63,7 +87,7 @@ export const bind = (args: ConnectArguments): EnvironmentConnection => {
 			actionsQueue = game = updater = null
 		},
 		saveGame(saveArgs: SaveGameArguments): void {
-			performGameSave(game, saveArgs, args.feedbackCallback)
+			performGameSave(game, saveArgs, args.feedbackCallback, tickQueue!.getActorIds())
 		},
 	}
 }

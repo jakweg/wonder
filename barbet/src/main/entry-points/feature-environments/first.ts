@@ -3,6 +3,7 @@ import { startRenderingGame } from '../../3d-stuff/renderable/render-context'
 import { createGameStateForRenderer, GameState } from '../../game-state/game-state'
 import { ActionsQueue, SendActionsQueue } from '../../game-state/scheduled-actions/queue'
 import { createStateUpdaterControllerFromReceived, StateUpdater } from '../../game-state/state-updater'
+import { TickQueueAction } from '../../network/tick-queue-action'
 import { initFrontedVariablesFromReceived } from '../../util/frontend-variables-updaters'
 import CONFIG from '../../util/persistance/observable-settings'
 import { getCameraBuffer, setCameraBuffer } from '../../util/persistance/serializable-settings'
@@ -39,17 +40,20 @@ export const bind = async (args: ConnectArguments): Promise<EnvironmentConnectio
 	updateWorker.handler.listen('feedback', data => {
 		args.feedbackCallback(data)
 	})
-	updateWorker.handler.listen('feedback', data => {
-		args.feedbackCallback(data)
-	})
 
-	const queue: ActionsQueue = SendActionsQueue.create(a => updateWorker.replier.send('scheduled-action', a))
+	const queue: ActionsQueue = SendActionsQueue.create(a => args.feedbackCallback({type: 'input-action', value: a}))
 
 	updateWorker.handler.listen('game-snapshot-for-renderer', (data) => {
 		decodedGame = createGameStateForRenderer(data.game)
 
 		updater = createStateUpdaterControllerFromReceived(data.updater)
-		gameResolveCallback({state: decodedGame, updater, queue})
+		gameResolveCallback({
+			state: decodedGame,
+			updater,
+			setActionsCallback: (forTick: number, playerId: number, actions: TickQueueAction[]) => {
+				updateWorker.replier.send('append-to-tick-queue', {forTick, playerId, actions})
+			},
+		})
 	})
 
 
