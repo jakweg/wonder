@@ -1,6 +1,6 @@
 import { createLocalSession, createRemoteSession, GameSession } from '../game-session/'
 import { bindSettingsListeners } from '../html-controls/settings'
-import { COMMIT_HASH, DEBUG, DEFAULT_NETWORK_SERVER_ADDRESS } from '../util/build-info'
+import { CODE_STATS_LINES_COUNT, COMMIT_HASH, DEBUG, DEFAULT_NETWORK_SERVER_ADDRESS } from '../util/build-info'
 import {
 	bindFrontendVariablesToCanvas,
 	initFrontendVariableAndRegisterToWindow,
@@ -20,6 +20,7 @@ initFrontendVariableAndRegisterToWindow()
 
 document.getElementById('commit')!['innerText'] = COMMIT_HASH || '?'
 document.getElementById('mode')!['innerText'] = DEBUG ? 'debug' : 'production'
+document.getElementById('lines-count')!['innerText'] = `${CODE_STATS_LINES_COUNT || '?'}`
 
 const recreateCanvas = (): HTMLCanvasElement => {
 	const canvas = document.getElementById('main-canvas') as HTMLCanvasElement

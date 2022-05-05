@@ -14,7 +14,7 @@ if (buildForProduction && forceSingleThread)
 if (!buildForProduction && produceMappings)
 	console.warn('Mappings are only produced in production mode')
 
-async function getOutputFromProcess(cmd: string[]): Promise<string> {
+const getOutputFromProcess = async (cmd: string[]): Promise<string> => {
 	const process = Deno.run({cmd, stdout: 'piped'})
 
 	const output = await process.output()
@@ -25,7 +25,10 @@ async function getOutputFromProcess(cmd: string[]): Promise<string> {
 	return outputString
 }
 
-const commitHash = (await getOutputFromProcess(['git', 'rev-parse', '--short', 'HEAD'])).trim()
+const getCommitHash = async () => (await getOutputFromProcess(['git', 'rev-parse', '--short', 'HEAD'])).trim()
+const getLinesCount = async () => +(await getOutputFromProcess(['sh', '-c', 'find -type f -name "*.ts" -exec cat {} \\; | grep -vc "^\\s*$"'])).trim()
+
+const [commitHash, linesCount] = await Promise.all([getCommitHash(), getLinesCount()])
 
 if (args.size > 0) {
 	console.log('Received unknown options: ', args)
@@ -53,6 +56,7 @@ if (args.size > 0) {
 			_C_JS_ROOT: JSON.stringify(`/${jsOutRoot}`),
 			_C_FORCE_ENV_ZERO: JSON.stringify(forceSingleThread),
 			_C_COMMIT_HASH: JSON.stringify(commitHash),
+			_C_CODE_STATS_LINES_COUNT: JSON.stringify(linesCount || 0),
 			_C_DEFAULT_NETWORK_SERVER_ADDRESS: JSON.stringify(buildForProduction ? undefined : 'localhost:4575'),
 		},
 		entryPoints: entryPoints.map(name => `src/main/entry-points/${name}.ts`),
