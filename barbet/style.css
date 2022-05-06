@@ -123,3 +123,30 @@ svg {
 .setting-button:hover {
     background: #3a3a3a;
 }
+
+.setting-range {
+    background: #2c2c2c;
+    display: grid;
+    place-items: center;
+    padding-left: 4px;
+    padding-right: 4px;
+    position: relative;
+    overflow: hidden;
+    cursor: pointer;
+}
+
+.setting-range .moving-part {
+    --progress: 50%;
+    --width: 16px;
+    pointer-events: none;
+    width: 100%;
+    height: 100%;
+    border-left: var(--width) solid #737373;
+    transform: translateX(min(calc(100% - var(--width) - var(--width)), max(calc(var(--progress) - var(--width)), 0px)));
+}
+
+.setting-range .title {
+    position: absolute;
+    text-align: center;
+    pointer-events: none;
+}
