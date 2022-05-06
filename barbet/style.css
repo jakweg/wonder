@@ -97,6 +97,10 @@ svg {
 .settings header {
     text-align: center;
     font-size: 1.6em;
+    margin: 8px;
+}
+.settings header p {
+    margin: 4px;
 }
 
 .settings footer {
@@ -109,6 +113,11 @@ svg {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 12px;
+}
+
+.settings header.sub-header {
+    text-align: center;
+    font-size: 1.3em;
 }
 
 .setting-button {
@@ -125,6 +134,7 @@ svg {
 }
 
 .setting-range {
+    min-height: 34px;
     background: #2c2c2c;
     display: grid;
     place-items: center;

@@ -7,7 +7,7 @@ import { createElement } from './utils'
 export const createUi = (parent: HTMLElement) => {
 	const root = createElement('div', parent, 'root')
 
-	const [settingsOpened, setSettingsOpened] = observableState(true)
+	const [settingsOpened, setSettingsOpened] = observableState(false)
 
 	const canvas = CanvasBackground(root)
 

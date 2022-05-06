@@ -1,3 +1,4 @@
+import { Environment } from '../../entry-points/feature-environments/loader'
 import { STANDARD_GAME_TICK_RATE } from '../../game-state/state-updater'
 import State from '../state'
 import { getFromLocalStorage, putInLocalStorage } from './serializable-settings'
@@ -9,7 +10,7 @@ const settingsToDefaults = {
 	'rendering/fps-cap-on-blur': 15,
 	'rendering/antialias': true,
 	'rendering/show-tile-borders': true,
-	'other/preferred-environment': 'second',
+	'other/preferred-environment': 'second' as Environment,
 	'other/generate-debug-world': true,
 }
 
