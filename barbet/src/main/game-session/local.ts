@@ -26,7 +26,7 @@ export const createLocalSession = async (props: GenericSessionProps): Promise<Ga
 
 	return {
 		dispatchAction: generic.dispatchAction,
-		resetRendering: generic.terminate,
+		resetRendering: generic.resetRendering,
 		terminate: generic.terminate,
 	}
 }

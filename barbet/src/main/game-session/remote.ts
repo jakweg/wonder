@@ -99,7 +99,7 @@ export const createRemoteSession = async (props: Props & GenericSessionProps): P
 
 	return {
 		dispatchAction: generic.dispatchAction,
-		resetRendering: generic.terminate,
+		resetRendering: generic.resetRendering,
 		terminate() {
 			generic.terminate()
 			socket.terminate()

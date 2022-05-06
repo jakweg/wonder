@@ -39,3 +39,21 @@ export const observableState = <T>(defaultValue: T): [Observable<T>, (updater: (
 export const constantState = <T>(value: T): Observable<T> => {
 	return (listener) => listener(value, undefined)
 }
+
+export const map = <T, U>(from: Observable<T>, func: (value: T, previousValue: T | undefined) => U): Observable<U> => {
+	const listeners: any[] = []
+	let currentValue: U | undefined = undefined
+	from((a, b) => {
+		const newValue = func(a, b)
+		if (currentValue !== newValue) {
+			for (let l of listeners)
+				l(newValue, currentValue)
+			currentValue = newValue
+		}
+	})
+
+	return (listener: (newValue: U, oldValue: undefined | U) => void) => {
+		listeners.push(listener)
+		listener(currentValue!, undefined)
+	}
+}

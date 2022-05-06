@@ -7,13 +7,13 @@ import { createElement } from './utils'
 export const createUi = (parent: HTMLElement) => {
 	const root = createElement('div', parent, 'root')
 
-	const [settingsOpened, setSettingsOpened] = observableState(false)
+	const [settingsOpened, setSettingsOpened] = observableState(true)
 
 	const canvas = CanvasBackground(root)
 
 	FloatingPreferences(root, () => setSettingsOpened(() => true))
 
-	PreferencesRoot(root, settingsOpened)
+	PreferencesRoot(root, settingsOpened, () => setSettingsOpened(() => false))
 
 	return {
 		canvas,
