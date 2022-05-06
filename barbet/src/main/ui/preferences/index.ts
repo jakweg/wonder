@@ -1,5 +1,6 @@
 import { constantState, Observable } from '../../util/state/observable'
 import { Callback, createElement } from '../utils'
+import BuildInfoSection from './build-info-section'
 import { Button } from './helper-components'
 import OnBlurBehaviourSection from './on-blur-section'
 import RenderingSection from './rendering-section'
@@ -16,6 +17,7 @@ export default (parent: HTMLElement, opened: Observable<boolean>, doneClicked: C
 	Header(root, constantState('Game preferences'), false)
 	RenderingSection(root)
 	OnBlurBehaviourSection(root)
+	BuildInfoSection(root)
 
 	Footer(root, doneClicked)
 }
