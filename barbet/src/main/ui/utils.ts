@@ -6,3 +6,5 @@ export const createElement = (type: string,
 	attachTo?.appendChild(htmlElement)
 	return htmlElement
 }
+
+export type Callback = () => void

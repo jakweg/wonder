@@ -1,33 +1,22 @@
-import { bindFrontendVariablesToCanvas } from '../util/frontend-variables-updaters'
-import { constantState, Observable } from '../util/state/observable'
-import { createElement } from './'
+import { observableState } from '../util/state/observable'
+import CanvasBackground from './canvas-background'
+import FloatingPreferences from './floating-preferences'
+import PreferencesRoot from './preferences'
+import { createElement } from './utils'
 
 export const createUi = (parent: HTMLElement) => {
 	const root = createElement('div', parent, 'root')
 
+	const [settingsOpened, setSettingsOpened] = observableState(false)
+
 	const canvas = CanvasBackground(root)
-	SettingsElement(root, constantState(false))
+
+	FloatingPreferences(root, () => setSettingsOpened(() => true))
+
+	PreferencesRoot(root, settingsOpened)
 
 	return {
 		canvas,
 	}
 }
 
-const CanvasBackground = (parent: HTMLElement) => {
-	let element = createElement('canvas', parent) as HTMLCanvasElement
-	let cancelListenersCallback = bindFrontendVariablesToCanvas(element)
-	return {
-		recreate(): HTMLCanvasElement {
-			cancelListenersCallback()
-			const newElement = document.createElement('canvas') as HTMLCanvasElement
-			parent['replaceChild'](newElement, element)
-			element = newElement
-			cancelListenersCallback = bindFrontendVariablesToCanvas(newElement)
-			return newElement
-		},
-	}
-}
-
-const SettingsElement = (parent: HTMLElement, opened: Observable<boolean>) => {
-	const root = createElement('div', parent, 'settings')
-}

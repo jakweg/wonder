@@ -4,6 +4,7 @@ body {
     color: #EEE;
     height: 100vh;
     overflow: hidden;
+    user-select: none;
 }
 
 canvas {
@@ -30,4 +31,64 @@ canvas {
 
 .root > * {
     position: absolute;
+}
+
+.settings-overlay {
+    height: 100vh;
+    width: 100vw;
+    overflow: hidden;
+    background-color: black;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity .2s;
+}
+
+.settings-overlay.visible {
+    pointer-events: unset;
+    opacity: .7;
+}
+
+.settings {
+    pointer-events: none;
+    opacity: 0;
+    background-color: rgba(49, 16, 16, 0.7);
+    padding: 8px;
+    transform: translateY(10px);
+    transition: opacity .2s, transform .2s;
+}
+
+.settings.opened {
+    transform: none;
+    pointer-events: unset;
+    opacity: 1;
+}
+
+.floating-preferences {
+    align-self: start;
+    justify-self: end;
+    background-color: rgba(0, 0, 0, 0.7);
+    margin: 8px;
+    padding: 4px;
+    border-radius: 4px;
+    display: grid;
+    gap: 4px;
+    grid-template-areas:
+            'icon range'
+            'buttons buttons';
+}
+
+.floating-preferences > .buttons {
+    grid-area: buttons;
+    display: flex;
+    justify-content: space-evenly;
+}
+
+.floating-preferences > .buttons > * {
+    cursor: pointer;
+    padding: 2px;
+    aspect-ratio: 1/1;
+}
+
+svg {
+    fill: white;
 }

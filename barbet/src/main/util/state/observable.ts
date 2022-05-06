@@ -17,7 +17,7 @@ export const observeField = <S, K extends keyof S>(state: State<S>, key: K): Obs
 	}
 }
 
-export const observableState = <T>(defaultValue: T): [Observable<T>, (value: T) => void] => {
+export const observableState = <T>(defaultValue: T): [Observable<T>, (updater: (value: T) => T) => void] => {
 	const listeners: any[] = []
 	let currentValue = defaultValue
 	return [
@@ -25,7 +25,8 @@ export const observableState = <T>(defaultValue: T): [Observable<T>, (value: T) 
 			listeners.push(listener)
 			listener(currentValue!, undefined)
 		},
-		(value: T) => {
+		(updater: (value: T) => T) => {
+			const value = updater(currentValue)
 			if (currentValue !== value) {
 				for (let l of listeners)
 					l(value, currentValue)
