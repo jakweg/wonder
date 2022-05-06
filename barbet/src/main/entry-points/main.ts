@@ -1,11 +1,8 @@
 import { createLocalSession, createRemoteSession, GameSession } from '../game-session/'
-import { bindSettingsListeners } from '../html-controls/settings'
-import { CODE_STATS_LINES_COUNT, COMMIT_HASH, DEBUG, DEFAULT_NETWORK_SERVER_ADDRESS } from '../util/build-info'
+import { createUi } from '../ui/root'
+import { DEFAULT_NETWORK_SERVER_ADDRESS } from '../util/build-info'
+import { initFrontendVariableAndRegisterToWindow } from '../util/frontend-variables-updaters'
 import {
-	bindFrontendVariablesToCanvas,
-	initFrontendVariableAndRegisterToWindow,
-} from '../util/frontend-variables-updaters'
-import CONFIG, {
 	initSettingsFromLocalStorage,
 	observeSetting,
 	saveSettingsToLocalStorage,
@@ -18,21 +15,9 @@ addSaveCallback(() => saveSettingsToLocalStorage())
 registerSaveSettingsCallback()
 initFrontendVariableAndRegisterToWindow()
 
-document.getElementById('commit')!['innerText'] = COMMIT_HASH || '?'
-document.getElementById('mode')!['innerText'] = DEBUG ? 'debug' : 'production'
-document.getElementById('lines-count')!['innerText'] = `${CODE_STATS_LINES_COUNT || '?'}`
+document['body'].classList['remove']('not-loaded-body')
 
-const recreateCanvas = (): HTMLCanvasElement => {
-	const canvas = document.getElementById('main-canvas') as HTMLCanvasElement
-	(canvas as any)['cancelCallback']?.()
-
-	const clone = canvas['cloneNode'](false) as HTMLCanvasElement
-	canvas['parentElement']!['replaceChild'](clone, canvas);
-
-	(clone as any)['cancelCallback'] = bindFrontendVariablesToCanvas(clone)
-	return clone
-}
-
+const uiHandlers = createUi(document.body)
 let session: GameSession | null = null
 
 
@@ -50,9 +35,6 @@ observeSetting('other/pause-on-blur', v => pauseOnBlur = v)
 // }))
 
 observeSetting('rendering/antialias', () => setTimeout(() => session?.resetRendering(), 10))
-
-bindSettingsListeners()
-document['body'].classList['remove']('not-loaded-body')
 
 
 const askForFile = async () => {
@@ -84,23 +66,6 @@ window.addEventListener('beforeunload', async () => {
 	// TODO autosave?
 	// state.environment?.saveGame({saveName: 'latest', method: SaveMethod.ToIndexedDatabase})
 })
-
-document.getElementById('input-reset-normal')!
-	.addEventListener('click', async (event) => {
-		session?.terminate()
-		session = null
-		CONFIG.set('other/generate-debug-world', false);
-		(event.target as HTMLElement)['blur']()
-		// TODO: restart game
-	})
-
-
-document.getElementById('input-reset-to-debug')!
-	.addEventListener('click', async (event) => {
-		CONFIG.set('other/generate-debug-world', true);
-		(event.target as HTMLElement)['blur']()
-		// TODO: restart game
-	})
 
 document.addEventListener('keydown', async event => {
 	if (event['code'] === 'KeyS' && event['ctrlKey']) {
@@ -152,13 +117,13 @@ const startRemoteSession = async (url: string) => {
 	session = await createRemoteSession({
 		feedbackCallback: feedbackFinalHandler,
 		remoteUrl: url,
-		canvasProvider: recreateCanvas,
+		canvasProvider: uiHandlers.canvas.recreate,
 	})
 }
 
 const startLocalSession = async () => {
 	session = await createLocalSession({
-		canvasProvider: recreateCanvas,
+		canvasProvider: uiHandlers.canvas.recreate,
 		feedbackCallback: feedbackFinalHandler,
 	})
 	session.dispatchAction({
@@ -166,6 +131,7 @@ const startLocalSession = async () => {
 		args: {},
 	})
 }
+
 
 const initPageState = async () => {
 	if (DEFAULT_NETWORK_SERVER_ADDRESS !== undefined)
@@ -175,3 +141,5 @@ const initPageState = async () => {
 }
 
 initPageState().then(() => void 0)
+
+
