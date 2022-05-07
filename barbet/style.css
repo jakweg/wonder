@@ -14,6 +14,10 @@ canvas {
     background: black;
     color: #eee;
     image-rendering: pixelated;
+    transition: opacity .5s;
+}
+canvas.fade-out {
+    opacity: 0;
 }
 
 .not-loaded-body {
