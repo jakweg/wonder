@@ -6,6 +6,7 @@ export type Action =
 	{ type: 'create-game', args: CreateGameArguments }
 	| { type: 'save-game', args: SaveGameArguments }
 	| { type: 'pause-game' }
+	| { type: 'resume-game' }
 
 
 export interface GameSession {

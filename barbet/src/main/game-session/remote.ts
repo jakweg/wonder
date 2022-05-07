@@ -51,6 +51,15 @@ export const createRemoteSession = async (props: Props & GenericSessionProps): P
 				initiatorId: networkState!.get('myId'),
 			})
 		},
+		onResumeRequested() {
+			const tickRate = generic.getUpdater().getTickRate()
+			generic.getUpdater().start(tickRate)
+			socket.broadcastMyActions(-1, [{
+				type: TickQueueActionType.UpdaterAction,
+				action: {type: 'resume', tickRate: tickRate},
+				initiatorId: networkState!.get('myId'),
+			}])
+		},
 		onGameLoaded: (callback) => {
 			if (ignoreActionsCallback) {
 				forwardReceivedActionsCallback = null
@@ -100,10 +109,14 @@ export const createRemoteSession = async (props: Props & GenericSessionProps): P
 				})
 				break
 			case 'actions-received-from-player':
-				if (forwardReceivedActionsCallback !== null)
-					forwardReceivedActionsCallback(event.tick, event.from, event.actions)
-				else
-					temporaryActionsQueue.push([event.tick, event.from, event.actions])
+				if (event.tick === -1) {
+					generic.getUpdater().start(generic.getUpdater().getTickRate())
+				} else {
+					if (forwardReceivedActionsCallback !== null)
+						forwardReceivedActionsCallback(event.tick, event.from, event.actions)
+					else
+						temporaryActionsQueue.push([event.tick, event.from, event.actions])
+				}
 				break
 			case 'became-input-actor':
 				ignoreActionsCallback = event.gameState.isTemporary

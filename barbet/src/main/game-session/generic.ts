@@ -26,6 +26,8 @@ interface Props {
 
 	onPauseRequested(): void
 
+	onResumeRequested(): void
+
 	onGameLoaded: (actionsCallback: SetActionsCallback) => void
 }
 
@@ -95,6 +97,9 @@ export const createGenericSession = async (props: Props) => {
 						break
 					case 'pause-game':
 						props.onPauseRequested()
+						break
+					case 'resume-game':
+						props.onResumeRequested()
 						break
 					default:
 						console.warn('Unknown task', type)

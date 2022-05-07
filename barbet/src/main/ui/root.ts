@@ -6,7 +6,10 @@ import { createElement } from './utils'
 
 interface Props {
 	root: HTMLElement
+
 	onPauseRequested(): void
+
+	onResumeRequested(): void
 }
 
 export const createUi = (props: Props) => {
@@ -16,7 +19,10 @@ export const createUi = (props: Props) => {
 
 	const canvas = CanvasBackground(root)
 
-	FloatingPreferences(root, () => setSettingsOpened(() => true), props.onPauseRequested)
+	FloatingPreferences(root,
+		() => setSettingsOpened(() => true),
+		props.onPauseRequested,
+		props.onResumeRequested)
 
 	PreferencesRoot(root, settingsOpened, () => setSettingsOpened(() => false))
 

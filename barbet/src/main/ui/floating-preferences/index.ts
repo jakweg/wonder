@@ -4,14 +4,17 @@ import { RestartIcon, SettingsIcon, TpsIcon } from '../icons'
 import { Callback, createElement } from '../utils'
 
 
-export default (parent: HTMLElement, openSettingsClicked: Callback, pauseRequested: Callback) => {
+export default (parent: HTMLElement,
+                openSettingsClicked: Callback,
+                pauseRequested: Callback,
+                resumeRequested: Callback) => {
 	const root = createElement('div', parent, 'floating-preferences')
 
 	TpsIcon(root)
 
 	RangeInput(root, observeField(CONFIG, 'other/tps'), v => CONFIG.set('other/tps', v))
 
-	ButtonsBar(root, openSettingsClicked, pauseRequested)
+	ButtonsBar(root, openSettingsClicked, pauseRequested, resumeRequested)
 }
 
 const RangeInput = (parent: HTMLElement,
@@ -46,9 +49,13 @@ const ButtonWithIcon = (parent: HTMLElement,
 }
 
 
-const ButtonsBar = (parent: HTMLElement, openSettingsClicked: Callback, pauseRequested: Callback) => {
+const ButtonsBar = (parent: HTMLElement,
+                    openSettingsClicked: Callback,
+                    pauseRequested: Callback,
+                    resumeRequested: Callback) => {
 	const bar = createElement('div', parent, 'buttons')
 
 	ButtonWithIcon(bar, 'Restart', RestartIcon, pauseRequested)
+	ButtonWithIcon(bar, 'Restart', RestartIcon, resumeRequested)
 	ButtonWithIcon(bar, 'Settings', SettingsIcon, openSettingsClicked)
 }

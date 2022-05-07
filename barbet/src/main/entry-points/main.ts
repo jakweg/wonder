@@ -25,6 +25,11 @@ const uiHandlers = createUi({
 			type: 'pause-game',
 		})
 	},
+	onResumeRequested() {
+		session?.dispatchAction({
+			type: 'resume-game'
+		})
+	}
 })
 
 

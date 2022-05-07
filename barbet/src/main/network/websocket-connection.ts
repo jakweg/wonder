@@ -11,6 +11,8 @@ export interface WebsocketConnection {
 
 	broadcastMyActions(tick: number, actions: TickQueueAction[]): void
 
+	broadcastMyActions(tick: number, actions: TickQueueAction[]): void
+
 	provideGameStateAsRequested(forPlayer: number, state: GameStateAsRequested): void
 
 	terminate(): void
