@@ -75,11 +75,22 @@ export const bind = async (args: ConnectArguments): Promise<EnvironmentConnectio
 	})
 
 
+	const terminate = (args: TerminateGameArguments) => {
+		renderWorker.replier.send('terminate-game', args)
+		updateWorker.replier.send('terminate-game', args)
+		entityContainerSnapshotForRenderer = decodedGame = updater = null
+
+		if (args.terminateEverything) {
+			setTimeout(() => updateWorker.terminate(), 10_000)
+			setTimeout(() => renderWorker.terminate(), 10_000)
+		}
+	}
+
 	return {
 		name: 'second',
 		async createNewGame(gameArgs) {
 			if (decodedGame !== null)
-				throw new Error('Game was already created')
+				terminate({})
 
 			updateWorker.replier.send('create-game', gameArgs)
 
@@ -98,14 +109,7 @@ export const bind = async (args: ConnectArguments): Promise<EnvironmentConnectio
 		saveGame(args: SaveGameArguments): void {
 			updateWorker.replier?.send('save-game', args)
 		},
-		terminate(args: TerminateGameArguments): void {
-			renderWorker.replier.send('terminate-game', args)
-			updateWorker.replier.send('terminate-game', args)
-			entityContainerSnapshotForRenderer = decodedGame = updater = null
-
-			setTimeout(() => updateWorker.terminate(), 10_000)
-			setTimeout(() => renderWorker.terminate(), 10_000)
-		},
+		terminate,
 	}
 }
 

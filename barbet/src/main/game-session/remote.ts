@@ -1,4 +1,5 @@
 import { SaveMethod, SetActionsCallback } from '../entry-points/feature-environments/loader'
+import { Status } from '../game-state/state-updater'
 import { NetworkStateType } from '../network/network-state'
 import { TickQueueAction, TickQueueActionType, UpdaterAction } from '../network/tick-queue-action'
 import { createWebsocketConnectionWithServer, NetworkEvent, WebsocketConnection } from '../network/websocket-connection'
@@ -15,6 +16,7 @@ export const createRemoteSession = async (props: Props & GenericSessionProps): P
 	let forwardReceivedActionsCallback: SetActionsCallback | null = null
 	let socket: WebsocketConnection
 	const temporaryActionsQueue: any[] = []
+	let ignoreActionsCallback: boolean = false
 
 	const sendActionsToWorld = (tick: number, actions: TickQueueAction[]) => {
 		socket.broadcastMyActions(tick, actions)
@@ -26,7 +28,11 @@ export const createRemoteSession = async (props: Props & GenericSessionProps): P
 				if (networkState!.get('myId') === networkState!.get('leaderId'))
 					generic.dispatchAction({
 						type: 'save-game',
-						args: {saveName: action.playerId.toString(), method: SaveMethod.ToString},
+						args: {
+							method: SaveMethod.ToString,
+							forPlayerId: action.playerId,
+							sendPaused: false,
+						},
 					})
 				break
 		}
@@ -38,15 +44,32 @@ export const createRemoteSession = async (props: Props & GenericSessionProps): P
 		myPlayerId: () => networkState!.get('myId'),
 		sendActionsToWorld,
 		dispatchUpdaterAction,
+		onPauseRequested() {
+			generic.appendActionForNextTick({
+				type: TickQueueActionType.UpdaterAction,
+				action: {type: 'pause'},
+				initiatorId: networkState!.get('myId'),
+			})
+		},
 		onGameLoaded: (callback) => {
-			forwardReceivedActionsCallback = callback
-			for (let action of temporaryActionsQueue)
-				forwardReceivedActionsCallback(action[0]!, action[1]!, action[2]!)
+			if (ignoreActionsCallback) {
+				forwardReceivedActionsCallback = null
+			} else {
+				forwardReceivedActionsCallback = callback
+				for (let action of temporaryActionsQueue)
+					callback(action[0]!, action[1]!, action[2]!)
+			}
 		},
 		handleFeedbackCallback: (event) => {
 			switch (event.type) {
 				case 'saved-to-string':
-					socket.provideGameStateAsRequested(+event.name, event.inputActorIds, event.serializedState)
+					const running = generic.getUpdater().getCurrentStatus() === Status.Running
+					socket.provideGameStateAsRequested(event.forPlayerId, {
+						state: event.serializedState,
+						inputActorIds: event.inputActorIds,
+						gameSpeed: (!event.sendPaused && running) ? generic.getUpdater().getTickRate() : 0,
+						isTemporary: event.sendPaused,
+					})
 					break
 				default:
 					props.feedbackCallback(event)
@@ -59,6 +82,14 @@ export const createRemoteSession = async (props: Props & GenericSessionProps): P
 		const type = event.type
 		switch (type) {
 			case 'player-wants-to-become-input-actor':
+				generic.dispatchAction({
+					type: 'save-game',
+					args: {
+						method: SaveMethod.ToString,
+						forPlayerId: event.from,
+						sendPaused: true,
+					},
+				})
 				generic.appendActionForNextTick({
 					type: TickQueueActionType.UpdaterAction,
 					initiatorId: event.from,
@@ -75,9 +106,14 @@ export const createRemoteSession = async (props: Props & GenericSessionProps): P
 					temporaryActionsQueue.push([event.tick, event.from, event.actions])
 				break
 			case 'became-input-actor':
+				ignoreActionsCallback = event.gameState.isTemporary
 				generic.dispatchAction({
 					type: 'create-game',
-					args: {stringToRead: event.gameState, existingInputActorIds: event.actorsIds},
+					args: {
+						stringToRead: event.gameState.state,
+						existingInputActorIds: event.gameState.inputActorIds,
+						gameSpeed: event.gameState.gameSpeed,
+					},
 				})
 				break
 			default:

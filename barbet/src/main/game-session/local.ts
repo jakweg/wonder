@@ -19,6 +19,9 @@ export const createLocalSession = async (props: GenericSessionProps): Promise<Ga
 		myPlayerId: () => 1,
 		sendActionsToWorld,
 		dispatchUpdaterAction: () => void 0,
+		onPauseRequested() {
+			generic.getUpdater().stop()
+		},
 		onGameLoaded: (callback) => {
 			forwardReceivedActionsCallback = callback
 		},

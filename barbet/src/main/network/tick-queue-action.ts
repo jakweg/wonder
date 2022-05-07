@@ -3,6 +3,7 @@ import { ScheduledAction } from '../game-state/scheduled-actions'
 export type UpdaterAction =
 	{ type: 'resume', tickRate: number }
 	| { type: 'new-player-joins', playerId: number }
+	| { type: 'pause' }
 
 export const enum TickQueueActionType {
 	GameAction,

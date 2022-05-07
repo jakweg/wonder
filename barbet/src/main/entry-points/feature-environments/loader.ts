@@ -13,7 +13,7 @@ import { globalMutex } from '../../util/worker/global-mutex'
 export type FeedbackEvent =
 	{ type: 'saved-to-url', url: string }
 	| { type: 'tick-completed', tick: number, updaterActions: UpdaterAction[] }
-	| { type: 'saved-to-string', serializedState: string, name: string, inputActorIds: number[] }
+	| { type: 'saved-to-string', serializedState: string, forPlayerId: number, inputActorIds: number[], sendPaused: boolean }
 	| { type: 'input-action', value: ScheduledAction }
 	| { type: 'error' }
 	| { type: 'became-leader' }
@@ -46,6 +46,7 @@ export interface CreateGameArguments {
 	fileToRead?: File
 	stringToRead?: string
 	existingInputActorIds?: number[]
+	gameSpeed?: number
 }
 
 export const enum SaveMethod {
@@ -54,12 +55,17 @@ export const enum SaveMethod {
 	ToString,
 }
 
-export interface SaveGameArguments {
+export type SaveGameArguments = {
+	method: SaveMethod.ToDataUrl | SaveMethod.ToIndexedDatabase
 	saveName: string
-	method: SaveMethod
+} | {
+	method: SaveMethod.ToString,
+	forPlayerId: number
+	sendPaused: boolean
 }
 
 export interface TerminateGameArguments {
+	terminateEverything?: boolean
 }
 
 export type SetActionsCallback = (forTick: number, playerId: number, actions: TickQueueAction[]) => void

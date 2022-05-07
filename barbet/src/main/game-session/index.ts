@@ -5,6 +5,7 @@ import { createRemoteSession } from './remote'
 export type Action =
 	{ type: 'create-game', args: CreateGameArguments }
 	| { type: 'save-game', args: SaveGameArguments }
+	| { type: 'pause-game' }
 
 
 export interface GameSession {

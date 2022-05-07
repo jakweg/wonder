@@ -51,7 +51,6 @@ connectionWithMainThread.listen('network-worker-dispatch-action', (data) => {
 		case 'become-actor-completed':
 			sendGameMessage(data.to, 'become-input-actor-complete', {
 				gameState: data.gameState,
-				actorIds: data.inputActorIds,
 			})
 			break
 		case 'connect':

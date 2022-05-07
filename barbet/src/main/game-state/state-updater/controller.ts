@@ -9,6 +9,8 @@ export interface StateUpdater {
 
 	getExecutedTicksCount(): number
 
+	getCurrentStatus(): Status
+
 	estimateCurrentGameTickTime(workerStartDelay: number): number
 
 	stop(): void
@@ -30,6 +32,9 @@ export const createStateUpdaterControllerFromReceived = (data: any): StateUpdate
 		},
 		getExecutedTicksCount(): number {
 			return Atomics.load(memory, BufferField.ExecutedTicksCounter)
+		},
+		getCurrentStatus(): Status {
+			return Atomics.load(memory, BufferField.Status) as Status
 		},
 		estimateCurrentGameTickTime(workerStartDelay: number): number {
 			const executedTicks = Atomics.load(memory, BufferField.ExecutedTicksCounter)

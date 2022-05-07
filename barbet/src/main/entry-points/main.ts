@@ -17,8 +17,15 @@ initFrontendVariableAndRegisterToWindow()
 
 document['body'].classList['remove']('not-loaded-body')
 
-const uiHandlers = createUi(document['body'])
 let session: GameSession | null = null
+const uiHandlers = createUi({
+	root: document['body'],
+	onPauseRequested() {
+		session?.dispatchAction({
+			type: 'pause-game',
+		})
+	},
+})
 
 
 let pauseOnBlur = false
@@ -103,7 +110,7 @@ const feedbackFinalHandler = async (event: FeedbackEvent) => {
 				console.log('i am a leader now')
 				session?.dispatchAction({
 					type: 'create-game',
-					args: {}, // it'll generate new world
+					args: {gameSpeed: 50}, // it'll generate new world
 				})
 			}, 0)
 			break

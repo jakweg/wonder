@@ -1,5 +1,6 @@
 import State from '../util/state'
 import { globalMutex } from '../util/worker/global-mutex'
+import { GameStateAsRequested } from '../util/worker/network-worker-dispatch-action'
 import { WorkerController } from '../util/worker/worker-controller'
 import { GameLayerMessage } from './message'
 import { defaultNetworkState, NetworkStateType } from './network-state'
@@ -10,7 +11,7 @@ export interface WebsocketConnection {
 
 	broadcastMyActions(tick: number, actions: TickQueueAction[]): void
 
-	provideGameStateAsRequested(forPlayer: number, inputActorIds: number[], state: string): void
+	provideGameStateAsRequested(forPlayer: number, state: GameStateAsRequested): void
 
 	terminate(): void
 }
@@ -19,7 +20,7 @@ export interface WebsocketConnection {
 export type NetworkEvent =
 	{ type: 'player-wants-to-become-input-actor', from: number }
 	| { type: 'actions-received-from-player', from: number, tick: number, actions: TickQueueAction[] }
-	| { type: 'became-input-actor', gameState: string, actorsIds: number[], }
+	| { type: 'became-input-actor', gameState: GameStateAsRequested, }
 
 interface NetworkEnvironmentConfiguration {
 	connectToUrl: string
@@ -55,7 +56,6 @@ export const createWebsocketConnectionWithServer = async (config: NetworkEnviron
 				config.eventCallback({
 					type: 'became-input-actor',
 					gameState: payload.gameState,
-					actorsIds: payload.actorIds,
 				})
 				break
 			}
@@ -88,11 +88,10 @@ export const createWebsocketConnectionWithServer = async (config: NetworkEnviron
 
 	return {
 		networkState: mirroredState,
-		provideGameStateAsRequested(forPlayer: number, inputActorIds: number[], state: string) {
+		provideGameStateAsRequested(forPlayer, state) {
 			worker.replier.send('network-worker-dispatch-action', {
 				type: 'become-actor-completed',
 				to: forPlayer,
-				inputActorIds,
 				gameState: state,
 			})
 		},

@@ -1,7 +1,7 @@
 import { FeedbackEvent, SaveGameArguments, SaveMethod } from '../../entry-points/feature-environments/loader'
-import { GameState, GameStateImplementation } from '../game-state'
 import { putSaveData } from '../../util/persistance/saves-database'
 import { ArrayEncodingType, setArrayEncodingType } from '../../util/persistance/serializers'
+import { GameState, GameStateImplementation } from '../game-state'
 
 const saveToIndexedDb = (saveName: string, game: GameState) => {
 	setArrayEncodingType(ArrayEncodingType.Array)
@@ -35,17 +35,18 @@ export const performGameSave = (game: GameState | null,
                                 inputActorIds: number[]) => {
 	if (game === null) return
 
-	const saveName = saveArgs.saveName
 	switch (saveArgs.method) {
 		case SaveMethod.ToIndexedDatabase:
-			saveToIndexedDb(saveName, game)
+			saveToIndexedDb(saveArgs.saveName, game)
 			break
 		case SaveMethod.ToString:
 			const string = saveToString(game)
 			feedbackCallback({
 				type: 'saved-to-string',
-				serializedState: string, name: saveName,
+				serializedState: string,
 				inputActorIds,
+				forPlayerId: saveArgs.forPlayerId,
+				sendPaused: saveArgs.sendPaused,
 			})
 			break
 		case SaveMethod.ToDataUrl:

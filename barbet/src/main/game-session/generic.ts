@@ -6,6 +6,7 @@ import {
 	loadEnvironment,
 	SetActionsCallback,
 } from '../entry-points/feature-environments/loader'
+import { StateUpdater } from '../game-state/state-updater'
 import { TickQueueAction, TickQueueActionType, UpdaterAction } from '../network/tick-queue-action'
 import CONFIG from '../util/persistance/observable-settings'
 import { Action } from './index'
@@ -23,11 +24,14 @@ interface Props {
 
 	dispatchUpdaterAction: (action: UpdaterAction) => void
 
+	onPauseRequested(): void
+
 	onGameLoaded: (actionsCallback: SetActionsCallback) => void
 }
 
 export const createGenericSession = async (props: Props) => {
 	const myActionsForFutureTick: TickQueueAction[] = []
+	let updater: StateUpdater
 
 	const feedbackMiddleware = (event: FeedbackEvent) => {
 		switch (event.type) {
@@ -63,12 +67,14 @@ export const createGenericSession = async (props: Props) => {
 			...args,
 			existingInputActorIds: [...(args.existingInputActorIds ?? []), props.myPlayerId()],
 		}).then((results) => {
+			updater = results.updater
 			environment.startRender({canvas: props.canvasProvider()})
 
 			props.onGameLoaded(results.setActionsCallback)
 
 			sendEmptyActionsForInitialTicks(results.updater.getExecutedTicksCount())
-			results.updater.start(20)
+			if (args.gameSpeed !== undefined && args.gameSpeed > 0)
+				results.updater.start(args.gameSpeed)
 		})
 	}
 
@@ -87,11 +93,17 @@ export const createGenericSession = async (props: Props) => {
 					case 'save-game':
 						environment.saveGame(action.args)
 						break
+					case 'pause-game':
+						props.onPauseRequested()
+						break
 					default:
 						console.warn('Unknown task', type)
 						break
 				}
 			})
+		},
+		getUpdater() {
+			return updater
 		},
 		resetRendering() {
 			environment.startRender({canvas: props.canvasProvider()})

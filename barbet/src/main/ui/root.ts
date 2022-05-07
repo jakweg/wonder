@@ -4,14 +4,19 @@ import FloatingPreferences from './floating-preferences'
 import PreferencesRoot from './preferences'
 import { createElement } from './utils'
 
-export const createUi = (parent: HTMLElement) => {
-	const root = createElement('div', parent, 'root')
+interface Props {
+	root: HTMLElement
+	onPauseRequested(): void
+}
+
+export const createUi = (props: Props) => {
+	const root = createElement('div', props.root, 'root')
 
 	const [settingsOpened, setSettingsOpened] = observableState(false)
 
 	const canvas = CanvasBackground(root)
 
-	FloatingPreferences(root, () => setSettingsOpened(() => true))
+	FloatingPreferences(root, () => setSettingsOpened(() => true), props.onPauseRequested)
 
 	PreferencesRoot(root, settingsOpened, () => setSettingsOpened(() => false))
 

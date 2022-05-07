@@ -23,10 +23,11 @@ connectionWithParent.listen('new-settings', settings => {
 	CONFIG.update(settings)
 })
 
-connectionWithParent.listen('terminate-game', () => {
+connectionWithParent.listen('terminate-game', args => {
 	stateUpdater?.terminate()
 	gameState = stateUpdater = null
-	close()
+	if (args.terminateEverything)
+		close()
 })
 
 connectionWithParent.listen('create-game', async (args) => {

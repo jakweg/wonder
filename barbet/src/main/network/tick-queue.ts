@@ -38,7 +38,7 @@ export default class TickQueue {
 		if (value === undefined)
 			return
 
-		if (value['size'] !== this.requiredPlayerIds['size'])
+		if (value['size'] < this.requiredPlayerIds['size'])
 			return
 
 		const actions = [...value.values()].flatMap(e => e)
