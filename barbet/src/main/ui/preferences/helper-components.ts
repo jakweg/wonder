@@ -16,7 +16,7 @@ export const Button = (root: HTMLElement,
 	container['type'] = 'button'
 	container.addEventListener('click', onClick)
 
-	displayedText(displayedText => container.innerText = displayedText)
+	displayedText(displayedText => container['innerText'] = displayedText)
 }
 
 export const Range = (root: HTMLElement,
@@ -32,7 +32,7 @@ export const Range = (root: HTMLElement,
 	const stepsCount = (range[1] - range[0]) / step
 
 	const handleDragMove = (event: PointerEvent) => {
-		let progress = event.offsetX / (event.target as HTMLDivElement).clientWidth
+		let progress = event['offsetX'] / (event['target'] as HTMLDivElement)['clientWidth']
 		if (progress < 0)
 			progress = 0
 		else if (progress > 1)
@@ -65,5 +65,5 @@ export const Range = (root: HTMLElement,
 		if (dragging) handleDragMove(event)
 	}, {'passive': true})
 
-	displayedText(displayedText => title.innerText = displayedText)
+	displayedText(displayedText => title['innerText'] = displayedText)
 }

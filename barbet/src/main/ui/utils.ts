@@ -3,7 +3,7 @@ export const createElement = (type: string,
                               className: string = '') => {
 	const htmlElement = document.createElement(type) as HTMLElement
 	if (className) htmlElement['classList']['add'](className)
-	attachTo?.appendChild(htmlElement)
+	attachTo?.['appendChild'](htmlElement)
 	return htmlElement
 }
 

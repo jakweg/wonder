@@ -17,7 +17,7 @@ initFrontendVariableAndRegisterToWindow()
 
 document['body'].classList['remove']('not-loaded-body')
 
-const uiHandlers = createUi(document.body)
+const uiHandlers = createUi(document['body'])
 let session: GameSession | null = null
 
 
