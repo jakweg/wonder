@@ -20,6 +20,9 @@ document['body'].classList['remove']('not-loaded-body')
 let session: GameSession | null = null
 const uiHandlers = createUi({
 	root: document['body'],
+	isPaused(): boolean {
+		return session?.isPaused() === true
+	},
 	onPauseRequested() {
 		session?.dispatchAction({
 			type: 'pause-game',
@@ -140,7 +143,7 @@ const startLocalSession = async () => {
 	})
 	session.dispatchAction({
 		type: 'create-game',
-		args: {},
+		args: {gameSpeed: 20},
 	})
 }
 

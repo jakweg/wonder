@@ -57,3 +57,41 @@ export const map = <T, U>(from: Observable<T>, func: (value: T, previousValue: T
 		listener(currentValue!, undefined)
 	}
 }
+
+export const sum = (entries: Observable<number>[]): Observable<number> => {
+	const listeners: any[] = []
+	let currentSum = 0
+	for (let entry of entries) {
+		entry((newValue, oldValue) => {
+			const newSum = currentSum - (oldValue ?? 0) + newValue
+			if (newSum !== currentSum) {
+				for (let l of listeners)
+					l(newSum, currentSum)
+				currentSum = newSum
+			}
+		})
+	}
+
+	return (listener: (newValue: number, oldValue: undefined | number) => void) => {
+		listeners.push(listener)
+		listener(currentSum!, undefined)
+	}
+}
+
+export const observeProducer = <T>(producer: () => T, interval: number = 100): Observable<T> => {
+	const listeners: any[] = []
+	let currentValue = producer()
+	setInterval(() => {
+		const newValue = producer()
+		if (currentValue !== newValue) {
+			for (let l of listeners)
+				l(newValue, currentValue)
+			currentValue = newValue
+		}
+	}, interval)
+
+	return (listener: (newValue: T, oldValue: undefined | T) => void) => {
+		listeners.push(listener)
+		listener(currentValue!, undefined)
+	}
+}

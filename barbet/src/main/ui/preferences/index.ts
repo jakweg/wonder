@@ -7,8 +7,6 @@ import OnBlurBehaviourSection from './on-blur-section'
 import RenderingSection from './rendering-section'
 
 export default (parent: HTMLElement, opened: Observable<boolean>, doneClicked: Callback) => {
-	const overlay = AnimatedVisibility(createElement('div', parent, 'settings-overlay'), opened, ['opacity'])
-	overlay.addEventListener('click', doneClicked)
 
 	const root = AnimatedVisibility(createElement('div', parent, 'settings'), opened, ['opacity', 'translate-y'])
 

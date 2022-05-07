@@ -147,6 +147,7 @@ export const createRemoteSession = async (props: Props & GenericSessionProps): P
 	})
 
 	return {
+		isPaused: generic.isPaused,
 		dispatchAction: generic.dispatchAction,
 		resetRendering: generic.resetRendering,
 		terminate() {

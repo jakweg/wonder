@@ -6,7 +6,7 @@ import {
 	loadEnvironment,
 	SetActionsCallback,
 } from '../entry-points/feature-environments/loader'
-import { StateUpdater } from '../game-state/state-updater'
+import { StateUpdater, Status } from '../game-state/state-updater'
 import { TickQueueAction, TickQueueActionType, UpdaterAction } from '../network/tick-queue-action'
 import CONFIG from '../util/persistance/observable-settings'
 import { Action } from './index'
@@ -23,12 +23,11 @@ interface Props {
 	sendActionsToWorld: (tick: number, actions: TickQueueAction[]) => void
 
 	dispatchUpdaterAction: (action: UpdaterAction) => void
+	onGameLoaded: (actionsCallback: SetActionsCallback) => void
 
 	onPauseRequested(): void
 
 	onResumeRequested(): void
-
-	onGameLoaded: (actionsCallback: SetActionsCallback) => void
 }
 
 export const createGenericSession = async (props: Props) => {
@@ -82,6 +81,9 @@ export const createGenericSession = async (props: Props) => {
 
 	return {
 		feedbackMiddleware,
+		isPaused() {
+			return updater?.getCurrentStatus() !== Status.Running
+		},
 		appendActionForNextTick(action: TickQueueAction) {
 			myActionsForFutureTick.push(action)
 		},

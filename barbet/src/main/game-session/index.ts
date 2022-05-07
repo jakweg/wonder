@@ -10,6 +10,8 @@ export type Action =
 
 
 export interface GameSession {
+	isPaused(): boolean
+
 	resetRendering(): void
 
 	dispatchAction(action: Action): void
