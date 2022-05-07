@@ -16,7 +16,9 @@ canvas {
     image-rendering: pixelated;
     transition: opacity .5s;
 }
+
 canvas.fade-out {
+    pointer-events: none;
     opacity: 0;
 }
 
@@ -42,30 +44,14 @@ canvas.fade-out {
     width: 100vw;
     overflow: hidden;
     background-color: black;
-    pointer-events: none;
-    opacity: 0;
-    transition: opacity .2s;
-}
-
-.settings-overlay.visible {
-    pointer-events: unset;
-    opacity: .7;
+    --opacity: .7;
 }
 
 .settings {
-    pointer-events: none;
-    opacity: 0;
     background-color: rgba(49, 16, 16, 0.9);
     width: max(50%, 300px);
     padding: 8px;
-    transform: translateY(10px);
-    transition: opacity .2s, transform .2s;
-}
-
-.settings.opened {
-    transform: none;
-    pointer-events: unset;
-    opacity: 1;
+    --translate-y: 12px;
 }
 
 .floating-preferences {
@@ -103,6 +89,7 @@ svg {
     font-size: 1.6em;
     margin: 8px;
 }
+
 .settings header p {
     margin: 4px;
 }
@@ -170,4 +157,27 @@ svg {
     opacity: .7;
     font-size: .9em;
     user-select: text;
+}
+
+.animated-visibility {
+    --duration: 300ms;
+    transition: opacity var(--duration), transform var(--duration);
+    pointer-events: none;
+    opacity: var(--opacity, 1);
+}
+
+.animated-visibility.fully-visible {
+    pointer-events: all;
+}
+
+.animated-visibility.invisible.opacity {
+    opacity: 0;
+}
+.animated-visibility.invisible.translate-y {
+    transform: translateY(var(--translate-y, 100%));
+}
+
+.animated-visibility.gone {
+    display: none;
+    visibility: hidden;
 }

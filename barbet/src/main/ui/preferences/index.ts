@@ -1,18 +1,16 @@
 import { constantState, Observable } from '../../util/state/observable'
 import { Callback, createElement } from '../utils'
+import AnimatedVisibility from './animated-visibility'
 import BuildInfoSection from './build-info-section'
 import { Button } from './helper-components'
 import OnBlurBehaviourSection from './on-blur-section'
 import RenderingSection from './rendering-section'
 
 export default (parent: HTMLElement, opened: Observable<boolean>, doneClicked: Callback) => {
-	const overlay = createElement('div', parent, 'settings-overlay')
-	const root = createElement('div', parent, 'settings')
+	const overlay = AnimatedVisibility(createElement('div', parent, 'settings-overlay'), opened, ['opacity'])
+	overlay.addEventListener('click', doneClicked)
 
-	opened(opened => {
-		root['classList']['toggle']('opened', opened)
-		overlay['classList']['toggle']('visible', opened)
-	})
+	const root = AnimatedVisibility(createElement('div', parent, 'settings'), opened, ['opacity', 'translate-y'])
 
 	Header(root, constantState('Game preferences'), false)
 	RenderingSection(root)
