@@ -13,7 +13,7 @@ export default (parent: HTMLElement) => {
 			let triesCounter = 0
 			const old = element
 			const intervalId = setInterval(() => {
-				if (newElement['width'] !== 0 || triesCounter++ > 40) {
+				if (newElement['width'] !== 0 || triesCounter++ > 100) {
 					clearInterval(intervalId)
 					old['classList']['add']('fade-out')
 					setTimeout(() => {

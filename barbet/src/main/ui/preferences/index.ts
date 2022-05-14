@@ -1,3 +1,4 @@
+import KeyboardController from '../../util/keyboard-controller'
 import { constantState, Observable } from '../../util/state/observable'
 import { Callback, createElement } from '../utils'
 import AnimatedVisibility from './animated-visibility'
@@ -7,6 +8,9 @@ import OnBlurBehaviourSection from './on-blur-section'
 import RenderingSection from './rendering-section'
 
 export default (parent: HTMLElement, opened: Observable<boolean>, doneClicked: Callback) => {
+	opened(opened => {
+		KeyboardController.INSTANCE?.setMaskEnabled(opened)
+	})
 
 	const root = AnimatedVisibility(createElement('div', parent, 'settings'), opened, ['opacity', 'translate-y'])
 

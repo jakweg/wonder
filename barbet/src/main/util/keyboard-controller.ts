@@ -18,8 +18,10 @@ const defaultKeyMapping: { [key: string]: PressedKey } = {
 }
 
 class KeyboardController {
+	public static INSTANCE: KeyboardController | undefined = undefined
 	private pressedKeys: { [key: string]: boolean } = {}
 	private pressedCount: number = 0
+	private maskEnabled: boolean = false
 
 	private constructor(private readonly frontedVariables: Int16Array) {
 	}
@@ -31,7 +33,15 @@ class KeyboardController {
 		document.addEventListener('keyup', event => controller.setKeyPressed(event['code'], false))
 		window.addEventListener('blur', () => controller.cancelAllPressed())
 
+		KeyboardController.INSTANCE = controller
 		return controller
+	}
+
+	public setMaskEnabled(enabled: boolean) {
+		if (this.maskEnabled === enabled) return
+		if (enabled)
+			this.cancelAllPressed()
+		this.maskEnabled = enabled
 	}
 
 	public cancelAllPressed(): void {
@@ -52,6 +62,7 @@ class KeyboardController {
 	}
 
 	private setKeyPressed(code: string, pressed: boolean): void {
+		if (this.maskEnabled) return
 		const pressedKeys = this.pressedKeys
 		if (pressedKeys[code] === pressed) return
 		pressedKeys[code] = pressed
