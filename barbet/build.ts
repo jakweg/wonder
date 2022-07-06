@@ -25,10 +25,25 @@ const getOutputFromProcess = async (cmd: string[]): Promise<string> => {
 	return outputString
 }
 
-const getCommitHash = async () => (await getOutputFromProcess(['git', 'rev-parse', '--short', 'HEAD'])).trim()
-const getLinesCount = async () => +(await getOutputFromProcess(['sh', '-c', 'find -type f -name "*.ts" -exec cat {} \\; | grep -vc "^\\s*$"'])).trim()
+const countLines =  async(path: string): Promise<number> => {
+	let sum = 0
+	for await (const dirEntry of Deno.readDir(path)) {
+		if (dirEntry.isDirectory)
+			sum += await countLines(`${path}/${dirEntry.name}`)
+		if (dirEntry.isFile && /\.(ts|js)$/.test(dirEntry.name)) {
+			const content = await Deno.readTextFile(`${path}/${dirEntry.name}`)
+			const nonEmptyLinesCount = content.split('\n').filter(e => e.trim().length !== 0).length
+			sum += nonEmptyLinesCount
+		}
+	}
+	return sum
+}
 
-const [commitHash, linesCount] = await Promise.all([getCommitHash(), getLinesCount()])
+const getProjectTotalLinesCount = () => countLines('src')
+const getCommitHash = async () => (await getOutputFromProcess(['git', 'rev-parse', '--short', 'HEAD'])).trim()
+
+
+const [commitHash, linesCount] = await Promise.all([getCommitHash(), getProjectTotalLinesCount()])
 
 if (args.size > 0) {
 	console.log('Received unknown options: ', args)
