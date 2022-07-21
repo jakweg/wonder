@@ -7,7 +7,7 @@ import CONFIG from '../../util/persistance/observable-settings'
 import { getCameraBuffer, setCameraBuffer } from '../../util/persistance/serializable-settings'
 import { globalMutex, setGlobalMutex } from '../../util/worker/global-mutex'
 import { spawnNew as spawnNewRenderWorker } from '../../util/worker/message-types/render'
-import { WorkerController } from '../../util/worker/worker-controller'
+import { spawnNew as spawnNewUpdateWorker } from '../../util/worker/message-types/update'
 import {
 	ConnectArguments,
 	CreateGameResult,
@@ -32,9 +32,9 @@ export const bind = async (args: ConnectArguments): Promise<EnvironmentConnectio
 	let updater: StateUpdater | null = null
 
 	const renderWorker = await spawnNewRenderWorker(globalMutex)
-	const updateWorker = await WorkerController.spawnNew('update-worker', 'update', globalMutex)
+	const updateWorker = await spawnNewUpdateWorker(globalMutex)
 	CONFIG.observeEverything(snapshot => {
-		updateWorker.replier.send('new-settings', snapshot)
+		updateWorker.send.send('new-settings', snapshot)
 		renderWorker.send.send('new-settings', snapshot)
 	})
 
@@ -42,15 +42,15 @@ export const bind = async (args: ConnectArguments): Promise<EnvironmentConnectio
 	renderWorker.send.send('camera-buffer', { buffer: getCameraBuffer() })
 	renderWorker.send.send('set-worker-load-delays', {
 		render: renderWorker.startDelay,
-		update: updateWorker!.workerStartDelay,
+		update: updateWorker.startDelay,
 	})
 
-	updateWorker.handler.listen('feedback', data => {
+	updateWorker.receive.on('feedback', data => {
 		args.feedbackCallback(data)
 	})
 	renderWorker.receive.on('feedback', data => args.feedbackCallback(data))
 
-	updateWorker.handler.listen('scheduled-action', action => {
+	updateWorker.receive.on('scheduled-action', action => {
 		args.feedbackCallback({ type: 'input-action', value: action })
 	})
 	renderWorker.receive.on('scheduled-action', action => {
@@ -58,16 +58,16 @@ export const bind = async (args: ConnectArguments): Promise<EnvironmentConnectio
 	})
 
 	const setActionsCallback = (forTick: number, playerId: number, actions: TickQueueAction[]) => {
-		updateWorker.replier.send('append-to-tick-queue', { forTick, playerId, actions })
+		updateWorker.send.send('append-to-tick-queue', { forTick, playerId, actions })
 	}
 
-	updateWorker.handler.listen('game-snapshot-for-renderer', (data) => {
+	updateWorker.receive.on('game-snapshot-for-renderer', (data) => {
 		gameSnapshotForRenderer = data
 		decodedGame = createGameStateForRenderer(data.game)
 		updater = createStateUpdaterControllerFromReceived(data.updater)
 		startGameCallback?.({ state: decodedGame, updater, setActionsCallback })
 	})
-	updateWorker.handler.listen('update-entity-container', data => {
+	updateWorker.receive.on('update-entity-container', data => {
 		decodedGame!.entities.replaceBuffersFromReceived(data)
 		entityContainerSnapshotForRenderer = data
 		renderWorker.send.send('update-entity-container', data)
@@ -76,7 +76,7 @@ export const bind = async (args: ConnectArguments): Promise<EnvironmentConnectio
 
 	const terminate = (args: TerminateGameArguments) => {
 		renderWorker.send.send('terminate-game', args)
-		updateWorker.replier.send('terminate-game', args)
+		updateWorker.send.send('terminate-game', args)
 		entityContainerSnapshotForRenderer = decodedGame = updater = null
 
 		if (args.terminateEverything) {
@@ -91,7 +91,7 @@ export const bind = async (args: ConnectArguments): Promise<EnvironmentConnectio
 			if (decodedGame !== null)
 				terminate({})
 
-			updateWorker.replier.send('create-game', gameArgs)
+			updateWorker.send.send('create-game', gameArgs)
 
 			return new Promise(resolve => startGameCallback = resolve)
 		},
@@ -106,7 +106,7 @@ export const bind = async (args: ConnectArguments): Promise<EnvironmentConnectio
 				renderWorker.send.send('update-entity-container', entityContainerSnapshotForRenderer)
 		},
 		saveGame(args: SaveGameArguments): void {
-			updateWorker.replier?.send('save-game', args)
+			updateWorker?.send?.send('save-game', args)
 		},
 		terminate,
 	}

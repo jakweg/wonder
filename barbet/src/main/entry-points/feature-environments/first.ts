@@ -8,13 +8,13 @@ import { initFrontedVariablesFromReceived } from '../../util/frontend-variables-
 import CONFIG from '../../util/persistance/observable-settings'
 import { getCameraBuffer, setCameraBuffer } from '../../util/persistance/serializable-settings'
 import { globalMutex, setGlobalMutex } from '../../util/worker/global-mutex'
-import { WorkerController } from '../../util/worker/worker-controller'
+import { spawnNew as spawnNewUpdateWorker } from '../../util/worker/message-types/update'
 import {
 	ConnectArguments,
 	EnvironmentConnection,
 	SaveGameArguments,
 	StartRenderArguments,
-	TerminateGameArguments,
+	TerminateGameArguments
 } from './loader'
 
 // this function is always used
@@ -29,21 +29,21 @@ export const bind = async (args: ConnectArguments): Promise<EnvironmentConnectio
 	let gameResolveCallback: any = null
 	let decodedGame: GameState | null = null
 	let updater: StateUpdater | null = null
-	const updateWorker = await WorkerController.spawnNew('update-worker', 'update', globalMutex)
+	const updateWorker = await spawnNewUpdateWorker(globalMutex)
 
-	CONFIG.observeEverything(snapshot => updateWorker.replier.send('new-settings', snapshot))
+	CONFIG.observeEverything(snapshot => updateWorker.send.send('new-settings', snapshot))
 
-	updateWorker.handler.listen('update-entity-container', data => {
+	updateWorker.receive.on('update-entity-container', data => {
 		decodedGame!.entities.replaceBuffersFromReceived(data)
 	})
 
-	updateWorker.handler.listen('feedback', data => {
+	updateWorker.receive.on('feedback', data => {
 		args.feedbackCallback(data)
 	})
 
-	const queue: ActionsQueue = SendActionsQueue.create(a => args.feedbackCallback({type: 'input-action', value: a}))
+	const queue: ActionsQueue = SendActionsQueue.create(a => args.feedbackCallback({ type: 'input-action', value: a }))
 
-	updateWorker.handler.listen('game-snapshot-for-renderer', (data) => {
+	updateWorker.receive.on('game-snapshot-for-renderer', (data) => {
 		decodedGame = createGameStateForRenderer(data.game)
 
 		updater = createStateUpdaterControllerFromReceived(data.updater)
@@ -51,14 +51,14 @@ export const bind = async (args: ConnectArguments): Promise<EnvironmentConnectio
 			state: decodedGame,
 			updater,
 			setActionsCallback: (forTick: number, playerId: number, actions: TickQueueAction[]) => {
-				updateWorker.replier.send('append-to-tick-queue', {forTick, playerId, actions})
+				updateWorker.send.send('append-to-tick-queue', { forTick, playerId, actions })
 			},
 		})
 	})
 
 
 	const terminate = (args: TerminateGameArguments) => {
-		updateWorker.replier.send('terminate-game', args)
+		updateWorker.send.send('terminate-game', args)
 		renderingCancelCallback?.()
 		renderingCancelCallback = decodedGame = updater = null
 
@@ -73,18 +73,18 @@ export const bind = async (args: ConnectArguments): Promise<EnvironmentConnectio
 				terminate({})
 			}
 
-			updateWorker.replier.send('create-game', gameArgs)
+			updateWorker.send.send('create-game', gameArgs)
 			return await new Promise(resolve => gameResolveCallback = resolve)
 		},
 		async startRender(args: StartRenderArguments): Promise<void> {
 			if (decodedGame === null) throw new Error('Start game first')
 			renderingCancelCallback?.()
 			const camera = Camera.newUsingBuffer(getCameraBuffer())
-			const gameTickEstimation = () => updater!.estimateCurrentGameTickTime(updateWorker.workerStartDelay)
+			const gameTickEstimation = () => updater!.estimateCurrentGameTickTime(updateWorker.startDelay)
 			renderingCancelCallback = startRenderingGame(args.canvas, decodedGame, updater!, queue!, camera, gameTickEstimation)
 		},
 		saveGame(args: SaveGameArguments): void {
-			updateWorker.replier?.send('save-game', args)
+			updateWorker?.send?.send('save-game', args)
 		},
 		terminate,
 	}

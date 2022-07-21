@@ -5,35 +5,30 @@ import { loadGameFromArgs } from '../game-state/world/world-loader'
 import { performGameSave } from '../game-state/world/world-saver'
 import TickQueue from '../network/tick-queue'
 import CONFIG from '../util/persistance/observable-settings'
-import { takeControlOverWorkerConnection } from '../util/worker/connections-manager'
-import { setGlobalMutex } from '../util/worker/global-mutex'
+import { bind } from '../util/worker/message-types/update'
 
-const connectionWithParent = takeControlOverWorkerConnection()
+const { sender, receiver } = await bind()
 
 
 let gameState: GameStateImplementation | null = null
 let stateUpdater: StateUpdaterImplementation | null = null
 let tickQueue: TickQueue | null = null
 
-connectionWithParent.listen('set-global-mutex', (data) => {
-	setGlobalMutex(data.mutex)
-})
-
-connectionWithParent.listen('new-settings', settings => {
+receiver.on('new-settings', settings => {
 	CONFIG.update(settings)
 })
 
-connectionWithParent.listen('terminate-game', args => {
+receiver.on('terminate-game', args => {
 	stateUpdater?.terminate()
 	gameState = stateUpdater = null
 	if (args.terminateEverything)
 		close()
 })
 
-connectionWithParent.listen('create-game', async (args) => {
+receiver.on('create-game', async (args) => {
 	const stateBroadcastCallback = () => {
 		if (gameState === null) return
-		connectionWithParent.send('update-entity-container', {
+		sender.send('update-entity-container', {
 			buffers: gameState?.entities?.passBuffers(),
 		})
 	}
@@ -57,20 +52,20 @@ connectionWithParent.listen('create-game', async (args) => {
 				}
 			}
 
-			connectionWithParent.send('feedback', {type: 'tick-completed', tick: currentTick, updaterActions})
+			sender.send('feedback', { type: 'tick-completed', tick: currentTick, updaterActions })
 		},
 		gameState.currentTick, tickQueue)
 
-	connectionWithParent.send('game-snapshot-for-renderer', {
+	sender.send('game-snapshot-for-renderer', {
 		game: gameState!.passForRenderer(),
 		updater: stateUpdater!.pass(),
 	})
 })
 
-connectionWithParent.listen('save-game', async (data) => {
-	performGameSave(gameState, data, value => connectionWithParent.send('feedback', value), tickQueue!.getActorIds())
+receiver.on('save-game', async (data) => {
+	performGameSave(gameState, data, value => sender.send('feedback', value), tickQueue!.getActorIds())
 })
 
-connectionWithParent.listen('append-to-tick-queue', ({actions, playerId, forTick}) => {
+receiver.on('append-to-tick-queue', ({ actions, playerId, forTick }) => {
 	tickQueue?.setForTick(forTick, playerId, actions)
 })
