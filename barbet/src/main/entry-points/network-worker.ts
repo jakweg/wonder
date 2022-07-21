@@ -3,14 +3,11 @@ import { defaultNetworkState } from '../network/network-state'
 import { ConnectedSocket, connectToServer, createMessageMiddleware, createMessageReceiver } from '../network/socket'
 import CONFIG from '../util/persistance/observable-settings'
 import State from '../util/state'
-import { takeControlOverWorkerConnection } from '../util/worker/connections-manager'
-import { setGlobalMutex } from '../util/worker/global-mutex'
+import { bind } from '../util/worker/message-types/network'
 
-const connectionWithMainThread = takeControlOverWorkerConnection()
-connectionWithMainThread.listen('set-global-mutex', (data) => {
-	setGlobalMutex(data.mutex)
-})
-connectionWithMainThread.listen('new-settings', settings => {
+const { sender, receiver } = await bind()
+
+receiver.on('new-settings', settings => {
 	CONFIG.update(settings)
 })
 
@@ -36,7 +33,7 @@ const handlers: HandlersType = {
 	},
 }
 
-connectionWithMainThread.listen('network-worker-dispatch-action', (data) => {
+receiver.on('network-worker-dispatch-action', (data) => {
 	const type = data.type
 	switch (type) {
 		case 'request-become-input-actor':
@@ -92,14 +89,14 @@ const doConnection = async (params: any) => {
 			const message = await receiver()
 			switch (message['type']) {
 				case 'game-layer-message':
-					connectionWithMainThread.send('network-message-received', {
+					sender.send('network-message-received', {
 						origin: message['extra']['from'],
 						type: message['extra']['extra'].type,
 						extra: message['extra']['extra'].extra,
 					})
 					break
 				default:
-					console.error('unknown message', message['type'], {message})
+					console.error('unknown message', message['type'], { message })
 					socket.close()
 					break
 			}
@@ -115,5 +112,5 @@ const doConnection = async (params: any) => {
 }
 
 networkState.observeEverything(snapshot => {
-	connectionWithMainThread.send('network-state', snapshot)
+	sender.send('network-state', snapshot)
 })

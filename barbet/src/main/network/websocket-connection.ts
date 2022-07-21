@@ -1,7 +1,7 @@
 import State from '../util/state'
 import { globalMutex } from '../util/worker/global-mutex'
+import { spawnNew } from '../util/worker/message-types/network'
 import { GameStateAsRequested } from '../util/worker/network-worker-dispatch-action'
-import { WorkerController } from '../util/worker/worker-controller'
 import { GameLayerMessage } from './message'
 import { defaultNetworkState, NetworkStateType } from './network-state'
 import { TickQueueAction } from './tick-queue-action'
@@ -32,16 +32,16 @@ interface NetworkEnvironmentConfiguration {
 
 export const createWebsocketConnectionWithServer = async (config: NetworkEnvironmentConfiguration): Promise<WebsocketConnection> => {
 	const mirroredState = State.fromInitial(defaultNetworkState)
-	const worker = await WorkerController.spawnNew('network-worker', 'network', globalMutex)
+	const worker = await spawnNew(globalMutex)
 
-	worker.handler.listen('network-state', state => {
+	worker.receive.on('network-state', state => {
 		mirroredState.update(state)
 	})
 
-	worker.handler.listen('network-message-received', message => {
+	worker.receive.on('network-message-received', message => {
 		switch (message.type as keyof GameLayerMessage) {
 			case 'become-input-actor-request':
-				config.eventCallback({type: 'player-wants-to-become-input-actor', from: message.origin})
+				config.eventCallback({ type: 'player-wants-to-become-input-actor', from: message.origin })
 				break
 			case 'actions-broadcast': {
 				const payload = message.extra as GameLayerMessage['actions-broadcast']
@@ -66,7 +66,7 @@ export const createWebsocketConnectionWithServer = async (config: NetworkEnviron
 		}
 	})
 
-	worker.replier.send('network-worker-dispatch-action', {
+	worker.send.send('network-worker-dispatch-action', {
 		type: 'connect',
 		url: config.connectToUrl,
 		forceEncryption: false,
@@ -85,20 +85,20 @@ export const createWebsocketConnectionWithServer = async (config: NetworkEnviron
 	})
 
 	if (mirroredState.get('myId') !== mirroredState.get('leaderId')) {
-		worker.replier.send('network-worker-dispatch-action', {type: 'request-become-input-actor'})
+		worker.send.send('network-worker-dispatch-action', { type: 'request-become-input-actor' })
 	}
 
 	return {
 		networkState: mirroredState,
 		provideGameStateAsRequested(forPlayer, state) {
-			worker.replier.send('network-worker-dispatch-action', {
+			worker.send.send('network-worker-dispatch-action', {
 				type: 'become-actor-completed',
 				to: forPlayer,
 				gameState: state,
 			})
 		},
 		broadcastMyActions(tick: number, actions: TickQueueAction[]) {
-			worker.replier.send('network-worker-dispatch-action', {
+			worker.send.send('network-worker-dispatch-action', {
 				type: 'broadcast-my-actions',
 				tick, actions,
 			})
