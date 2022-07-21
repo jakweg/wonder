@@ -5,10 +5,9 @@ import { SendActionsQueue } from '../game-state/scheduled-actions/queue'
 import { createStateUpdaterControllerFromReceived, StateUpdater } from '../game-state/state-updater'
 import { initFrontedVariablesFromReceived } from '../util/frontend-variables-updaters'
 import CONFIG from '../util/persistance/observable-settings'
-import { takeControlOverWorkerConnection } from '../util/worker/connections-manager'
-import { setGlobalMutex } from '../util/worker/global-mutex'
+import { bind } from '../util/worker/message-types/render'
 
-const connectionWithParent = takeControlOverWorkerConnection()
+const { sender, receiver } = await bind()
 
 let renderCancelCallback: () => void = () => void 0
 let workerStartDelayDifference = 0
@@ -18,41 +17,37 @@ let decodedGame: GameState | null = null
 let decodedUpdater: StateUpdater | null = null
 let cameraBuffer: SharedArrayBuffer | null = null
 
-connectionWithParent.listen('set-global-mutex', (data) => {
-	setGlobalMutex(data.mutex)
-})
-
-connectionWithParent.listen('new-settings', settings => {
+receiver.on('new-settings', settings => {
 	CONFIG.update(settings)
 })
 
-connectionWithParent.listen('transfer-canvas', (data) => {
+receiver.on('transfer-canvas', (data) => {
 	canvas = data.canvas as HTMLCanvasElement
 	considerStartRendering()
 })
 
-connectionWithParent.listen('set-worker-load-delays', (data) => {
+receiver.on('set-worker-load-delays', (data) => {
 	workerStartDelayDifference = data.update - data.render
 })
 
-connectionWithParent.listen('game-snapshot-for-renderer', (data) => {
+receiver.on('game-snapshot-for-renderer', (data) => {
 	gameSnapshot = data
 	considerStartRendering()
 })
 
-connectionWithParent.listen('update-entity-container', (data) => {
+receiver.on('update-entity-container', (data) => {
 	decodedGame!.entities.replaceBuffersFromReceived(data)
 })
 
-connectionWithParent.listen('camera-buffer', (data) => {
+receiver.on('camera-buffer', (data) => {
 	cameraBuffer = data.buffer
 })
 
-connectionWithParent.listen('frontend-variables', (data) => {
+receiver.on('frontend-variables', (data) => {
 	initFrontedVariablesFromReceived(data.buffer)
 })
 
-connectionWithParent.listen('terminate-game', args => {
+receiver.on('terminate-game', args => {
 	renderCancelCallback?.()
 	canvas = decodedUpdater = decodedGame = gameSnapshot = null
 	if (args.terminateEverything)
@@ -70,7 +65,7 @@ const considerStartRendering = () => {
 	if (canvas !== null && decodedGame !== null && decodedUpdater !== null) {
 		const camera = cameraBuffer ? Camera.newUsingBuffer(cameraBuffer) : Camera.newPerspective()
 
-		const queue = SendActionsQueue.create(action => connectionWithParent.send('scheduled-action', action))
+		const queue = SendActionsQueue.create(action => sender.send('scheduled-action', action))
 
 		renderCancelCallback?.()
 		const gameTickEstimation = () => decodedUpdater!.estimateCurrentGameTickTime(workerStartDelayDifference)

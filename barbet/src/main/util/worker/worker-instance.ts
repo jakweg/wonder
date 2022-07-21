@@ -24,7 +24,7 @@ const startExchange = async <S extends SystemMessageTypeToWorker, R extends Syst
 export class WorkerInstance<SendTypes, ReceiveTypes>{
     private constructor(
         private readonly handle: Worker,
-        public readonly delay: number,
+        public readonly startDelay: number,
         public readonly send: Sender<SendTypes>,
         public readonly receive: Receiver<ReceiveTypes>,
     ) { }

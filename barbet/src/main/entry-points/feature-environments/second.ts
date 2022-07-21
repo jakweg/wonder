@@ -6,6 +6,7 @@ import { initFrontedVariablesFromReceived } from '../../util/frontend-variables-
 import CONFIG from '../../util/persistance/observable-settings'
 import { getCameraBuffer, setCameraBuffer } from '../../util/persistance/serializable-settings'
 import { globalMutex, setGlobalMutex } from '../../util/worker/global-mutex'
+import { spawnNew as spawnNewRenderWorker } from '../../util/worker/message-types/render'
 import { WorkerController } from '../../util/worker/worker-controller'
 import {
 	ConnectArguments,
@@ -13,7 +14,7 @@ import {
 	EnvironmentConnection,
 	SaveGameArguments,
 	StartRenderArguments,
-	TerminateGameArguments,
+	TerminateGameArguments
 } from './loader'
 
 // this function is always used
@@ -30,53 +31,51 @@ export const bind = async (args: ConnectArguments): Promise<EnvironmentConnectio
 	let decodedGame: GameState | null = null
 	let updater: StateUpdater | null = null
 
+	const renderWorker = await spawnNewRenderWorker(globalMutex)
 	const updateWorker = await WorkerController.spawnNew('update-worker', 'update', globalMutex)
-	const renderWorker = await WorkerController.spawnNew('render-worker', 'render', globalMutex)
 	CONFIG.observeEverything(snapshot => {
 		updateWorker.replier.send('new-settings', snapshot)
-		renderWorker.replier.send('new-settings', snapshot)
+		renderWorker.send.send('new-settings', snapshot)
 	})
 
-	renderWorker.replier.send('frontend-variables', {buffer: frontedVariablesBuffer})
-	renderWorker.replier.send('camera-buffer', {buffer: getCameraBuffer()})
-	renderWorker.replier.send('set-worker-load-delays', {
-		render: renderWorker.workerStartDelay,
+	renderWorker.send.send('frontend-variables', { buffer: frontedVariablesBuffer })
+	renderWorker.send.send('camera-buffer', { buffer: getCameraBuffer() })
+	renderWorker.send.send('set-worker-load-delays', {
+		render: renderWorker.startDelay,
 		update: updateWorker!.workerStartDelay,
 	})
 
 	updateWorker.handler.listen('feedback', data => {
 		args.feedbackCallback(data)
 	})
-	renderWorker.handler.listen('feedback', data => {
-		args.feedbackCallback(data)
-	})
+	renderWorker.receive.on('feedback', data => args.feedbackCallback(data))
 
 	updateWorker.handler.listen('scheduled-action', action => {
-		args.feedbackCallback({type: 'input-action', value: action})
+		args.feedbackCallback({ type: 'input-action', value: action })
 	})
-	renderWorker.handler.listen('scheduled-action', action => {
-		args.feedbackCallback({type: 'input-action', value: action})
+	renderWorker.receive.on('scheduled-action', action => {
+		args.feedbackCallback({ type: 'input-action', value: action })
 	})
 
 	const setActionsCallback = (forTick: number, playerId: number, actions: TickQueueAction[]) => {
-		updateWorker.replier.send('append-to-tick-queue', {forTick, playerId, actions})
+		updateWorker.replier.send('append-to-tick-queue', { forTick, playerId, actions })
 	}
 
 	updateWorker.handler.listen('game-snapshot-for-renderer', (data) => {
 		gameSnapshotForRenderer = data
 		decodedGame = createGameStateForRenderer(data.game)
 		updater = createStateUpdaterControllerFromReceived(data.updater)
-		startGameCallback?.({state: decodedGame, updater, setActionsCallback})
+		startGameCallback?.({ state: decodedGame, updater, setActionsCallback })
 	})
 	updateWorker.handler.listen('update-entity-container', data => {
 		decodedGame!.entities.replaceBuffersFromReceived(data)
 		entityContainerSnapshotForRenderer = data
-		renderWorker.replier.send('update-entity-container', data)
+		renderWorker.send.send('update-entity-container', data)
 	})
 
 
 	const terminate = (args: TerminateGameArguments) => {
-		renderWorker.replier.send('terminate-game', args)
+		renderWorker.send.send('terminate-game', args)
 		updateWorker.replier.send('terminate-game', args)
 		entityContainerSnapshotForRenderer = decodedGame = updater = null
 
@@ -101,10 +100,10 @@ export const bind = async (args: ConnectArguments): Promise<EnvironmentConnectio
 				throw new Error('Create game first')
 
 			const canvasControl = (renderArguments.canvas as any).transferControlToOffscreen()
-			renderWorker.replier.send('transfer-canvas', {canvas: canvasControl}, [canvasControl])
-			renderWorker.replier.send('game-snapshot-for-renderer', gameSnapshotForRenderer)
+			renderWorker.send.send('transfer-canvas', { canvas: canvasControl }, [canvasControl])
+			renderWorker.send.send('game-snapshot-for-renderer', gameSnapshotForRenderer)
 			if (entityContainerSnapshotForRenderer !== null)
-				renderWorker.replier.send('update-entity-container', entityContainerSnapshotForRenderer)
+				renderWorker.send.send('update-entity-container', entityContainerSnapshotForRenderer)
 		},
 		saveGame(args: SaveGameArguments): void {
 			updateWorker.replier?.send('save-game', args)
