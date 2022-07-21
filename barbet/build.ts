@@ -15,7 +15,7 @@ if (!buildForProduction && produceMappings)
 	console.warn('Mappings are only produced in production mode')
 
 const getOutputFromProcess = async (cmd: string[]): Promise<string> => {
-	const process = Deno.run({cmd, stdout: 'piped'})
+	const process = Deno.run({ cmd, stdout: 'piped' })
 
 	const output = await process.output()
 	const outputString = new TextDecoder().decode(output)
@@ -25,7 +25,7 @@ const getOutputFromProcess = async (cmd: string[]): Promise<string> => {
 	return outputString
 }
 
-const countLines =  async(path: string): Promise<number> => {
+const countLines = async (path: string): Promise<number> => {
 	let sum = 0
 	for await (const dirEntry of Deno.readDir(path)) {
 		if (dirEntry.isDirectory)
@@ -50,7 +50,7 @@ if (args.size > 0) {
 } else {
 	const jsOutRoot = 'build-js'
 	try {
-		await Deno.remove(jsOutRoot, {recursive: true})
+		await Deno.remove(jsOutRoot, { recursive: true })
 	} catch (_) { // ignore, probably missing folder
 	}
 
@@ -58,6 +58,7 @@ if (args.size > 0) {
 		'main',
 		'feature-environments/zero',
 		'network-worker',
+		'network-worker2',
 		...(forceSingleThread ? [] : [
 			'update-worker',
 			'render-worker',
@@ -79,7 +80,7 @@ if (args.size > 0) {
 		treeShaking: buildForProduction,
 		sourcemap: (buildForProduction ? false : 'inline') as 'inline',
 		outdir: jsOutRoot,
-		target: 'es2021',
+		target: 'es2022',
 		splitting: false,
 		format: 'esm',
 		watch: buildForProduction ? false : {
@@ -89,7 +90,7 @@ if (args.size > 0) {
 			},
 		},
 	}
-	const {errors} = await esbuild.build(config as any)
+	const { errors } = await esbuild.build(config as any)
 	if (errors.length > 0) {
 		console.error(errors)
 	}

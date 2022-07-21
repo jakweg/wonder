@@ -8,11 +8,11 @@ const extensionsToContentTypeMap: { [key: string]: string } = {
 }
 
 const handler = async (request: Request): Promise<Response> => {
-	let {pathname} = new URL(request.url)
+	let { pathname } = new URL(request.url)
 
 	try {
 		if (pathname.includes('..'))
-			return new Response(null, {status: 401})
+			return new Response(null, { status: 401 })
 
 		if (pathname === '/')
 			pathname = 'index.html'
@@ -23,7 +23,7 @@ const handler = async (request: Request): Promise<Response> => {
 		if (!isNaN(ifModifiedSince)) {
 			// add 1000, because gmt format doesn't account for milliseconds but stat syscall does
 			if (mtime.getTime() <= ifModifiedSince + 1000) {
-				return new Response(null, {status: 304})
+				return new Response(null, { status: 304 })
 			}
 		}
 
@@ -36,7 +36,7 @@ const handler = async (request: Request): Promise<Response> => {
 			contentType = extensionsToContentTypeMap[extension]
 		}
 
-		const csp = pathname === '/build-js/network-worker.js' ? '' : `require-trusted-types-for 'script';upgrade-insecure-requests; default-src 'self';`
+		const csp = (pathname === '/build-js/network-worker.js' || pathname === '/build-js/network-worker2.js') ? '' : `require-trusted-types-for 'script';upgrade-insecure-requests; default-src 'self';`
 
 		return new Response(await file, {
 			headers: {
@@ -51,7 +51,7 @@ const handler = async (request: Request): Promise<Response> => {
 	} catch (e) {
 		if (e.code !== 'ENOENT') // ignore file not found
 			console.error(e)
-		return new Response(null, {status: 404})
+		return new Response(null, { status: 404 })
 	}
 }
 

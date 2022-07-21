@@ -5,32 +5,33 @@ import {
 	Message,
 	MessageReceiver,
 	MessageSender,
-	MessageType,
+	MessageType
 } from './worker-communication-handler'
 
 const EMPTY_LIST: ReadonlyArray<any> = Object.freeze([])
 
-const trustedTypesPolicy = {'createScriptURL': (name: string) => `${JS_ROOT}/${name}.js`}
+const trustedTypesPolicy = { 'createScriptURL': (name: string) => `${JS_ROOT}/${name}.js` }
 const policy = /* @__PURE__ */ (window as any)['trustedTypes'] ? (window as any)['trustedTypes']['createPolicy']('default', trustedTypesPolicy) : trustedTypesPolicy
 
+/** @deprecated */
 export class WorkerController {
 	private constructor(private readonly worker: Worker,
-	                    public readonly replier: MessageSender,
-	                    public readonly handler: MessageReceiver,
-	                    public readonly workerStartDelay: number) {
+		public readonly replier: MessageSender,
+		public readonly handler: MessageReceiver,
+		public readonly workerStartDelay: number) {
 	}
 
 	public static async spawnNew(scriptName: string,
-	                             name: string,
-	                             mutex: Mutex) {
+		name: string,
+		mutex: Mutex) {
 		let delay = 0
 		await mutex.enterAsync(Lock.Update)
 
-		const worker = new Worker(policy['createScriptURL'](scriptName), {'name': name, 'type': 'module'})
+		const worker = new Worker(policy['createScriptURL'](scriptName), { 'name': name, 'type': 'module' })
 
 		const replier = {
 			send<T extends MessageType>(type: T, extra: Message[T], transferable?: Transferable[]) {
-				worker['postMessage']({type, extra}, transferable ?? (EMPTY_LIST as Transferable[]))
+				worker['postMessage']({ type, extra }, transferable ?? (EMPTY_LIST as Transferable[]))
 			},
 		}
 
@@ -42,7 +43,7 @@ export class WorkerController {
 				delay = performance.now() - data.now
 				resolve()
 			})
-		}).then(() => replier?.send('set-global-mutex', {mutex: mutex.pass()}))
+		}).then(() => replier?.send('set-global-mutex', { mutex: mutex.pass() }))
 
 		mutex.unlock(Lock.Update)
 		return new WorkerController(worker, replier, handler, delay)
