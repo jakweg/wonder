@@ -7,5 +7,7 @@ export enum ConnectionStatus {
 
 export const initialState = {
     'endpoint': null as (null | string),
-    'connection-status': ConnectionStatus.Disconnected
+    'connection-status': ConnectionStatus.Disconnected,
+    'my-id': null as (null | string),
+    'room-id': null as (null | string),
 };

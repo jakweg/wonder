@@ -2,12 +2,17 @@ import Mutex from "../../mutex";
 import { WorkerInstance } from "../worker-instance";
 import { genericBind } from "../worker-listener";
 
+
 interface ToWorker {
-    'connect-to': { address: string }
+    'connect': { address: string },
+    'join-room': { roomId: string }
 }
 
 interface FromWorker {
-    'state-update': any
+    'state-update': any,
+    'connection-made': { success: boolean }
+    'connection-dropped': null,
+    'joined-room': { roomId: string }
 }
 
 export const spawnNew = (mutex: Mutex) => WorkerInstance
