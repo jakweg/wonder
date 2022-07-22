@@ -37,5 +37,9 @@ export class PlayersStore {
 
         return player
     }
+
+    public getById(id: string): Player | undefined {
+        return this.allPlayers.find(e => e.id === id)
+    }
 }
 

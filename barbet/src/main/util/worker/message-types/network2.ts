@@ -5,7 +5,7 @@ import { genericBind } from "../worker-listener";
 
 interface ToWorker {
     'connect': { address: string },
-    'join-room': { roomId: string }
+    'join-room': { roomId: string },
 }
 
 interface FromWorker {

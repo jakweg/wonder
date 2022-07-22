@@ -3,3 +3,5 @@ export const abortAfterTimeout = (ms: number) => {
     setTimeout(() => controller.abort(), ms)
     return controller
 }
+
+export const sleep = (ms: number) => new Promise<void>(resolve => setTimeout(() => resolve(), ms))

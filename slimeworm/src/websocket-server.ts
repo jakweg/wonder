@@ -33,6 +33,15 @@ server.on('connection', async (socket) => {
     await serveNewPlayer(player)
 })
 
+contex.rooms.on('updated-room', ({ roomId, snapshot }) => {
+    const packetValue = { roomId: snapshot.id, playerIds: snapshot.playerIds }
+
+    for (const playerId of contex.rooms.getPlayerIdsInRoom(roomId)) {
+        contex.players.getById(playerId)?.ws?.send
+            ?.send('room-info-update', packetValue)
+    }
+})
+
 
 export const serveNewPlayer = async (p: Player) => {
     while (p.ws.connection.isConnected()) {

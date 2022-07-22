@@ -1,14 +1,35 @@
 import { info } from "console";
+import EventEmitter from '../../seampan/event-emitter';
 import { Player } from "./players-store";
+
+interface Events {
+    'updated-room': { roomId: string, snapshot: RoomSnapshot }
+}
+
+export interface RoomSnapshot {
+    id: string
+    playerIds: string[]
+}
 
 interface Room {
     id: string
     assignedPlayerIds: Set<string>
 }
 
+const createSnapshotFromRoom = (room: Room): RoomSnapshot => {
+    return {
+        id: room.id,
+        playerIds: [...room.assignedPlayerIds]
+    }
+}
 
-export default class RoomStore {
+export default class RoomStore extends EventEmitter<Events> {
     private allRooms: Map<string, Room> = new Map()
+
+    public getPlayerIdsInRoom(roomId: string): string[] {
+        const room = this.allRooms.get(roomId);
+        return room !== undefined ? [...room.assignedPlayerIds] : []
+    }
 
     public assignPlayerToRoom(player: Player, roomId: string): void {
         if (player.joinedRoomId !== null) throw new Error()
@@ -26,6 +47,7 @@ export default class RoomStore {
         player.joinedRoomId = room.id
         room.assignedPlayerIds.add(player.id)
         info('Added player', player.id, 'to room', room.id)
+        this.emitAsync('updated-room', { roomId: room.id, snapshot: createSnapshotFromRoom(room) })
     }
 
     public removePlayerFromRoom(player: Player): void {
@@ -39,6 +61,7 @@ export default class RoomStore {
                 info('Deleting empty room', room.id)
                 this.allRooms.delete(room.id)
             }
+            this.emitAsync('updated-room', { roomId: room.id, snapshot: createSnapshotFromRoom(room) })
         }
         player.joinedRoomId = null
     }

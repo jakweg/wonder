@@ -10,4 +10,5 @@ export const initialState = {
     'connection-status': ConnectionStatus.Disconnected,
     'my-id': null as (null | string),
     'room-id': null as (null | string),
+    'players-in-room': null as (null | string[])
 };

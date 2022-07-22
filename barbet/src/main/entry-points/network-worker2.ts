@@ -50,19 +50,22 @@ receiver.on('connect', async request => {
 
     wsSocket.connection.awaitDisconnected()
         .then(({ error }) => {
-            sender.send('connection-dropped', null)
             state.update({
                 endpoint: null,
                 "my-id": null,
                 "room-id": null,
-                "connection-status": error ? ConnectionStatus.Error : ConnectionStatus.Disconnected
+                "connection-status": error ? ConnectionStatus.Error : ConnectionStatus.Disconnected,
+                "players-in-room": null,
             })
+            sender.send('connection-dropped', null)
         })
 })
 
 receiver.on('join-room', async ({ roomId }) => {
     if (!wsSocket || state.get('connection-status') !== ConnectionStatus.Connected)
         throw new Error('not connected')
+    if (state.get('room-id') !== null)
+        throw new Error('already is room')
 
     wsSocket.send.send('join-room', { 'roomId': roomId })
 
@@ -73,4 +76,11 @@ receiver.on('join-room', async ({ roomId }) => {
     })
 
     sender.send('joined-room', { roomId: myRoomId })
+
+    while (state.get('room-id') === myRoomId) {
+        const packet = await wsSocket.receive.await('room-info-update')
+        state.update({
+            "players-in-room": packet['playerIds']
+        })
+    }
 })
