@@ -63,7 +63,8 @@ receiver.on('create-game', async (args) => {
 })
 
 receiver.on('save-game', async (data) => {
-	performGameSave(gameState, data, value => sender.send('feedback', value), tickQueue!.getActorIds())
+	const result = gameState ? (await performGameSave(gameState, data)) : false
+	sender.send('game-saved', result)
 })
 
 receiver.on('append-to-tick-queue', ({ actions, playerId, forTick }) => {

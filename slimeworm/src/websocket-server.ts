@@ -34,7 +34,11 @@ server.on('connection', async (socket) => {
 })
 
 contex.rooms.on('updated-room', ({ roomId, snapshot }) => {
-    const packetValue = { roomId: snapshot.id, playerIds: snapshot.playerIds }
+    const packetValue = {
+        roomId: snapshot.id,
+        preventJoining: snapshot.preventJoining,
+        playerIds: snapshot.playerIds
+    }
 
     for (const playerId of contex.rooms.getPlayerIdsInRoom(roomId)) {
         contex.players.getById(playerId)?.ws?.send

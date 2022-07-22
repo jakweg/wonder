@@ -1,5 +1,6 @@
 import { createGameStateForRenderer, GameState } from '../../game-state/game-state'
 import { createStateUpdaterControllerFromReceived, StateUpdater } from '../../game-state/state-updater'
+import { SaveGameResult } from '../../game-state/world/world-saver'
 import { TickQueueAction } from '../../network/tick-queue-action'
 import { frontedVariablesBuffer } from '../../util/frontend-variables'
 import { initFrontedVariablesFromReceived } from '../../util/frontend-variables-updaters'
@@ -105,8 +106,14 @@ export const bind = async (args: ConnectArguments): Promise<EnvironmentConnectio
 			if (entityContainerSnapshotForRenderer !== null)
 				renderWorker.send.send('update-entity-container', entityContainerSnapshotForRenderer)
 		},
-		saveGame(args: SaveGameArguments): void {
-			updateWorker?.send?.send('save-game', args)
+		async saveGame(args: SaveGameArguments): Promise<SaveGameResult> {
+			if (updateWorker) {
+				updateWorker.send.send('save-game', args)
+				const result = await updateWorker.receive.await('game-saved')
+				if (result !== false)
+					return result
+			}
+			throw new Error('save failed')
 		},
 		terminate,
 	}

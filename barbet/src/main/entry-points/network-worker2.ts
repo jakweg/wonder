@@ -69,18 +69,28 @@ receiver.on('join-room', async ({ roomId }) => {
 
     wsSocket.send.send('join-room', { 'roomId': roomId })
 
-    const myRoomId = (await wsSocket.receive.await('joined-room'))['roomId']
+    const packet = (await wsSocket.receive.await('joined-room'))
+    if (!packet['ok']) {
+        sender.send('joined-room', { ok: false })
+        return
+    }
+    const myRoomId = packet['roomId']
 
     state.update({
         'room-id': myRoomId
     })
 
-    sender.send('joined-room', { roomId: myRoomId })
+    sender.send('joined-room', { ok: true, roomId: myRoomId })
 
     while (state.get('room-id') === myRoomId) {
         const packet = await wsSocket.receive.await('room-info-update')
         state.update({
-            "players-in-room": packet['playerIds']
+            "room-is-locked": packet['preventJoining'],
+            "players-in-room": packet['playerIds'],
         })
     }
+})
+
+receiver.on('set-prevent-joins', ({ prevent }) => {
+    wsSocket?.send?.send('update-room', { 'preventJoining': prevent })
 })

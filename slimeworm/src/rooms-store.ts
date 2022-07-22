@@ -8,23 +8,37 @@ interface Events {
 
 export interface RoomSnapshot {
     id: string
+    preventJoining: boolean
     playerIds: string[]
 }
 
 interface Room {
     id: string
+    preventJoining: boolean
     assignedPlayerIds: Set<string>
 }
 
 const createSnapshotFromRoom = (room: Room): RoomSnapshot => {
     return {
         id: room.id,
+        preventJoining: room.preventJoining,
         playerIds: [...room.assignedPlayerIds]
     }
 }
 
 export default class RoomStore extends EventEmitter<Events> {
     private allRooms: Map<string, Room> = new Map()
+
+    public isRoomLocked(roomId: string): boolean | undefined {
+        return this.allRooms.get(roomId)?.preventJoining
+    }
+    public setRoomLocked(roomId: string, locked: boolean): void {
+        const room = this.allRooms.get(roomId)
+        if (room !== undefined && room.preventJoining !== locked) {
+            room.preventJoining = locked
+            this.emitAsync('updated-room', { roomId: room.id, snapshot: createSnapshotFromRoom(room) })
+        }
+    }
 
     public getPlayerIdsInRoom(roomId: string): string[] {
         const room = this.allRooms.get(roomId);
@@ -38,7 +52,8 @@ export default class RoomStore extends EventEmitter<Events> {
         if (room === undefined) {
             room = {
                 id: roomId,
-                assignedPlayerIds: new Set()
+                assignedPlayerIds: new Set(),
+                preventJoining: false,
             }
             this.allRooms.set(room.id, room)
             info('Created room', room.id)

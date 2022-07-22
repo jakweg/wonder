@@ -1,6 +1,7 @@
 import { GameState } from '../../game-state/game-state'
 import { ScheduledAction } from '../../game-state/scheduled-actions'
 import { StateUpdater } from '../../game-state/state-updater'
+import { SaveGameArguments, SaveGameResult } from '../../game-state/world/world-saver'
 import { TickQueueAction, UpdaterAction } from '../../network/tick-queue-action'
 import { DEBUG, FORCE_ENV_ZERO, JS_ROOT } from '../../util/build-info'
 import { frontedVariablesBuffer } from '../../util/frontend-variables'
@@ -14,6 +15,7 @@ export type FeedbackEvent =
 	{ type: 'saved-to-url', url: string }
 	| { type: 'tick-completed', tick: number, updaterActions: UpdaterAction[] }
 	| { type: 'saved-to-string', serializedState: string, forPlayerId: number, inputActorIds: number[], sendPaused: boolean }
+	| { type: 'saved-to-string2', serializedState: string, }
 	| { type: 'input-action', value: ScheduledAction }
 	| { type: 'error' }
 	| { type: 'became-leader' }
@@ -27,8 +29,8 @@ export interface ConnectArguments {
 }
 
 export type Environment =
-/** SharedArrayBuffer is not available.
- *  Do everything on the main thread*/
+	/** SharedArrayBuffer is not available.
+	 *  Do everything on the main thread*/
 	'zero'
 	/** SharedArrayBuffer is available, but OffscreenCanvas is not.
 	 * Do event handling and rendering on the main thread and logic on background thread */
@@ -47,21 +49,6 @@ export interface CreateGameArguments {
 	stringToRead?: string
 	existingInputActorIds?: number[]
 	gameSpeed?: number
-}
-
-export const enum SaveMethod {
-	ToIndexedDatabase,
-	ToDataUrl,
-	ToString,
-}
-
-export type SaveGameArguments = {
-	method: SaveMethod.ToDataUrl | SaveMethod.ToIndexedDatabase
-	saveName: string
-} | {
-	method: SaveMethod.ToString,
-	forPlayerId: number
-	sendPaused: boolean
 }
 
 export interface TerminateGameArguments {
@@ -83,7 +70,7 @@ export interface EnvironmentConnection {
 
 	startRender(args: StartRenderArguments): Promise<void>
 
-	saveGame(args: SaveGameArguments): void
+	saveGame(args: SaveGameArguments): Promise<SaveGameResult>
 
 	terminate(args: TerminateGameArguments): void
 }
@@ -102,7 +89,7 @@ export const getSuggestedEnvironmentName = (preferredEnvironment: Environment) =
 }
 
 export const loadEnvironment = async (name: Environment,
-                                      feedbackCallback: (event: FeedbackEvent) => void)
+	feedbackCallback: (event: FeedbackEvent) => void)
 	: Promise<Readonly<EnvironmentConnection>> => {
 	if (FORCE_ENV_ZERO && name !== 'zero') {
 		if (!DEBUG)

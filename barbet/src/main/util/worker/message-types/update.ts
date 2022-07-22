@@ -1,5 +1,6 @@
-import { CreateGameArguments, FeedbackEvent, SaveGameArguments, TerminateGameArguments } from "../../../entry-points/feature-environments/loader";
+import { CreateGameArguments, FeedbackEvent, TerminateGameArguments } from "../../../entry-points/feature-environments/loader";
 import { ScheduledAction } from "../../../game-state/scheduled-actions";
+import { SaveGameArguments, SaveGameResult } from "../../../game-state/world/world-saver";
 import { TickQueueAction } from "../../../network/tick-queue-action";
 import Mutex from "../../mutex";
 import { WorkerInstance } from "../worker-instance";
@@ -19,6 +20,7 @@ interface FromWorker {
     'scheduled-action': ScheduledAction
     'game-snapshot-for-renderer': { game: unknown, updater: unknown }
     'update-entity-container': { buffers: SharedArrayBuffer[] }
+    'game-saved': SaveGameResult | false
 }
 
 export const spawnNew = (mutex: Mutex) => WorkerInstance

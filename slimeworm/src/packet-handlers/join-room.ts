@@ -10,11 +10,15 @@ export default {
 
         const roomToJoin = packet.roomId
         if (!(typeof roomToJoin === "string" && roomToJoin.length >= 4 && roomToJoin.length <= 30)) {
-            console.warn('Invalid room id');
+            return
+        }
+
+        if (state.rooms.isRoomLocked(roomToJoin) === true) {
+            player.ws.send.send('joined-room', { ok: false, })
             return
         }
 
         state.rooms.assignPlayerToRoom(player, roomToJoin)
-        player.ws.send.send('joined-room', { roomId: player.joinedRoomId! })
+        player.ws.send.send('joined-room', { ok: true, roomId: player.joinedRoomId! })
     },
 } as Handler<'join-room'>

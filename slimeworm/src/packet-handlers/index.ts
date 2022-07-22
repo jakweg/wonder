@@ -2,6 +2,7 @@ import { ClientToServer } from "../../../seampan/packet-types";
 import { Player } from "../players-store";
 import { ServerState } from "../server-state";
 import joinRoom from "./join-room";
+import updateRoom from "./update-room";
 
 export default interface Handler<T extends keyof ClientToServer> {
     type: T
@@ -10,7 +11,8 @@ export default interface Handler<T extends keyof ClientToServer> {
 }
 
 export const allHandlersList: Handler<keyof ClientToServer>[] = [
-    joinRoom
+    joinRoom,
+    updateRoom,
 ]
 
 export const allHandlers = Object.fromEntries(allHandlersList.map(h => [h.type, h]))

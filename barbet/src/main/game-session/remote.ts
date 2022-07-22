@@ -1,5 +1,6 @@
-import { SaveMethod, SetActionsCallback } from '../entry-points/feature-environments/loader'
+import { SetActionsCallback } from '../entry-points/feature-environments/loader'
 import { Status } from '../game-state/state-updater'
+import { SaveMethod } from '../game-state/world/world-saver'
 import { NetworkStateType } from '../network/network-state'
 import { TickQueueAction, TickQueueActionType, UpdaterAction } from '../network/tick-queue-action'
 import { createWebsocketConnectionWithServer, NetworkEvent, WebsocketConnection } from '../network/websocket-connection'
@@ -47,7 +48,7 @@ export const createRemoteSession = async (props: Props & GenericSessionProps): P
 		onPauseRequested() {
 			generic.appendActionForNextTick({
 				type: TickQueueActionType.UpdaterAction,
-				action: {type: 'pause'},
+				action: { type: 'pause' },
 				initiatorId: networkState!.get('myId'),
 			})
 		},
@@ -56,7 +57,7 @@ export const createRemoteSession = async (props: Props & GenericSessionProps): P
 			generic.getUpdater().start(tickRate)
 			socket.broadcastMyActions(-1, [{
 				type: TickQueueActionType.UpdaterAction,
-				action: {type: 'resume', tickRate: tickRate},
+				action: { type: 'resume', tickRate: tickRate },
 				initiatorId: networkState!.get('myId'),
 			}])
 		},
@@ -143,7 +144,7 @@ export const createRemoteSession = async (props: Props & GenericSessionProps): P
 	networkState.observe('leaderId', leaderId => {
 		const myId = networkState!.get('myId')
 		if (myId === leaderId)
-			props.feedbackCallback({type: 'became-leader'})
+			props.feedbackCallback({ type: 'became-leader' })
 	})
 
 	return {

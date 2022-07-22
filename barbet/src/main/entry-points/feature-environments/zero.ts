@@ -5,10 +5,10 @@ import { ActionsQueue, SendActionsQueue } from '../../game-state/scheduled-actio
 import {
 	createNewStateUpdater,
 	createStateUpdaterControllerFromReceived,
-	StateUpdater,
+	StateUpdater
 } from '../../game-state/state-updater'
 import { loadGameFromArgs } from '../../game-state/world/world-loader'
-import { performGameSave } from '../../game-state/world/world-saver'
+import { performGameSave, SaveGameArguments, SaveGameResult } from '../../game-state/world/world-saver'
 import TickQueue from '../../network/tick-queue'
 import { TickQueueAction } from '../../network/tick-queue-action'
 import { initFrontedVariablesFromReceived } from '../../util/frontend-variables-updaters'
@@ -19,9 +19,8 @@ import {
 	ConnectArguments,
 	CreateGameArguments,
 	EnvironmentConnection,
-	SaveGameArguments,
 	StartRenderArguments,
-	TerminateGameArguments,
+	TerminateGameArguments
 } from './loader'
 
 // this function is always used
@@ -42,7 +41,7 @@ export const bind = (args: ConnectArguments): EnvironmentConnection => {
 		async createNewGame(gameArgs: CreateGameArguments) {
 			const stateBroadcastCallback = () => void 0 // ignore, since everything is locally anyway
 			actionsQueue = SendActionsQueue.create(action => {
-				args.feedbackCallback({type: 'input-action', value: action})
+				args.feedbackCallback({ type: 'input-action', value: action })
 			})
 
 			game = await loadGameFromArgs(gameArgs, stateBroadcastCallback) as GameStateImplementation
@@ -62,7 +61,7 @@ export const bind = (args: ConnectArguments): EnvironmentConnection => {
 						}
 					}
 
-					args.feedbackCallback({type: 'tick-completed', tick: currentTick, updaterActions})
+					args.feedbackCallback({ type: 'tick-completed', tick: currentTick, updaterActions })
 				},
 				game.currentTick, tickQueue)
 
@@ -86,8 +85,11 @@ export const bind = (args: ConnectArguments): EnvironmentConnection => {
 			updater?.stop()
 			actionsQueue = game = updater = null
 		},
-		saveGame(saveArgs: SaveGameArguments): void {
-			performGameSave(game, saveArgs, args.feedbackCallback, tickQueue!.getActorIds())
+		async saveGame(saveArgs: SaveGameArguments): Promise<SaveGameResult> {
+			const result = game ? (await performGameSave(game, saveArgs)) : false
+			if (result === false)
+				throw new Error()
+			return result
 		},
 	}
 }

@@ -1,11 +1,32 @@
-import { FeedbackEvent, SaveGameArguments, SaveMethod } from '../../entry-points/feature-environments/loader'
 import { putSaveData } from '../../util/persistance/saves-database'
 import { ArrayEncodingType, setArrayEncodingType } from '../../util/persistance/serializers'
 import { GameState, GameStateImplementation } from '../game-state'
 
-const saveToIndexedDb = (saveName: string, game: GameState) => {
+export const enum SaveMethod {
+	ToIndexedDatabase,
+	ToDataUrl,
+	ToString,
+	ToString2,
+}
+
+export type SaveGameArguments = {
+	method: SaveMethod.ToDataUrl | SaveMethod.ToIndexedDatabase
+	saveName: string
+} | {
+	method: SaveMethod.ToString,
+	forPlayerId: number
+	sendPaused: boolean
+} | { method: SaveMethod.ToString2 }
+
+export type SaveGameResult =
+	| { method: SaveMethod.ToDataUrl, url: string, }
+	| { method: SaveMethod.ToIndexedDatabase, }
+	| { method: SaveMethod.ToString2, serializedState: string, }
+
+
+const saveToIndexedDb = async (saveName: string, game: GameState) => {
 	setArrayEncodingType(ArrayEncodingType.Array)
-	void putSaveData(saveName, (game as GameStateImplementation).serialize())
+	await putSaveData(saveName, (game as GameStateImplementation).serialize())
 	setArrayEncodingType(ArrayEncodingType.None)
 }
 
@@ -29,30 +50,22 @@ const saveToUrl = (game: GameState) => {
 	return URL.createObjectURL(new Blob([bytes]))
 }
 
-export const performGameSave = (game: GameState | null,
-                                saveArgs: SaveGameArguments,
-                                feedbackCallback: (value: FeedbackEvent) => void,
-                                inputActorIds: number[]) => {
-	if (game === null) return
+export const performGameSave = async (game: GameState,
+	saveArgs: SaveGameArguments): Promise<SaveGameResult> => {
 
 	switch (saveArgs.method) {
 		case SaveMethod.ToIndexedDatabase:
-			saveToIndexedDb(saveArgs.saveName, game)
-			break
+			await saveToIndexedDb(saveArgs.saveName, game)
+			return { method: SaveMethod.ToIndexedDatabase }
 		case SaveMethod.ToString:
-			const string = saveToString(game)
-			feedbackCallback({
-				type: 'saved-to-string',
-				serializedState: string,
-				inputActorIds,
-				forPlayerId: saveArgs.forPlayerId,
-				sendPaused: saveArgs.sendPaused,
-			})
-			break
+			throw new Error('unsupported')
 		case SaveMethod.ToDataUrl:
 			const url = saveToUrl(game)
-			feedbackCallback({type: 'saved-to-url', url: url})
-			break
-
+			return { method: SaveMethod.ToDataUrl, url }
+		case SaveMethod.ToString2:
+			const string = saveToString(game)
+			return { method: SaveMethod.ToString2, serializedState: string }
+		default:
+			throw new Error()
 	}
 }
