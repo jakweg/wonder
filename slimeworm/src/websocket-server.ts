@@ -36,7 +36,7 @@ server.on('connection', async (socket) => {
 
 contex.rooms.on('updated-room', ({ roomId, snapshot }) => {
 
-    for (const playerId of contex.rooms.getPlayerIdsInRoom(roomId)) {
+    for (const playerId of contex.rooms.listPlayerIdsInRoom(roomId)) {
         contex.players.getById(playerId)?.ws?.send
             ?.send('room-info-update', snapshot)
     }

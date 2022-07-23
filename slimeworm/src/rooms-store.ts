@@ -33,10 +33,10 @@ const createSnapshotFromRoom = (room: Room): RoomSnapshot => {
 export default class RoomStore extends EventEmitter<Events> {
     private allRooms: Map<string, Room> = new Map()
 
-    public isRoomLocked(roomId: string): boolean | undefined {
+    public isLocked(roomId: string): boolean | undefined {
         return this.allRooms.get(roomId)?.preventJoining
     }
-    public setRoomLocked(roomId: string, locked: boolean): void {
+    public setLocked(roomId: string, locked: boolean): void {
         const room = this.allRooms.get(roomId)
         if (room !== undefined && room.preventJoining !== locked) {
             room.preventJoining = locked
@@ -44,7 +44,7 @@ export default class RoomStore extends EventEmitter<Events> {
         }
     }
 
-    public getPlayerIdsInRoom(roomId: string): string[] {
+    public listPlayerIdsInRoom(roomId: string): string[] {
         const room = this.allRooms.get(roomId);
         return room !== undefined ? Object.keys(room.players) : []
     }

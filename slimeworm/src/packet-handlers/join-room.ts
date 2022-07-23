@@ -13,7 +13,7 @@ export default {
             return
         }
 
-        if (state.rooms.isRoomLocked(roomToJoin) === true) {
+        if (state.rooms.isLocked(roomToJoin) === true) {
             player.ws.send.send('joined-room', { ok: false, })
             return
         }

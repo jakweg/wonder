@@ -4,16 +4,18 @@ import { genericBind } from "../worker-listener";
 
 
 interface ToWorker {
-    'connect': { address: string },
-    'join-room': { roomId: string },
+    'connect': { address: string }
+    'join-room': { roomId: string }
     'set-prevent-joins': { prevent: boolean }
+    'broadcast-game-state': { serializedState: string }
 }
 
 interface FromWorker {
-    'state-update': any,
+    'state-update': any
     'connection-made': { success: boolean }
-    'connection-dropped': null,
+    'connection-dropped': null
     'joined-room': { ok: true, roomId: string } | { ok: false, }
+    'got-game-state': { serializedState: string }
 }
 
 export const spawnNew = (mutex: Mutex) => WorkerInstance

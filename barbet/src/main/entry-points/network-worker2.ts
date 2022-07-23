@@ -82,15 +82,32 @@ receiver.on('join-room', async ({ roomId }) => {
 
     sender.send('joined-room', { ok: true, roomId: myRoomId })
 
-    while (state.get('room-id') === myRoomId) {
-        const snapshot = await wsSocket.receive.await('room-info-update')
-        state.update({
-            "room-is-locked": snapshot['preventJoining'],
-            "players-in-room": snapshot['players'],
-        })
+    const doReceiveRoomUpdates = async () => {
+        while (state.get('room-id') === myRoomId && wsSocket?.connection.isConnected()) {
+            const snapshot = await wsSocket.receive.await('room-info-update')
+            state.update({
+                "room-is-locked": snapshot['preventJoining'],
+                "players-in-room": snapshot['players'],
+            })
+        }
     }
+
+    const doReceiveGameState = async () => {
+        while (state.get('room-id') === myRoomId && wsSocket?.connection.isConnected()) {
+            const packet = await wsSocket.receive.await('game-state-broadcast')
+            sender.send('got-game-state', { serializedState: packet['serializedState'] })
+        }
+    }
+
+    void doReceiveRoomUpdates()
+    void doReceiveGameState()
+
 })
 
 receiver.on('set-prevent-joins', ({ prevent }) => {
     wsSocket?.send?.send('update-room', { 'preventJoining': prevent })
+})
+
+receiver.on('broadcast-game-state', ({ serializedState }) => {
+    wsSocket?.send?.send('broadcast-game-state', { 'serializedState': serializedState })
 })

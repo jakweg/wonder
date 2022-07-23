@@ -15,7 +15,7 @@ export default {
         }
 
         if (typeof packet.preventJoining === 'boolean') {
-            state.rooms.setRoomLocked(player.joinedRoomId, packet.preventJoining)
+            state.rooms.setLocked(player.joinedRoomId, packet.preventJoining)
         }
     },
 } as Handler<'update-room'>
