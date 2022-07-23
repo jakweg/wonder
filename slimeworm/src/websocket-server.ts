@@ -27,6 +27,7 @@ server.on('connection', async (socket) => {
 
     player.ws.connection.awaitDisconnected()
         .then(() => contex.rooms.removePlayerFromRoom(player))
+        .then(() => info('Disconnected player', player.id))
 
     info('Connected player', player.id)
 
@@ -34,15 +35,10 @@ server.on('connection', async (socket) => {
 })
 
 contex.rooms.on('updated-room', ({ roomId, snapshot }) => {
-    const packetValue = {
-        roomId: snapshot.id,
-        preventJoining: snapshot.preventJoining,
-        playerIds: snapshot.playerIds
-    }
 
     for (const playerId of contex.rooms.getPlayerIdsInRoom(roomId)) {
         contex.players.getById(playerId)?.ws?.send
-            ?.send('room-info-update', packetValue)
+            ?.send('room-info-update', snapshot)
     }
 })
 

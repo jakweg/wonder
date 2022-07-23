@@ -1,6 +1,6 @@
 import { createGameStateForRenderer, GameState } from '../../game-state/game-state'
 import { createStateUpdaterControllerFromReceived, StateUpdater } from '../../game-state/state-updater'
-import { SaveGameResult } from '../../game-state/world/world-saver'
+import { SaveGameArguments, SaveGameResult } from '../../game-state/world/world-saver'
 import { TickQueueAction } from '../../network/tick-queue-action'
 import { frontedVariablesBuffer } from '../../util/frontend-variables'
 import { initFrontedVariablesFromReceived } from '../../util/frontend-variables-updaters'
@@ -13,7 +13,6 @@ import {
 	ConnectArguments,
 	CreateGameResult,
 	EnvironmentConnection,
-	SaveGameArguments,
 	StartRenderArguments,
 	TerminateGameArguments
 } from './loader'
@@ -114,6 +113,7 @@ export const bind = async (args: ConnectArguments): Promise<EnvironmentConnectio
 					return result
 			}
 			throw new Error('save failed')
+
 		},
 		terminate,
 	}

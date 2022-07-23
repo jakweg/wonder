@@ -1,3 +1,5 @@
+import { PlayerInRoom } from "../../../../seampan/room-snapshot";
+
 export enum ConnectionStatus {
     Disconnected,
     Connecting,
@@ -10,6 +12,6 @@ export const initialState = {
     'connection-status': ConnectionStatus.Disconnected,
     'my-id': null as (null | string),
     'room-id': null as (null | string),
-    'players-in-room': null as (null | string[]),
+    'players-in-room': null as (null | { [key: string]: PlayerInRoom }),
     'room-is-locked': null as (null | boolean),
 };

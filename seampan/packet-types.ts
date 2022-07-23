@@ -1,3 +1,5 @@
+import { RoomSnapshot } from './room-snapshot'
+
 export interface BothWayPackets {
     'ping': { noonce: number }
     'pong': { noonce: number }
@@ -11,5 +13,5 @@ export interface ClientToServer extends BothWayPackets {
 export interface ServerToClient extends BothWayPackets {
     'your-info': { id: string }
     'joined-room': { ok: true, roomId: string } | { ok: false }
-    'room-info-update': { roomId: string, preventJoining: boolean, playerIds: string[] }
+    'room-info-update': RoomSnapshot
 }

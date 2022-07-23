@@ -83,10 +83,10 @@ receiver.on('join-room', async ({ roomId }) => {
     sender.send('joined-room', { ok: true, roomId: myRoomId })
 
     while (state.get('room-id') === myRoomId) {
-        const packet = await wsSocket.receive.await('room-info-update')
+        const snapshot = await wsSocket.receive.await('room-info-update')
         state.update({
-            "room-is-locked": packet['preventJoining'],
-            "players-in-room": packet['playerIds'],
+            "room-is-locked": snapshot['preventJoining'],
+            "players-in-room": snapshot['players'],
         })
     }
 })

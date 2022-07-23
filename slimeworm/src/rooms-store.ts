@@ -1,28 +1,32 @@
 import { info } from "console";
 import EventEmitter from '../../seampan/event-emitter';
+import { PlayerRole, RoomSnapshot } from '../../seampan/room-snapshot';
 import { Player } from "./players-store";
 
 interface Events {
     'updated-room': { roomId: string, snapshot: RoomSnapshot }
 }
 
-export interface RoomSnapshot {
-    id: string
-    preventJoining: boolean
-    playerIds: string[]
+
+interface PlayerInRoom {
+    player: Player
+    role: PlayerRole
 }
 
 interface Room {
     id: string
     preventJoining: boolean
-    assignedPlayerIds: Set<string>
+    players: { [key: string]: PlayerInRoom }
 }
 
 const createSnapshotFromRoom = (room: Room): RoomSnapshot => {
     return {
         id: room.id,
         preventJoining: room.preventJoining,
-        playerIds: [...room.assignedPlayerIds]
+        players: Object.fromEntries(Object.entries(room.players)
+            .map(([k, v]) => [k, {
+                role: v.role
+            }]))
     }
 }
 
@@ -42,17 +46,22 @@ export default class RoomStore extends EventEmitter<Events> {
 
     public getPlayerIdsInRoom(roomId: string): string[] {
         const room = this.allRooms.get(roomId);
-        return room !== undefined ? [...room.assignedPlayerIds] : []
+        return room !== undefined ? Object.keys(room.players) : []
+    }
+
+    public getPlayersRoleInRoom(roomId: string, playerId: string): PlayerRole | undefined {
+        return this.allRooms.get(roomId)?.players?.[playerId]?.role
     }
 
     public assignPlayerToRoom(player: Player, roomId: string): void {
         if (player.joinedRoomId !== null) throw new Error()
 
         let room: Room | undefined = this.allRooms.get(roomId)
+        let newlyCreated = room === undefined
         if (room === undefined) {
             room = {
                 id: roomId,
-                assignedPlayerIds: new Set(),
+                players: {},
                 preventJoining: false,
             }
             this.allRooms.set(room.id, room)
@@ -60,7 +69,9 @@ export default class RoomStore extends EventEmitter<Events> {
         }
 
         player.joinedRoomId = room.id
-        room.assignedPlayerIds.add(player.id)
+        room.players[player.id] = {
+            player, role: newlyCreated ? PlayerRole.Owner : PlayerRole.Member,
+        }
         info('Added player', player.id, 'to room', room.id)
         this.emitAsync('updated-room', { roomId: room.id, snapshot: createSnapshotFromRoom(room) })
     }
@@ -71,8 +82,8 @@ export default class RoomStore extends EventEmitter<Events> {
         const room = this.allRooms.get(player.joinedRoomId)
         if (room !== undefined) {
             info('Removed player', player.id, 'from room', room.id)
-            room.assignedPlayerIds.delete(player.id)
-            if (room.assignedPlayerIds.size === 0) {
+            delete room.players[player.id]
+            if (Object.keys(room.players).length === 0) {
                 info('Deleting empty room', room.id)
                 this.allRooms.delete(room.id)
             }
