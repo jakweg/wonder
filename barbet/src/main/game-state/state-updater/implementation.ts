@@ -1,5 +1,5 @@
-import TickQueue from '../../network/tick-queue'
-import { TickQueueActionType, UpdaterAction } from '../../network/tick-queue-action'
+import TickQueue from '../../network2/tick-queue'
+import { TickQueueActionType, UpdaterAction } from '../../network2/tick-queue-action'
 import { isInWorker, waitAsyncCompat } from '../../util/mutex'
 import { createNewBuffer } from '../../util/shared-memory'
 import { ScheduledAction } from '../scheduled-actions'
@@ -24,7 +24,7 @@ const waitForStatusNotStopped = async (memory: Int32Array): Promise<Status> => {
 }
 
 const performLogicUpdates = async (memory: Int32Array,
-                                   func: (tick: number) => Promise<boolean>): Promise<boolean> => {
+	func: (tick: number) => Promise<boolean>): Promise<boolean> => {
 	const now = performance.now()
 	const firstExecutedAt = Atomics.load(memory, BufferField.FirstTickExecutedAt)
 	const tps = Atomics.load(memory, BufferField.TicksPerSecond)
@@ -146,8 +146,8 @@ const loop = async (memory: Int32Array, func: (tick: number) => Promise<boolean>
 }
 
 export const createNewStateUpdater = (updatable: (gameActions: ScheduledAction[], updaterActions: UpdaterAction[]) => Promise<void>,
-                                      startFromTick: number,
-                                      tickQueue: TickQueue)
+	startFromTick: number,
+	tickQueue: TickQueue)
 	: StateUpdaterImplementation => {
 
 	const memory = new Int32Array(createNewBuffer(BufferField.SIZE * Int32Array.BYTES_PER_ELEMENT))
@@ -183,7 +183,7 @@ export const createNewStateUpdater = (updatable: (gameActions: ScheduledAction[]
 
 	return {
 		pass(): unknown {
-			return {buffer: memory['buffer']}
+			return { buffer: memory['buffer'] }
 		},
 		terminate(): void {
 			Atomics.store(memory, BufferField.Status, Status.Terminated)

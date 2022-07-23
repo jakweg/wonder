@@ -3,7 +3,7 @@ import { createNewStateUpdater } from '../game-state/state-updater'
 import { StateUpdaterImplementation } from '../game-state/state-updater/implementation'
 import { loadGameFromArgs } from '../game-state/world/world-loader'
 import { performGameSave } from '../game-state/world/world-saver'
-import TickQueue from '../network/tick-queue'
+import TickQueue from '../network2/tick-queue'
 import CONFIG from '../util/persistance/observable-settings'
 import { bind } from '../util/worker/message-types/update'
 
@@ -37,26 +37,18 @@ receiver.on('create-game', async (args) => {
 
 	tickQueue = TickQueue.createEmpty()
 
-	if (args.existingInputActorIds)
-		args.existingInputActorIds.forEach(id => tickQueue!.addRequiredPlayer(id))
-
 	stateUpdater = createNewStateUpdater(
 		async (gameActions, updaterActions) => {
 
 			await gameState!.advanceActivities(gameActions)
 
 			const currentTick = gameState!.currentTick
-			for (const a of updaterActions) {
-				if (a.type === 'new-player-joins') {
-					tickQueue!.addRequiredPlayer(a.playerId)
-				}
-			}
 
 			sender.send('tick-completed', { tick: currentTick, updaterActions })
 		},
 		gameState.currentTick, tickQueue)
 
-	sender.send('game-snapshot-for-renderer', {
+	sender.send('game-create-result', {
 		game: gameState!.passForRenderer(),
 		updater: stateUpdater!.pass(),
 	})
@@ -69,4 +61,8 @@ receiver.on('save-game', async (data) => {
 
 receiver.on('append-to-tick-queue', ({ actions, playerId, forTick }) => {
 	tickQueue?.setForTick(forTick, playerId, actions)
+})
+
+receiver.on('set-player-ids', ({ playerIds }) => {
+	tickQueue?.setRequiredPlayers(playerIds)
 })

@@ -20,7 +20,7 @@ export class PlayersStore {
         pinger.send()
 
         const player: Player = {
-            id: randomUUID(),
+            id: randomUUID().substring(0, 8),
             ws, pinger, joinedRoomId: null
         };
 

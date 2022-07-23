@@ -42,7 +42,7 @@ export class WorkerInstance<SendTypes, ReceiveTypes>{
             worker['addEventListener']('error', reject)
         })
 
-        const { sender, receiver, delay } = await Promise.race([
+        const { sender, receiver, delay } = await Promise['race']([
             startExchange<S & SystemMessageTypeToWorker, R & SystemMessageTypeFromWorker>(worker, mutex),
             loadErrorPromise as any,
         ])

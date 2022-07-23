@@ -54,34 +54,37 @@ const createReceiver = <T>(ws: { onmessage: null | ((event: MessageEvent) => voi
             return
         }
         const { type, value } = parsed
-        let deliveredValue = value
 
-        let callback = oneTimeListeners['get'](type)
-        let isOneTime = true
-        if (callback === undefined) {
-            callback = listeners[type]
-            isOneTime = false
-        }
+        setTimeout(() => {
+            let deliveredValue = value
 
-        if (callback === undefined && anyListener !== undefined) {
-            deliveredValue = [type, { [type]: value }]
-            callback = anyListener
-            anyListener = undefined
-            isOneTime = false
-        }
+            let callback = oneTimeListeners['get'](type)
+            let isOneTime = true
+            if (callback === undefined) {
+                callback = listeners[type]
+                isOneTime = false
+            }
 
-        if (callback === undefined)
-            throw new Error(`Missing handler for ${type}`)
+            if (callback === undefined && anyListener !== undefined) {
+                deliveredValue = [type, { [type]: value }]
+                callback = anyListener
+                anyListener = undefined
+                isOneTime = false
+            }
 
-        if (isOneTime)
-            oneTimeListeners['delete'](type)
+            if (callback === undefined)
+                throw new Error(`Missing handler for ${type}`)
+
+            if (isOneTime)
+                oneTimeListeners['delete'](type)
 
 
-        try {
-            callback(deliveredValue)
-        } catch (e) {
-            console['error']('Error handling packet', { type, value }, e);
-        }
+            try {
+                callback(deliveredValue)
+            } catch (e) {
+                console['error']('Error handling packet', { type, value }, e);
+            }
+        })
     }
 
 

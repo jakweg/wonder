@@ -99,8 +99,20 @@ receiver.on('join-room', async ({ roomId }) => {
         }
     }
 
+    const doReceivePlayerActions = async () => {
+        while (state.get('room-id') === myRoomId && wsSocket?.connection.isConnected()) {
+            const packet = await wsSocket.receive.await('players-actions')
+            sender.send('got-player-actions', {
+                from: packet['from'],
+                tick: packet['tick'],
+                actions: packet['actions'],
+            })
+        }
+    }
+
     void doReceiveRoomUpdates()
     void doReceiveGameState()
+    void doReceivePlayerActions()
 
 })
 
@@ -110,4 +122,8 @@ receiver.on('set-prevent-joins', ({ prevent }) => {
 
 receiver.on('broadcast-game-state', ({ serializedState }) => {
     wsSocket?.send?.send('broadcast-game-state', { 'serializedState': serializedState })
+})
+
+receiver.on('broadcast-my-actions', ({ tick, actions }) => {
+    wsSocket?.send?.send('broadcast-my-actions', { 'tick': tick, 'actions': actions })
 })

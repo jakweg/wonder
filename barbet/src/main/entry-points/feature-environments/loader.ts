@@ -2,7 +2,7 @@ import { GameState } from '../../game-state/game-state'
 import { ScheduledAction } from '../../game-state/scheduled-actions'
 import { StateUpdater } from '../../game-state/state-updater'
 import { SaveGameArguments, SaveGameResult } from '../../game-state/world/world-saver'
-import { TickQueueAction, UpdaterAction } from '../../network/tick-queue-action'
+import { TickQueueAction, UpdaterAction } from '../../network2/tick-queue-action'
 import { DEBUG, FORCE_ENV_ZERO, JS_ROOT } from '../../util/build-info'
 import { frontedVariablesBuffer } from '../../util/frontend-variables'
 import Mutex from '../../util/mutex'
@@ -11,6 +11,7 @@ import { getCameraBuffer } from '../../util/persistance/serializable-settings'
 import { sharedMemoryIsAvailable } from '../../util/shared-memory'
 import { globalMutex } from '../../util/worker/global-mutex'
 
+/** @deprecated */
 export type FeedbackEvent =
 	| { type: 'tick-completed', tick: number, updaterActions: UpdaterAction[] }
 	| { type: 'saved-to-string', serializedState: string, forPlayerId: number, inputActorIds: number[], sendPaused: boolean }
@@ -22,7 +23,6 @@ export interface ConnectArguments {
 	frontendVariables: SharedArrayBuffer
 	camera: SharedArrayBuffer
 	settings: typeof CONFIG
-	feedbackCallback: ((event: FeedbackEvent) => void)
 }
 
 export type Environment =
@@ -44,20 +44,26 @@ export interface CreateGameArguments {
 	saveName?: string
 	fileToRead?: File
 	stringToRead?: string
-	existingInputActorIds?: number[]
-	gameSpeed?: number
 }
 
 export interface TerminateGameArguments {
 	terminateEverything?: boolean
 }
 
-export type SetActionsCallback = (forTick: number, playerId: number, actions: TickQueueAction[]) => void
+export type SetActionsCallback = (forTick: number, playerId: string, actions: TickQueueAction[]) => void
+
+export interface GameListeners {
+	onTickCompleted(tick: number): void
+
+	onInputCaused(action: ScheduledAction): void
+}
 
 export interface CreateGameResult {
 	state: GameState,
 	updater: StateUpdater,
+	setPlayerIdsCallback: (ids: string[]) => void
 	setActionsCallback: SetActionsCallback
+	setGameListeners: (listeners: GameListeners) => void
 }
 
 export interface EnvironmentConnection {
@@ -85,8 +91,7 @@ export const getSuggestedEnvironmentName = (preferredEnvironment: Environment) =
 	return usedEnvironment
 }
 
-export const loadEnvironment = async (name: Environment,
-	feedbackCallback: (event: FeedbackEvent) => void)
+export const loadEnvironment = async (name: Environment)
 	: Promise<Readonly<EnvironmentConnection>> => {
 	if (FORCE_ENV_ZERO && name !== 'zero') {
 		if (!DEBUG)
@@ -99,7 +104,6 @@ export const loadEnvironment = async (name: Environment,
 		frontendVariables: frontedVariablesBuffer,
 		camera: getCameraBuffer(),
 		settings: CONFIG,
-		feedbackCallback,
 	}
 	return Object.freeze(await connect(args) as EnvironmentConnection)
 }

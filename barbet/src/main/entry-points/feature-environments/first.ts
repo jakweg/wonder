@@ -43,7 +43,7 @@ export const bind = async (args: ConnectArguments): Promise<EnvironmentConnectio
 
 	const queue: ActionsQueue = SendActionsQueue.create(a => args.feedbackCallback({ type: 'input-action', value: a }))
 
-	updateWorker.receive.on('game-snapshot-for-renderer', (data) => {
+	updateWorker.receive.on('game-create-result', (data) => {
 		decodedGame = createGameStateForRenderer(data.game)
 
 		updater = createStateUpdaterControllerFromReceived(data.updater)

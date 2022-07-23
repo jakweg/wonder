@@ -9,8 +9,8 @@ import {
 } from '../../game-state/state-updater'
 import { loadGameFromArgs } from '../../game-state/world/world-loader'
 import { performGameSave, SaveGameArguments, SaveGameResult } from '../../game-state/world/world-saver'
-import TickQueue from '../../network/tick-queue'
-import { TickQueueAction } from '../../network/tick-queue-action'
+import TickQueue from '../../network2/tick-queue'
+import { TickQueueAction } from '../../network2/tick-queue-action'
 import { initFrontedVariablesFromReceived } from '../../util/frontend-variables-updaters'
 import CONFIG from '../../util/persistance/observable-settings'
 import { getCameraBuffer, setCameraBuffer } from '../../util/persistance/serializable-settings'
@@ -46,8 +46,8 @@ export const bind = (args: ConnectArguments): EnvironmentConnection => {
 
 			game = await loadGameFromArgs(gameArgs, stateBroadcastCallback) as GameStateImplementation
 			tickQueue = TickQueue.createEmpty()
-			if (gameArgs.existingInputActorIds)
-				gameArgs.existingInputActorIds.forEach(id => tickQueue!.addRequiredPlayer(id))
+			// if (gameArgs.existingInputActorIds)
+			// gameArgs.existingInputActorIds.forEach(id => tickQueue!.addRequiredPlayer(id))
 
 			const updaterInstance = createNewStateUpdater(
 				async (gameActions, updaterActions) => {
@@ -56,9 +56,9 @@ export const bind = (args: ConnectArguments): EnvironmentConnection => {
 
 					const currentTick = game!.currentTick
 					for (const a of updaterActions) {
-						if (a.type === 'new-player-joins') {
-							tickQueue!.addRequiredPlayer(a.playerId)
-						}
+						// if (a.type === 'new-player-joins') {
+						// 	tickQueue!.addRequiredPlayer(a.playerId)
+						// }
 					}
 
 					args.feedbackCallback({ type: 'tick-completed', tick: currentTick, updaterActions })
@@ -69,7 +69,7 @@ export const bind = (args: ConnectArguments): EnvironmentConnection => {
 			return {
 				state: game,
 				updater,
-				setActionsCallback: (forTick: number, playerId: number, actions: TickQueueAction[]) => {
+				setActionsCallback: (forTick: number, playerId: string, actions: TickQueueAction[]) => {
 					tickQueue!.setForTick(forTick, playerId, actions)
 				},
 			}

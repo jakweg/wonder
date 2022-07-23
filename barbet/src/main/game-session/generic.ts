@@ -8,7 +8,7 @@ import {
 	SetActionsCallback
 } from '../entry-points/feature-environments/loader'
 import { StateUpdater, Status } from '../game-state/state-updater'
-import { TickQueueAction, TickQueueActionType, UpdaterAction } from '../network/tick-queue-action'
+import { TickQueueAction, TickQueueActionType, UpdaterAction } from '../network2/tick-queue-action'
 import CONFIG from '../util/persistance/observable-settings'
 import { Action } from './index'
 
@@ -24,7 +24,7 @@ interface Props {
 	sendActionsToWorld: (tick: number, actions: TickQueueAction[]) => void
 
 	dispatchUpdaterAction: (action: UpdaterAction) => void
-	onGameLoaded: (actionsCallback: SetActionsCallback) => void
+	onGameLoaded: (actionsCallback: SetActionsCallback, setPlayerIdsCallback: (ids: string[]) => void) => void
 
 	onPauseRequested(): void
 
@@ -67,12 +67,11 @@ export const createGenericSession = async (props: Props) => {
 	const loadGameFromArgs = (args: CreateGameArguments) => {
 		environment.createNewGame({
 			...args,
-			existingInputActorIds: [...(args.existingInputActorIds ?? []), props.myPlayerId()],
 		}).then((results) => {
 			updater = results.updater
 			environment.startRender({ canvas: props.canvasProvider() })
 
-			props.onGameLoaded(results.setActionsCallback)
+			props.onGameLoaded(results.setActionsCallback, results.setPlayerIdsCallback)
 
 			sendEmptyActionsForInitialTicks(results.updater.getExecutedTicksCount())
 			if (args.gameSpeed !== undefined && args.gameSpeed > 0)

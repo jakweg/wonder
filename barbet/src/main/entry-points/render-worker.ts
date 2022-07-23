@@ -30,7 +30,7 @@ receiver.on('set-worker-load-delays', (data) => {
 	workerStartDelayDifference = data.update - data.render
 })
 
-receiver.on('game-snapshot-for-renderer', (data) => {
+receiver.on('game-create-result', (data) => {
 	gameSnapshot = data
 	considerStartRendering()
 })

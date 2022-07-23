@@ -13,7 +13,7 @@ interface ToWorker {
     'update-entity-container': { buffers: SharedArrayBuffer[] }
     'terminate-game': TerminateGameArguments
     'transfer-canvas': { canvas: unknown }
-    'game-snapshot-for-renderer': { game: unknown, updater: unknown }
+    'game-create-result': { game: unknown, updater: unknown }
 }
 
 interface FromWorker {

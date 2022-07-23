@@ -1,4 +1,5 @@
-import { CreateGameArguments, FeedbackEvent, SaveGameArguments } from '../entry-points/feature-environments/loader'
+import { CreateGameArguments, FeedbackEvent } from '../entry-points/feature-environments/loader'
+import { SaveGameArguments } from '../game-state/world/world-saver'
 import { createLocalSession } from './local'
 import { createRemoteSession } from './remote'
 
