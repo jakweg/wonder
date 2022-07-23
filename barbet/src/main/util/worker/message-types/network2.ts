@@ -8,6 +8,7 @@ interface ToWorker {
     'join-room': { roomId: string }
     'set-prevent-joins': { prevent: boolean }
     'broadcast-game-state': { serializedState: string }
+    'broadcast-my-actions': { tick: number, actions: never[] }
 }
 
 interface FromWorker {

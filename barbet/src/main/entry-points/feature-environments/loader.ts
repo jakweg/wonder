@@ -12,12 +12,9 @@ import { sharedMemoryIsAvailable } from '../../util/shared-memory'
 import { globalMutex } from '../../util/worker/global-mutex'
 
 export type FeedbackEvent =
-	{ type: 'saved-to-url', url: string }
 	| { type: 'tick-completed', tick: number, updaterActions: UpdaterAction[] }
 	| { type: 'saved-to-string', serializedState: string, forPlayerId: number, inputActorIds: number[], sendPaused: boolean }
-	| { type: 'saved-to-string2', serializedState: string, }
 	| { type: 'input-action', value: ScheduledAction }
-	| { type: 'error' }
 	| { type: 'became-leader' }
 
 export interface ConnectArguments {

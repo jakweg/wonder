@@ -1,10 +1,11 @@
 import {
 	CreateGameArguments,
 	Environment,
+	EnvironmentConnection,
 	FeedbackEvent,
 	getSuggestedEnvironmentName,
 	loadEnvironment,
-	SetActionsCallback,
+	SetActionsCallback
 } from '../entry-points/feature-environments/loader'
 import { StateUpdater, Status } from '../game-state/state-updater'
 import { TickQueueAction, TickQueueActionType, UpdaterAction } from '../network/tick-queue-action'
@@ -69,7 +70,7 @@ export const createGenericSession = async (props: Props) => {
 			existingInputActorIds: [...(args.existingInputActorIds ?? []), props.myPlayerId()],
 		}).then((results) => {
 			updater = results.updater
-			environment.startRender({canvas: props.canvasProvider()})
+			environment.startRender({ canvas: props.canvasProvider() })
 
 			props.onGameLoaded(results.setActionsCallback)
 
@@ -86,6 +87,9 @@ export const createGenericSession = async (props: Props) => {
 		},
 		appendActionForNextTick(action: TickQueueAction) {
 			myActionsForFutureTick.push(action)
+		},
+		getEnvironment(): EnvironmentConnection {
+			return environment
 		},
 		dispatchAction(action: Action) {
 			queueMicrotask(async () => {
@@ -113,7 +117,7 @@ export const createGenericSession = async (props: Props) => {
 			return updater
 		},
 		resetRendering() {
-			environment.startRender({canvas: props.canvasProvider()})
+			environment.startRender({ canvas: props.canvasProvider() })
 		},
 		terminate() {
 			environment.terminate({})

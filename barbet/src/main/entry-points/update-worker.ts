@@ -52,7 +52,7 @@ receiver.on('create-game', async (args) => {
 				}
 			}
 
-			sender.send('feedback', { type: 'tick-completed', tick: currentTick, updaterActions })
+			sender.send('tick-completed', { tick: currentTick, updaterActions })
 		},
 		gameState.currentTick, tickQueue)
 

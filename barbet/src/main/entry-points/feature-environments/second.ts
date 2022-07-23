@@ -45,14 +45,10 @@ export const bind = async (args: ConnectArguments): Promise<EnvironmentConnectio
 		update: updateWorker.startDelay,
 	})
 
-	updateWorker.receive.on('feedback', data => {
-		args.feedbackCallback(data)
+	updateWorker.receive.on('tick-completed', data => {
+		args.feedbackCallback({ type: 'tick-completed', ...data })
 	})
-	renderWorker.receive.on('feedback', data => args.feedbackCallback(data))
 
-	updateWorker.receive.on('scheduled-action', action => {
-		args.feedbackCallback({ type: 'input-action', value: action })
-	})
 	renderWorker.receive.on('scheduled-action', action => {
 		args.feedbackCallback({ type: 'input-action', value: action })
 	})
@@ -113,7 +109,6 @@ export const bind = async (args: ConnectArguments): Promise<EnvironmentConnectio
 					return result
 			}
 			throw new Error('save failed')
-
 		},
 		terminate,
 	}

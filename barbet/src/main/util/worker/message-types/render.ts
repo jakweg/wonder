@@ -1,4 +1,4 @@
-import { FeedbackEvent, TerminateGameArguments } from "../../../entry-points/feature-environments/loader";
+import { TerminateGameArguments } from "../../../entry-points/feature-environments/loader";
 import { ScheduledAction } from "../../../game-state/scheduled-actions";
 import Mutex from "../../mutex";
 import { WorkerInstance } from "../worker-instance";
@@ -17,7 +17,6 @@ interface ToWorker {
 }
 
 interface FromWorker {
-    'feedback': FeedbackEvent
     'scheduled-action': ScheduledAction
 }
 
