@@ -70,7 +70,7 @@ const initPageState = async () => {
 
 	await remote.connect('localhost:3719')
 
-	await remote.joinRoom('abed')
+	await remote.joinRoom('default')
 
 	await waitForOtherPlayers(remote.getState(), 1)
 
