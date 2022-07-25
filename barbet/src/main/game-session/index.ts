@@ -1,6 +1,8 @@
-interface CreateGameArguments {
-    canvasProvider: () => HTMLCanvasElement
-}
+import { CreateGameArguments } from "../entry-points/feature-environments/loader"
+
+export type Operation =
+    | { type: 'start', tps: number, }
+    | { type: 'pause', }
 
 
 export interface GameSession {

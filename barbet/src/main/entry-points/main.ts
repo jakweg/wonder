@@ -1,7 +1,8 @@
 import { can, MemberPermissions } from '../../../../seampan/room-snapshot'
 import { sleep } from '../../../../seampan/util'
-import { RemoteSession } from '../game-session/remote2'
-import { GameSession } from '../game-session/session'
+import { GameSession } from '../game-session'
+import { createLocalSession } from '../game-session/local'
+import { createRemoteSession } from '../game-session/remote2'
 import { initialState } from '../network2/initialState'
 import { createUi } from '../ui/root'
 import { initFrontendVariableAndRegisterToWindow } from '../util/frontend-variables-updaters'
@@ -65,8 +66,11 @@ const waitForOtherPlayers = async (
 		await sleep(50)
 }
 
-const initPageState = async () => {
-	const remote = session = await RemoteSession.createNew()
+const startRemote = async () => {
+
+	const remote = session = await createRemoteSession({
+		canvasProvider: uiHandlers.canvas.recreate
+	})
 
 	await remote.connect('localhost:3719')
 
@@ -78,9 +82,7 @@ const initPageState = async () => {
 	if (can(myRole, MemberPermissions.SendGameState)) {
 		console.info('I\'m the owner, waiting for other players')
 
-		await remote.createNewGame({
-			canvasProvider: uiHandlers.canvas.recreate
-		})
+		await remote.createNewGame()
 
 		await waitForOtherPlayers(remote.getState(), 2)
 		await remote.lockRoom(true)
@@ -97,159 +99,22 @@ const initPageState = async () => {
 	} else {
 		console.info('I\'m not the owner, wait for map to be sent')
 
-		await remote.waitForGameFromNetwork(uiHandlers.canvas.recreate)
+		await remote.waitForGameFromNetwork()
 		remote.listenForOperations()
 
 	}
+}
 
+const startLocal = async () => {
+	const local = session = await createLocalSession({
+		canvasProvider: uiHandlers.canvas.recreate
+	})
+	await local.createNewGame({})
+	local.resume(20)
+}
 
-
-
-	// // if (DEFAULT_NETWORK_SERVER_ADDRESS !== undefined)
-	// // 	await startRemoteSession(DEFAULT_NETWORK_SERVER_ADDRESS)
-	// // else
-	// // await startLocalSession()
-	// // if (Math.random() < 100)
-	// // 	return
-
-
-	// const network2 = await import('../util/worker/message-types/network2')
-	// const { initialState } = await import('../network2/initialState')
-	// const { send, receive } = await network2.spawnNew(globalMutex)
-
-	// receive.on('connection-dropped', () => console.info('Connection closed'))
-
-	// const networkState = State.fromInitial(initialState)
-	// networkState.observeEverything(console.log)
-	// receive.on('state-update', data => networkState.update(data))
-
-	// send.send('connect', { address: 'localhost:3719' });
-	// if (!(await receive.await('connection-made')).success) {
-	// 	console.error('failed to establish connection');
-	// 	return
-	// }
-	// console.log('connected to server successfully');
-
-
-	// send.send('join-room', { roomId: 'abcd' })
-	// if (!(await receive.await('joined-room')).ok) {
-	// 	console.error('failed to join room');
-	// 	return
-	// }
-	// console.log('Joined room', networkState.get('room-id'));
-
-	// const MIN_PLAYERS = 2
-
-	// while (true) {
-	// 	const playersCount = Object.keys(networkState.get('players-in-room') ?? {}).length
-	// 	if (playersCount >= MIN_PLAYERS)
-	// 		break
-
-	// 	await sleep(200)
-	// }
-
-
-	// const session = await createGenericSession({
-	// 	canvasProvider: uiHandlers.canvas.recreate,
-	// 	ticksToTakeActionProvider: () => 15,
-	// 	myPlayerId: () => 1,
-	// 	sendActionsToWorld(tick, actions) {
-	// 		console.log('send');
-	// 		console.log({ tick, actions });
-	// 		send.send('broadcast-my-actions', { tick, actions })
-
-	// 		// throw new Error('not implemented: sendActionsToWorld')
-	// 	},
-	// 	dispatchUpdaterAction(action) {
-	// 		throw new Error('not implemented: dispatchUpdaterAction')
-	// 	},
-	// 	handleFeedbackCallback(event) {
-	// 		throw new Error('not implemented: handleFeedbackCallback')
-	// 	},
-	// 	async onGameLoaded(actionsCallback, setIds) {
-	// 		console.log('loaded');
-
-	// 		const players = networkState.get('players-in-room') ?? {}
-	// 		const myRole = players[networkState.get('my-id') ?? '']?.role
-
-	// 		if (myRole === PlayerRole.Owner) {
-	// 			const saveResult = await session.getEnvironment().saveGame({ method: SaveMethod.ToString2, })
-	// 			if (saveResult.method !== SaveMethod.ToString2) return
-
-	// 			console.log('broadcasting game');
-	// 			send.send('broadcast-game-state', { serializedState: saveResult.serializedState })
-	// 		}
-
-	// 		const ids = Object.keys(players)
-	// 		setIds(ids)
-	// 	},
-	// 	onPauseRequested() {
-	// 		throw new Error('not implemented: onPauseRequested')
-	// 	},
-	// 	onResumeRequested() {
-	// 		throw new Error('not implemented: onResumeRequested')
-	// 	},
-	// })
-
-	// const myRole = networkState.get('players-in-room')?.[networkState.get('my-id') ?? '']?.role
-	// if (myRole === PlayerRole.Owner) {
-	// 	console.log('locking room')
-
-	// 	send.send('set-prevent-joins', { prevent: true })
-	// 	while (true) {
-	// 		if (networkState.get('room-is-locked'))
-	// 			break
-
-	// 		await sleep(200)
-	// 	}
-
-	// 	console.log('Loading game');
-
-	// 	session.dispatchAction({
-	// 		type: 'create-game',
-	// 		args: { gameSpeed: 0 },
-	// 	})
-
-	// 	// const suggestedName = getSuggestedEnvironmentName(CONFIG.get('other/preferred-environment') as Environment)
-	// 	// const environment = await loadEnvironment(suggestedName, feedbackFinalHandler)
-
-	// 	// const game = await environment.createNewGame({})
-	// 	// await environment.startRender({ canvas: uiHandlers.canvas.recreate() })
-	// 	// const saveResult = await environment.saveGame({ method: SaveMethod.ToString2, })
-	// 	// if (saveResult.method !== SaveMethod.ToString2) return
-
-	// 	// console.log('broadcasting game');
-	// 	// send.send('broadcast-game-state', { serializedState: saveResult.serializedState })
-
-
-	// } else {
-	// 	console.log('waiting for game to be broadcasted');
-	// 	const { serializedState } = await receive.await('got-game-state')
-	// 	console.log('got it');
-
-
-	// 	session.dispatchAction({
-	// 		type: 'create-game',
-	// 		args: { stringToRead: serializedState, gameSpeed: 0 }
-	// 	})
-
-
-	// 	// const suggestedName = getSuggestedEnvironmentName(CONFIG.get('other/preferred-environment') as Environment)
-	// 	// const environment = await loadEnvironment(suggestedName, feedbackFinalHandler)
-
-	// 	// const game = await environment.createNewGame({ stringToRead: serializedState })
-	// 	// await environment.startRender({ canvas: uiHandlers.canvas.recreate() })
-
-	// 	// console.log('Game ready to play!');
-
-	// }
-
-
-
-
-	// result.updater.start(20)
-	// result.setActionsCallback(1, 0, [])
-
+const initPageState = async () => {
+	startLocal()
 }
 
 initPageState().then(() => void 0)

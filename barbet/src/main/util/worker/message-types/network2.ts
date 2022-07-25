@@ -1,4 +1,4 @@
-import { Operation } from "../../../game-session/remote2";
+import { Operation } from "../../../game-session/";
 import { TickQueueAction } from "../../../network2/tick-queue-action";
 import Mutex from "../../mutex";
 import { WorkerInstance } from "../worker-instance";
