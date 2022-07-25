@@ -1,6 +1,7 @@
 import { TickQueueAction } from './tick-queue-action'
 
 export default class TickQueue {
+	private sortedPlayersCache: string[] | null = null
 	private constructor(
 		private readonly ticksMap: Map<number, Map<string, TickQueueAction[]>>,
 		private readonly requiredPlayerIds: Set<string>,
@@ -13,6 +14,7 @@ export default class TickQueue {
 
 	public setRequiredPlayers(playerIds: string[]): void {
 		this.requiredPlayerIds['clear']()
+		this.sortedPlayersCache = null
 		for (const id of playerIds)
 			this.requiredPlayerIds['add'](id)
 	}
@@ -39,8 +41,13 @@ export default class TickQueue {
 		if (value['size'] < this.requiredPlayerIds['size'])
 			return
 
-		const actions = [...value.values()].flatMap(e => e)
-		actions['sort']((a, b) => a.initiatorId - b.initiatorId)
-		return actions
+		if (this.sortedPlayersCache === null)
+			this.sortedPlayersCache = [...this.requiredPlayerIds.values()].sort()
+
+		const allActions: TickQueueAction[] = []
+		for (const player of this.sortedPlayersCache)
+			allActions.push(...value.get(player)!)
+
+		return allActions
 	}
 }
