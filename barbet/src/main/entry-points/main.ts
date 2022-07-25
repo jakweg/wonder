@@ -1,4 +1,4 @@
-import { PlayerRole } from '../../../../seampan/room-snapshot'
+import { can, MemberPermissions } from '../../../../seampan/room-snapshot'
 import { sleep } from '../../../../seampan/util'
 import { RemoteSession } from '../game-session/remote2'
 import { GameSession } from '../game-session/session'
@@ -74,7 +74,8 @@ const initPageState = async () => {
 
 	await waitForOtherPlayers(remote.getState(), 1)
 
-	if ((remote.getState().get('players-in-room') ?? {})[remote.getState().get('my-id') ?? '']?.role === PlayerRole.Owner) {
+	const myRole = (remote.getState().get('players-in-room') ?? {})[remote.getState().get('my-id') ?? '']?.role
+	if (can(myRole, MemberPermissions.SendGameState)) {
 		console.info('I\'m the owner, waiting for other players')
 
 		await remote.createNewGame({

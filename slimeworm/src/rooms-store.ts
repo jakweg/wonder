@@ -1,6 +1,6 @@
 import { info } from "console";
 import EventEmitter from '../../seampan/event-emitter';
-import { PlayerRole, RoomSnapshot } from '../../seampan/room-snapshot';
+import { MemberPermissions, MemberRole, OwnerRole, RoomSnapshot } from '../../seampan/room-snapshot';
 import { Player } from "./players-store";
 
 interface Events {
@@ -10,7 +10,7 @@ interface Events {
 
 interface PlayerInRoom {
     player: Player
-    role: PlayerRole
+    role: MemberPermissions
 }
 
 interface Room {
@@ -58,7 +58,7 @@ export default class RoomStore extends EventEmitter<Events> {
         return room !== undefined ? Object.keys(room.players) : []
     }
 
-    public getPlayersRoleInRoom(roomId: string, playerId: string): PlayerRole | undefined {
+    public getPlayersRoleInRoom(roomId: string, playerId: string): MemberPermissions | undefined {
         return this.allRooms.get(roomId)?.players?.[playerId]?.role
     }
 
@@ -80,7 +80,7 @@ export default class RoomStore extends EventEmitter<Events> {
 
         player.joinedRoomId = room.id
         room.players[player.id] = {
-            player, role: newlyCreated ? PlayerRole.Owner : PlayerRole.Member,
+            player, role: newlyCreated ? OwnerRole : MemberRole,
         }
         info('Added player', player.id, 'to room', room.id)
         this.emitAsync('updated-room', { roomId: room.id, snapshot: createSnapshotFromRoom(room) })

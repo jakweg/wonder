@@ -1,5 +1,5 @@
 import Handler from ".";
-import { PlayerRole } from "../../../seampan/room-snapshot";
+import { can, MemberPermissions } from "../../../seampan/room-snapshot";
 
 export default {
     type: 'broadcast-game-state',
@@ -14,8 +14,9 @@ export default {
             return
         }
 
-        if (state.rooms.getPlayersRoleInRoom(player.joinedRoomId, player.id) !== PlayerRole.Owner) {
-            console.warn('not an owner');
+        const role = state.rooms.getPlayersRoleInRoom(player.joinedRoomId, player.id)
+        if (!can(role, MemberPermissions.SendGameState)) {
+            console.warn('missing permission');
             return
         }
 

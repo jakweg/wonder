@@ -1,5 +1,5 @@
 import Handler from ".";
-import { PlayerRole } from "../../../seampan/room-snapshot";
+import { can, MemberPermissions } from "../../../seampan/room-snapshot";
 
 export default {
     type: 'update-room',
@@ -9,19 +9,26 @@ export default {
             return
         }
 
-        if (state.rooms.getPlayersRoleInRoom(player.joinedRoomId, player.id) !== PlayerRole.Owner) {
-            console.error('Not an owner')
-            return
-        }
+        const role = state.rooms.getPlayersRoleInRoom(player.joinedRoomId, player.id);
 
         if (typeof packet.preventJoining === 'boolean') {
-            state.rooms.setLocked(player.joinedRoomId, packet.preventJoining)
+            if (can(role, MemberPermissions.LockRoom)) {
+                state.rooms.setLocked(player.joinedRoomId, packet.preventJoining)
+            } else {
+                console.error('missing permission')
+                return
+            }
         }
 
         if (typeof packet.latencyTicks === 'number'
             && packet.latencyTicks === (packet.latencyTicks | 0)
             && (packet.latencyTicks | 0) > 0) {
-            state.rooms.setLatency(player.joinedRoomId, packet.latencyTicks)
+            if (can(role, MemberPermissions.SetLatencyTicks)) {
+                state.rooms.setLatency(player.joinedRoomId, packet.latencyTicks)
+            } else {
+                console.error('missing permission')
+                return
+            }
         }
     },
 } as Handler<'update-room'>
