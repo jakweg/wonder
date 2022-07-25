@@ -1,3 +1,4 @@
+import { Operation } from "../../../game-session/remote2";
 import { TickQueueAction } from "../../../network2/tick-queue-action";
 import Mutex from "../../mutex";
 import { WorkerInstance } from "../worker-instance";
@@ -10,6 +11,7 @@ interface ToWorker {
     'set-prevent-joins': { prevent: boolean }
     'broadcast-game-state': { serializedState: string }
     'broadcast-my-actions': { tick: number, actions: TickQueueAction[] }
+    'broadcast-operation': Operation
 }
 
 interface FromWorker {
@@ -19,6 +21,7 @@ interface FromWorker {
     'joined-room': { ok: true, roomId: string } | { ok: false, }
     'got-game-state': { serializedState: string }
     'got-player-actions': { from: string, tick: number, actions: TickQueueAction[] }
+    'got-operation': Operation
 }
 
 export const spawnNew = (mutex: Mutex) => WorkerInstance

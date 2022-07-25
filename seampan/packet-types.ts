@@ -1,3 +1,4 @@
+import { Operation } from '../barbet/src/main/game-session/remote2'
 import { RoomSnapshot } from './room-snapshot'
 
 export interface BothWayPackets {
@@ -10,6 +11,7 @@ export interface ClientToServer extends BothWayPackets {
     'update-room': Partial<{ preventJoining: boolean }>
     'broadcast-game-state': { serializedState: string }
     'broadcast-my-actions': { tick: number, actions: any[] }
+    'broadcast-operation': Operation
 }
 
 export interface ServerToClient extends BothWayPackets {
@@ -18,4 +20,5 @@ export interface ServerToClient extends BothWayPackets {
     'room-info-update': RoomSnapshot
     'game-state-broadcast': { serializedState: string }
     'players-actions': { from: string, tick: number, actions: any[] }
+    'invoked-operation': { who: string, operation: Operation }
 }

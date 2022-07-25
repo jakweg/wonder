@@ -3,6 +3,7 @@ import { Player } from "../players-store";
 import { ServerState } from "../server-state";
 import broadcastGameState from "./broadcast-game-state";
 import broadcastMyActions from "./broadcast-my-actions";
+import broadcastOperation from "./broadcast-operation";
 import joinRoom from "./join-room";
 import updateRoom from "./update-room";
 
@@ -17,6 +18,7 @@ export const allHandlersList: Handler<keyof ClientToServer>[] = [
     updateRoom,
     broadcastGameState,
     broadcastMyActions,
+    broadcastOperation,
 ]
 
 export const allHandlers = Object.fromEntries(allHandlersList.map(h => [h.type, h]))

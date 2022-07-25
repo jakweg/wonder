@@ -1,4 +1,4 @@
-import { CreateGameResult, Environment, EnvironmentConnection, getSuggestedEnvironmentName, loadEnvironment } from '../entry-points/feature-environments/loader'
+import { CreateGameResult, Environment, EnvironmentConnection, GameListeners, getSuggestedEnvironmentName, loadEnvironment } from '../entry-points/feature-environments/loader'
 import { Status } from '../game-state/state-updater'
 import { SaveMethod } from '../game-state/world/world-saver'
 import { ConnectionStatus, initialState } from '../network2/initialState'
@@ -8,11 +8,13 @@ import State from '../util/state'
 import { globalMutex } from '../util/worker/global-mutex'
 import { spawnNew } from '../util/worker/message-types/network2'
 
+export type Operation = { type: 'start', tps: number }
+
 interface CreateGameArguments {
 	canvasProvider: () => HTMLCanvasElement
 }
 
-const TICKS_BUFFER_SIZE = 15
+const TICKS_BUFFER_SIZE = 3
 
 class ActionsBroadcastHelper {
 	private eventsToSend: { tick: number, action: TickQueueAction }[] = []
@@ -28,6 +30,7 @@ class ActionsBroadcastHelper {
 	}
 
 	public initializeFromTick(tick: number): void {
+		this.eventsToSend.splice(0)
 		this.lastExecutedTick = this.lastSendTick = tick
 	}
 
@@ -103,36 +106,31 @@ export class RemoteSession {
 		if (!(await this.ws.receive.await('joined-room')).ok)
 			throw new Error('failed to join room')
 	}
+	private gameListener: GameListeners = {
+		onInputCaused: (action) => {
+			this.actionsHelper.enqueueAction({
+				type: TickQueueActionType.GameAction,
+				action: action,
+				initiatorId: 0,
+			})
+		},
+		onTickCompleted: (tick) => {
+			this.actionsHelper.tickDone(tick)
+		},
+	}
 	async createNewGame(args: CreateGameArguments): Promise<void> {
 		if (this.currentGame !== null) throw new Error('already loaded')
 		const result = this.currentGame = await this.environment.createNewGame({})
+		this.actionsHelper.initializeFromTick(result.updater.getExecutedTicksCount())
 		const self = this
-		result.setGameListeners({
-			onInputCaused(action) {
-				self.actionsHelper.enqueueAction({
-					type: TickQueueActionType.GameAction,
-					action: action,
-					initiatorId: 0,
-				})
-			},
-			onTickCompleted(tick) {
-				self.actionsHelper.tickDone(tick)
-			},
-		})
+		result.setGameListeners(this.gameListener)
 
 		await this.environment.startRender({ canvas: args.canvasProvider() })
 	}
 	async waitForGameFromNetwork(canvasProvider: () => HTMLCanvasElement): Promise<void> {
 		const { serializedState } = await this.ws.receive.await('got-game-state')
 		const result = this.currentGame = await this.environment.createNewGame({ stringToRead: serializedState })
-		result.setGameListeners({
-			onInputCaused(action) {
-				console.log('input!', action);
-			},
-			onTickCompleted(tick) {
-				console.log('tick done', tick);
-			},
-		})
+		result.setGameListeners(this.gameListener)
 
 		await this.environment.startRender({ canvas: canvasProvider() })
 	}
@@ -150,18 +148,35 @@ export class RemoteSession {
 		if (!this.currentGame) throw new Error('no game')
 		if (this.currentGame.updater.getCurrentStatus() !== Status.Stopped) return
 
-		const playerIds = Object.keys(this.state.get('players-in-room') ?? {})
-		this.currentGame.setPlayerIdsCallback(playerIds)
+		this.broadcastOperation({ type: 'start', tps })
 
-		const ticksCount = this.currentGame.updater.getExecutedTicksCount()
-		this.actionsHelper.tickDone(ticksCount)
+	}
+	async listenForOperations() {
+		while (this.state.get('connection-status') === ConnectionStatus.Connected) {
+			const operation = await this.ws.receive.await('got-operation')
 
-		this.currentGame.updater.start(tps)
+			switch (operation.type) {
+				case 'start':
+					if (!this.currentGame) throw new Error('no game')
+					const playerIds = Object.keys(this.state.get('players-in-room') ?? {})
+					this.currentGame.setPlayerIdsCallback(playerIds)
+
+					const ticksCount = this.currentGame.updater.getExecutedTicksCount()
+					this.actionsHelper.tickDone(ticksCount)
+
+					this.currentGame.updater.start(operation.tps)
+					break
+			}
+		}
 	}
 	terminate(): void {
 		this.ws.terminate()
 		this.environment.terminate({ terminateEverything: true })
 	}
+	private broadcastOperation(operation: Operation): void {
+		this.ws.send.send('broadcast-operation', operation)
+	}
+
 	private broadcastMyActions(tick: number, actions: TickQueueAction[]): void {
 		this.ws.send.send('broadcast-my-actions', { tick, actions })
 	}
