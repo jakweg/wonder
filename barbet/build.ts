@@ -57,7 +57,6 @@ if (args.size > 0) {
 	const entryPoints = [
 		'main',
 		'feature-environments/zero',
-		'network-worker',
 		'network-worker2',
 		...(forceSingleThread ? [] : [
 			'update-worker',
@@ -73,7 +72,6 @@ if (args.size > 0) {
 			_C_FORCE_ENV_ZERO: JSON.stringify(forceSingleThread),
 			_C_COMMIT_HASH: JSON.stringify(commitHash),
 			_C_CODE_STATS_LINES_COUNT: JSON.stringify(linesCount || 0),
-			_C_DEFAULT_NETWORK_SERVER_ADDRESS: JSON.stringify(buildForProduction ? undefined : 'localhost:4575'),
 		},
 		entryPoints: entryPoints.map(name => `src/main/entry-points/${name}.ts`),
 		bundle: true,

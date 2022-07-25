@@ -2,7 +2,7 @@ import { GameState } from '../../game-state/game-state'
 import { ScheduledAction } from '../../game-state/scheduled-actions'
 import { StateUpdater } from '../../game-state/state-updater'
 import { SaveGameArguments, SaveGameResult } from '../../game-state/world/world-saver'
-import { TickQueueAction, UpdaterAction } from '../../network2/tick-queue-action'
+import { TickQueueAction } from '../../network2/tick-queue-action'
 import { DEBUG, FORCE_ENV_ZERO, JS_ROOT } from '../../util/build-info'
 import { frontedVariablesBuffer } from '../../util/frontend-variables'
 import Mutex from '../../util/mutex'
@@ -10,13 +10,6 @@ import CONFIG from '../../util/persistance/observable-settings'
 import { getCameraBuffer } from '../../util/persistance/serializable-settings'
 import { sharedMemoryIsAvailable } from '../../util/shared-memory'
 import { globalMutex } from '../../util/worker/global-mutex'
-
-/** @deprecated */
-export type FeedbackEvent =
-	| { type: 'tick-completed', tick: number, updaterActions: UpdaterAction[] }
-	| { type: 'saved-to-string', serializedState: string, forPlayerId: number, inputActorIds: number[], sendPaused: boolean }
-	| { type: 'input-action', value: ScheduledAction }
-	| { type: 'became-leader' }
 
 export interface ConnectArguments {
 	mutex: Mutex
