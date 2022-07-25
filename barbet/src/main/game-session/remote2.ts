@@ -8,6 +8,7 @@ import CONFIG from '../util/persistance/observable-settings'
 import State from '../util/state'
 import { globalMutex } from '../util/worker/global-mutex'
 import { spawnNew } from '../util/worker/message-types/network2'
+import { GameSession } from './session'
 
 export type Operation =
 	| { type: 'start', tps: number, }
@@ -18,7 +19,11 @@ interface CreateGameArguments {
 }
 
 
-export class RemoteSession {
+export class RemoteSession implements GameSession {
+	isMultiplayer(): boolean {
+		return true
+	}
+
 	private state = State.fromInitial(initialState)
 	private actionsHelper = new ActionsBroadcastHelper(this.broadcastMyActions.bind(this))
 	private currentGame: CreateGameResult | null = null
