@@ -67,11 +67,13 @@ const waitForOtherPlayers = async (
 }
 
 const startRemote = async () => {
+	const start = performance.now()
 
 	const remote = session = await createRemoteSession({
 		canvasProvider: uiHandlers.canvas.recreate
 	})
 
+	console.log(performance.now() - start)
 	await remote.connect('localhost:3719')
 
 	await remote.joinRoom('default')
@@ -114,7 +116,7 @@ const startLocal = async () => {
 }
 
 const initPageState = async () => {
-	startLocal()
+	startRemote()
 }
 
 initPageState().then(() => void 0)

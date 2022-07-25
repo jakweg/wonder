@@ -30,8 +30,11 @@ export const bind = async (args: ConnectArguments): Promise<EnvironmentConnectio
 	let decodedGame: GameState | null = null
 	let updater: StateUpdater | null = null
 
-	const renderWorker = await spawnNewRenderWorker(globalMutex)
-	const updateWorker = await spawnNewUpdateWorker(globalMutex)
+	const [renderWorker, updateWorker] = await Promise.all([
+		spawnNewRenderWorker(globalMutex),
+		spawnNewUpdateWorker(globalMutex),
+	])
+
 	CONFIG.observeEverything(snapshot => {
 		updateWorker.send.send('new-settings', snapshot)
 		renderWorker.send.send('new-settings', snapshot)

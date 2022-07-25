@@ -1,8 +1,7 @@
-import { CreateGameArguments, CreateGameResult, Environment, GameListeners, getSuggestedEnvironmentName, loadEnvironment } from '../entry-points/feature-environments/loader'
+import { CreateGameArguments, CreateGameResult, createNewEnvironment, GameListeners } from '../entry-points/feature-environments/loader'
 import { Status } from '../game-state/state-updater'
 import ActionsBroadcastHelper from '../network2/actions-broadcast-helper'
 import { TickQueueAction, TickQueueActionType } from '../network2/tick-queue-action'
-import CONFIG from '../util/persistance/observable-settings'
 
 
 interface Props {
@@ -11,8 +10,7 @@ interface Props {
 }
 
 export const createGenericSession = async (props: Props) => {
-    const suggestedName = getSuggestedEnvironmentName(CONFIG.get('other/preferred-environment') as Environment)
-    const environment = await loadEnvironment(suggestedName)
+    const environment = await createNewEnvironment()
 
     const actionsHelper = new ActionsBroadcastHelper(props.sendActionsCallback)
     let currentGame: CreateGameResult | null = null

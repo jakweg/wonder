@@ -73,6 +73,8 @@ export interface EnvironmentConnection {
 
 export const getSuggestedEnvironmentName = (preferredEnvironment: Environment) => {
 	let usedEnvironment: Environment = 'zero'
+	if (FORCE_ENV_ZERO) return 'zero'
+
 	if (sharedMemoryIsAvailable && preferredEnvironment !== 'zero') {
 		const offscreenCanvasIsAvailable = !!((window as any).OffscreenCanvas)
 		if (offscreenCanvasIsAvailable && preferredEnvironment !== 'first')
@@ -99,4 +101,23 @@ export const loadEnvironment = async (name: Environment)
 		settings: CONFIG,
 	}
 	return Object.freeze(await connect(args) as EnvironmentConnection)
+}
+
+export const preloadWorkers = (both: boolean) => {
+	if (DEBUG) return
+	for (const name of ['update', both && 'render']) {
+		if (!name) continue
+		const link = document['createElement']('link')
+		link['setAttribute']('rel', 'prefetch')
+		link['setAttribute']('as', 'worker')
+		link['setAttribute']('href', `${JS_ROOT}/${name}-worker.js`)
+		document['head']['appendChild'](link)
+	}
+}
+
+export const createNewEnvironment = async (): Promise<EnvironmentConnection> => {
+	const suggestedName = getSuggestedEnvironmentName(CONFIG.get('other/preferred-environment') as Environment)
+	if (suggestedName === 'second') preloadWorkers(true)
+	else if (suggestedName === 'first') preloadWorkers(false)
+	return await loadEnvironment(suggestedName)
 }
