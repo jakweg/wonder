@@ -9,27 +9,44 @@ import { globalMutex } from '../util/worker/global-mutex'
 import { spawnNew } from '../util/worker/message-types/network2'
 import { createGenericSession } from './generic'
 
-
 interface Props {
 	canvasProvider: () => HTMLCanvasElement | undefined
 }
 
 export type RemoteSession = Awaited<ReturnType<typeof createRemoteSession>>
-export const createRemoteSession = async (props: Props) => {
+
+const loadWebsocket = async (holder: any) => {
 	const state = State.fromInitial(initialState)
 	const ws = await spawnNew(globalMutex)
 	ws.receive.on('state-update', data => state.update(data))
 	ws.receive.on('got-player-actions', ({ tick, from, actions }) => {
-		generic.forwardPlayerActions(tick, from, actions)
+		holder.generic.forwardPlayerActions(tick, from, actions)
 	})
 
+	return { ws, state }
+}
+
+const loadGenericSession = async (props: Props, holder: any) => {
 	const sendActionsCallback: ConstructorParameters<typeof ActionsBroadcastHelper>[0]
-		= (tick, actions) => ws.send.send('broadcast-my-actions', { tick, actions })
+		= (tick, actions) => holder.ws.send.send('broadcast-my-actions', { tick, actions })
 
 	const generic = await createGenericSession({
 		canvasProvider: props.canvasProvider,
 		sendActionsCallback,
 	})
+
+	return generic
+}
+
+export const createRemoteSession = async (props: Props) => {
+	const holder: any = { ws: null, generic: null }
+	const [{ ws, state }, generic] = await Promise.all([
+		loadWebsocket(holder),
+		loadGenericSession(props, holder)
+	])
+	holder.ws = ws
+	holder.generic = generic
+
 
 	state.observe('latency-ticks', ticks => generic.setLatencyTicks(ticks))
 
