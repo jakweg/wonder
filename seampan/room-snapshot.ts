@@ -9,5 +9,6 @@ export type PlayerInRoom = { role: PlayerRole }
 export interface RoomSnapshot {
     id: string
     preventJoining: boolean
+    latencyTicks: number
     players: { [key: string]: PlayerInRoom }
 }

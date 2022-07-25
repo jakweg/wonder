@@ -14,4 +14,5 @@ export const initialState = {
     'room-id': null as (null | string),
     'players-in-room': null as (null | { [key: string]: PlayerInRoom }),
     'room-is-locked': null as (null | boolean),
+    'latency-ticks': 10 as number
 };

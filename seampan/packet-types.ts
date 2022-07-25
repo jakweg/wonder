@@ -8,7 +8,7 @@ export interface BothWayPackets {
 
 export interface ClientToServer extends BothWayPackets {
     'join-room': { roomId: string }
-    'update-room': Partial<{ preventJoining: boolean }>
+    'update-room': Partial<{ preventJoining: boolean, latencyTicks: number }>
     'broadcast-game-state': { serializedState: string }
     'broadcast-my-actions': { tick: number, actions: any[] }
     'broadcast-operation': Operation

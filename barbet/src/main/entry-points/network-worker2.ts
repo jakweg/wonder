@@ -87,6 +87,7 @@ receiver.on('join-room', async ({ roomId }) => {
             const snapshot = await wsSocket.receive.await('room-info-update')
             state.update({
                 "room-is-locked": snapshot['preventJoining'],
+                "latency-ticks": snapshot['latencyTicks'],
                 "players-in-room": snapshot['players'],
             })
         }
@@ -126,6 +127,10 @@ receiver.on('join-room', async ({ roomId }) => {
 
 receiver.on('set-prevent-joins', ({ prevent }) => {
     wsSocket?.send.send('update-room', { 'preventJoining': prevent })
+})
+
+receiver.on('set-latency-ticks', ({ count }) => {
+    wsSocket?.send.send('update-room', { 'latencyTicks': count })
 })
 
 receiver.on('broadcast-game-state', ({ serializedState }) => {

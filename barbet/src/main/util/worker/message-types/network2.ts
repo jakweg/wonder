@@ -9,6 +9,7 @@ interface ToWorker {
     'connect': { address: string }
     'join-room': { roomId: string }
     'set-prevent-joins': { prevent: boolean }
+    'set-latency-ticks': { count: number }
     'broadcast-game-state': { serializedState: string }
     'broadcast-my-actions': { tick: number, actions: TickQueueAction[] }
     'broadcast-operation': Operation

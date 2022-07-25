@@ -1,6 +1,7 @@
 import { CreateGameResult, Environment, EnvironmentConnection, GameListeners, getSuggestedEnvironmentName, loadEnvironment } from '../entry-points/feature-environments/loader'
 import { Status } from '../game-state/state-updater'
 import { SaveMethod } from '../game-state/world/world-saver'
+import ActionsBroadcastHelper from '../network2/actions-broadcast-helper'
 import { ConnectionStatus, initialState } from '../network2/initialState'
 import { TickQueueAction, TickQueueActionType } from '../network2/tick-queue-action'
 import CONFIG from '../util/persistance/observable-settings'
@@ -8,58 +9,14 @@ import State from '../util/state'
 import { globalMutex } from '../util/worker/global-mutex'
 import { spawnNew } from '../util/worker/message-types/network2'
 
-export type Operation = { type: 'start', tps: number }
+export type Operation =
+	| { type: 'start', tps: number, }
+	| { type: 'pause', }
 
 interface CreateGameArguments {
 	canvasProvider: () => HTMLCanvasElement
 }
 
-const TICKS_BUFFER_SIZE = 3
-
-class ActionsBroadcastHelper {
-	private eventsToSend: { tick: number, action: TickQueueAction }[] = []
-	private lastExecutedTick: number = 0
-	private lastSendTick: number = 0
-
-	constructor(
-		private readonly onSend: (tick: number, actions: TickQueueAction[]) => void
-	) { }
-
-	public enqueueAction(action: TickQueueAction): void {
-		this.eventsToSend.push({ tick: this.lastExecutedTick + TICKS_BUFFER_SIZE + 1, action })
-	}
-
-	public initializeFromTick(tick: number): void {
-		this.eventsToSend.splice(0)
-		this.lastExecutedTick = this.lastSendTick = tick
-	}
-
-	public tickDone(tick: number): void {
-		this.lastExecutedTick = tick
-		this.checkIfNeedsToSend()
-	}
-
-	public checkIfNeedsToSend(): void {
-		const difference = this.lastSendTick - this.lastExecutedTick
-		if (difference >= TICKS_BUFFER_SIZE)
-			return
-
-		const needsSendCount = TICKS_BUFFER_SIZE - difference
-		for (let i = 1; i <= needsSendCount; i++) {
-			const tick = this.lastSendTick + i
-			const actionsForThisTick: TickQueueAction[] = []
-			while (this.eventsToSend.length > 0) {
-				const action = this.eventsToSend[0]!
-				if (action.tick !== tick) break
-				this.eventsToSend.shift()
-				actionsForThisTick.push(action.action)
-			}
-
-			this.onSend(tick, actionsForThisTick)
-		}
-		this.lastSendTick += needsSendCount
-	}
-}
 
 export class RemoteSession {
 	private state = State.fromInitial(initialState)
@@ -74,6 +31,7 @@ export class RemoteSession {
 		ws.receive.on('got-player-actions', ({ tick, from, actions }) => {
 			this.currentGame?.setActionsCallback(tick, from, actions)
 		})
+		this.state.observe('latency-ticks', ticks => this.actionsHelper.setLatencyTicksCount(ticks))
 	}
 
 	public static async createNew() {
@@ -122,7 +80,7 @@ export class RemoteSession {
 		if (this.currentGame !== null) throw new Error('already loaded')
 		const result = this.currentGame = await this.environment.createNewGame({})
 		this.actionsHelper.initializeFromTick(result.updater.getExecutedTicksCount())
-		const self = this
+
 		result.setGameListeners(this.gameListener)
 
 		await this.environment.startRender({ canvas: args.canvasProvider() })
@@ -130,6 +88,7 @@ export class RemoteSession {
 	async waitForGameFromNetwork(canvasProvider: () => HTMLCanvasElement): Promise<void> {
 		const { serializedState } = await this.ws.receive.await('got-game-state')
 		const result = this.currentGame = await this.environment.createNewGame({ stringToRead: serializedState })
+		this.actionsHelper.initializeFromTick(result.updater.getExecutedTicksCount())
 		result.setGameListeners(this.gameListener)
 
 		await this.environment.startRender({ canvas: canvasProvider() })
@@ -145,11 +104,17 @@ export class RemoteSession {
 		this.ws.send.send('broadcast-game-state', { serializedState: result.serializedState })
 	}
 	resume(tps: number) {
-		if (!this.currentGame) throw new Error('no game')
-		if (this.currentGame.updater.getCurrentStatus() !== Status.Stopped) return
-
 		this.broadcastOperation({ type: 'start', tps })
+	}
+	pause(): boolean {
+		const previousStatus = this.currentGame?.updater.getCurrentStatus()
 
+		this.broadcastOperation({ type: 'pause', })
+
+		return previousStatus === Status.Running
+	}
+	setLatencyTicks(count: number) {
+		this.ws.send.send('set-latency-ticks', { count })
 	}
 	async listenForOperations() {
 		while (this.state.get('connection-status') === ConnectionStatus.Connected) {
@@ -166,8 +131,15 @@ export class RemoteSession {
 
 					this.currentGame.updater.start(operation.tps)
 					break
+				case 'pause':
+					if (!this.currentGame) throw new Error('no game')
+					this.currentGame.updater.stop()
+					break
 			}
 		}
+	}
+	isPaused(): boolean {
+		return this.currentGame?.updater.getCurrentStatus() === Status.Stopped
 	}
 	terminate(): void {
 		this.ws.terminate()

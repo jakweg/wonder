@@ -16,6 +16,7 @@ interface PlayerInRoom {
 interface Room {
     id: string
     preventJoining: boolean
+    latencyTicks: number
     players: { [key: string]: PlayerInRoom }
 }
 
@@ -23,6 +24,7 @@ const createSnapshotFromRoom = (room: Room): RoomSnapshot => {
     return {
         id: room.id,
         preventJoining: room.preventJoining,
+        latencyTicks: room.latencyTicks,
         players: Object.fromEntries(Object.entries(room.players)
             .map(([k, v]) => [k, {
                 role: v.role
@@ -40,6 +42,13 @@ export default class RoomStore extends EventEmitter<Events> {
         const room = this.allRooms.get(roomId)
         if (room !== undefined && room.preventJoining !== locked) {
             room.preventJoining = locked
+            this.emitAsync('updated-room', { roomId: room.id, snapshot: createSnapshotFromRoom(room) })
+        }
+    }
+    public setLatency(roomId: string, ticks: number): void {
+        const room = this.allRooms.get(roomId)
+        if (room !== undefined && room.latencyTicks !== ticks) {
+            room.latencyTicks = ticks
             this.emitAsync('updated-room', { roomId: room.id, snapshot: createSnapshotFromRoom(room) })
         }
     }
@@ -63,6 +72,7 @@ export default class RoomStore extends EventEmitter<Events> {
                 id: roomId,
                 players: {},
                 preventJoining: false,
+                latencyTicks: 10,
             }
             this.allRooms.set(room.id, room)
             info('Created room', room.id)

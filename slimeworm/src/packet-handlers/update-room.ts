@@ -17,5 +17,11 @@ export default {
         if (typeof packet.preventJoining === 'boolean') {
             state.rooms.setLocked(player.joinedRoomId, packet.preventJoining)
         }
+
+        if (typeof packet.latencyTicks === 'number'
+            && packet.latencyTicks === (packet.latencyTicks | 0)
+            && (packet.latencyTicks | 0) > 0) {
+            state.rooms.setLatency(player.joinedRoomId, packet.latencyTicks)
+        }
     },
 } as Handler<'update-room'>
