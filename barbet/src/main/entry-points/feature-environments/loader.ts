@@ -64,7 +64,7 @@ export interface EnvironmentConnection {
 
 	createNewGame(args: CreateGameArguments): Promise<CreateGameResult>
 
-	startRender(args: StartRenderArguments): Promise<void>
+	startRender(args: StartRenderArguments): void
 
 	saveGame(args: SaveGameArguments): Promise<SaveGameResult>
 

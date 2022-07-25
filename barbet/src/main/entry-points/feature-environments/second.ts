@@ -101,7 +101,7 @@ export const bind = async (args: ConnectArguments): Promise<EnvironmentConnectio
 				},
 			}
 		},
-		startRender: async function (renderArguments: StartRenderArguments): Promise<void> {
+		startRender: async function (renderArguments: StartRenderArguments) {
 			if (gameSnapshotForRenderer === null)
 				throw new Error('Create game first')
 

@@ -39,9 +39,7 @@ export const createGenericSession = async (props: Props) => {
 
             result.setGameListeners(gameListener)
 
-            const canvas = props.canvasProvider()
-            if (canvas)
-                await environment.startRender({ canvas })
+            this.resetRendering()
             return result
         },
         setLatencyTicks(count: number) {
@@ -56,6 +54,11 @@ export const createGenericSession = async (props: Props) => {
             actionsHelper.tickDone(ticksCount)
 
             currentGame.updater.start(tps)
+        },
+        resetRendering() {
+            const canvas = props.canvasProvider()
+            if (canvas)
+                environment.startRender({ canvas })
         },
         stop(): boolean {
             const previousStatus = currentGame?.updater.getCurrentStatus()

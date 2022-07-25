@@ -19,6 +19,7 @@ export const createLocalSession = async (props: Props) => {
         async createNewGame(args) {
             await generic.createNewGame(args)
         },
+        resetRendering: generic.resetRendering,
         isMultiplayer() {
             return false
         },

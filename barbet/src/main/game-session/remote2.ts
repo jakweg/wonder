@@ -136,6 +136,7 @@ export const createRemoteSession = async (props: Props) => {
 		isPaused() {
 			return !generic.isRunning()
 		},
+		resetRendering: generic.resetRendering,
 		terminate(): void {
 			ws.terminate()
 			generic.terminate()

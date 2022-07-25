@@ -57,7 +57,7 @@ observeSetting('other/tps', tps => {
 		session.resume(tps)
 })
 
-// observeSetting('rendering/antialias', () => setTimeout(() => session?.resetRendering(), 10))
+observeSetting('rendering/antialias', () => setTimeout(() => session?.resetRendering(), 10))
 
 const waitForOtherPlayers = async (
 	state: State<typeof initialState>,
@@ -67,13 +67,10 @@ const waitForOtherPlayers = async (
 }
 
 const startRemote = async () => {
-	const start = performance.now()
-
 	const remote = session = await createRemoteSession({
 		canvasProvider: uiHandlers.canvas.recreate
 	})
 
-	console.log(performance.now() - start)
 	await remote.connect('localhost:3719')
 
 	await remote.joinRoom('default')

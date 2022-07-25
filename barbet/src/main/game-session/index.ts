@@ -10,6 +10,8 @@ export interface GameSession {
 
     createNewGame(args: CreateGameArguments): Promise<void>
 
+    resetRendering(): void
+
     resume(tps: number): void
 
     pause(): boolean
