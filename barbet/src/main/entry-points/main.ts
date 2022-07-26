@@ -77,11 +77,11 @@ const startRemote = async () => {
 
 	await waitForOtherPlayers(remote.getState(), 1)
 
-	const myRole = (remote.getState().get('players-in-room') ?? {})[remote.getState().get('my-id') ?? '']?.role
+	const myRole = (remote.getState().get('players-in-room') ?? {})[remote.getState().get('my-id') ?? '']?.['role']
 	if (can(myRole, MemberPermissions.SendGameState)) {
-		console.info('I\'m the owner, waiting for other players')
+		console['info']('I\'m the owner, waiting for other players')
 
-		await remote.createNewGame()
+		await remote.createNewGame({})
 
 		await waitForOtherPlayers(remote.getState(), 2)
 		await remote.lockRoom(true)
@@ -89,14 +89,14 @@ const startRemote = async () => {
 		await sleep(100)
 
 		remote.broadcastGameToOthers()
-		console.log('Game broadcasted');
+		console['info']('Game broadcasted');
 
 		await sleep(1000)
 		remote.listenForOperations()
 		remote.resume(20)
 
 	} else {
-		console.info('I\'m not the owner, wait for map to be sent')
+		console['info']('I\'m not the owner, wait for map to be sent')
 
 		await remote.waitForGameFromNetwork()
 		remote.listenForOperations()
@@ -113,7 +113,8 @@ const startLocal = async () => {
 }
 
 const initPageState = async () => {
-	startRemote()
+	// startRemote()
+	startLocal()
 }
 
 initPageState().then(() => void 0)

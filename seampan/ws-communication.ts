@@ -32,7 +32,7 @@ const createSender = <T>(ws: WebSocket): Sender<T> => {
         send(type, value) {
             if (ws['readyState'] !== ws['OPEN'])
                 throw new Error('not connected')
-            ws['send'](JSON.stringify({ type, value }))
+            ws['send'](JSON.stringify({ 'type': type, 'value': value }))
         },
     }
 }
@@ -53,7 +53,8 @@ const createReceiver = <T>(ws: { onmessage: null | ((event: MessageEvent) => voi
             console['error']('Got invalid packet')
             return
         }
-        const { type, value } = parsed
+        const type = parsed['type']
+        const value = parsed['value']
 
         setTimeout(() => {
             let deliveredValue = value

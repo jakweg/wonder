@@ -42,11 +42,11 @@ export default class TickQueue {
 			return
 
 		if (this.sortedPlayersCache === null)
-			this.sortedPlayersCache = [...this.requiredPlayerIds.values()].sort()
+			this.sortedPlayersCache = [...this.requiredPlayerIds['values']()]['sort']()
 
 		const allActions: TickQueueAction[] = []
 		for (const player of this.sortedPlayersCache)
-			allActions.push(...value.get(player)!)
+			allActions['push'](...value['get'](player)!)
 
 		return allActions
 	}

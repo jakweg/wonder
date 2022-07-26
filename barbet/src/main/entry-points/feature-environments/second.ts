@@ -30,7 +30,7 @@ export const bind = async (args: ConnectArguments): Promise<EnvironmentConnectio
 	let decodedGame: GameState | null = null
 	let updater: StateUpdater | null = null
 
-	const [renderWorker, updateWorker] = await Promise.all([
+	const [renderWorker, updateWorker] = await Promise['all']([
 		spawnNewRenderWorker(globalMutex),
 		spawnNewUpdateWorker(globalMutex),
 	])

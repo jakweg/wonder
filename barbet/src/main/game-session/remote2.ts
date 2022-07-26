@@ -1,5 +1,6 @@
 import { Operation } from '.'
 import { can, MemberPermissions } from '../../../../seampan/room-snapshot'
+import { CreateGameArguments } from '../entry-points/feature-environments/loader'
 import { Status } from '../game-state/state-updater'
 import { SaveMethod } from '../game-state/world/world-saver'
 import ActionsBroadcastHelper from '../network2/actions-broadcast-helper'
@@ -40,7 +41,7 @@ const loadGenericSession = async (props: Props, holder: any) => {
 
 export const createRemoteSession = async (props: Props) => {
 	const holder: any = { ws: null, generic: null }
-	const [{ ws, state }, generic] = await Promise.all([
+	const [{ ws, state }, generic] = await Promise['all']([
 		loadWebsocket(holder),
 		loadGenericSession(props, holder)
 	])
@@ -78,8 +79,8 @@ export const createRemoteSession = async (props: Props) => {
 			if (!(await ws.receive.await('joined-room')).ok)
 				throw new Error('failed to join room')
 		},
-		async createNewGame(): Promise<void> {
-			generic.createNewGame({})
+		async createNewGame(args: CreateGameArguments): Promise<void> {
+			generic.createNewGame(args)
 		},
 		async waitForGameFromNetwork(): Promise<void> {
 			const { serializedState } = await ws.receive.await('got-game-state')
@@ -122,7 +123,7 @@ export const createRemoteSession = async (props: Props) => {
 					case 'start':
 						const playerIds = Object
 							.entries(state.get('players-in-room') ?? {})
-							.filter(p => can(p[1].role, MemberPermissions.SendInputActions))
+							.filter(p => can(p[1]['role'], MemberPermissions.SendInputActions))
 							.map(e => e[0])
 
 						generic.start(playerIds, operation.tps)

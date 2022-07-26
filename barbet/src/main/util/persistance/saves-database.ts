@@ -7,7 +7,7 @@ const enum Constants {
 }
 
 const createSavesDatabaseCallback = (db: IDBDatabase) => {
-	db.createObjectStore(Constants.STORE_MAIN_DATA, {'keyPath': 'id'})
+	db.createObjectStore(Constants.STORE_MAIN_DATA, { 'keyPath': 'id' })
 }
 
 export const getSavesList = async (): Promise<string[]> => {
@@ -36,7 +36,7 @@ export const readSaveData = async (id: string): Promise<any> => {
 export const putSaveData = async (id: string, data: any): Promise<void> => {
 	const db = await openIndexedDatabase(Constants.DB_NAME, Constants.VERSION, createSavesDatabaseCallback)
 	const transaction = db.transaction([Constants.STORE_MAIN_DATA as string], 'readwrite')
-	const objectToPut = {'id': id, 'data': data}
+	const objectToPut = { 'id': id, 'data': data }
 	await promiseWrapRequest(transaction
 		.objectStore(Constants.STORE_MAIN_DATA)['put'](objectToPut))
 
@@ -59,7 +59,7 @@ export const deleteAllSaves = async (): Promise<void> => {
 	const db = await openIndexedDatabase(Constants.DB_NAME, Constants.VERSION, createSavesDatabaseCallback)
 	const transaction = db.transaction([Constants.STORE_MAIN_DATA as string], 'readwrite')
 	const data = await promiseWrapRequest(transaction.objectStore(Constants.STORE_MAIN_DATA).getAllKeys(null, 1)) as string[]
-	await Promise.all(data.map(id => promiseWrapRequest(transaction.objectStore(Constants.STORE_MAIN_DATA)['delete'](id))))
+	await Promise['all'](data['map'](id => promiseWrapRequest(transaction.objectStore(Constants.STORE_MAIN_DATA)['delete'](id))))
 
 	await promiseWrapTransactionCommit(transaction)
 
