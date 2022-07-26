@@ -18,7 +18,9 @@ import { setGlobalMutex } from '../../util/worker/global-mutex'
 import {
 	ConnectArguments,
 	CreateGameArguments,
+	CreateGameResult,
 	EnvironmentConnection,
+	GameListeners,
 	StartRenderArguments,
 	TerminateGameArguments
 } from './loader'
@@ -36,32 +38,27 @@ export const bind = (args: ConnectArguments): EnvironmentConnection => {
 	let game: GameStateImplementation | null = null
 	let updater: StateUpdater | null = null
 	let renderCancelCallback: any = null
+	let gameListeners: GameListeners | null = null
 	return {
 		name: 'zero',
-		async createNewGame(gameArgs: CreateGameArguments) {
+		async createNewGame(gameArgs: CreateGameArguments): Promise<CreateGameResult> {
+			if (game !== null)
+				this.terminate({})
+
 			const stateBroadcastCallback = () => void 0 // ignore, since everything is locally anyway
 			actionsQueue = SendActionsQueue.create(action => {
-				args.feedbackCallback({ type: 'input-action', value: action })
+				gameListeners?.onInputCaused(action)
 			})
 
 			game = await loadGameFromArgs(gameArgs, stateBroadcastCallback) as GameStateImplementation
 			tickQueue = TickQueue.createEmpty()
-			// if (gameArgs.existingInputActorIds)
-			// gameArgs.existingInputActorIds.forEach(id => tickQueue!.addRequiredPlayer(id))
+
 
 			const updaterInstance = createNewStateUpdater(
-				async (gameActions, updaterActions) => {
-
+				async (gameActions) => {
 					await game!.advanceActivities(gameActions)
-
 					const currentTick = game!.currentTick
-					for (const a of updaterActions) {
-						// if (a.type === 'new-player-joins') {
-						// 	tickQueue!.addRequiredPlayer(a.playerId)
-						// }
-					}
-
-					args.feedbackCallback({ type: 'tick-completed', tick: currentTick, updaterActions })
+					gameListeners?.onTickCompleted(currentTick)
 				},
 				game.currentTick, tickQueue)
 
@@ -71,6 +68,12 @@ export const bind = (args: ConnectArguments): EnvironmentConnection => {
 				updater,
 				setActionsCallback: (forTick: number, playerId: string, actions: TickQueueAction[]) => {
 					tickQueue!.setForTick(forTick, playerId, actions)
+				},
+				setPlayerIdsCallback(ids) {
+					tickQueue?.setRequiredPlayers(ids)
+				},
+				setGameListeners(l) {
+					gameListeners = l
 				},
 			}
 		},
@@ -83,7 +86,7 @@ export const bind = (args: ConnectArguments): EnvironmentConnection => {
 		terminate(_: TerminateGameArguments) {
 			renderCancelCallback?.()
 			updater?.stop()
-			actionsQueue = game = updater = null
+			gameListeners = actionsQueue = game = updater = null
 		},
 		async saveGame(saveArgs: SaveGameArguments): Promise<SaveGameResult> {
 			const result = game ? (await performGameSave(game, saveArgs)) : false
