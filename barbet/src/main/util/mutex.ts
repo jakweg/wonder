@@ -18,7 +18,7 @@ export const waitAsyncCompat = useNativeWaitAsync ?
 	Atomics.waitAsync : ((typedArray: Int32Array, index: number, value: number, timeout?: number): WaitAsyncResult => {
 		const load = Atomics.load(typedArray, index)
 		if (load !== value)
-			return {'async': false, 'value': Promise.resolve('ok')}
+			return { 'async': false, 'value': Promise.resolve('ok') }
 
 		const timeoutValue = timeout ?? Number.POSITIVE_INFINITY
 		const started = performance.now()
@@ -66,29 +66,33 @@ export const createNewMutex = (): Mutex => {
 		return new MutexImpl(createNewBuffer(Lock.SIZE * Int32Array.BYTES_PER_ELEMENT))
 	else {
 		// return some dummy mutex interface, shared memory is not available anyway
-		return {
-			unlock() {
-			},
-			enterAsync(): Promise<boolean> {
-				return Promise.resolve(true)
-			},
-			enter(): boolean {
-				return true
-			},
-			pass(): unknown {
-				return {}
-			},
-		}
+		return createDummyMutex()
 	}
 }
 
 export const createMutexFromReceived = (object: any): Mutex => {
 	const buffer = object.buffer as SharedArrayBuffer
+	if (buffer === undefined)
+		return createDummyMutex()
 	if (buffer?.byteLength !== Lock.SIZE * Int32Array.BYTES_PER_ELEMENT)
 		throw new Error(`Received invalid object`)
 
 	return new MutexImpl(buffer)
 }
+
+const createDummyMutex = (): Mutex => ({
+	unlock() {
+	},
+	enterAsync(): Promise<boolean> {
+		return Promise.resolve(true)
+	},
+	enter(): boolean {
+		return true
+	},
+	pass(): unknown {
+		return {}
+	},
+})
 
 class MutexImpl implements Mutex {
 	private readonly intArray = new Int32Array(this.buffer)
