@@ -68,7 +68,6 @@ export const bind = async (args: ConnectArguments): Promise<EnvironmentConnectio
 			updater = createStateUpdaterControllerFromReceived(data.updater)
 
 			return {
-				state: decodedGame,
 				updater,
 				setActionsCallback(forTick: number, playerId: string, actions: TickQueueAction[]) {
 					updateWorker.send.send('append-to-tick-queue', { forTick, playerId, actions })

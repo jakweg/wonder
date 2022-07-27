@@ -1,4 +1,3 @@
-import { createGameStateForRenderer, GameState } from '../../game-state/game-state'
 import { createStateUpdaterControllerFromReceived, StateUpdater } from '../../game-state/state-updater'
 import { SaveGameArguments, SaveGameResult } from '../../game-state/world/world-saver'
 import { TickQueueAction } from '../../network2/tick-queue-action'
@@ -27,7 +26,6 @@ export const bind = async (args: ConnectArguments): Promise<EnvironmentConnectio
 	let entityContainerSnapshotForRenderer: any = null
 	let gameSnapshotForRenderer: any = null
 	let listeners: GameListeners | null = null
-	let decodedGame: GameState | null = null
 	let updater: StateUpdater | null = null
 
 	const [renderWorker, updateWorker] = await Promise['all']([
@@ -56,7 +54,6 @@ export const bind = async (args: ConnectArguments): Promise<EnvironmentConnectio
 	})
 
 	updateWorker.receive.on('update-entity-container', data => {
-		decodedGame!.entities.replaceBuffersFromReceived(data)
 		entityContainerSnapshotForRenderer = data
 		renderWorker.send.send('update-entity-container', data)
 	})
@@ -65,7 +62,7 @@ export const bind = async (args: ConnectArguments): Promise<EnvironmentConnectio
 	const terminate = (args: TerminateGameArguments) => {
 		renderWorker.send.send('terminate-game', args)
 		updateWorker.send.send('terminate-game', args)
-		entityContainerSnapshotForRenderer = decodedGame = updater = listeners = null
+		entityContainerSnapshotForRenderer = updater = listeners = null
 
 		if (args.terminateEverything) {
 			setTimeout(() => updateWorker.terminate(), 10_000)
@@ -76,7 +73,7 @@ export const bind = async (args: ConnectArguments): Promise<EnvironmentConnectio
 	return {
 		name: 'second',
 		async createNewGame(gameArgs) {
-			if (decodedGame !== null)
+			if (updater !== null)
 				terminate({})
 
 			updateWorker.send.send('create-game', gameArgs)
@@ -84,11 +81,9 @@ export const bind = async (args: ConnectArguments): Promise<EnvironmentConnectio
 			const data = await updateWorker.receive.await('game-create-result')
 
 			gameSnapshotForRenderer = data
-			decodedGame = createGameStateForRenderer(data.game)
 			updater = createStateUpdaterControllerFromReceived(data.updater)
 
 			return {
-				state: decodedGame,
 				updater,
 				setActionsCallback(forTick: number, playerId: string, actions: TickQueueAction[]) {
 					updateWorker.send.send('append-to-tick-queue', { forTick, playerId, actions })

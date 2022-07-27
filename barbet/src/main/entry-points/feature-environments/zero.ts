@@ -64,7 +64,6 @@ export const bind = (args: ConnectArguments): EnvironmentConnection => {
 
 			updater = createStateUpdaterControllerFromReceived(updaterInstance.pass())
 			return {
-				state: game,
 				updater,
 				setActionsCallback: (forTick: number, playerId: string, actions: TickQueueAction[]) => {
 					tickQueue!.setForTick(forTick, playerId, actions)

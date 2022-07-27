@@ -1,4 +1,3 @@
-import { GameState } from '../../game-state/game-state'
 import { ScheduledAction } from '../../game-state/scheduled-actions'
 import { StateUpdater } from '../../game-state/state-updater'
 import { SaveGameArguments, SaveGameResult } from '../../game-state/world/world-saver'
@@ -52,8 +51,7 @@ export interface GameListeners {
 }
 
 export interface CreateGameResult {
-	state: GameState,
-	updater: StateUpdater,
+	updater: StateUpdater
 	setPlayerIdsCallback: (ids: string[]) => void
 	setActionsCallback: SetActionsCallback
 	setGameListeners: (listeners: GameListeners) => void
