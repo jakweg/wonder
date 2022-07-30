@@ -4,7 +4,7 @@ import { createGameStateForRenderer, GameState } from '../../game-state/game-sta
 import { ActionsQueue, SendActionsQueue } from '../../game-state/scheduled-actions/queue'
 import { createStateUpdaterControllerFromReceived, StateUpdater } from '../../game-state/state-updater'
 import { SaveGameArguments, SaveGameResult } from '../../game-state/world/world-saver'
-import { TickQueueAction } from '../../network2/tick-queue-action'
+import { TickQueueAction } from '../../network/tick-queue-action'
 import { initFrontedVariablesFromReceived } from '../../util/frontend-variables-updaters'
 import CONFIG from '../../util/persistance/observable-settings'
 import { getCameraBuffer, setCameraBuffer } from '../../util/persistance/serializable-settings'

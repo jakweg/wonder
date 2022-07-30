@@ -3,7 +3,7 @@ import { createNewStateUpdater } from '../game-state/state-updater'
 import { StateUpdaterImplementation } from '../game-state/state-updater/implementation'
 import { loadGameFromArgs } from '../game-state/world/world-loader'
 import { performGameSave } from '../game-state/world/world-saver'
-import TickQueue from '../network2/tick-queue'
+import TickQueue from '../network/tick-queue'
 import CONFIG from '../util/persistance/observable-settings'
 import { bind } from '../util/worker/message-types/update'
 

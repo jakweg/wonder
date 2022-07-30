@@ -1,7 +1,7 @@
 import { CreateGameArguments, CreateGameResult, createNewEnvironment, GameListeners } from '../entry-points/feature-environments/loader'
 import { Status } from '../game-state/state-updater'
-import ActionsBroadcastHelper from '../network2/actions-broadcast-helper'
-import { TickQueueAction, TickQueueActionType } from '../network2/tick-queue-action'
+import ActionsBroadcastHelper from '../network/actions-broadcast-helper'
+import { TickQueueAction, TickQueueActionType } from '../network/tick-queue-action'
 
 
 interface Props {

@@ -1,7 +1,7 @@
 import { ScheduledAction } from '../../game-state/scheduled-actions'
 import { StateUpdater } from '../../game-state/state-updater'
 import { SaveGameArguments, SaveGameResult } from '../../game-state/world/world-saver'
-import { TickQueueAction } from '../../network2/tick-queue-action'
+import { TickQueueAction } from '../../network/tick-queue-action'
 import { DEBUG, FORCE_ENV_ZERO, JS_ROOT } from '../../util/build-info'
 import { frontedVariablesBuffer } from '../../util/frontend-variables'
 import Mutex from '../../util/mutex'

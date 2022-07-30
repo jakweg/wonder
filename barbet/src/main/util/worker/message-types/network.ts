@@ -1,5 +1,5 @@
-import { Operation } from "../../../game-session/";
-import { TickQueueAction } from "../../../network2/tick-queue-action";
+import { Operation } from "../../../game-session";
+import { TickQueueAction } from "../../../network/tick-queue-action";
 import Mutex from "../../mutex";
 import { WorkerInstance } from "../worker-instance";
 import { genericBind } from "../worker-listener";
@@ -26,6 +26,6 @@ interface FromWorker {
 }
 
 export const spawnNew = (mutex: Mutex) => WorkerInstance
-    .spawnNew<ToWorker, FromWorker>('network-worker2', 'network2', mutex)
+    .spawnNew<ToWorker, FromWorker>('network-worker', 'network', mutex)
 
 export const bind = () => genericBind<FromWorker, ToWorker>()

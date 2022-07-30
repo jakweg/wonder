@@ -1,5 +1,5 @@
-import TickQueue from '../../network2/tick-queue'
-import { TickQueueActionType, UpdaterAction } from '../../network2/tick-queue-action'
+import TickQueue from '../../network/tick-queue'
+import { TickQueueActionType, UpdaterAction } from '../../network/tick-queue-action'
 import { isInWorker, waitAsyncCompat } from '../../util/mutex'
 import { createNewBuffer } from '../../util/shared-memory'
 import { ScheduledAction } from '../scheduled-actions'
