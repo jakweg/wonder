@@ -6,12 +6,14 @@ export const enum MemberPermissions {
     LockRoom = 1 << 2,
     SetLatencyTicks = 1 << 3,
     SendInputActions = 1 << 4,
+    ReceiveInputActions = 1 << 5,
 }
 
 
 export const MemberRole: MemberPermissions = MemberPermissions.None
     | MemberPermissions.InvokeOperation
     | MemberPermissions.SendInputActions
+    | MemberPermissions.ReceiveInputActions
 
 export const OwnerRole: MemberPermissions = MemberRole
     | MemberPermissions.InvokeOperation

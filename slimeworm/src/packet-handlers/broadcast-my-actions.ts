@@ -1,3 +1,4 @@
+import { can, MemberPermissions } from "@seampan/room-snapshot";
 import Handler from ".";
 
 export default {
@@ -14,8 +15,16 @@ export default {
             return
         }
 
+        if (!can(state.rooms.getPlayersRoleInRoom(player.joinedRoomId, player.id), MemberPermissions.SendInputActions)) {
+            console.warn('missing permission');
+            return
+        }
+
         for (const playerId of state.rooms.listPlayerIdsInRoom(player.joinedRoomId)) {
-            // if (playerId === player.id) continue // TODO should that check be uncommented?
+            const role = state.rooms.getPlayersRoleInRoom(player.joinedRoomId, playerId);
+            if (!can(role, MemberPermissions.ReceiveInputActions))
+                continue
+
             const other = state.players.getById(playerId)
             if (other !== undefined) {
                 other.ws.send.send('players-actions', {
