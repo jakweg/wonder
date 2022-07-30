@@ -53,7 +53,7 @@ fi
 echo "Using project $output"
 
 AVAILABLE_SERVICES=$(gcloud services list | tail +2)
-if [[ $(echo "$AVAILABLE_SERVICES" | grep ^cloudbuild.googleapis.com$) == "" ]]; then
+if [[ $(echo "$AVAILABLE_SERVICES" | grep " cloudbuild.googleapis.com$") == "" ]]; then
   echo "CloudBuild is not enabled, use command: "
   echo "gcloud services enable cloudbuild.googleapis.com"
   echo "And try again in a few minutes"
