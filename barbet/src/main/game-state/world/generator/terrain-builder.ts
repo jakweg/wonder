@@ -1,4 +1,4 @@
-import { makeNoise2D } from '../../../util/noise/2d'
+import { makeNoise2D } from '../../../../../../seampan/noise/2d'
 
 const getBlockTypeByNoiseValue = (v: number): BlockType => {
 	if (v < 0.04)
@@ -66,7 +66,7 @@ interface WorldSize {
 	readonly sizeZ: number
 }
 
-export const generateWorld = ({sizeX, sizeY, sizeZ}: WorldSize): Uint8Array => {
+export const generateWorld = ({ sizeX, sizeY, sizeZ }: WorldSize): Uint8Array => {
 	const world = new Uint8Array(sizeX * sizeY * sizeZ)
 	world.fill(BlockType.Air)
 	const noise = makeNoise2D(123)

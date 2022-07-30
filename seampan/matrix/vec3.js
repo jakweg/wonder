@@ -11,13 +11,7 @@ import * as glMatrix from './common.js';
  * @returns {vec3} a new 3D vector
  */
 export function create() {
-  let out = new glMatrix.ARRAY_TYPE(3);
-  if (glMatrix.ARRAY_TYPE != Float32Array) {
-    out[0] = 0;
-    out[1] = 0;
-    out[2] = 0;
-  }
-  return out;
+  return new Float32Array(3);
 }
 
 /**
@@ -27,7 +21,7 @@ export function create() {
  * @returns {vec3} a new 3D vector
  */
 export function clone(a) {
-  var out = new glMatrix.ARRAY_TYPE(3);
+  var out = new Float32Array(3);
   out[0] = a[0];
   out[1] = a[1];
   out[2] = a[2];
@@ -56,7 +50,7 @@ export function length(a) {
  * @returns {vec3} a new 3D vector
  */
 export function fromValues(x, y, z) {
-  let out = new glMatrix.ARRAY_TYPE(3);
+  let out = new Float32Array(3);
   out[0] = x;
   out[1] = y;
   out[2] = z;
@@ -367,11 +361,11 @@ export function dot(a, b) {
  */
 export function cross(out, a, b) {
   let ax = a[0],
-      ay = a[1],
-      az = a[2];
+    ay = a[1],
+    az = a[2];
   let bx = b[0],
-      by = b[1],
-      bz = b[2];
+    by = b[1],
+    bz = b[2];
 
   out[0] = ay * bz - az * by;
   out[1] = az * bx - ax * bz;
@@ -503,8 +497,8 @@ export function random(out, scale) {
  */
 export function transformMat4(out, a, m) {
   let x = a[0],
-      y = a[1],
-      z = a[2];
+    y = a[1],
+    z = a[2];
   let w = m[3] * x + m[7] * y + m[11] * z + m[15];
   w = w || 1.0;
   out[0] = (m[0] * x + m[4] * y + m[8] * z + m[12]) / w;
@@ -523,8 +517,8 @@ export function transformMat4(out, a, m) {
  */
 export function transformMat3(out, a, m) {
   let x = a[0],
-      y = a[1],
-      z = a[2];
+    y = a[1],
+    z = a[2];
   out[0] = x * m[0] + y * m[3] + z * m[6];
   out[1] = x * m[1] + y * m[4] + z * m[7];
   out[2] = x * m[2] + y * m[5] + z * m[8];
@@ -543,21 +537,21 @@ export function transformMat3(out, a, m) {
 export function transformQuat(out, a, q) {
   // benchmarks: https://jsperf.com/quaternion-transform-vec3-implementations-fixed
   let qx = q[0],
-      qy = q[1],
-      qz = q[2],
-      qw = q[3];
+    qy = q[1],
+    qz = q[2],
+    qw = q[3];
   let x = a[0],
-      y = a[1],
-      z = a[2];
+    y = a[1],
+    z = a[2];
   // var qvec = [qx, qy, qz];
   // var uv = vec3.cross([], qvec, a);
   let uvx = qy * z - qz * y,
-      uvy = qz * x - qx * z,
-      uvz = qx * y - qy * x;
+    uvy = qz * x - qx * z,
+    uvz = qx * y - qy * x;
   // var uuv = vec3.cross([], qvec, uv);
   let uuvx = qy * uvz - qz * uvy,
-      uuvy = qz * uvx - qx * uvz,
-      uuvz = qx * uvy - qy * uvx;
+    uuvy = qz * uvx - qx * uvz,
+    uuvz = qx * uvy - qy * uvx;
   // vec3.scale(uv, uv, 2 * w);
   let w2 = qw * 2;
   uvx *= w2;
@@ -584,7 +578,7 @@ export function transformQuat(out, a, q) {
  */
 export function rotateX(out, a, b, rad) {
   let p = [],
-      r = [];
+    r = [];
   //Translate point to the origin
   p[0] = a[0] - b[0];
   p[1] = a[1] - b[1];
@@ -613,7 +607,7 @@ export function rotateX(out, a, b, rad) {
  */
 export function rotateY(out, a, b, rad) {
   let p = [],
-      r = [];
+    r = [];
   //Translate point to the origin
   p[0] = a[0] - b[0];
   p[1] = a[1] - b[1];
@@ -642,7 +636,7 @@ export function rotateY(out, a, b, rad) {
  */
 export function rotateZ(out, a, b, rad) {
   let p = [],
-      r = [];
+    r = [];
   //Translate point to the origin
   p[0] = a[0] - b[0];
   p[1] = a[1] - b[1];
@@ -669,13 +663,13 @@ export function rotateZ(out, a, b, rad) {
  */
 export function angle(a, b) {
   let ax = a[0],
-      ay = a[1],
-      az = a[2],
-      bx = b[0],
-      by = b[1],
-      bz = b[2],
-      mag = Math.sqrt((ax * ax + ay * ay + az * az) * (bx * bx + by * by + bz * bz)),
-      cosine = mag && dot(a, b) / mag;
+    ay = a[1],
+    az = a[2],
+    bx = b[0],
+    by = b[1],
+    bz = b[2],
+    mag = Math.sqrt((ax * ax + ay * ay + az * az) * (bx * bx + by * by + bz * bz)),
+    cosine = mag && dot(a, b) / mag;
   return Math.acos(Math.min(Math.max(cosine, -1), 1));
 }
 
@@ -722,18 +716,18 @@ export function exactEquals(a, b) {
  */
 export function equals(a, b) {
   let a0 = a[0],
-      a1 = a[1],
-      a2 = a[2];
+    a1 = a[1],
+    a2 = a[2];
   let b0 = b[0],
-      b1 = b[1],
-      b2 = b[2];
+    b1 = b[1],
+    b2 = b[2];
   return (
-      Math.abs(a0 - b0) <=
-      glMatrix.EPSILON * Math.max(1.0, Math.abs(a0), Math.abs(b0)) &&
-      Math.abs(a1 - b1) <=
-      glMatrix.EPSILON * Math.max(1.0, Math.abs(a1), Math.abs(b1)) &&
-      Math.abs(a2 - b2) <=
-      glMatrix.EPSILON * Math.max(1.0, Math.abs(a2), Math.abs(b2))
+    Math.abs(a0 - b0) <=
+    glMatrix.EPSILON * Math.max(1.0, Math.abs(a0), Math.abs(b0)) &&
+    Math.abs(a1 - b1) <=
+    glMatrix.EPSILON * Math.max(1.0, Math.abs(a1), Math.abs(b1)) &&
+    Math.abs(a2 - b2) <=
+    glMatrix.EPSILON * Math.max(1.0, Math.abs(a2), Math.abs(b2))
   );
 }
 

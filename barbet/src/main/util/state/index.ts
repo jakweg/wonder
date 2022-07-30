@@ -21,12 +21,12 @@ export default class State<T> {
 
 
 	public replace(entireState: T) {
-		return this.update({...this.current, ...entireState})
+		return this.update({ ...this.current, ...entireState })
 	}
 
 
 	public set<K extends keyof T>(key: K, value: T[K]): void {
-		return this.update({[key]: value} as any)
+		return this.update({ [key]: value } as any)
 	}
 
 	public update(update: Partial<T>) {
@@ -40,14 +40,15 @@ export default class State<T> {
 					listenersToCall.push(...listeners.map(l => () => l(newValue)))
 			}
 		}
-		const snapshot = this.current = {...current, ...update}
+		const snapshot = this.current = { ...current, ...update }
 		for (const l of listenersToCall) l()
 		for (const l of [...this.everythingListeners]) l(snapshot)
 	}
 
 	public observe<K extends keyof T>(key: K,
-	                                  callback: (value: T[K]) => void,
-	                                  initialCall: boolean = true): () => void {
+		callback: (value: T[K]) => void,
+		initialCall: boolean = true): () => void {
+		const newCallback = (value: Parameters<typeof callback>[0]) => callback(value)
 
 		const value = this.current[key]
 		let list = this.listeners.get(key)
@@ -56,22 +57,24 @@ export default class State<T> {
 			this.listeners.set(key, list)
 		}
 		if (initialCall)
-			callback(value)
-		list.push(callback)
+			newCallback(value)
+		list.push(newCallback)
 		return () => {
-			const index = list?.indexOf(callback) ?? -1
+			const index = list?.indexOf(newCallback) ?? -1
 			if (index >= 0)
 				list?.splice(index, 1)
 		}
 	}
 
 	public observeEverything(callback: (snapshot: T) => void,
-	                         initialCall: boolean = true): () => void {
-		this.everythingListeners.push(callback)
+		initialCall: boolean = true): () => void {
+		const newCallback = (value: Parameters<typeof callback>[0]) => callback(value)
+
+		this.everythingListeners.push(newCallback)
 		if (initialCall)
-			callback(this.current)
+			newCallback(this.current)
 		return () => {
-			const index = this.everythingListeners.indexOf(callback) ?? -1
+			const index = this.everythingListeners.indexOf(newCallback) ?? -1
 			if (index >= 0)
 				this.everythingListeners.splice(index, 1)
 		}

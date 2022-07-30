@@ -11,21 +11,7 @@ import * as glMatrix from './common.js';
  * @returns {mat4} a new 4x4 matrix
  */
 export function create() {
-  let out = new glMatrix.ARRAY_TYPE(16);
-  if (glMatrix.ARRAY_TYPE != Float32Array) {
-    out[1] = 0;
-    out[2] = 0;
-    out[3] = 0;
-    out[4] = 0;
-    out[6] = 0;
-    out[7] = 0;
-    out[8] = 0;
-    out[9] = 0;
-    out[11] = 0;
-    out[12] = 0;
-    out[13] = 0;
-    out[14] = 0;
-  }
+  let out = new Float32Array(16);
   out[0] = 1;
   out[5] = 1;
   out[10] = 1;
@@ -40,7 +26,7 @@ export function create() {
  * @returns {mat4} a new 4x4 matrix
  */
 export function clone(a) {
-  let out = new glMatrix.ARRAY_TYPE(16);
+  let out = new Float32Array(16);
   out[0] = a[0];
   out[1] = a[1];
   out[2] = a[2];
@@ -97,10 +83,10 @@ export function transpose(out, a) {
   // If we are transposing ourselves we can skip a few steps but have to cache some values
   if (out === a) {
     let a01 = a[1],
-        a02 = a[2],
-        a03 = a[3];
+      a02 = a[2],
+      a03 = a[3];
     let a12 = a[6],
-        a13 = a[7];
+      a13 = a[7];
     let a23 = a[11];
 
     out[1] = a[4];
@@ -146,21 +132,21 @@ export function transpose(out, a) {
  */
 export function invert(out, a) {
   let a00 = a[0],
-      a01 = a[1],
-      a02 = a[2],
-      a03 = a[3];
+    a01 = a[1],
+    a02 = a[2],
+    a03 = a[3];
   let a10 = a[4],
-      a11 = a[5],
-      a12 = a[6],
-      a13 = a[7];
+    a11 = a[5],
+    a12 = a[6],
+    a13 = a[7];
   let a20 = a[8],
-      a21 = a[9],
-      a22 = a[10],
-      a23 = a[11];
+    a21 = a[9],
+    a22 = a[10],
+    a23 = a[11];
   let a30 = a[12],
-      a31 = a[13],
-      a32 = a[14],
-      a33 = a[15];
+    a31 = a[13],
+    a32 = a[14],
+    a33 = a[15];
 
   let b00 = a00 * a11 - a01 * a10;
   let b01 = a00 * a12 - a02 * a10;
@@ -177,7 +163,7 @@ export function invert(out, a) {
 
   // Calculate the determinant
   let det =
-      b00 * b11 - b01 * b10 + b02 * b09 + b03 * b08 - b04 * b07 + b05 * b06;
+    b00 * b11 - b01 * b10 + b02 * b09 + b03 * b08 - b04 * b07 + b05 * b06;
 
   if (!det) {
     return null;
@@ -213,21 +199,21 @@ export function invert(out, a) {
  */
 export function adjoint(out, a) {
   let a00 = a[0],
-      a01 = a[1],
-      a02 = a[2],
-      a03 = a[3];
+    a01 = a[1],
+    a02 = a[2],
+    a03 = a[3];
   let a10 = a[4],
-      a11 = a[5],
-      a12 = a[6],
-      a13 = a[7];
+    a11 = a[5],
+    a12 = a[6],
+    a13 = a[7];
   let a20 = a[8],
-      a21 = a[9],
-      a22 = a[10],
-      a23 = a[11];
+    a21 = a[9],
+    a22 = a[10],
+    a23 = a[11];
   let a30 = a[12],
-      a31 = a[13],
-      a32 = a[14],
-      a33 = a[15];
+    a31 = a[13],
+    a32 = a[14],
+    a33 = a[15];
 
   let b00 = a00 * a11 - a01 * a10;
   let b01 = a00 * a12 - a02 * a10;
@@ -269,21 +255,21 @@ export function adjoint(out, a) {
  */
 export function determinant(a) {
   let a00 = a[0],
-      a01 = a[1],
-      a02 = a[2],
-      a03 = a[3];
+    a01 = a[1],
+    a02 = a[2],
+    a03 = a[3];
   let a10 = a[4],
-      a11 = a[5],
-      a12 = a[6],
-      a13 = a[7];
+    a11 = a[5],
+    a12 = a[6],
+    a13 = a[7];
   let a20 = a[8],
-      a21 = a[9],
-      a22 = a[10],
-      a23 = a[11];
+    a21 = a[9],
+    a22 = a[10],
+    a23 = a[11];
   let a30 = a[12],
-      a31 = a[13],
-      a32 = a[14],
-      a33 = a[15];
+    a31 = a[13],
+    a32 = a[14],
+    a33 = a[15];
 
   let b0 = a00 * a11 - a01 * a10;
   let b1 = a00 * a12 - a02 * a10;
@@ -310,27 +296,27 @@ export function determinant(a) {
  */
 export function multiply(out, a, b) {
   let a00 = a[0],
-      a01 = a[1],
-      a02 = a[2],
-      a03 = a[3];
+    a01 = a[1],
+    a02 = a[2],
+    a03 = a[3];
   let a10 = a[4],
-      a11 = a[5],
-      a12 = a[6],
-      a13 = a[7];
+    a11 = a[5],
+    a12 = a[6],
+    a13 = a[7];
   let a20 = a[8],
-      a21 = a[9],
-      a22 = a[10],
-      a23 = a[11];
+    a21 = a[9],
+    a22 = a[10],
+    a23 = a[11];
   let a30 = a[12],
-      a31 = a[13],
-      a32 = a[14],
-      a33 = a[15];
+    a31 = a[13],
+    a32 = a[14],
+    a33 = a[15];
 
   // Cache only the current line of the second matrix
   let b0 = b[0],
-      b1 = b[1],
-      b2 = b[2],
-      b3 = b[3];
+    b1 = b[1],
+    b2 = b[2],
+    b3 = b[3];
   out[0] = b0 * a00 + b1 * a10 + b2 * a20 + b3 * a30;
   out[1] = b0 * a01 + b1 * a11 + b2 * a21 + b3 * a31;
   out[2] = b0 * a02 + b1 * a12 + b2 * a22 + b3 * a32;
@@ -375,8 +361,8 @@ export function multiply(out, a, b) {
  */
 export function translate(out, a, v) {
   let x = v[0],
-      y = v[1],
-      z = v[2];
+    y = v[1],
+    z = v[2];
   let a00, a01, a02, a03;
   let a10, a11, a12, a13;
   let a20, a21, a22, a23;
@@ -432,8 +418,8 @@ export function translate(out, a, v) {
  **/
 export function scale(out, a, v) {
   let x = v[0],
-      y = v[1],
-      z = v[2];
+    y = v[1],
+    z = v[2];
 
   out[0] = a[0] * x;
   out[1] = a[1] * x;
@@ -465,8 +451,8 @@ export function scale(out, a, v) {
  */
 export function rotate(out, a, rad, axis) {
   let x = axis[0],
-      y = axis[1],
-      z = axis[2];
+    y = axis[1],
+    z = axis[2];
   let len = Math.hypot(x, y, z);
   let s, c, t;
   let a00, a01, a02, a03;
@@ -745,8 +731,8 @@ export function fromScaling(out, v) {
  */
 export function fromRotation(out, rad, axis) {
   let x = axis[0],
-      y = axis[1],
-      z = axis[2];
+    y = axis[1],
+    z = axis[2];
   let len = Math.hypot(x, y, z);
   let s, c, t;
 
@@ -906,9 +892,9 @@ export function fromZRotation(out, rad) {
 export function fromRotationTranslation(out, q, v) {
   // Quaternion math
   let x = q[0],
-      y = q[1],
-      z = q[2],
-      w = q[3];
+    y = q[1],
+    z = q[2],
+    w = q[3];
   let x2 = x + x;
   let y2 = y + y;
   let z2 = z + z;
@@ -963,9 +949,9 @@ export function fromRotationTranslation(out, q, v) {
 export function fromRotationTranslationScale(out, q, v, s) {
   // Quaternion math
   let x = q[0],
-      y = q[1],
-      z = q[2],
-      w = q[3];
+    y = q[1],
+    z = q[2],
+    w = q[3];
   let x2 = x + x;
   let y2 = y + y;
   let z2 = z + z;
@@ -1026,9 +1012,9 @@ export function fromRotationTranslationScale(out, q, v, s) {
 export function fromRotationTranslationScaleOrigin(out, q, v, s, o) {
   // Quaternion math
   let x = q[0],
-      y = q[1],
-      z = q[2],
-      w = q[3];
+    y = q[1],
+    z = q[2],
+    w = q[3];
   let x2 = x + x;
   let y2 = y + y;
   let z2 = z + z;
@@ -1343,9 +1329,9 @@ export function lookAt(out, eye, center, up) {
   let centerz = center[2];
 
   if (
-      Math.abs(eyex - centerx) < glMatrix.EPSILON &&
-      Math.abs(eyey - centery) < glMatrix.EPSILON &&
-      Math.abs(eyez - centerz) < glMatrix.EPSILON
+    Math.abs(eyex - centerx) < glMatrix.EPSILON &&
+    Math.abs(eyey - centery) < glMatrix.EPSILON &&
+    Math.abs(eyez - centerz) < glMatrix.EPSILON
   ) {
     return identity(out);
   }
@@ -1421,15 +1407,15 @@ export function lookAt(out, eye, center, up) {
  */
 export function targetTo(out, eye, target, up) {
   let eyex = eye[0],
-      eyey = eye[1],
-      eyez = eye[2],
-      upx = up[0],
-      upy = up[1],
-      upz = up[2];
+    eyey = eye[1],
+    eyez = eye[2],
+    upx = up[0],
+    upy = up[1],
+    upz = up[2];
 
   let z0 = eyex - target[0],
-      z1 = eyey - target[1],
-      z2 = eyez - target[2];
+    z1 = eyey - target[1],
+    z2 = eyez - target[2];
 
   let len = z0 * z0 + z1 * z1 + z2 * z2;
   if (len > 0) {
@@ -1440,8 +1426,8 @@ export function targetTo(out, eye, target, up) {
   }
 
   let x0 = upy * z2 - upz * z1,
-      x1 = upz * z0 - upx * z2,
-      x2 = upx * z1 - upy * z0;
+    x1 = upz * z0 - upx * z2,
+    x2 = upx * z1 - upy * z0;
 
   len = x0 * x0 + x1 * x1 + x2 * x2;
   if (len > 0) {

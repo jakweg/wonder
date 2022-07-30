@@ -1,5 +1,5 @@
+import lazy from '@seampan/lazy'
 import { calculateNormals } from '../../3d-stuff/common-shader'
-import { lazy } from '../../util/lazy'
 import { ItemType } from '../items'
 
 const createVertexesAndElements = (size: number, scale: number) => {
@@ -28,7 +28,7 @@ const createVertexesAndElements = (size: number, scale: number) => {
 		elementsData[(i - 1) * 3 + 2] = i % size + 1
 	}
 
-	return {vertexData, elementsData}
+	return { vertexData, elementsData }
 }
 
 const vertexesAndElements = /* @__PURE__ */ lazy(() => {
@@ -38,8 +38,8 @@ const vertexesAndElements = /* @__PURE__ */ lazy(() => {
 })
 
 function extracted(vertexDataToAppend: number[], elementsDataToAppend: number[],
-                   x: number, y: number, z: number,
-                   scale: number) {
+	x: number, y: number, z: number,
+	scale: number) {
 	const vertexCountBeforeAdd = vertexDataToAppend.length / 6 | 0
 	const vertexes = vertexesAndElements().vertexData
 	for (let i = 0, s = vertexes.length; i < s;) {
@@ -59,9 +59,9 @@ function extracted(vertexDataToAppend: number[], elementsDataToAppend: number[],
 }
 
 export const appendToMesh = (x: number, y: number, z: number,
-                             amount: number,
-                             vertexDataToAppend: number[],
-                             elementsDataToAppend: number[]): void => {
+	amount: number,
+	vertexDataToAppend: number[],
+	elementsDataToAppend: number[]): void => {
 	if (amount > 0)
 		extracted(vertexDataToAppend, elementsDataToAppend, x, y, z, 1)
 	if (amount > 1)

@@ -1,4 +1,4 @@
-import SeededRandom from '../../util/seeded-random'
+import SeededRandom from '@seampan/seeded-random'
 import { AIR_ID, allBlocks, BlockId } from './block'
 
 const NO_ELEMENT_INDEX_MARKER = 4294967295
@@ -8,7 +8,7 @@ const NO_FLAGS_VALUE = 0
 const FLOATS_PER_VERTEX = 7
 
 const randomizeColor = (x: number, y: number, z: number,
-                        color: [number, number, number]): [number, number, number] => {
+	color: [number, number, number]): [number, number, number] => {
 	const r = SeededRandom.singleRandom(x * 1231.1242412 + y * 42412.123141 ^ z * 911019204.09235) * 0.02 - 0.01
 	color[0] += r
 	color[1] += r
@@ -27,7 +27,7 @@ interface WorldLike {
 }
 
 export const buildChunkMesh = (world: WorldLike, chunkX: number, chunkZ: number, chunkSize: number): Mesh => {
-	const {sizeX, sizeY, sizeZ} = world.size
+	const { sizeX, sizeY, sizeZ } = world.size
 	const worldData = world.rawBlockData
 
 	const vertexIndexes = new Uint32Array((chunkSize + 1) * (sizeY + 1) * (chunkSize + 1))
@@ -60,9 +60,9 @@ export const buildChunkMesh = (world: WorldLike, chunkX: number, chunkZ: number,
 	}
 
 	const setVertexData = (vertexIndex: number,
-	                       colorValue: [number, number, number],
-	                       encodedNormal: number,
-	                       forX: number, forY: number, forZ: number): number => {
+		colorValue: [number, number, number],
+		encodedNormal: number,
+		forX: number, forY: number, forZ: number): number => {
 		let vertexStartIndex = vertexIndex * FLOATS_PER_VERTEX
 		const wasNeverUsed = vertexes[vertexStartIndex + 3]! === NO_COLOR_VALUE
 			&& vertexes[vertexStartIndex + 4]! === NO_COLOR_VALUE

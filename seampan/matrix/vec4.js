@@ -11,14 +11,7 @@ import * as glMatrix from './common.js';
  * @returns {vec4} a new 4D vector
  */
 export function create() {
-  let out = new glMatrix.ARRAY_TYPE(4);
-  if (glMatrix.ARRAY_TYPE != Float32Array) {
-    out[0] = 0;
-    out[1] = 0;
-    out[2] = 0;
-    out[3] = 0;
-  }
-  return out;
+  return new Float32Array(4);
 }
 
 /**
@@ -28,7 +21,7 @@ export function create() {
  * @returns {vec4} a new 4D vector
  */
 export function clone(a) {
-  let out = new glMatrix.ARRAY_TYPE(4);
+  let out = new Float32Array(4);
   out[0] = a[0];
   out[1] = a[1];
   out[2] = a[2];
@@ -46,7 +39,7 @@ export function clone(a) {
  * @returns {vec4} a new 4D vector
  */
 export function fromValues(x, y, z, w) {
-  let out = new glMatrix.ARRAY_TYPE(4);
+  let out = new Float32Array(4);
   out[0] = x;
   out[1] = y;
   out[2] = z;
@@ -394,11 +387,11 @@ export function dot(a, b) {
  */
 export function cross(out, u, v, w) {
   let A = v[0] * w[1] - v[1] * w[0],
-      B = v[0] * w[2] - v[2] * w[0],
-      C = v[0] * w[3] - v[3] * w[0],
-      D = v[1] * w[2] - v[2] * w[1],
-      E = v[1] * w[3] - v[3] * w[1],
-      F = v[2] * w[3] - v[3] * w[2];
+    B = v[0] * w[2] - v[2] * w[0],
+    C = v[0] * w[3] - v[3] * w[0],
+    D = v[1] * w[2] - v[2] * w[1],
+    E = v[1] * w[3] - v[3] * w[1],
+    F = v[2] * w[3] - v[3] * w[2];
   let G = u[0];
   let H = u[1];
   let I = u[2];
@@ -477,9 +470,9 @@ export function random(out, scale) {
  */
 export function transformMat4(out, a, m) {
   let x = a[0],
-      y = a[1],
-      z = a[2],
-      w = a[3];
+    y = a[1],
+    z = a[2],
+    w = a[3];
   out[0] = m[0] * x + m[4] * y + m[8] * z + m[12] * w;
   out[1] = m[1] * x + m[5] * y + m[9] * z + m[13] * w;
   out[2] = m[2] * x + m[6] * y + m[10] * z + m[14] * w;
@@ -497,12 +490,12 @@ export function transformMat4(out, a, m) {
  */
 export function transformQuat(out, a, q) {
   let x = a[0],
-      y = a[1],
-      z = a[2];
+    y = a[1],
+    z = a[2];
   let qx = q[0],
-      qy = q[1],
-      qz = q[2],
-      qw = q[3];
+    qy = q[1],
+    qz = q[2],
+    qw = q[3];
 
   // calculate quat * vec
   let ix = qw * x + qy * z - qz * y;
@@ -562,22 +555,22 @@ export function exactEquals(a, b) {
  */
 export function equals(a, b) {
   let a0 = a[0],
-      a1 = a[1],
-      a2 = a[2],
-      a3 = a[3];
+    a1 = a[1],
+    a2 = a[2],
+    a3 = a[3];
   let b0 = b[0],
-      b1 = b[1],
-      b2 = b[2],
-      b3 = b[3];
+    b1 = b[1],
+    b2 = b[2],
+    b3 = b[3];
   return (
-      Math.abs(a0 - b0) <=
-      glMatrix.EPSILON * Math.max(1.0, Math.abs(a0), Math.abs(b0)) &&
-      Math.abs(a1 - b1) <=
-      glMatrix.EPSILON * Math.max(1.0, Math.abs(a1), Math.abs(b1)) &&
-      Math.abs(a2 - b2) <=
-      glMatrix.EPSILON * Math.max(1.0, Math.abs(a2), Math.abs(b2)) &&
-      Math.abs(a3 - b3) <=
-      glMatrix.EPSILON * Math.max(1.0, Math.abs(a3), Math.abs(b3))
+    Math.abs(a0 - b0) <=
+    glMatrix.EPSILON * Math.max(1.0, Math.abs(a0), Math.abs(b0)) &&
+    Math.abs(a1 - b1) <=
+    glMatrix.EPSILON * Math.max(1.0, Math.abs(a1), Math.abs(b1)) &&
+    Math.abs(a2 - b2) <=
+    glMatrix.EPSILON * Math.max(1.0, Math.abs(a2), Math.abs(b2)) &&
+    Math.abs(a3 - b3) <=
+    glMatrix.EPSILON * Math.max(1.0, Math.abs(a3), Math.abs(b3))
   );
 }
 

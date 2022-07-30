@@ -17,7 +17,7 @@
     ],
     "paths": {
       "@matrix/*": [
-        "./src/main/util/matrix/*"
+        "../seampan/matrix/*"
       ],
       "@seampan/*": [
         "../seampan/*"

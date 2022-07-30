@@ -1,4 +1,4 @@
-import { makeNoise2D } from '../../../util/noise/2d'
+import { makeNoise2D } from '@seampan/noise/2d'
 import { BiomeId } from '../biome'
 import { WorldSize } from '../world'
 
@@ -18,7 +18,7 @@ const getBiomeByValue = (value: number): BiomeId => {
 }
 
 export const generateBiomeMap = (settings: GeneratorSettings): Uint8Array => {
-	const {sizeX, sizeZ} = settings
+	const { sizeX, sizeZ } = settings
 	const data = new Uint8Array(sizeX * sizeZ)
 	if (BiomeId.Void !== 0) data.fill(BiomeId.Void)
 
@@ -41,7 +41,7 @@ export const generateBiomeMap = (settings: GeneratorSettings): Uint8Array => {
 }
 
 export const generateHeightMap = (settings: GeneratorSettings): Uint8Array => {
-	const {sizeX, sizeY, sizeZ} = settings
+	const { sizeX, sizeY, sizeZ } = settings
 	const data = new Uint8Array(sizeX * sizeZ)
 	if (BiomeId.Void !== 0) data.fill(BiomeId.Void)
 

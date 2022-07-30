@@ -1,6 +1,6 @@
+import lazy from '@seampan/lazy'
+import { MeshBuffer } from '.'
 import { MainRenderer } from '../../3d-stuff/main-renderer'
-import { lazy } from '../../util/lazy'
-import { MeshBuffer } from './index'
 
 const rootVertexes = [
 	-0.5, -0.5, -0.5, 0b010001,
@@ -60,7 +60,7 @@ export const createMeshBuffer = (renderer: MainRenderer): MeshBuffer => {
 	array.setContent(vertexesInHand())
 	const indices = renderer.createBuffer(false, false)
 	indices.setContent(elements())
-	return {array, indices, trianglesToRender: elements().length | 0}
+	return { array, indices, trianglesToRender: elements().length | 0 }
 }
 
 export const appendToMesh = (x: number, y: number, z: number, vertexData: number[], elementsData: number[]) => {
