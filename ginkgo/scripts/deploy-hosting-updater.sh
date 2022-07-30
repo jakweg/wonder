@@ -52,8 +52,9 @@ if [[ "$output" != "$GCP_PROJECT" ]]; then
 fi
 echo "Using project $output"
 
-AVAILABLE_SERVICES=$(gcloud services list | tail +2 | cut -f1 -d" ")
-if [[ $(echo "$AVAILABLE_SERVICES" | grep ^cloudbuild.googleapis.com$) == "" ]]; then
+
+AVAILABLE_SERVICES=$(gcloud services list | tail +2)
+if [[ $(echo "$AVAILABLE_SERVICES" | grep " cloudbuild.googleapis.com$") == "" ]]; then
   echo "CloudBuild is not enabled, use command: "
   echo "gcloud services enable cloudbuild.googleapis.com"
   echo "And try again in a few minutes"
@@ -99,7 +100,7 @@ fi
 if [[ $(gcloud pubsub subscriptions list --filter "name:projects/$GCP_PROJECT/subscriptions/hosting-updater-subscription" --format "csv(name)" 2>&1 | tail +2) == "" ]]; then
   gcloud pubsub subscriptions create hosting-updater-subscription --topic "projects/$GCP_PROJECT/topics/hosting-update" \
     --message-retention-duration=10m \
-    --ack-deadline=180 --max-delivery-attempts=1 --min-retry-delay=1m \
+    --ack-deadline=180 --min-retry-delay=1m \
     --push-endpoint="$(gcloud run services list --filter="SERVICE:hosting-updater" --format "csv(URL)" | tail +2)" "--push-auth-service-account=hosting-updater-pubsub-invoker@$GCP_PROJECT.iam.gserviceaccount.com"
 fi
 
