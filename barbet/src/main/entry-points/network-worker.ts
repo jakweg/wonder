@@ -1,6 +1,6 @@
-import { ClientToServer, ServerToClient } from "../../../../seampan/packet-types";
-import { abortAfterTimeout } from "../../../../seampan/util";
-import { attachPingHandling, WrappedWebsocket, wrapWebsocket } from "../../../../seampan/ws-communication";
+import { ClientToServer, ServerToClient } from "@seampan/packet-types";
+import { abortAfterTimeout } from "@seampan/util";
+import { attachPingHandling, WrappedWebsocket, wrapWebsocket } from "@seampan/ws-communication";
 import { ConnectionStatus, initialState } from "../network/initialState";
 import State from "../util/state";
 import { bind } from "../util/worker/message-types/network";

@@ -1,5 +1,5 @@
 import Handler from ".";
-import { can, MemberPermissions } from "../../../seampan/room-snapshot";
+import { can, MemberPermissions } from "@seampan/room-snapshot";
 
 export default {
     type: 'broadcast-game-state',

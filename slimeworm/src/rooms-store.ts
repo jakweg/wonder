@@ -1,6 +1,6 @@
 import { info } from "console";
-import EventEmitter from '../../seampan/event-emitter';
-import { MemberPermissions, MemberRole, OwnerRole, RoomSnapshot } from '../../seampan/room-snapshot';
+import EventEmitter from '@seampan/event-emitter';
+import { MemberPermissions, MemberRole, OwnerRole, RoomSnapshot } from '@seampan/room-snapshot';
 import { Player } from "./players-store";
 
 interface Events {

@@ -1,5 +1,5 @@
 import { Operation } from '.'
-import { can, MemberPermissions } from '../../../../seampan/room-snapshot'
+import { can, MemberPermissions } from '@seampan/room-snapshot'
 import { CreateGameArguments } from '../entry-points/feature-environments/loader'
 import { Status } from '../game-state/state-updater'
 import { SaveMethod } from '../game-state/world/world-saver'

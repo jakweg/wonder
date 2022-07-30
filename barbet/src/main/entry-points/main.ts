@@ -1,5 +1,5 @@
-import { can, MemberPermissions } from '../../../../seampan/room-snapshot'
-import { sleep } from '../../../../seampan/util'
+import { can, MemberPermissions } from '@seampan/room-snapshot'
+import { sleep } from '@seampan/util'
 import { GameSession } from '../game-session'
 import { createLocalSession } from '../game-session/local'
 import { createRemoteSession } from '../game-session/remote'

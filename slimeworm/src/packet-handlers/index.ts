@@ -1,4 +1,4 @@
-import { ClientToServer } from "../../../seampan/packet-types";
+import { ClientToServer } from "@seampan/packet-types";
 import { Player } from "../players-store";
 import { ServerState } from "../server-state";
 import broadcastGameState from "./broadcast-game-state";

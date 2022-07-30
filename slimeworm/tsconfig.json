@@ -12,6 +12,11 @@
     "moduleResolution": "Node",
     "lib": [
       "es2021"
-    ]
+    ],
+    "paths": {
+      "@seampan/*": [
+        "../seampan/*"
+      ]
+    }
   }
 }

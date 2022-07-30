@@ -1,8 +1,8 @@
 
+import { ClientToServer, ServerToClient } from "@seampan/packet-types";
+import { attachPingHandling, WrappedWebsocket, wrapWebsocket } from "@seampan/ws-communication";
 import { randomUUID } from "crypto";
 import { WebSocket } from "ws";
-import { ClientToServer, ServerToClient } from "../../seampan/packet-types";
-import { attachPingHandling, WrappedWebsocket, wrapWebsocket } from "../../seampan/ws-communication";
 
 export interface Player {
     id: string

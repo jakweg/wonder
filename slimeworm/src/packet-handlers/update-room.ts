@@ -1,5 +1,5 @@
+import { can, MemberPermissions } from "@seampan/room-snapshot";
 import Handler from ".";
-import { can, MemberPermissions } from "../../../seampan/room-snapshot";
 
 export default {
     type: 'update-room',

@@ -1,4 +1,4 @@
-import { PlayerInRoom } from "../../../../seampan/room-snapshot";
+import { PlayerInRoom } from "@seampan/room-snapshot";
 
 export enum ConnectionStatus {
     Disconnected,
