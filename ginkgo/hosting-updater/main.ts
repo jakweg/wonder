@@ -178,7 +178,7 @@ async function shaDestFolder() {
 async function prepareDestFolder(): Promise<void> {
 	await Deno.mkdir(`${TMP_FOLDER_ROOT}/${FINAL_FILES_FOLDER_NAME}`)
 	await Deno.mkdir(`${TMP_FOLDER_ROOT}/${FINAL_FILES_FOLDER_NAME}/build-js`)
-	await Deno.mkdir(`${TMP_FOLDER_ROOT}/${FINAL_FILES_FOLDER_NAME}/build-js/environments`)
+	await Deno.mkdir(`${TMP_FOLDER_ROOT}/${FINAL_FILES_FOLDER_NAME}/build-js/feature-environments`)
 	await Promise.all(hostedFiles.map(name => Deno.copyFile(`${TMP_FOLDER_ROOT}/${FOLDER_TO_CLONE}/barbet/${name}`, `${TMP_FOLDER_ROOT}/${FINAL_FILES_FOLDER_NAME}/${name}`)))
 	await compressFiles(hostedFiles.map(name => `${TMP_FOLDER_ROOT}/${FINAL_FILES_FOLDER_NAME}/${name}`))
 }
