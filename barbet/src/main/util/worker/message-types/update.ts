@@ -5,24 +5,39 @@ import Mutex from "../../mutex";
 import { WorkerInstance } from "../worker-instance";
 import { genericBind } from "../worker-listener";
 
-
-interface ToWorker {
-    'new-settings': any
-    'create-game': CreateGameArguments
-    'save-game': SaveGameArguments
-    'terminate-game': TerminateGameArguments
-    'append-to-tick-queue': { actions: TickQueueAction[], playerId: string, forTick: number }
-    'set-player-ids': { playerIds: string[] }
+export const enum ToWorker {
+    NewSettings,
+    CreateGame,
+    SaveGame,
+    TerminateGame,
+    AppendToTickQueue,
+    SetPlayerIds,
 }
 
-interface FromWorker {
-    'game-create-result': { game: unknown, updater: unknown }
-    'update-entity-container': { buffers: SharedArrayBuffer[] }
-    'game-saved': SaveGameResult | false
-    'tick-completed': { tick: number, updaterActions: UpdaterAction[] }
+interface ToTypes {
+    [ToWorker.NewSettings]: any
+    [ToWorker.CreateGame]: CreateGameArguments
+    [ToWorker.SaveGame]: SaveGameArguments
+    [ToWorker.TerminateGame]: TerminateGameArguments
+    [ToWorker.AppendToTickQueue]: { actions: TickQueueAction[], playerId: string, forTick: number }
+    [ToWorker.SetPlayerIds]: { playerIds: string[] }
+}
+
+export const enum FromWorker {
+    GameCreateResult,
+    UpdateEntityContainer,
+    GameSaved,
+    TickCompleted,
+}
+
+interface FromTypes {
+    [FromWorker.GameCreateResult]: { game: unknown, updater: unknown }
+    [FromWorker.UpdateEntityContainer]: { buffers: SharedArrayBuffer[] }
+    [FromWorker.GameSaved]: SaveGameResult | false
+    [FromWorker.TickCompleted]: { tick: number, updaterActions: UpdaterAction[] }
 }
 
 export const spawnNew = (mutex: Mutex) => WorkerInstance
-    .spawnNew<ToWorker, FromWorker>('update-worker', 'update', mutex)
+    .spawnNew<ToTypes, FromTypes>('update-worker', 'update', mutex)
 
-export const bind = () => genericBind<FromWorker, ToWorker>()
+export const bind = () => genericBind<FromTypes, ToTypes>()

@@ -5,7 +5,7 @@ import { loadGameFromArgs } from '../game-state/world/world-loader'
 import { performGameSave } from '../game-state/world/world-saver'
 import TickQueue from '../network/tick-queue'
 import CONFIG from '../util/persistance/observable-settings'
-import { bind } from '../util/worker/message-types/update'
+import { bind, FromWorker, ToWorker } from '../util/worker/message-types/update'
 
 const { sender, receiver } = await bind()
 
@@ -14,21 +14,21 @@ let gameState: GameStateImplementation | null = null
 let stateUpdater: StateUpdaterImplementation | null = null
 let tickQueue: TickQueue | null = null
 
-receiver.on('new-settings', settings => {
+receiver.on(ToWorker.NewSettings, settings => {
 	CONFIG.update(settings)
 })
 
-receiver.on('terminate-game', args => {
+receiver.on(ToWorker.TerminateGame, args => {
 	stateUpdater?.terminate()
 	gameState = stateUpdater = null
 	if (args.terminateEverything)
 		close()
 })
 
-receiver.on('create-game', async (args) => {
+receiver.on(ToWorker.CreateGame, async (args) => {
 	const stateBroadcastCallback = () => {
 		if (gameState === null) return
-		sender.send('update-entity-container', {
+		sender.send(FromWorker.UpdateEntityContainer, {
 			buffers: gameState?.entities?.passBuffers(),
 		})
 	}
@@ -44,25 +44,25 @@ receiver.on('create-game', async (args) => {
 
 			const currentTick = gameState!.currentTick
 
-			sender.send('tick-completed', { tick: currentTick, updaterActions })
+			sender.send(FromWorker.TickCompleted, { tick: currentTick, updaterActions })
 		},
 		gameState.currentTick, tickQueue)
 
-	sender.send('game-create-result', {
+	sender.send(FromWorker.GameCreateResult, {
 		game: gameState!.passForRenderer(),
 		updater: stateUpdater!.pass(),
 	})
 })
 
-receiver.on('save-game', async (data) => {
+receiver.on(ToWorker.SaveGame, async (data) => {
 	const result = gameState ? (await performGameSave(gameState, data)) : false
-	sender.send('game-saved', result)
+	sender.send(FromWorker.GameSaved, result)
 })
 
-receiver.on('append-to-tick-queue', ({ actions, playerId, forTick }) => {
+receiver.on(ToWorker.AppendToTickQueue, ({ actions, playerId, forTick }) => {
 	tickQueue?.setForTick(forTick, playerId, actions)
 })
 
-receiver.on('set-player-ids', ({ playerIds }) => {
+receiver.on(ToWorker.SetPlayerIds, ({ playerIds }) => {
 	tickQueue?.setRequiredPlayers(playerIds)
 })

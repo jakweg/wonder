@@ -7,7 +7,7 @@ import CONFIG from '../../util/persistance/observable-settings'
 import { getCameraBuffer, setCameraBuffer } from '../../util/persistance/serializable-settings'
 import { globalMutex, setGlobalMutex } from '../../util/worker/global-mutex'
 import { FromWorker as FromRender, spawnNew as spawnNewRenderWorker, ToWorker as ToRender } from '../../util/worker/message-types/render'
-import { spawnNew as spawnNewUpdateWorker } from '../../util/worker/message-types/update'
+import { FromWorker as FromUpdate, spawnNew as spawnNewUpdateWorker, ToWorker as ToUpdate } from '../../util/worker/message-types/update'
 import {
 	ConnectArguments, EnvironmentConnection,
 	GameListeners,
@@ -34,7 +34,7 @@ export const bind = async (args: ConnectArguments): Promise<EnvironmentConnectio
 	])
 
 	CONFIG.observeEverything(snapshot => {
-		updateWorker.send.send('new-settings', snapshot)
+		updateWorker.send.send(ToUpdate.NewSettings, snapshot)
 		renderWorker.send.send(ToRender.NewSettings, snapshot)
 	})
 
@@ -45,7 +45,7 @@ export const bind = async (args: ConnectArguments): Promise<EnvironmentConnectio
 		update: updateWorker.startDelay,
 	})
 
-	updateWorker.receive.on('tick-completed', data => {
+	updateWorker.receive.on(FromUpdate.TickCompleted, data => {
 		listeners?.onTickCompleted(data.tick)
 	})
 
@@ -53,7 +53,7 @@ export const bind = async (args: ConnectArguments): Promise<EnvironmentConnectio
 		listeners?.onInputCaused(action)
 	})
 
-	updateWorker.receive.on('update-entity-container', data => {
+	updateWorker.receive.on(FromUpdate.UpdateEntityContainer, data => {
 		entityContainerSnapshotForRenderer = data
 		renderWorker.send.send(ToRender.UpdateEntityContainer, data)
 	})
@@ -61,7 +61,7 @@ export const bind = async (args: ConnectArguments): Promise<EnvironmentConnectio
 
 	const terminate = (args: TerminateGameArguments) => {
 		renderWorker.send.send(ToRender.TerminateGame, args)
-		updateWorker.send.send('terminate-game', args)
+		updateWorker.send.send(ToUpdate.TerminateGame, args)
 		entityContainerSnapshotForRenderer = updater = listeners = null
 
 		if (args.terminateEverything) {
@@ -76,9 +76,9 @@ export const bind = async (args: ConnectArguments): Promise<EnvironmentConnectio
 			if (updater !== null)
 				terminate({})
 
-			updateWorker.send.send('create-game', gameArgs)
+			updateWorker.send.send(ToUpdate.CreateGame, gameArgs)
 
-			const data = await updateWorker.receive.await('game-create-result')
+			const data = await updateWorker.receive.await(FromUpdate.GameCreateResult)
 
 			gameSnapshotForRenderer = data
 			updater = createStateUpdaterControllerFromReceived(data.updater)
@@ -86,10 +86,10 @@ export const bind = async (args: ConnectArguments): Promise<EnvironmentConnectio
 			return {
 				updater,
 				setActionsCallback(forTick: number, playerId: string, actions: TickQueueAction[]) {
-					updateWorker.send.send('append-to-tick-queue', { forTick, playerId, actions })
+					updateWorker.send.send(ToUpdate.AppendToTickQueue, { forTick, playerId, actions })
 				},
 				setPlayerIdsCallback(ids) {
-					updateWorker.send.send('set-player-ids', { playerIds: ids })
+					updateWorker.send.send(ToUpdate.SetPlayerIds, { playerIds: ids })
 				},
 				setGameListeners(l) {
 					listeners = l
@@ -108,8 +108,8 @@ export const bind = async (args: ConnectArguments): Promise<EnvironmentConnectio
 		},
 		async saveGame(args: SaveGameArguments): Promise<SaveGameResult> {
 			if (updateWorker) {
-				updateWorker.send.send('save-game', args)
-				const result = await updateWorker.receive.await('game-saved')
+				updateWorker.send.send(ToUpdate.SaveGame, args)
+				const result = await updateWorker.receive.await(FromUpdate.GameSaved)
 				if (result !== false)
 					return result
 			}
