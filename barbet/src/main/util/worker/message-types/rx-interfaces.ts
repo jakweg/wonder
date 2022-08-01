@@ -22,8 +22,8 @@ export const createReceiver = <T>(worker: { onmessage: null | ((event: MessageEv
     if (worker['onmessage'] != null)
         throw new Error()
 
-    const listeners: any = {}
-    const oneTimeListeners: Map<string, any> = new Map()
+    const listeners: Map<keyof T, any> = new Map()
+    const oneTimeListeners: Map<keyof T, any> = new Map()
 
     worker['onmessage'] = (event) => {
         const { type, value } = event['data']
@@ -31,7 +31,7 @@ export const createReceiver = <T>(worker: { onmessage: null | ((event: MessageEv
         let callback = oneTimeListeners['get'](type)
         let isOneTime = true
         if (callback === undefined) {
-            callback = listeners[type]
+            callback = listeners['get'](type)
             isOneTime = false
         }
 
@@ -47,19 +47,19 @@ export const createReceiver = <T>(worker: { onmessage: null | ((event: MessageEv
 
     return {
         on(type, callback) {
-            if (listeners[type] !== undefined)
+            if (listeners['has'](type))
                 throw new Error(`Reasign listener ${String(type)}`)
 
-            listeners[type] = callback
+            listeners['set'](type, callback)
         },
         once(type, callback) {
-            if (oneTimeListeners['has'](String(type)))
+            if (oneTimeListeners['has'](type))
                 throw new Error(`Already waiting ${String(type)}`)
 
-            oneTimeListeners.set(String(type), callback)
+            oneTimeListeners.set(type, callback)
             return () => {
-                if (oneTimeListeners['get'](String(type)) === callback)
-                    oneTimeListeners['delete'](String(type))
+                if (oneTimeListeners['get'](type) === callback)
+                    oneTimeListeners['delete'](type)
             }
         },
         await(type, signal) {

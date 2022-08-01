@@ -1,5 +1,5 @@
-import { Operation } from '.'
 import { can, MemberPermissions } from '@seampan/room-snapshot'
+import { Operation } from '.'
 import { CreateGameArguments } from '../entry-points/feature-environments/loader'
 import { Status } from '../game-state/state-updater'
 import { SaveMethod } from '../game-state/world/world-saver'
@@ -7,7 +7,7 @@ import ActionsBroadcastHelper from '../network/actions-broadcast-helper'
 import { ConnectionStatus, initialState } from '../network/initialState'
 import State from '../util/state'
 import { globalMutex } from '../util/worker/global-mutex'
-import { spawnNew } from '../util/worker/message-types/network'
+import { FromWorker, spawnNew, ToWorker } from '../util/worker/message-types/network'
 import { createGenericSession } from './generic'
 
 interface Props {
@@ -19,8 +19,8 @@ export type RemoteSession = Awaited<ReturnType<typeof createRemoteSession>>
 const loadWebsocket = async (holder: any) => {
 	const state = State.fromInitial(initialState)
 	const ws = await spawnNew(globalMutex)
-	ws.receive.on('state-update', data => state.update(data))
-	ws.receive.on('got-player-actions', ({ tick, from, actions }) => {
+	ws.receive.on(FromWorker.StateUpdate, data => state.update(data))
+	ws.receive.on(FromWorker.GotPlayerActions, ({ tick, from, actions }) => {
 		holder.generic.forwardPlayerActions(tick, from, actions)
 	})
 
@@ -29,7 +29,7 @@ const loadWebsocket = async (holder: any) => {
 
 const loadGenericSession = async (props: Props, holder: any) => {
 	const sendActionsCallback: ConstructorParameters<typeof ActionsBroadcastHelper>[0]
-		= (tick, actions) => holder.ws.send.send('broadcast-my-actions', { tick, actions })
+		= (tick, actions) => holder.ws.send.send(ToWorker.BroadcastMyActions, { tick, actions })
 
 	const generic = await createGenericSession({
 		canvasProvider: props.canvasProvider,
@@ -53,7 +53,7 @@ export const createRemoteSession = async (props: Props) => {
 
 
 	const broadcastOperation = (operation: Operation): void => {
-		ws.send.send('broadcast-operation', operation)
+		ws.send.send(ToWorker.BroadcastOperation, operation)
 	}
 
 	return {
@@ -65,31 +65,32 @@ export const createRemoteSession = async (props: Props) => {
 				throw new Error('Already connected')
 
 
-			ws.send.send('connect', { address: to })
+			ws.send.send(ToWorker.Connect, { address: to })
 
-			if (!(await ws.receive.await('connection-made')).success)
+
+			if (!(await ws.receive.await(FromWorker.ConnectionMade)).success)
 				throw new Error('failed to establish connection')
 		},
 		async joinRoom(id: string): Promise<void> {
 			if (state.get('connection-status') !== ConnectionStatus.Connected)
 				throw new Error('not connected')
 
-			ws.send.send('join-room', { roomId: id })
+			ws.send.send(ToWorker.JoinRoom, { roomId: id })
 
-			if (!(await ws.receive.await('joined-room')).ok)
+			if (!(await ws.receive.await(FromWorker.JoinedRoom)).ok)
 				throw new Error('failed to join room')
 		},
 		async createNewGame(args: CreateGameArguments): Promise<void> {
 			generic.createNewGame(args)
 		},
 		async waitForGameFromNetwork(): Promise<void> {
-			const { serializedState } = await ws.receive.await('got-game-state')
+			const { serializedState } = await ws.receive.await(FromWorker.GotGameState)
 			generic.createNewGame({ stringToRead: serializedState })
 		},
 		async lockRoom(lock: boolean) {
 			if (state.get('connection-status') !== ConnectionStatus.Connected)
 				throw new Error('not connected')
-			ws.send.send('set-prevent-joins', { prevent: !!lock })
+			ws.send.send(ToWorker.SetPreventJoins, { prevent: !!lock })
 		},
 		async broadcastGameToOthers() {
 			const result = await generic
@@ -97,7 +98,7 @@ export const createRemoteSession = async (props: Props) => {
 				.saveGame({ method: SaveMethod.ToString2 })
 
 			if (result.method !== SaveMethod.ToString2) throw new Error()
-			ws.send.send('broadcast-game-state', { serializedState: result.serializedState })
+			ws.send.send(ToWorker.BroadcastGameState, { serializedState: result.serializedState })
 		},
 		resume(tps: number) {
 			broadcastOperation({ type: 'start', tps })
@@ -113,11 +114,11 @@ export const createRemoteSession = async (props: Props) => {
 			return previousStatus === Status.Running
 		},
 		setLatencyTicks(count: number) {
-			ws.send.send('set-latency-ticks', { count })
+			ws.send.send(ToWorker.SetLatencyTicks, { count })
 		},
 		async listenForOperations() {
 			while (state.get('connection-status') === ConnectionStatus.Connected) {
-				const operation = await ws.receive.await('got-operation')
+				const operation = await ws.receive.await(FromWorker.GotOperation)
 
 				switch (operation.type) {
 					case 'start':

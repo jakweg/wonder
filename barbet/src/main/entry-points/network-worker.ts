@@ -3,15 +3,15 @@ import { abortAfterTimeout } from "@seampan/util";
 import { attachPingHandling, WrappedWebsocket, wrapWebsocket } from "@seampan/ws-communication";
 import { ConnectionStatus, initialState } from "../network/initialState";
 import State from "../util/state";
-import { bind } from "../util/worker/message-types/network";
+import { bind, FromWorker, ToWorker } from "../util/worker/message-types/network";
 
 const { sender, receiver } = await bind()
 
 const state = State.fromInitial(initialState)
 let wsSocket: WrappedWebsocket<ClientToServer, ServerToClient> | null = null
-state.observeEverything(snapshot => sender.send('state-update', snapshot))
+state.observeEverything(snapshot => sender.send(FromWorker.StateUpdate, snapshot))
 
-receiver.on('connect', async request => {
+receiver.on(ToWorker.Connect, async request => {
     const status = state.get('connection-status')
     if (status !== ConnectionStatus.Disconnected && status !== ConnectionStatus.Error)
         throw new Error('Already connected')
@@ -36,14 +36,14 @@ receiver.on('connect', async request => {
             "my-id": idPacket['id'],
             "connection-status": ConnectionStatus.Connected
         })
-        sender.send('connection-made', { success: true })
+        sender.send(FromWorker.ConnectionMade, { success: true })
     } catch (e) {
         wsSocket = null
         state.update({
             endpoint: null,
             "connection-status": ConnectionStatus.Error
         })
-        sender.send('connection-made', { success: false })
+        sender.send(FromWorker.ConnectionMade, { success: false })
         return
     }
 
@@ -57,11 +57,11 @@ receiver.on('connect', async request => {
                 "connection-status": error ? ConnectionStatus.Error : ConnectionStatus.Disconnected,
                 "players-in-room": null,
             })
-            sender.send('connection-dropped', null)
+            sender.send(FromWorker.ConnectionDropped, null)
         })
 })
 
-receiver.on('join-room', async ({ roomId }) => {
+receiver.on(ToWorker.JoinRoom, async ({ roomId }) => {
     if (!wsSocket || state.get('connection-status') !== ConnectionStatus.Connected)
         throw new Error('not connected')
     if (state.get('room-id') !== null)
@@ -71,7 +71,7 @@ receiver.on('join-room', async ({ roomId }) => {
 
     const packet = (await wsSocket.receive.await('joined-room'))
     if (!packet['ok']) {
-        sender.send('joined-room', { ok: false })
+        sender.send(FromWorker.JoinedRoom, { ok: false })
         return
     }
     const myRoomId = packet['roomId']
@@ -80,7 +80,7 @@ receiver.on('join-room', async ({ roomId }) => {
         'room-id': myRoomId
     })
 
-    sender.send('joined-room', { ok: true, roomId: myRoomId })
+    sender.send(FromWorker.JoinedRoom, { ok: true, roomId: myRoomId })
 
     const doReceiveRoomUpdates = async () => {
         while (state.get('room-id') === myRoomId && wsSocket?.connection.isConnected()) {
@@ -96,14 +96,14 @@ receiver.on('join-room', async ({ roomId }) => {
     const doReceiveGameState = async () => {
         while (state.get('room-id') === myRoomId && wsSocket?.connection.isConnected()) {
             const packet = await wsSocket.receive.await('game-state-broadcast')
-            sender.send('got-game-state', { serializedState: packet['serializedState'] })
+            sender.send(FromWorker.GotGameState, { serializedState: packet['serializedState'] })
         }
     }
 
     const doReceivePlayerActions = async () => {
         while (state.get('room-id') === myRoomId && wsSocket?.connection.isConnected()) {
             const packet = await wsSocket.receive.await('players-actions')
-            sender.send('got-player-actions', {
+            sender.send(FromWorker.GotPlayerActions, {
                 from: packet['from'],
                 tick: packet['tick'],
                 actions: packet['actions'],
@@ -114,7 +114,7 @@ receiver.on('join-room', async ({ roomId }) => {
     const doReceiveOperations = async () => {
         while (state.get('room-id') === myRoomId && wsSocket?.connection.isConnected()) {
             const packet = await wsSocket.receive.await('invoked-operation')
-            sender.send('got-operation', packet['operation'])
+            sender.send(FromWorker.GotOperation, packet['operation'])
         }
     }
 
@@ -125,22 +125,22 @@ receiver.on('join-room', async ({ roomId }) => {
 
 })
 
-receiver.on('set-prevent-joins', ({ prevent }) => {
+receiver.on(ToWorker.SetPreventJoins, ({ prevent }) => {
     wsSocket?.send.send('update-room', { 'preventJoining': prevent })
 })
 
-receiver.on('set-latency-ticks', ({ count }) => {
+receiver.on(ToWorker.SetLatencyTicks, ({ count }) => {
     wsSocket?.send.send('update-room', { 'latencyTicks': count })
 })
 
-receiver.on('broadcast-game-state', ({ serializedState }) => {
+receiver.on(ToWorker.BroadcastGameState, ({ serializedState }) => {
     wsSocket?.send.send('broadcast-game-state', { 'serializedState': serializedState })
 })
 
-receiver.on('broadcast-my-actions', ({ tick, actions }) => {
+receiver.on(ToWorker.BroadcastMyActions, ({ tick, actions }) => {
     wsSocket?.send.send('broadcast-my-actions', { 'tick': tick, 'actions': actions })
 })
 
-receiver.on('broadcast-operation', operation => {
+receiver.on(ToWorker.BroadcastOperation, operation => {
     wsSocket?.send.send('broadcast-operation', operation)
 })

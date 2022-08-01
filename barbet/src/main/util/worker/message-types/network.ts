@@ -4,28 +4,47 @@ import Mutex from "../../mutex";
 import { WorkerInstance } from "../worker-instance";
 import { genericBind } from "../worker-listener";
 
-
-interface ToWorker {
-    'connect': { address: string }
-    'join-room': { roomId: string }
-    'set-prevent-joins': { prevent: boolean }
-    'set-latency-ticks': { count: number }
-    'broadcast-game-state': { serializedState: string }
-    'broadcast-my-actions': { tick: number, actions: TickQueueAction[] }
-    'broadcast-operation': Operation
+export const enum ToWorker {
+    Connect,
+    JoinRoom,
+    SetPreventJoins,
+    SetLatencyTicks,
+    BroadcastGameState,
+    BroadcastMyActions,
+    BroadcastOperation,
 }
 
-interface FromWorker {
-    'state-update': any
-    'connection-made': { success: boolean }
-    'connection-dropped': null
-    'joined-room': { ok: true, roomId: string } | { ok: false, }
-    'got-game-state': { serializedState: string }
-    'got-player-actions': { from: string, tick: number, actions: TickQueueAction[] }
-    'got-operation': Operation
+type ToTypes = {
+    [ToWorker.Connect]: { address: string }
+    [ToWorker.JoinRoom]: { roomId: string }
+    [ToWorker.SetPreventJoins]: { prevent: boolean }
+    [ToWorker.SetLatencyTicks]: { count: number }
+    [ToWorker.BroadcastGameState]: { serializedState: string }
+    [ToWorker.BroadcastMyActions]: { tick: number, actions: TickQueueAction[] }
+    [ToWorker.BroadcastOperation]: Operation
+}
+
+export const enum FromWorker {
+    StateUpdate,
+    ConnectionMade,
+    ConnectionDropped,
+    JoinedRoom,
+    GotGameState,
+    GotPlayerActions,
+    GotOperation,
+}
+
+interface FromTypes {
+    [FromWorker.StateUpdate]: any
+    [FromWorker.ConnectionMade]: { success: boolean }
+    [FromWorker.ConnectionDropped]: null
+    [FromWorker.JoinedRoom]: { ok: true, roomId: string } | { ok: false, }
+    [FromWorker.GotGameState]: { serializedState: string }
+    [FromWorker.GotPlayerActions]: { from: string, tick: number, actions: TickQueueAction[] }
+    [FromWorker.GotOperation]: Operation
 }
 
 export const spawnNew = (mutex: Mutex) => WorkerInstance
-    .spawnNew<ToWorker, FromWorker>('network-worker', 'network', mutex)
+    .spawnNew<ToTypes, FromTypes>('network-worker', 'network', mutex)
 
-export const bind = () => genericBind<FromWorker, ToWorker>()
+export const bind = () => genericBind<FromTypes, ToTypes>()
