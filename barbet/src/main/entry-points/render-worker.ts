@@ -5,7 +5,7 @@ import { SendActionsQueue } from '../game-state/scheduled-actions/queue'
 import { createStateUpdaterControllerFromReceived, StateUpdater } from '../game-state/state-updater'
 import { initFrontedVariablesFromReceived } from '../util/frontend-variables-updaters'
 import CONFIG from '../util/persistance/observable-settings'
-import { bind } from '../util/worker/message-types/render'
+import { bind, FromWorker, ToWorker } from '../util/worker/message-types/render'
 
 const { sender, receiver } = await bind()
 
@@ -17,37 +17,37 @@ let decodedGame: GameState | null = null
 let decodedUpdater: StateUpdater | null = null
 let cameraBuffer: SharedArrayBuffer | null = null
 
-receiver.on('new-settings', settings => {
+receiver.on(ToWorker.NewSettings, settings => {
 	CONFIG.update(settings)
 })
 
-receiver.on('transfer-canvas', (data) => {
+receiver.on(ToWorker.TransferCanvas, (data) => {
 	canvas = data.canvas as HTMLCanvasElement
 	considerStartRendering()
 })
 
-receiver.on('set-worker-load-delays', (data) => {
+receiver.on(ToWorker.SetWorkerLoadDelays, (data) => {
 	workerStartDelayDifference = data.update - data.render
 })
 
-receiver.on('game-create-result', (data) => {
+receiver.on(ToWorker.GameCreateResult, (data) => {
 	gameSnapshot = data
 	considerStartRendering()
 })
 
-receiver.on('update-entity-container', (data) => {
+receiver.on(ToWorker.UpdateEntityContainer, (data) => {
 	decodedGame!.entities.replaceBuffersFromReceived(data)
 })
 
-receiver.on('camera-buffer', (data) => {
+receiver.on(ToWorker.CameraBuffer, (data) => {
 	cameraBuffer = data.buffer
 })
 
-receiver.on('frontend-variables', (data) => {
+receiver.on(ToWorker.FrontendVariables, (data) => {
 	initFrontedVariablesFromReceived(data.buffer)
 })
 
-receiver.on('terminate-game', args => {
+receiver.on(ToWorker.TerminateGame, args => {
 	renderCancelCallback?.()
 	canvas = decodedUpdater = decodedGame = gameSnapshot = null
 	if (args.terminateEverything)
@@ -65,7 +65,7 @@ const considerStartRendering = () => {
 	if (canvas !== null && decodedGame !== null && decodedUpdater !== null) {
 		const camera = cameraBuffer ? Camera.newUsingBuffer(cameraBuffer) : Camera.newPerspective()
 
-		const queue = SendActionsQueue.create(action => sender.send('scheduled-action', action))
+		const queue = SendActionsQueue.create(action => sender.send(FromWorker.ScheduledAction, action))
 
 		renderCancelCallback?.()
 		const gameTickEstimation = () => decodedUpdater!.estimateCurrentGameTickTime(workerStartDelayDifference)

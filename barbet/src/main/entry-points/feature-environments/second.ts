@@ -6,7 +6,7 @@ import { initFrontedVariablesFromReceived } from '../../util/frontend-variables-
 import CONFIG from '../../util/persistance/observable-settings'
 import { getCameraBuffer, setCameraBuffer } from '../../util/persistance/serializable-settings'
 import { globalMutex, setGlobalMutex } from '../../util/worker/global-mutex'
-import { spawnNew as spawnNewRenderWorker } from '../../util/worker/message-types/render'
+import { FromWorker as FromRender, spawnNew as spawnNewRenderWorker, ToWorker as ToRender } from '../../util/worker/message-types/render'
 import { spawnNew as spawnNewUpdateWorker } from '../../util/worker/message-types/update'
 import {
 	ConnectArguments, EnvironmentConnection,
@@ -35,12 +35,12 @@ export const bind = async (args: ConnectArguments): Promise<EnvironmentConnectio
 
 	CONFIG.observeEverything(snapshot => {
 		updateWorker.send.send('new-settings', snapshot)
-		renderWorker.send.send('new-settings', snapshot)
+		renderWorker.send.send(ToRender.NewSettings, snapshot)
 	})
 
-	renderWorker.send.send('frontend-variables', { buffer: frontedVariablesBuffer })
-	renderWorker.send.send('camera-buffer', { buffer: getCameraBuffer() })
-	renderWorker.send.send('set-worker-load-delays', {
+	renderWorker.send.send(ToRender.FrontendVariables, { buffer: frontedVariablesBuffer })
+	renderWorker.send.send(ToRender.CameraBuffer, { buffer: getCameraBuffer() })
+	renderWorker.send.send(ToRender.SetWorkerLoadDelays, {
 		render: renderWorker.startDelay,
 		update: updateWorker.startDelay,
 	})
@@ -49,18 +49,18 @@ export const bind = async (args: ConnectArguments): Promise<EnvironmentConnectio
 		listeners?.onTickCompleted(data.tick)
 	})
 
-	renderWorker.receive.on('scheduled-action', action => {
+	renderWorker.receive.on(FromRender.ScheduledAction, action => {
 		listeners?.onInputCaused(action)
 	})
 
 	updateWorker.receive.on('update-entity-container', data => {
 		entityContainerSnapshotForRenderer = data
-		renderWorker.send.send('update-entity-container', data)
+		renderWorker.send.send(ToRender.UpdateEntityContainer, data)
 	})
 
 
 	const terminate = (args: TerminateGameArguments) => {
-		renderWorker.send.send('terminate-game', args)
+		renderWorker.send.send(ToRender.TerminateGame, args)
 		updateWorker.send.send('terminate-game', args)
 		entityContainerSnapshotForRenderer = updater = listeners = null
 
@@ -101,10 +101,10 @@ export const bind = async (args: ConnectArguments): Promise<EnvironmentConnectio
 				throw new Error('Create game first')
 
 			const canvasControl = (renderArguments.canvas as any).transferControlToOffscreen()
-			renderWorker.send.send('transfer-canvas', { canvas: canvasControl }, [canvasControl])
-			renderWorker.send.send('game-create-result', gameSnapshotForRenderer)
+			renderWorker.send.send(ToRender.TransferCanvas, { canvas: canvasControl }, [canvasControl])
+			renderWorker.send.send(ToRender.GameCreateResult, gameSnapshotForRenderer)
 			if (entityContainerSnapshotForRenderer !== null)
-				renderWorker.send.send('update-entity-container', entityContainerSnapshotForRenderer)
+				renderWorker.send.send(ToRender.UpdateEntityContainer, entityContainerSnapshotForRenderer)
 		},
 		async saveGame(args: SaveGameArguments): Promise<SaveGameResult> {
 			if (updateWorker) {

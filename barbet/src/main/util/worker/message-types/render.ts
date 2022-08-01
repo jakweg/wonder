@@ -4,23 +4,37 @@ import Mutex from "../../mutex";
 import { WorkerInstance } from "../worker-instance";
 import { genericBind } from "../worker-listener";
 
-
-interface ToWorker {
-    'new-settings': any
-    'frontend-variables': { buffer: SharedArrayBuffer }
-    'camera-buffer': { buffer: SharedArrayBuffer }
-    'set-worker-load-delays': { update: number, render: number }
-    'update-entity-container': { buffers: SharedArrayBuffer[] }
-    'terminate-game': TerminateGameArguments
-    'transfer-canvas': { canvas: unknown }
-    'game-create-result': { game: unknown, updater: unknown }
+export const enum ToWorker {
+    NewSettings,
+    FrontendVariables,
+    CameraBuffer,
+    SetWorkerLoadDelays,
+    UpdateEntityContainer,
+    TerminateGame,
+    TransferCanvas,
+    GameCreateResult,
 }
 
-interface FromWorker {
-    'scheduled-action': ScheduledAction
+interface ToTypes {
+    [ToWorker.NewSettings]: any
+    [ToWorker.FrontendVariables]: { buffer: SharedArrayBuffer }
+    [ToWorker.CameraBuffer]: { buffer: SharedArrayBuffer }
+    [ToWorker.SetWorkerLoadDelays]: { update: number, render: number }
+    [ToWorker.UpdateEntityContainer]: { buffers: SharedArrayBuffer[] }
+    [ToWorker.TerminateGame]: TerminateGameArguments
+    [ToWorker.TransferCanvas]: { canvas: unknown }
+    [ToWorker.GameCreateResult]: { game: unknown, updater: unknown }
+}
+
+export const enum FromWorker {
+    ScheduledAction,
+}
+
+interface FromTypes {
+    [FromWorker.ScheduledAction]: ScheduledAction
 }
 
 export const spawnNew = (mutex: Mutex) => WorkerInstance
-    .spawnNew<ToWorker, FromWorker>('render-worker', 'render', mutex)
+    .spawnNew<ToTypes, FromTypes>('render-worker', 'render', mutex)
 
-export const bind = () => genericBind<FromWorker, ToWorker>()
+export const bind = () => genericBind<FromTypes, ToTypes>()
