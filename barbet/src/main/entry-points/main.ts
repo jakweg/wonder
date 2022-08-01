@@ -3,7 +3,7 @@ import { sleep } from '@seampan/util'
 import { GameSession } from '../game-session'
 import { createLocalSession } from '../game-session/local'
 import { createRemoteSession } from '../game-session/remote'
-import { initialState } from '../network/initialState'
+import { defaults, NetworkStateField } from '../network/state'
 import { createUi } from '../ui/root'
 import { initFrontendVariableAndRegisterToWindow } from '../util/frontend-variables-updaters'
 import CONFIG, {
@@ -12,7 +12,7 @@ import CONFIG, {
 	saveSettingsToLocalStorage
 } from '../util/persistance/observable-settings'
 import { addSaveCallback, registerSaveSettingsCallback } from '../util/persistance/serializable-settings'
-import State from '../util/state'
+import IndexedState from '../util/state/indexed-state'
 
 initSettingsFromLocalStorage()
 addSaveCallback(() => saveSettingsToLocalStorage())
@@ -60,9 +60,9 @@ observeSetting('other/tps', tps => {
 observeSetting('rendering/antialias', () => setTimeout(() => session?.resetRendering(), 10))
 
 const waitForOtherPlayers = async (
-	state: State<typeof initialState>,
+	state: IndexedState<typeof defaults>,
 	minCount: number) => {
-	while (Object.keys(state.get('players-in-room') ?? {}).length < minCount)
+	while (Object.keys(state.get(NetworkStateField.PlayersInRoom) ?? {}).length < minCount)
 		await sleep(50)
 }
 
@@ -77,7 +77,7 @@ const startRemote = async () => {
 
 	await waitForOtherPlayers(remote.getState(), 1)
 
-	const myRole = (remote.getState().get('players-in-room') ?? {})[remote.getState().get('my-id') ?? '']?.['role']
+	const myRole = (remote.getState().get(NetworkStateField.PlayersInRoom) ?? {})[remote.getState().get(NetworkStateField.MyId) ?? '']?.['role']
 	if (can(myRole, MemberPermissions.SendGameState)) {
 		console['info']('I\'m the owner, waiting for other players')
 
@@ -93,7 +93,7 @@ const startRemote = async () => {
 
 		await sleep(1000)
 		remote.listenForOperations()
-		remote.resume(20)
+		remote.resume(CONFIG.get('other/tps'))
 
 	} else {
 		console['info']('I\'m not the owner, wait for map to be sent')
@@ -109,7 +109,7 @@ const startLocal = async () => {
 		canvasProvider: uiHandlers.canvas.recreate
 	})
 	await local.createNewGame({})
-	local.resume(20)
+	local.resume(CONFIG.get('other/tps'))
 }
 
 const initPageState = async () => {

@@ -35,10 +35,8 @@ const performLogicUpdates = async (memory: Int32Array,
 	const ticksToExecute = shouldBeNowAtTick - currentTick
 
 	if (ticksToExecute > 100 || ticksToExecute < 0) {
-		const message = `Lag? expected ${ticksToExecute} ticks to execute at once`
-		console.error(message)
-		Atomics.store(memory, BufferField.Status, Status.Terminated)
-		throw new Error(message)
+		// might have been a lag, return false to reset counter
+		return false
 	}
 
 	if (ticksToExecute > 0) {
