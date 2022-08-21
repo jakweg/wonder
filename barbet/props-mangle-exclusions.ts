@@ -1,4 +1,5 @@
 const list = Object.freeze([
+	'E',
 	'stopPropagation',
 	'createObjectURL',
 	'revokeObjectURL',
@@ -16,6 +17,7 @@ const list = Object.freeze([
 	'getAllKeys',
 	'transaction',
 	'abs',
+	"atan",
 	'sign',
 	'ACTIVE_ATTRIBUTES',
 	'ACTIVE_UNIFORMS',
