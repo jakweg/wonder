@@ -1,5 +1,4 @@
 import * as vec3 from '@matrix/vec3'
-import { Camera } from '../camera'
 import { GameState } from '../../game-state/game-state'
 import { ActionsQueue } from '../../game-state/scheduled-actions/queue'
 import { STANDARD_GAME_TICK_RATE, StateUpdater } from '../../game-state/state-updater'
@@ -7,6 +6,7 @@ import { AdditionalFrontedFlags, frontedVariables, FrontendVariable } from '../.
 import { isInWorker, Lock } from '../../util/mutex'
 import { observeSetting } from '../../util/persistance/observable-settings'
 import { globalMutex } from '../../util/worker/global-mutex'
+import { Camera } from '../camera'
 import { MainRenderer } from '../main-renderer'
 import { createPicker } from '../mouse-picker'
 import { createCombinedRenderable } from './combined-renderables'
@@ -23,11 +23,11 @@ export interface RenderContext {
 }
 
 export const setupSceneRendering = (canvas: HTMLCanvasElement,
-                                    state: GameState,
-                                    camera: Camera,
-                                    gameTickEstimation: () => number,
-                                    gameTickRate: () => number,
-                                    handleInputEvents: (dt: number, r: MainRenderer, ctx: RenderContext) => Promise<void>)
+	state: GameState,
+	camera: Camera,
+	gameTickEstimation: () => number,
+	gameTickRate: () => number,
+	handleInputEvents: (dt: number, r: MainRenderer, ctx: RenderContext) => Promise<void>)
 	: () => void => {
 	const renderer = MainRenderer.fromHTMLCanvas(canvas)
 
@@ -86,7 +86,10 @@ export const setupSceneRendering = (canvas: HTMLCanvasElement,
 	}
 	renderer.beginRendering()
 
+	let cancelled = false
 	return () => {
+		if (cancelled) return
+		cancelled = true
 		unsub1()
 		unsub2()
 		renderer.stopRendering()
@@ -96,11 +99,11 @@ export const setupSceneRendering = (canvas: HTMLCanvasElement,
 
 
 export const startRenderingGame = (canvas: HTMLCanvasElement,
-                                   game: GameState,
-                                   updater: StateUpdater,
-                                   actionsQueue: ActionsQueue,
-                                   camera: Camera,
-                                   gameTickEstimation: () => number): () => void => {
+	game: GameState,
+	updater: StateUpdater,
+	actionsQueue: ActionsQueue,
+	camera: Camera,
+	gameTickEstimation: () => number): () => void => {
 
 	const gameTickRate = () => updater.getTickRate()
 	const handleInputEvents = createInputReactor(game, actionsQueue)

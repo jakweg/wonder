@@ -22,6 +22,11 @@ receiver.on(ToWorker.NewSettings, settings => {
 })
 
 receiver.on(ToWorker.TransferCanvas, (data) => {
+	if (data.resetGame) {
+		decodedGame = null
+		gameSnapshot = null
+	}
+
 	canvas = data.canvas as HTMLCanvasElement
 	considerStartRendering()
 })

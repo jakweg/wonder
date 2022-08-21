@@ -31,7 +31,7 @@ const getAllUniforms = (gl: WebGL2RenderingContext, program: WebGLProgram) => {
 		allNames.push(name)
 	}
 	const mapped = Object.fromEntries(allNames.map((name) => ([name.substring(2), gl.getUniformLocation(program, name)])))
-	return DEBUG ? {...mapped, names: allNames} : mapped
+	return DEBUG ? { ...mapped, names: allNames } : mapped
 }
 
 const getAllAttributes = (gl: WebGL2RenderingContext, program: WebGLProgram) => {
@@ -46,7 +46,7 @@ const getAllAttributes = (gl: WebGL2RenderingContext, program: WebGLProgram) => 
 		allNames.push(name)
 	}
 	const mapped = Object.fromEntries(allNames.map((name) => [name.substring(2), gl.getAttribLocation(program, name)]))
-	return DEBUG ? {...mapped, names: allNames} : mapped
+	return DEBUG ? { ...mapped, names: allNames } : mapped
 }
 
 export type RenderFunction = (gl: WebGL2RenderingContext, secondsSinceLastFrame: number) => void | Promise<void>
@@ -97,7 +97,7 @@ export class MainRenderer {
 			throw new Error('Shader compilation failed')
 		}
 
-		this.allocatedResources.push({type: 'shader', id: shader})
+		this.allocatedResources.push({ type: 'shader', id: shader })
 
 		return shader
 	}
@@ -118,7 +118,7 @@ export class MainRenderer {
 			throw new Error('Program link failed')
 		}
 
-		this.allocatedResources.push({type: 'program', id: program})
+		this.allocatedResources.push({ type: 'program', id: program })
 
 		return new GlProgram<Attributes, Uniforms>(
 			gl, program,
@@ -128,11 +128,11 @@ export class MainRenderer {
 	}
 
 	public createBuffer(forArray: boolean,
-	                    dynamic: boolean): GPUBuffer {
+		dynamic: boolean): GPUBuffer {
 		const gl = this.gl
 		const buffer = gl.createBuffer()!
 
-		this.allocatedResources.push({id: buffer, type: 'buffer'})
+		this.allocatedResources.push({ id: buffer, type: 'buffer' })
 
 		const usage = dynamic ? gl.DYNAMIC_DRAW : gl.STATIC_DRAW
 		const target = forArray ? gl.ARRAY_BUFFER : gl.ELEMENT_ARRAY_BUFFER
@@ -142,7 +142,7 @@ export class MainRenderer {
 	public createVAO() {
 		const gl = this.gl
 		const array = gl.createVertexArray()!
-		this.allocatedResources.push({id: array, type: 'vertex-array'})
+		this.allocatedResources.push({ id: array, type: 'vertex-array' })
 		return new VertexArray(gl, array)
 	}
 
@@ -194,6 +194,8 @@ export class MainRenderer {
 			}
 		}
 		this.allocatedResources.splice(0)
+
+		gl['getExtension']('WEBGL_lose_context')?.['loseContext']?.();
 	}
 
 	public renderStarted() {
@@ -235,11 +237,11 @@ class VertexArray {
 
 export class GlProgram<A, U> {
 	constructor(private readonly gl: WebGL2RenderingContext,
-	            private readonly program: WebGLProgram,
-	            // @ts-ignore
-	            readonly uniforms: { [key in U]: WebGLUniformLocation },
-	            // @ts-ignore
-	            readonly attributes: { [key in A]: GLint }) {
+		private readonly program: WebGLProgram,
+		// @ts-ignore
+		readonly uniforms: { [key in U]: WebGLUniformLocation },
+		// @ts-ignore
+		readonly attributes: { [key in A]: GLint }) {
 	}
 
 	public use() {
@@ -256,11 +258,11 @@ export class GlProgram<A, U> {
 	 * @param divisor
 	 */
 	public enableAttribute(attribute: GLint | undefined,
-	                       size: number,
-	                       float: boolean,
-	                       stride: number,
-	                       offset: number,
-	                       divisor: number) {
+		size: number,
+		float: boolean,
+		stride: number,
+		offset: number,
+		divisor: number) {
 		if (attribute === undefined)
 			return
 		const gl = this.gl

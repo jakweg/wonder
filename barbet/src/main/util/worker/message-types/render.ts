@@ -22,7 +22,7 @@ interface ToTypes {
     [ToWorker.SetWorkerLoadDelays]: { update: number, render: number }
     [ToWorker.UpdateEntityContainer]: { buffers: SharedArrayBuffer[] }
     [ToWorker.TerminateGame]: TerminateGameArguments
-    [ToWorker.TransferCanvas]: { canvas: unknown }
+    [ToWorker.TransferCanvas]: { canvas: unknown, resetGame: boolean }
     [ToWorker.GameCreateResult]: { game: unknown, updater: unknown }
 }
 
