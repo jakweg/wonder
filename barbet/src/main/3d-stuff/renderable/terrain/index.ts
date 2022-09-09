@@ -2,17 +2,15 @@ import { toGl } from '@matrix//common'
 import { GameState, MetadataField } from '../../../game-state/game-state'
 import { WORLD_CHUNK_SIZE } from '../../../game-state/world/world'
 import { buildChunkMesh, combineMeshes, Mesh } from '../../../game-state/world/world-to-mesh-converter'
-import { observeSetting } from '../../../util/persistance/observable-settings'
+import CONFIG, { observeSetting } from '../../../util/persistance/observable-settings'
 import { createProgramFromNewShaders, pickViaMouseDefaultFragmentShader } from '../../common-shader'
 import { GPUBuffer, MainRenderer } from '../../main-renderer'
 import { RenderContext } from '../render-context'
 import {
 	Attributes,
 	fragmentShaderSource,
-	fragmentShaderSourceWithTileBorders,
 	MousePickerAttributes,
 	MousePickerUniforms,
-	pickViaMouseVertexShaderSource,
 	Uniforms,
 	vertexShaderSource
 } from './shaders'
@@ -20,7 +18,8 @@ import {
 const floatSize = Float32Array.BYTES_PER_ELEMENT
 const stride = 8 * floatSize
 function setUpMousePicker(renderer: MainRenderer, vertexBuffer: GPUBuffer, indicesBuffer: GPUBuffer) {
-	const mouseProgram = createProgramFromNewShaders<MousePickerAttributes, MousePickerUniforms>(renderer, pickViaMouseVertexShaderSource(), pickViaMouseDefaultFragmentShader())
+	const vertexSource = vertexShaderSource({ forMousePicker: true, ambientOcclusion: false, tileBorders: false })
+	const mouseProgram = createProgramFromNewShaders<MousePickerAttributes, MousePickerUniforms>(renderer, vertexSource, pickViaMouseDefaultFragmentShader())
 	const mouseVao = renderer.createVAO()
 	mouseVao.bind()
 	vertexBuffer.bind()
@@ -33,8 +32,14 @@ function setUpMousePicker(renderer: MainRenderer, vertexBuffer: GPUBuffer, indic
 }
 
 function setUpStandardRenderer(renderer: MainRenderer) {
-	const defaultProgram = createProgramFromNewShaders<Attributes, Uniforms>(renderer, vertexShaderSource, fragmentShaderSource)
-	const programWithTileBorders = createProgramFromNewShaders<Attributes, Uniforms>(renderer, vertexShaderSource, fragmentShaderSourceWithTileBorders)
+	const options = {
+		ambientOcclusion: CONFIG.get('rendering/ambient-occlusion'),
+		tileBorders: CONFIG.get('rendering/show-tile-borders'),
+		forMousePicker: false
+	}
+	const vertexSource = vertexShaderSource(options)
+	const fragmentSource = fragmentShaderSource(options)
+	const program = createProgramFromNewShaders<Attributes, Uniforms>(renderer, vertexSource, fragmentSource)
 	const vao = renderer.createVAO()
 	vao.bind()
 	const vertexBuffer = renderer.createBuffer(true, false)
@@ -42,19 +47,17 @@ function setUpStandardRenderer(renderer: MainRenderer) {
 	const indicesBuffer = renderer.createBuffer(false, false)
 	indicesBuffer.bind()
 
-	for (const program of [defaultProgram, programWithTileBorders]) {
-		program.enableAttribute(program.attributes['position'], 3, true, stride, 0, 0)
-		program.enableAttribute(program.attributes['color'], 3, true, stride, 3 * floatSize, 0)
-		program.enableAttribute(program.attributes['flags'], 1, true, stride, 6 * floatSize, 0)
-		program.enableAttribute(program.attributes['ambientOcclusion'], 1, true, stride, 7 * floatSize, 0)
-	}
-	return { defaultProgram, programWithTileBorders, vao, vertexBuffer, indicesBuffer }
+	program.enableAttribute(program.attributes['position'], 3, true, stride, 0, 0)
+	program.enableAttribute(program.attributes['color'], 3, true, stride, 3 * floatSize, 0)
+	program.enableAttribute(program.attributes['flags'], 1, true, stride, 6 * floatSize, 0)
+	program.enableAttribute(program.attributes['ambientOcclusion'], 1, true, stride, 7 * floatSize, 0)
+	return { program, vao, vertexBuffer, indicesBuffer }
 }
 
 export const createNewTerrainRenderable = (renderer: MainRenderer,
 	game: GameState) => {
 
-	const { defaultProgram, programWithTileBorders, vao, vertexBuffer, indicesBuffer } = setUpStandardRenderer(renderer)
+	const { program, vao, vertexBuffer, indicesBuffer } = setUpStandardRenderer(renderer)
 	const { mouseProgram, mouseVao } = setUpMousePicker(renderer, vertexBuffer, indicesBuffer)
 
 
@@ -100,7 +103,6 @@ export const createNewTerrainRenderable = (renderer: MainRenderer,
 			rebuildMeshIfNeeded()
 			const { gl, camera } = ctx
 			vao.bind()
-			const program = showTileBorders ? programWithTileBorders : defaultProgram
 			program.use()
 
 			gl.uniformMatrix4fv(program.uniforms['combinedMatrix'], false, toGl(camera.combinedMatrix))
