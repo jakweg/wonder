@@ -148,7 +148,6 @@ export const fragmentShaderSource = (options: ShaderOptions) => {
 
 	parts.push(`
 		finalColor = v_color * diffuse * ao;
-	}
 	`)
 
 	if (options.tileBorders)
@@ -175,6 +174,8 @@ export const fragmentShaderSource = (options: ShaderOptions) => {
 		finalColor.g *= multiply;
 		finalColor.b *= multiply;
 	}`)
+
+	parts.push(`}`)
 
 	return parts.join('')
 }

@@ -13,7 +13,7 @@ const settingsToDefaults = {
 	'rendering/show-tile-borders': false,
 	'rendering/ambient-occlusion': true,
 	'other/preferred-environment': 'second' as Environment,
-	'other/generate-debug-world': true,
+	'other/generate-debug-world': false,
 }
 
 type SettingName = keyof typeof settingsToDefaults
