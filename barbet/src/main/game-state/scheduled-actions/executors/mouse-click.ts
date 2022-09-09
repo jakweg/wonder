@@ -31,7 +31,9 @@ const handlePickBlock = (result: MousePickerTerrainResult, wasLeftClick: boolean
 			type: BuildingId.Monument,
 		})
 	else {
-		game.world.setBlock(result.x, result.y, result.z, BlockId.Air)
-		game.metaData[MetadataField.LastWorldChange]++
+		if (game.world.getBlock(result.x, result.y, result.z) !== BlockId.Water) {
+			game.world.setBlock(result.x, result.y, result.z, BlockId.Air)
+			game.metaData[MetadataField.LastWorldChange]++
+		}
 	}
 }

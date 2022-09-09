@@ -29,15 +29,15 @@ export class World {
 	}
 
 	public static createEmpty(sizeX: number,
-	                          sizeY: number,
-	                          sizeZ: number,
-	                          fillWith: BlockId = AIR_ID): World {
+		sizeY: number,
+		sizeZ: number,
+		fillWith: BlockId = AIR_ID): World {
 		const blocksPerY = sizeX * sizeZ
 		const totalBlocks = sizeY * blocksPerY
 		const chunksSizeX = Math.ceil(sizeX / WORLD_CHUNK_SIZE)
 		const chunksSizeZ = Math.ceil(sizeZ / WORLD_CHUNK_SIZE)
 
-		const size = {sizeX, sizeY, sizeZ, totalBlocks, blocksPerY, chunksSizeX, chunksSizeZ}
+		const size = { sizeX, sizeY, sizeZ, totalBlocks, blocksPerY, chunksSizeX, chunksSizeZ }
 		const buffers = [
 			createNewBuffer(totalBlocks * Uint8Array.BYTES_PER_ELEMENT),
 			createNewBuffer(blocksPerY * Uint8ClampedArray.BYTES_PER_ELEMENT),
@@ -69,7 +69,7 @@ export class World {
 		const chunksSizeX = Math.ceil(sizeX / WORLD_CHUNK_SIZE)
 		const chunksSizeZ = Math.ceil(sizeZ / WORLD_CHUNK_SIZE)
 
-		const size: ComputedWorldSize = {sizeX, sizeY, sizeZ, totalBlocks, blocksPerY, chunksSizeX, chunksSizeZ}
+		const size: ComputedWorldSize = { sizeX, sizeY, sizeZ, totalBlocks, blocksPerY, chunksSizeX, chunksSizeZ }
 		const buffers = object.buffers as SharedArrayBuffer[]
 
 		const blockData = new Uint8Array(buffers[0]!)
@@ -90,7 +90,7 @@ export class World {
 		const totalBlocks = sizeY * blocksPerY
 		const chunksSizeX = Math.ceil(sizeX / WORLD_CHUNK_SIZE)
 		const chunksSizeZ = Math.ceil(sizeZ / WORLD_CHUNK_SIZE)
-		const size: ComputedWorldSize = {sizeX, sizeY, sizeZ, blocksPerY, totalBlocks, chunksSizeX, chunksSizeZ}
+		const size: ComputedWorldSize = { sizeX, sizeY, sizeZ, blocksPerY, totalBlocks, chunksSizeX, chunksSizeZ }
 
 		const rawBlockData = decodeArray(blocks, true, Uint8Array)
 
@@ -106,9 +106,9 @@ export class World {
 	}
 
 	public static copyFragment(from: World, to: World,
-	                           fromX: number, fromY: number, fromZ: number,
-	                           toX: number, toY: number, toZ: number,
-	                           sizeX: number, sizeY: number, sizeZ: number): void {
+		fromX: number, fromY: number, fromZ: number,
+		toX: number, toY: number, toZ: number,
+		sizeX: number, sizeY: number, sizeZ: number): void {
 		if (from === to)
 			throw new Error('Cannot copy to self')
 
@@ -171,6 +171,13 @@ export class World {
 			'sizes': [this.size.sizeX, this.size.sizeY, this.size.sizeZ],
 			'blocks': encodeArray(this.rawBlockData),
 		}
+	}
+
+	public getBlock(x: number, y: number, z: number): BlockId {
+		this.validateCoords(x, y, z)
+		const sizeX = this.size.sizeX
+		const blocksPerY = this.size.blocksPerY
+		return this.rawBlockData[y * blocksPerY + x * sizeX + z] as BlockId
 	}
 
 	public setBlock(x: number, y: number, z: number, blockId: BlockId) {
