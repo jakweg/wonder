@@ -14,7 +14,7 @@ function prepareRenderer(renderer: MainRenderer) {
 	const program = createProgramFromNewShaders<Attributes, Uniforms>(renderer, vertexShaderSource, fragmentShaderSource)
 
 	const modelBuffer = renderer.createBuffer(true, false)
-	const stride = Float32Array.BYTES_PER_ELEMENT * 7
+	const stride = Float32Array.BYTES_PER_ELEMENT * 8
 	modelBuffer.setContent(new Float32Array())
 	program.enableAttribute(program.attributes['color'], 3, true, stride, 3 * floatSize, 0)
 	program.enableAttribute(program.attributes['position'], 3, true, stride, 0, 0)
@@ -22,12 +22,12 @@ function prepareRenderer(renderer: MainRenderer) {
 
 	const modelElementsBuffer = renderer.createBuffer(false, false)
 	modelElementsBuffer.setContent(new Float32Array())
-	return {vao, program, modelBuffer, modelElementsBuffer}
+	return { vao, program, modelBuffer, modelElementsBuffer }
 }
 
 const createNewBuildingRenderable = (renderer: MainRenderer,
-                                     game: GameState) => {
-	const {vao, program, modelBuffer, modelElementsBuffer} = prepareRenderer(renderer)
+	game: GameState) => {
+	const { vao, program, modelBuffer, modelElementsBuffer } = prepareRenderer(renderer)
 
 	let trianglesToRender = 0
 	let lastRebuildId = 0
@@ -59,7 +59,7 @@ const createNewBuildingRenderable = (renderer: MainRenderer,
 				let vertexes = model.finished.vertexes
 				let indices = model.finished.indices
 				if (thisRemainingPoints > 0) {
-					const {pointsToFullyBuild} = getBuildingProgressInfo(typeId) ?? {pointsToFullyBuild: thisRemainingPoints}
+					const { pointsToFullyBuild } = getBuildingProgressInfo(typeId) ?? { pointsToFullyBuild: thisRemainingPoints }
 					let progress = (pointsToFullyBuild - thisRemainingPoints) / pointsToFullyBuild
 					let progressStatesCount = model.inProgressStates.length
 					const state = model.inProgressStates[progressStatesCount - 1 - (progress * progressStatesCount | 0)]!
@@ -76,7 +76,8 @@ const createNewBuildingRenderable = (renderer: MainRenderer,
 					const color1 = vertexes[i++]!
 					const color2 = vertexes[i++]!
 					const flags = vertexes[i++]!
-					vertexData.push(vx, vy, vz, color0, color1, color2, flags)
+					const flags2 = vertexes[i++]!
+					vertexData.push(vx, vy, vz, color0, color1, color2, flags, flags2)
 				}
 				for (const index of indices) {
 					elementsData.push(index + vertexCountBeforeAdd)
@@ -91,7 +92,7 @@ const createNewBuildingRenderable = (renderer: MainRenderer,
 	return {
 		render(ctx: RenderContext) {
 			recreateMeshIfNeeded()
-			const {gl, camera} = ctx
+			const { gl, camera } = ctx
 
 			vao.bind()
 			program.use()
