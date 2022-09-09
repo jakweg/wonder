@@ -83,6 +83,9 @@ canvas.fade-out {
 svg {
     fill: white;
 }
+button>svg {
+    fill: #333;
+}
 
 .settings header {
     text-align: center;
@@ -118,6 +121,7 @@ svg {
     font-size: 1.1em;
     cursor: pointer;
     transition: background-color .2s;
+    color: inherit;
 }
 
 .setting-button:hover {
