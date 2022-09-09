@@ -1,7 +1,7 @@
 import { toGl } from '@matrix//common'
 import { GameState, MetadataField } from '../../../game-state/game-state'
 import { WORLD_CHUNK_SIZE } from '../../../game-state/world/world'
-import { buildChunkMesh, combineMeshes, Mesh } from '../../../game-state/world/world-to-mesh-converter'
+import { buildChunkMeshWithAmbientOcclusion, combineMeshes, Mesh } from '../../../game-state/world/world-to-mesh-converter'
 import { observeSetting } from '../../../util/persistance/observable-settings'
 import { createProgramFromNewShaders, pickViaMouseDefaultFragmentShader } from '../../common-shader'
 import { GPUBuffer, MainRenderer } from '../../main-renderer'
@@ -14,20 +14,22 @@ import {
 	MousePickerUniforms,
 	pickViaMouseVertexShaderSource,
 	Uniforms,
-	vertexShaderSource,
+	vertexShaderSource
 } from './shaders'
 
+const floatSize = Float32Array.BYTES_PER_ELEMENT
+const stride = 8 * floatSize
 function setUpMousePicker(renderer: MainRenderer, vertexBuffer: GPUBuffer, indicesBuffer: GPUBuffer) {
 	const mouseProgram = createProgramFromNewShaders<MousePickerAttributes, MousePickerUniforms>(renderer, pickViaMouseVertexShaderSource(), pickViaMouseDefaultFragmentShader())
 	const mouseVao = renderer.createVAO()
 	mouseVao.bind()
 	vertexBuffer.bind()
 	const floatSize = Float32Array.BYTES_PER_ELEMENT
-	mouseProgram.enableAttribute(mouseProgram.attributes['position'], 3, true, 7 * floatSize, 0, 0)
-	mouseProgram.enableAttribute(mouseProgram.attributes['flags'], 1, true, 7 * floatSize, 6 * floatSize, 0)
+	mouseProgram.enableAttribute(mouseProgram.attributes['position'], 3, true, stride, 0, 0)
+	mouseProgram.enableAttribute(mouseProgram.attributes['flags'], 1, true, stride, 6 * floatSize, 0)
 	indicesBuffer.bind()
 
-	return {mouseProgram, mouseVao}
+	return { mouseProgram, mouseVao }
 }
 
 function setUpStandardRenderer(renderer: MainRenderer) {
@@ -39,22 +41,21 @@ function setUpStandardRenderer(renderer: MainRenderer) {
 	vertexBuffer.bind()
 	const indicesBuffer = renderer.createBuffer(false, false)
 	indicesBuffer.bind()
-	const floatSize = Float32Array.BYTES_PER_ELEMENT
-	const stride = 7 * floatSize
 
 	for (const program of [defaultProgram, programWithTileBorders]) {
 		program.enableAttribute(program.attributes['position'], 3, true, stride, 0, 0)
 		program.enableAttribute(program.attributes['color'], 3, true, stride, 3 * floatSize, 0)
 		program.enableAttribute(program.attributes['flags'], 1, true, stride, 6 * floatSize, 0)
+		program.enableAttribute(program.attributes['ambientOcclusion'], 1, true, stride, 7 * floatSize, 0)
 	}
-	return {defaultProgram, programWithTileBorders, vao, vertexBuffer, indicesBuffer}
+	return { defaultProgram, programWithTileBorders, vao, vertexBuffer, indicesBuffer }
 }
 
 export const createNewTerrainRenderable = (renderer: MainRenderer,
-                                           game: GameState) => {
+	game: GameState) => {
 
-	const {defaultProgram, programWithTileBorders, vao, vertexBuffer, indicesBuffer} = setUpStandardRenderer(renderer)
-	const {mouseProgram, mouseVao} = setUpMousePicker(renderer, vertexBuffer, indicesBuffer)
+	const { defaultProgram, programWithTileBorders, vao, vertexBuffer, indicesBuffer } = setUpStandardRenderer(renderer)
+	const { mouseProgram, mouseVao } = setUpMousePicker(renderer, vertexBuffer, indicesBuffer)
 
 
 	let trianglesToRender = 0 | 0
@@ -77,7 +78,7 @@ export const createNewTerrainRenderable = (renderer: MainRenderer,
 				const modificationId = world.chunkModificationIds[chunkIndex]!
 				if (lastMeshModificationIds[chunkIndex] !== modificationId) {
 					lastMeshModificationIds[chunkIndex] = modificationId
-					meshes[chunkIndex] = buildChunkMesh(world, i, j, WORLD_CHUNK_SIZE)
+					meshes[chunkIndex] = buildChunkMeshWithAmbientOcclusion(world, i, j, WORLD_CHUNK_SIZE)
 					counter++
 				}
 				chunkIndex++
@@ -97,7 +98,7 @@ export const createNewTerrainRenderable = (renderer: MainRenderer,
 	return {
 		render(ctx: RenderContext) {
 			rebuildMeshIfNeeded()
-			const {gl, camera} = ctx
+			const { gl, camera } = ctx
 			vao.bind()
 			const program = showTileBorders ? programWithTileBorders : defaultProgram
 			program.use()
@@ -110,7 +111,7 @@ export const createNewTerrainRenderable = (renderer: MainRenderer,
 		},
 		renderForMousePicker(ctx: RenderContext) {
 			rebuildMeshIfNeeded()
-			const {gl, camera: {combinedMatrix}} = ctx
+			const { gl, camera: { combinedMatrix } } = ctx
 
 			mouseVao.bind()
 			mouseProgram.use()
