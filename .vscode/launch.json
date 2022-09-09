@@ -1,0 +1,32 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "chrome",
+            "request": "launch",
+            "name": "See frontend",
+            "webRoot": "${workspaceFolder}/barbet",
+            "url": "http://localhost:8000",
+            "disableNetworkCache": true
+        },
+        {
+            "name": "Build&serve",
+            "request": "launch",
+            "type": "node-terminal",
+            "cwd": "${workspaceFolder}/barbet",
+            "command": "deno run -A build.ts --serve",
+            "serverReadyAction": {
+                "action": "startDebugging",
+                "name": "See frontend",
+                "pattern": "Listening.*"
+            }
+        },
+        {
+            "name": "Multiplayer build&serve",
+            "request": "launch",
+            "type": "node-terminal",
+            "cwd": "${workspaceFolder}/slimeworm",
+            "command": "npm run dev"
+        }
+    ],
+}

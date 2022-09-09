@@ -1,0 +1,17 @@
+{
+  "deno.enable": true,
+  "deno.unstable": true,
+  "files.exclude": {
+    "**/build-js/**": true
+  },
+  "search.exclude": {
+    "**/build-js/**": true
+  },
+  "javascript.preferences.autoImportFileExcludePatterns": [
+    "**/build-js/**"
+  ],
+  "typescript.preferences.autoImportFileExcludePatterns": [
+    "**/build-js/**"
+  ],
+  "git.ignoreLimitWarning": true
+}
