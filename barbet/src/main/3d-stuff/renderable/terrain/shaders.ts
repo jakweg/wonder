@@ -1,6 +1,7 @@
 import { PrecisionHeader, TerrainHeightMultiplierDeclaration, VersionHeader } from '../../common-shader'
 import { MousePickableType } from '../../mouse-picker'
 
+const ambientOcclusionDarknessLevels = [0, 6, 10, 12, 14, 15, 15, 15]
 export const vertexShaderSource = `${VersionHeader()}
 ${PrecisionHeader()}
 ${TerrainHeightMultiplierDeclaration()}
@@ -17,15 +18,16 @@ flat out float v_ambientOcclusionFlat;
 flat out vec4 v_ambientOcclusionVec;
 uniform mat4 u_combinedMatrix;
 uniform float u_time;
+const float darknessLevels[] = float[](${ambientOcclusionDarknessLevels.map(e => (e / 15.0).toFixed(8)).join(',')});
+
 void main() {
 	int flags = int(a_flags);
 	v_normal = vec3(ivec3(((flags >> 4) & ${0b11}) - 1, ((flags >> 2) & ${0b11}) - 1, (flags & ${0b11}) - 1));
-	v_ambientOcclusion = (float((flags >> 16) & ${0b1111}) / 7.0);
-	v_ambientOcclusionFlat = (float((flags >> 20) & ${0b1111}) / 7.0);
-
+	v_ambientOcclusion = (float((flags >> 16) & ${0b1111}) / 15.0);
+	v_ambientOcclusionFlat = (float((flags >> 20) & ${0b1111}) / 15.0);
 
 	int ao = int(a_ambientOcclusion);
-	v_ambientOcclusionVec = vec4(ivec4((ao >> 0) & ${0b1111}, (ao >> 4) & ${0b1111}, (ao >> 8) & ${0b1111}, (ao >> 12) & ${0b1111})) / 7.0;
+	v_ambientOcclusionVec = vec4(darknessLevels[(ao >> 0) & ${0b1111}], darknessLevels[(ao >> 4) & ${0b1111}], darknessLevels[(ao >> 8) & ${0b1111}], darknessLevels[(ao >> 12) & ${0b1111}]);
 
 
 	v_color = a_color;
@@ -41,6 +43,7 @@ void main() {
 }
 `
 
+
 export const fragmentShaderSource = `${VersionHeader()}
 ${PrecisionHeader()}
 out vec3 finalColor;
@@ -54,66 +57,59 @@ flat in vec4 v_ambientOcclusionVec;
 uniform float u_time;
 uniform vec3 u_lightPosition;
 const float ambientLight = 0.3;
+
+float calculateAmbientOcclusion(vec2 vertex, vec4 ambientValues) {
+	float fx = fract(vertex.x);
+	float fz = fract(vertex.y);
+` +
+	// `
+	// 	float maxAo = 0.75;
+	// 	float d1 = max(0.0, maxAo - sqrt(fx * fx + fz * fz));
+	// 	float d2 = max(0.0, maxAo - sqrt((1.0 - fx) * (1.0 - fx) + fz * fz));
+	// 	float d3 = max(0.0, maxAo - sqrt((1.0 - fx) * (1.0 - fx) + (1.0 - fz) * (1.0 - fz)));
+	// 	float d4 = max(0.0, maxAo - sqrt(fx * fx + (1.0 - fz) * (1.0 - fz)));
+	// ` +
+	`
+	float power = 2.0;
+	float d1 = pow(1.0 - max(fx, fz), power);
+	float d2 = pow(1.0 - max(1.0 - fx, fz), power);
+	float d3 = pow(1.0 - max(1.0 - fx, 1.0 - fz), power);
+	float d4 = pow(1.0 - max(fx, 1.0 - fz), power);
+
+	return ((d1 * ambientValues.x) + (d2 * ambientValues.y) + (d3 * ambientValues.z) + (d4 * ambientValues.w)) / (d1 + d2 + d3 + d4);
+}
+
 void main() {
 	vec3 normal = v_normal;
 	vec3 lightDirection = normalize(u_lightPosition - v_currentPosition);
 	float diffuse = clamp(dot(normal, lightDirection), ambientLight, 1.0);
 
+	vec2 aoVertex;
+	vec4 aoVec;
 
-	float distanceOne;
-	float distanceTwo;
-	if (v_normal.y != 0.0) {
-		distanceOne = v_vertexPosition.x;
-		distanceTwo = v_vertexPosition.z;
-	} else if (v_normal.x != 0.0) {
-		distanceOne = v_vertexPosition.y;
-		distanceTwo = v_vertexPosition.z;
+	if (v_normal.x > 0.0) {
+		aoVertex = v_vertexPosition.yz;
+		aoVec = v_ambientOcclusionVec.xywz;
+	} else if (v_normal.x < 0.0) {
+		aoVertex = v_vertexPosition.yz;
+		aoVec = v_ambientOcclusionVec.xwzy;
+	} else if (v_normal.z < 0.0) {
+		aoVertex = v_vertexPosition.xy;
+		aoVec = v_ambientOcclusionVec.xzwy;
+	} else if (v_normal.z > 0.0) {
+		aoVertex = v_vertexPosition.xy;
+		aoVec = v_ambientOcclusionVec.xywz;
 	} else {
-		distanceOne = v_vertexPosition.x;
-		distanceTwo = v_vertexPosition.y;
+		aoVertex = v_vertexPosition.xz;
+		aoVec = v_ambientOcclusionVec.zyxw;
 	}
-	distanceOne = abs(distanceOne - float(int(distanceOne + 0.5))) * 2.0;
-	distanceTwo = abs(distanceTwo - float(int(distanceTwo + 0.5))) * 2.0;
-	// float distance1 = (sqrt(distanceOne * distanceOne + distanceTwo * distanceTwo) + (distanceOne + distanceTwo) / 4.0) / 2.0;
-	// float distance1 = abs(distanceOne * distanceTwo);
-	// float distance2 = (sqrt(distanceOne * distanceOne + distanceTwo * distanceTwo));
-	float distance3 = min(distanceOne / 2.0, distanceTwo / 2.0);
 
 
-	// finalColor = v_color * diffuse * (pow(v_ambientOcclusion, 4.0) * 3.0 + v_ambientOcclusionFlat) / 4.0;
-	// finalColor = v_color * diffuse * pow(v_ambientOcclusion, 4.0);
-	// finalColor = v_color * diffuse * pow(v_ambientOcclusionFlat, 4.0);
-	// finalColor = v_color * diffuse * mix(v_ambientOcclusionFlat, pow(v_ambientOcclusion, 4.0), distance3);
-	finalColor = v_color * diffuse;
-
-	if (v_normal.y != 0.0) {
-		float fx = fract(v_vertexPosition.x);
-		float fz = fract(v_vertexPosition.z);
-
-		float maxAo = 0.75;
-		float d1 = max(0.0, maxAo - sqrt(fx * fx + fz * fz));
-		float d2 = max(0.0, maxAo - sqrt((1.0 - fx) * (1.0 - fx) + fz * fz));
-		float d3 = max(0.0, maxAo - sqrt((1.0 - fx) * (1.0 - fx) + (1.0 - fz) * (1.0 - fz)));
-		float d4 = max(0.0, maxAo - sqrt(fx * fx + (1.0 - fz) * (1.0 - fz)));
-
-
-		// float d1 = pow(max(0.0, 1.0 - max(fx, fz)), 2.0);
-		// float d2 = pow(max(0.0, 1.0 - max(1.0 - fx, fz)), 2.0);
-		// float d3 = pow(max(0.0, 1.0 - max(1.0 - fx, 1.0 - fz)), 2.0);
-		// float d4 = pow(max(0.0, 1.0 - max(fx, 1.0 - fz)), 2.0);
-
-
-		float ao = ((d1 * v_ambientOcclusionVec.z) + (d2 * v_ambientOcclusionVec.y) + (d3 * v_ambientOcclusionVec.x) + (d4 * v_ambientOcclusionVec.w)) / (d1 + d2 + d3 + d4);
-		finalColor *= ao;
-		// if (v_ambientOcclusionVec.x < 1.0) 
-		// if (d3 < 1.0) 
-			// finalColor = vec3(1.0,1.0,0.0);
-	} else {
-
-	finalColor = vec3(1.0,0.0,0.0);
-	}
+	finalColor = v_color * diffuse * calculateAmbientOcclusion(aoVertex, aoVec);
 }
 `
+
+
 export const fragmentShaderSourceWithTileBorders = `${VersionHeader()}
 ${PrecisionHeader()}
 out vec3 finalColor;

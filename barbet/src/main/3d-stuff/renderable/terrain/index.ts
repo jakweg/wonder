@@ -1,7 +1,7 @@
 import { toGl } from '@matrix//common'
 import { GameState, MetadataField } from '../../../game-state/game-state'
 import { WORLD_CHUNK_SIZE } from '../../../game-state/world/world'
-import { buildChunkMeshWithAmbientOcclusion, combineMeshes, Mesh } from '../../../game-state/world/world-to-mesh-converter'
+import { buildChunkMesh, combineMeshes, Mesh } from '../../../game-state/world/world-to-mesh-converter'
 import { observeSetting } from '../../../util/persistance/observable-settings'
 import { createProgramFromNewShaders, pickViaMouseDefaultFragmentShader } from '../../common-shader'
 import { GPUBuffer, MainRenderer } from '../../main-renderer'
@@ -78,7 +78,7 @@ export const createNewTerrainRenderable = (renderer: MainRenderer,
 				const modificationId = world.chunkModificationIds[chunkIndex]!
 				if (lastMeshModificationIds[chunkIndex] !== modificationId) {
 					lastMeshModificationIds[chunkIndex] = modificationId
-					meshes[chunkIndex] = buildChunkMeshWithAmbientOcclusion(world, i, j, WORLD_CHUNK_SIZE)
+					meshes[chunkIndex] = buildChunkMesh(world, i, j, WORLD_CHUNK_SIZE)
 					counter++
 				}
 				chunkIndex++
