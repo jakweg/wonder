@@ -1,8 +1,42 @@
 import { isInWorker } from '../mutex'
 import { createNewBuffer } from '../shared-memory'
 
+const getStorage = <T extends 'localStorage' | 'sessionStorage'>(name: T) => {
+	try {
+		const storage = window[name]
+		storage['getItem']('-')
+		return {
+			setItem(name: string, value: string) {
+				return void storage['setItem'](name, value)
+			},
+			getItem(name: string): string | null {
+				return storage['getItem'](name)
+			},
+			removeItem(name: string) {
+				return void storage['removeItem'](name)
+			},
+		}
+	} catch (e) {
+		// cookies blocked
+	}
+
+	const storage = new Map<string, string>()
+	return {
+		setItem(name: string, value: string) {
+			return void storage['set'](name, value)
+		},
+		getItem(name: string): string | null {
+			return storage['get'](name) ?? null
+		},
+		removeItem(name: string) {
+			return void storage['delete'](name)
+		},
+	}
+}
+
+const localStorage = /* @__PURE__ */ getStorage('localStorage')
+
 export const getFromLocalStorage = (key: string): any => {
-	if (isInWorker) throw new Error('Attempt to read storage in worker')
 	const item = localStorage.getItem(key)
 	if (item != null) {
 		try {
