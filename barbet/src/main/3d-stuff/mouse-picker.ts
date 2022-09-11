@@ -29,7 +29,7 @@ export interface MousePickerUnitResult {
 export type MousePickerResultAny = MousePickerTerrainResult | MousePickerUnitResult | MousePickerNothingResult
 
 export const createPicker = (gl: WebGL2RenderingContext,
-                             renderers: ((ctx: RenderContext) => void)[]) => {
+	renderers: ((ctx: RenderContext) => void)[]) => {
 
 	let textureWidth = -1
 	let textureHeight = -1
@@ -136,7 +136,7 @@ export const createPicker = (gl: WebGL2RenderingContext,
 					}
 				case MousePickableType.Nothing:
 				default:
-					return {pickedType: MousePickableType.Nothing}
+					return { pickedType: MousePickableType.Nothing }
 			}
 		},
 	}

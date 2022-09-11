@@ -8,9 +8,11 @@ import {
 	createProgramFromNewShaders,
 	PrecisionHeader,
 	TerrainHeightMultiplierDeclaration,
-	VersionHeader,
+	VersionHeader
 } from '../common-shader'
-import { GlProgram, GPUBuffer, MainRenderer } from '../main-renderer'
+import GPUBuffer from "../gpu-resources/buffer"
+import GlProgram from '../gpu-resources/program'
+import { MainRenderer } from '../main-renderer'
 import { RenderContext } from '../renderable/render-context'
 
 type Program = GlProgram<'modelPosition' | 'unitPosition', 'rotation' | 'combinedMatrix'>
@@ -57,10 +59,10 @@ const idleAdditionalRenderer: AdditionalRenderer<T, B> = {
 		batchBuffer.bind()
 		program.enableAttribute(program.attributes['unitPosition'], 3, true, 3 * floatSize, 0, 1)
 
-		return {vao, batchBuffer, positions: game.entities.positions, program}
+		return { vao, batchBuffer, positions: game.entities.positions, program }
 	},
 	prepareBatch(): B {
-		return {unitPositions: [], count: 0}
+		return { unitPositions: [], count: 0 }
 	},
 	appendToBatch(setup: T, batch: B, unit: EntityTraitIndicesRecord): void {
 		const positions = setup.positions.rawData

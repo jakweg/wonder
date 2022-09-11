@@ -39,7 +39,7 @@ export const vertexShaderSource = (options: ShaderOptions): string => {
 	`)
 
 
-	if (options.ambientOcclusion)
+	if (options.ambientOcclusion && !options.forMousePicker)
 		parts.push(`
 			int ao = int(a_ambientOcclusion);
 			v_ambientOcclusionVec = vec4(darknessLevels[(ao >> 0) & ${0b1111}], darknessLevels[(ao >> 4) & ${0b1111}], darknessLevels[(ao >> 8) & ${0b1111}], darknessLevels[(ao >> 12) & ${0b1111}]);
@@ -120,7 +120,7 @@ export const fragmentShaderSource = (options: ShaderOptions) => {
 		vec3 lightDirection = normalize(u_lightPosition - v_currentPosition);
 		float diffuse = clamp(dot(normal, lightDirection), ambientLight, 1.0);
 	`)
-	if (options.ambientOcclusion)
+	if (options.ambientOcclusion && !options.forMousePicker)
 		parts.push(`
 		vec2 aoVertex;
 		vec4 aoVec;
@@ -150,7 +150,7 @@ export const fragmentShaderSource = (options: ShaderOptions) => {
 		finalColor = v_color * diffuse * ao;
 	`)
 
-	if (options.tileBorders)
+	if (options.tileBorders && !options.forMousePicker)
 		parts.push(`
 	float distanceOne;
 	float distanceTwo;

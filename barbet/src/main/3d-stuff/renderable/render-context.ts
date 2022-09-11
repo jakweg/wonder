@@ -4,13 +4,14 @@ import { ActionsQueue } from '../../game-state/scheduled-actions/queue'
 import { STANDARD_GAME_TICK_RATE, StateUpdater } from '../../game-state/state-updater'
 import { AdditionalFrontedFlags, frontedVariables, FrontendVariable } from '../../util/frontend-variables'
 import { isInWorker, Lock } from '../../util/mutex'
-import CONFIG, { observeSetting } from '../../util/persistance/observable-settings'
+import { observeSetting } from '../../util/persistance/observable-settings'
 import { globalMutex } from '../../util/worker/global-mutex'
 import { Camera } from '../camera'
 import terrain from '../drawable/terrain'
 import { MainRenderer } from '../main-renderer'
-import { createPicker } from '../mouse-picker'
 import { newPipeline } from '../pipeline'
+import { newMousePicker } from '../pipeline/mouse-picker'
+import { newAnimationFrameCaller, newBeforeDrawWrapper as newDrawWrapper, newInputHandler } from '../pipeline/wrappers'
 import { createCombinedRenderable } from './combined-renderables'
 import createInputReactor from './input-reactor'
 
@@ -20,8 +21,7 @@ export interface RenderContext {
 	readonly gameTickEstimation: number
 	readonly gameTime: number
 	readonly secondsSinceFirstRender: number
-	readonly sunPosition: vec3
-	readonly mousePicker: ReturnType<typeof createPicker>
+	readonly sunPosition: [number, number, number]
 }
 
 export const setupSceneRendering = (canvas: HTMLCanvasElement,
@@ -113,88 +113,6 @@ export const startRenderingGameOld = (canvas: HTMLCanvasElement,
 	return setupSceneRendering(canvas, game, camera, gameTickEstimation, gameTickRate, handleInputEvents)
 }
 
-const obtainWebGl2ContextFromCanvas = (canvas: HTMLCanvasElement): WebGL2RenderingContext => {
-	const context = canvas.getContext('webgl2', {
-		'alpha': false,
-		'antialias': CONFIG.get('rendering/antialias'),
-		'depth': true,
-		'stencil': false,
-		'failIfMajorPerformanceCaveat': true,
-	}) as WebGL2RenderingContext
-	if (context == null)
-		throw new Error('Unable to obtain context')
-	return context
-}
-
-const newAnimationFrameCaller = (
-	shouldRender: (elapsedSeconds: number) => boolean,
-	actualRender: (elapsedSeconds: number) => Promise<void>,
-) => {
-	let nextFrameRequest = 0;
-	let lastFrameTime = 0
-
-	const internalRenderFunction = async () => {
-		const now = performance.now()
-		const elapsedSeconds = (now - lastFrameTime) / 1000
-		if ((shouldRender(elapsedSeconds)) === true) {
-			await actualRender(elapsedSeconds)
-		}
-
-		// someone could cancel rendering in render callback
-		if (nextFrameRequest !== 0)
-			nextFrameRequest = requestAnimationFrame(internalRenderFunction)
-	}
-
-	return {
-		start() {
-			if (nextFrameRequest !== 0) return
-
-			lastFrameTime = performance.now()
-
-			nextFrameRequest = requestAnimationFrame(internalRenderFunction)
-		},
-		stop() {
-			cancelAnimationFrame(nextFrameRequest)
-			nextFrameRequest = 0
-		},
-	}
-}
-
-const newCanvasResizeWrapper = (canvas: HTMLCanvasElement, camera: Camera) => {
-	const gl = obtainWebGl2ContextFromCanvas(canvas)
-
-	const TEXTURE_PIXEL_MULTIPLIER = 1
-
-	let lastWidth = -1
-	let lastHeight = -1
-
-	return {
-		rawContext: gl,
-		prepareForDrawing() {
-
-			const width = frontedVariables[FrontendVariable.CanvasDrawingWidth]!
-			const height = frontedVariables[FrontendVariable.CanvasDrawingHeight]!
-			if (lastWidth !== width || lastHeight !== height) {
-				camera.setAspectRatio(width / height)
-				lastWidth = width
-				lastHeight = height
-
-				canvas['width'] = width * TEXTURE_PIXEL_MULTIPLIER | 0
-				canvas['height'] = height * TEXTURE_PIXEL_MULTIPLIER | 0
-			}
-			gl.viewport(0, 0, width * TEXTURE_PIXEL_MULTIPLIER | 0, height * TEXTURE_PIXEL_MULTIPLIER | 0)
-
-			gl.clearColor(0.15, 0.15, 0.15, 1)
-			gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
-
-			gl.enable(gl.DEPTH_TEST)
-			gl.depthFunc(gl.LEQUAL)
-
-			gl.cullFace(gl.BACK)
-			gl.enable(gl.CULL_FACE)
-		}
-	}
-}
 
 export const startRenderingGame = (
 	canvas: HTMLCanvasElement,
@@ -205,17 +123,19 @@ export const startRenderingGame = (
 	gameTickEstimation: () => number): () => void => {
 
 	const gameTickRate = () => updater.getTickRate()
-	const handleInputEvents = createInputReactor(game, actionsQueue)
 
-	const pipeline = newPipeline([terrain].map(e => e()))
+	const pipeline = newPipeline([
+		terrain,
+	].map(e => e()))
 
+	const inputHandler = newInputHandler(actionsQueue)
+	const drawHelper = newDrawWrapper(canvas, camera)
+	const mouse = newMousePicker(drawHelper.rawContext)
 
-	const canvasWrapper = newCanvasResizeWrapper(canvas, camera)
-	const gl = canvasWrapper.rawContext
-
-	const firstRenderTime = performance.now()
 	const sunPosition = vec3.fromValues(500, 1500, -500)
-	const performRender = async (elapsedSeconds: number) => {
+	const performRender = async (elapsedSeconds: number, secondsSinceFirstRender: number) => {
+		inputHandler.handleInputsBeforeDraw(camera, elapsedSeconds)
+
 		if (isInWorker)
 			globalMutex.enter(Lock.Update)
 		else
@@ -227,30 +147,35 @@ export const startRenderingGame = (
 		globalMutex.unlock(Lock.Update)
 
 		camera.updateMatrixIfNeeded()
-
 		pipeline.doGpuUploads()
 
-		const now = performance.now()
-		const secondsSinceFirstRender = (now - firstRenderTime) / 1000
 		const ctx: RenderContext = {
-			gl,
+			gl: drawHelper.rawContext,
 			camera,
 			sunPosition,
 			gameTickEstimation: gameTickEstimation(),
 			secondsSinceFirstRender,
 			gameTime: secondsSinceFirstRender * gameTickRate() / STANDARD_GAME_TICK_RATE,
-			// @ts-ignore
-			mousePicker: {},
 		}
 
-		canvasWrapper.prepareForDrawing()
+		drawHelper.handleResize()
+		drawHelper.clearBeforeDraw()
+
 		pipeline.draw(ctx)
+
+		const inputs = inputHandler.shouldRenderForInputs()
+		if (inputs !== null) {
+			mouse.prepareBeforeDraw()
+			pipeline.drawForMousePicker(ctx)
+			const computed = mouse.pickAfterDraw(inputs.mouseX, inputs.mouseY)
+			inputHandler.interpretPick(computed, inputs)
+		}
 	}
 
 
 	const caller = newAnimationFrameCaller(() => true, performRender)
 
-	pipeline.useContext(gl)
+	pipeline.useContext(drawHelper.rawContext)
 	pipeline.useGame(game)
 	pipeline.bindGpuWithGame()
 

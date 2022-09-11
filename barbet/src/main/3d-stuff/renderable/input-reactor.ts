@@ -14,6 +14,49 @@ const enum EventHappened {
 	RightClick,
 }
 
+const newInputReactor = (actionsQueue: ActionsQueue) => {
+	let lastClickId: number = 0
+	let eventHappened: EventHappened = EventHappened.None
+	let mousePositionX: number = 0
+	let mousePositionY: number = 0
+	let lastWidth: number = 0
+	let lastHeight: number = 0
+	const handleInputs = (dt: number, renderer: MainRenderer, ctx: RenderContext) => {
+		moveCameraByKeys(ctx.camera, dt)
+
+		if (lastClickId !== frontedVariables[FrontendVariable.LastMouseClickId]) {
+			lastClickId = frontedVariables[FrontendVariable.LastMouseClickId]!
+			mousePositionX = frontedVariables[FrontendVariable.MouseCursorPositionX]!
+			mousePositionY = frontedVariables[FrontendVariable.MouseCursorPositionY]!
+			const right = (frontedVariables[FrontendVariable.AdditionalFlags]! & AdditionalFrontedFlags.LastMouseButtonUnpressedWasRight) === AdditionalFrontedFlags.LastMouseButtonUnpressedWasRight
+			eventHappened = right ? EventHappened.RightClick : EventHappened.LeftClick
+		}
+	}
+	return async (dt: number, renderer: MainRenderer, ctx: RenderContext) => {
+		handleInputs(dt, renderer, ctx)
+
+		if (eventHappened === EventHappened.None) return
+
+		const event = eventHappened
+		eventHappened = EventHappened.None
+
+		if (isInWorker)
+			globalMutex.enter(Lock.Update)
+		else
+			await globalMutex.enterAsync(Lock.Update)
+
+		const pickResult = ctx.mousePicker.pick(ctx, mousePositionX, renderer.height - mousePositionY)
+
+		actionsQueue.append({
+			type: ScheduledActionId.MouseClick,
+			pick: pickResult,
+			wasLeftClick: event === EventHappened.LeftClick,
+		})
+
+		globalMutex.unlock(Lock.Update)
+	}
+}
+
 const createInputReactor = (game: GameState, actionsQueue: ActionsQueue) => {
 	let lastClickId: number = 0
 	let eventHappened: EventHappened = EventHappened.None

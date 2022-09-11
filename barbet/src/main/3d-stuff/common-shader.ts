@@ -1,5 +1,5 @@
 import { walkingDurationByDirection } from '../game-state/activities/walking'
-import { GlProgram, MainRenderer } from './main-renderer'
+import { MainRenderer } from './main-renderer'
 
 export const VersionHeader = () => `#version 300 es`
 
@@ -21,9 +21,9 @@ export const terrainHeightMultiplierValue = 0.4;
 export const TerrainHeightMultiplierDeclaration = (variableName: string = 'terrainHeightMultiplier') => `const float ${variableName} = ${terrainHeightMultiplierValue.toFixed(5)};`
 
 export const createProgramFromNewShaders = <A, U>(renderer: MainRenderer,
-                                                  vertexSource: string,
-                                                  fragmentSource: string)
-// @ts-ignore
+	vertexSource: string,
+	fragmentSource: string)
+	// @ts-ignore
 	: GlProgram<A, U> => {
 	const vert = renderer.createShader(true, vertexSource)
 	const frag = renderer.createShader(false, fragmentSource)
@@ -44,9 +44,9 @@ void main() {
 `
 
 export function calculateNormals(elements: Uint16Array | Uint8Array,
-                                 vertexes: Float32Array,
-                                 vertexSize: number,
-                                 normalsOffset: number): void {
+	vertexes: Float32Array,
+	vertexSize: number,
+	normalsOffset: number): void {
 	for (let i = 0, l = elements.length; i < l;) {
 		const a = elements[i++]!
 		const b = elements[i++]!

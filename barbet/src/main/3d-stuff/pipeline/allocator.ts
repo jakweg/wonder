@@ -1,5 +1,7 @@
 import { DEBUG } from "../../util/build-info"
-import { GlProgram, GPUBuffer, VertexArray } from "../main-renderer"
+import GPUBuffer from "../gpu-resources/buffer"
+import GlProgram from "../gpu-resources/program"
+import VertexArray from "../gpu-resources/vao"
 
 const getAllUniforms = (gl: WebGL2RenderingContext, program: WebGLProgram) => {
     const allNames: string[] = []

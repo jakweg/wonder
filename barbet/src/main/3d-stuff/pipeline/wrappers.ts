@@ -1,0 +1,145 @@
+import { ScheduledActionId } from "../../game-state/scheduled-actions"
+import { ActionsQueue } from "../../game-state/scheduled-actions/queue"
+import { AdditionalFrontedFlags, frontedVariables, FrontendVariable } from "../../util/frontend-variables"
+import CONFIG from "../../util/persistance/observable-settings"
+import { Camera } from "../camera"
+import { moveCameraByKeys } from "../renderable/camera-keyboard-updater"
+import { MousePickerResultAny } from "./mouse-picker"
+
+const obtainWebGl2ContextFromCanvas = (canvas: HTMLCanvasElement): WebGL2RenderingContext => {
+    const context = canvas.getContext('webgl2', {
+        'alpha': false,
+        'antialias': CONFIG.get('rendering/antialias'),
+        'depth': true,
+        'stencil': false,
+        'failIfMajorPerformanceCaveat': true,
+    }) as WebGL2RenderingContext
+    if (context == null)
+        throw new Error('Unable to obtain context')
+    return context
+}
+
+export const newBeforeDrawWrapper = (canvas: HTMLCanvasElement, camera: Camera) => {
+    const gl = obtainWebGl2ContextFromCanvas(canvas)
+
+    const TEXTURE_PIXEL_MULTIPLIER = 1
+
+    let lastWidth = -1
+    let lastHeight = -1
+
+    return {
+        rawContext: gl,
+        handleResize() {
+            const width = frontedVariables[FrontendVariable.CanvasDrawingWidth]!
+            const height = frontedVariables[FrontendVariable.CanvasDrawingHeight]!
+            if (lastWidth !== width || lastHeight !== height) {
+                camera.setAspectRatio(width / height)
+                lastWidth = width
+                lastHeight = height
+
+                canvas['width'] = width * TEXTURE_PIXEL_MULTIPLIER | 0
+                canvas['height'] = height * TEXTURE_PIXEL_MULTIPLIER | 0
+            }
+            gl.viewport(0, 0, width * TEXTURE_PIXEL_MULTIPLIER | 0, height * TEXTURE_PIXEL_MULTIPLIER | 0)
+        },
+        clearBeforeDraw() {
+            gl.clearColor(0.15, 0.15, 0.15, 1)
+            gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
+
+            gl.enable(gl.DEPTH_TEST)
+            gl.depthFunc(gl.LEQUAL)
+
+            gl.cullFace(gl.BACK)
+            gl.enable(gl.CULL_FACE)
+        }
+    }
+}
+
+export const newAnimationFrameCaller = (
+    shouldRender: (elapsedSeconds: number) => boolean,
+    actualRender: (elapsedSeconds: number, secondsSinceFirstRender: number) => Promise<void>,
+) => {
+    let nextFrameRequest = 0;
+    let firstFrameTime = 0
+    let lastFrameTime = 0
+
+    const internalRenderFunction = async () => {
+        const now = performance.now()
+        const elapsedSeconds = (now - lastFrameTime) / 1000
+
+        if ((shouldRender(elapsedSeconds)) === true) {
+            await actualRender(elapsedSeconds, (now - firstFrameTime) / 1000)
+            lastFrameTime = performance.now()
+        }
+
+        // someone could cancel rendering in render callback
+        if (nextFrameRequest !== 0)
+            nextFrameRequest = requestAnimationFrame(internalRenderFunction)
+    }
+
+    return {
+        start() {
+            if (nextFrameRequest !== 0) return
+
+            firstFrameTime = lastFrameTime = performance.now()
+
+            nextFrameRequest = requestAnimationFrame(internalRenderFunction)
+        },
+        stop() {
+            cancelAnimationFrame(nextFrameRequest)
+            nextFrameRequest = 0
+        },
+    }
+}
+
+
+const enum EventHappened {
+    None,
+    LeftClick,
+    RightClick,
+}
+
+interface InputHandlerRequestForRender {
+    mouseX: number
+    mouseY: number
+    event: EventHappened
+}
+
+export const newInputHandler = (actionsQueue: ActionsQueue) => {
+    let lastClickId: number = 0
+    let mousePositionX: number = 0
+    let mousePositionY: number = 0
+
+    return {
+        handleInputsBeforeDraw(camera: Camera, dt: number) {
+            moveCameraByKeys(camera, dt)
+        },
+        shouldRenderForInputs(): InputHandlerRequestForRender | null {
+            let eventHappened: EventHappened = EventHappened.None
+
+            if (lastClickId !== frontedVariables[FrontendVariable.LastMouseClickId]) {
+                lastClickId = frontedVariables[FrontendVariable.LastMouseClickId]!
+                mousePositionX = frontedVariables[FrontendVariable.MouseCursorPositionX]!
+                mousePositionY = frontedVariables[FrontendVariable.CanvasDrawingHeight]! - frontedVariables[FrontendVariable.MouseCursorPositionY]!
+                const right = (frontedVariables[FrontendVariable.AdditionalFlags]! & AdditionalFrontedFlags.LastMouseButtonUnpressedWasRight) === AdditionalFrontedFlags.LastMouseButtonUnpressedWasRight
+                eventHappened = right ? EventHappened.RightClick : EventHappened.LeftClick
+            }
+
+            if (eventHappened === EventHappened.None)
+                return null
+
+            return {
+                mouseX: mousePositionX,
+                mouseY: mousePositionY,
+                event: eventHappened,
+            }
+        },
+        interpretPick(computed: MousePickerResultAny, event: InputHandlerRequestForRender) {
+            actionsQueue.append({
+                type: ScheduledActionId.MouseClick,
+                pick: computed,
+                wasLeftClick: event.event === EventHappened.LeftClick,
+            })
+        },
+    }
+}

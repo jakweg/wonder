@@ -1,5 +1,8 @@
 import { DEBUG } from '../util/build-info'
 import CONFIG from '../util/persistance/observable-settings'
+import GPUBuffer from './gpu-resources/buffer'
+import GlProgram from './gpu-resources/program'
+import VertexArray from './gpu-resources/vao'
 
 const TEXTURE_PIXEL_MULTIPLIER = 1 // set 1 / 2 for half-resolution rendering
 
@@ -224,79 +227,4 @@ export class MainRenderer {
 	}
 }
 
-export class VertexArray {
-	constructor(
-		private readonly gl: WebGL2RenderingContext,
-		private readonly array: WebGLVertexArrayObject) {
-	}
 
-	public bind() {
-		this.gl.bindVertexArray(this.array)
-	}
-
-	public unbind() {
-		this.gl.bindVertexArray(null)
-	}
-}
-
-export class GlProgram<A, U> {
-	constructor(private readonly gl: WebGL2RenderingContext,
-		private readonly program: WebGLProgram,
-		// @ts-ignore
-		readonly uniforms: { [key in U]: WebGLUniformLocation },
-		// @ts-ignore
-		readonly attributes: { [key in A]: GLint }) {
-	}
-
-	public use() {
-		this.gl.useProgram(this.program)
-	}
-
-	/**
-	 *
-	 * @param attribute
-	 * @param size number of floats per attribute (eg 3 for vec3)
-	 * @param float true if use float, false for unsigned short
-	 * @param stride number of bytes in each set of data (eg 5 when each vertex shader call receives vec3 and vec2)
-	 * @param offset
-	 * @param divisor
-	 */
-	public enableAttribute(attribute: GLint | undefined,
-		size: number,
-		float: boolean,
-		stride: number,
-		offset: number,
-		divisor: number) {
-		if (attribute === undefined)
-			return
-		const gl = this.gl
-		gl.enableVertexAttribArray(attribute)
-		if (float) {
-			gl.vertexAttribPointer(attribute, size | 0, gl.FLOAT, false, stride | 0, offset | 0)
-		} else {
-			gl.vertexAttribIPointer(attribute, size | 0, gl.INT, stride | 0, offset | 0)
-		}
-		gl.vertexAttribDivisor(attribute, divisor | 0)
-	}
-}
-
-
-export class GPUBuffer {
-	constructor(
-		private readonly gl: WebGL2RenderingContext,
-		private readonly id: WebGLBuffer,
-		private readonly target: GLenum,
-		private readonly usage: GLenum) {
-	}
-
-	public bind() {
-		this.gl.bindBuffer(this.target, this.id)
-	}
-
-	public setContent(data: BufferSource) {
-		const gl = this.gl
-		const target = this.target
-		gl.bindBuffer(target, this.id)
-		gl.bufferData(target, data, this.usage)
-	}
-}

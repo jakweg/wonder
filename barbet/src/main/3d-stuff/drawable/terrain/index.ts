@@ -3,16 +3,21 @@ import { GameState, MetadataField } from "../../../game-state/game-state"
 import { WORLD_CHUNK_SIZE } from "../../../game-state/world/world"
 import { buildChunkMesh, combineMeshes, Mesh } from "../../../game-state/world/world-to-mesh-converter"
 import CONFIG from "../../../util/persistance/observable-settings"
-import { GlProgram, GPUBuffer, VertexArray } from "../../main-renderer"
+import { pickViaMouseDefaultFragmentShader } from "../../common-shader"
+import GPUBuffer from "../../gpu-resources/buffer"
+import GlProgram from "../../gpu-resources/program"
+import VertexArray from "../../gpu-resources/vao"
 import { GpuAllocator } from "../../pipeline/allocator"
 import { Drawable } from "../../pipeline/Drawable"
 import { RenderContext } from "../../renderable/render-context"
-import { Attributes, fragmentShaderSource, Uniforms, vertexShaderSource } from "../../renderable/terrain/shaders"
+import { Attributes, fragmentShaderSource, MousePickerAttributes, MousePickerUniforms, Uniforms, vertexShaderSource } from "../../renderable/terrain/shaders"
 
 
 interface ShaderCache {
     program: GlProgram<Attributes, Uniforms>
+    mouseProgram: GlProgram<MousePickerAttributes, MousePickerUniforms>
     vao: VertexArray
+    mouseVao: VertexArray
     vertexBuffer: GPUBuffer
     indicesBuffer: GPUBuffer
 }
@@ -38,11 +43,18 @@ const drawable: () => Drawable<ShaderCache, WorldData, BoundData> = () => ({
             tileBorders: CONFIG.get('rendering/show-tile-borders'),
             forMousePicker: false
         }
-        const vertexSource = vertexShaderSource(options)
-        const fragmentSource = fragmentShaderSource(options)
-        const shader = allocator.newProgram<Attributes, Uniforms>({ vertexSource, fragmentSource })
+        const shader = allocator.newProgram<Attributes, Uniforms>({
+            vertexSource: vertexShaderSource(options),
+            fragmentSource: fragmentShaderSource(options)
+        })
+
+        const mouseShader = allocator.newProgram<MousePickerAttributes, MousePickerUniforms>({
+            vertexSource: vertexShaderSource({ ...options, forMousePicker: true }),
+            fragmentSource: pickViaMouseDefaultFragmentShader(),
+        })
 
         const vao = allocator.newVao()
+        const mouseVao = allocator.newVao()
 
         const vertexBuffer = allocator.newBuffer({ dynamic: false, forArray: true })
         const indicesBuffer = allocator.newBuffer({ dynamic: false, forArray: false })
@@ -58,9 +70,18 @@ const drawable: () => Drawable<ShaderCache, WorldData, BoundData> = () => ({
         program.enableAttribute(program.attributes['color'], 3, true, stride, 3 * floatSize, 0)
         program.enableAttribute(program.attributes['flags'], 1, true, stride, 6 * floatSize, 0)
         program.enableAttribute(program.attributes['ambientOcclusion'], 1, true, stride, 7 * floatSize, 0)
-
         vao.unbind()
-        return { program, vao, vertexBuffer, indicesBuffer }
+
+        const mouseProgram = await mouseShader
+
+        mouseVao.bind()
+        vertexBuffer.bind()
+        mouseProgram.enableAttribute(mouseProgram.attributes['position'], 3, true, stride, 0, 0)
+        mouseProgram.enableAttribute(mouseProgram.attributes['flags'], 1, true, stride, 6 * floatSize, 0)
+        indicesBuffer.bind()
+        mouseVao.unbind()
+
+        return { program, vao, vertexBuffer, indicesBuffer, mouseProgram, mouseVao }
     },
     createWorld(game: GameState, previous: WorldData | null): WorldData {
         return { game }
@@ -102,7 +123,6 @@ const drawable: () => Drawable<ShaderCache, WorldData, BoundData> = () => ({
         }
 
         const combinedMesh: Mesh = combineMeshes(bound.meshes)
-        console.log(combinedMesh);
 
         shader.vertexBuffer.setContent(combinedMesh.vertexes)
         shader.indicesBuffer.setContent(combinedMesh.indices)
@@ -129,7 +149,16 @@ const drawable: () => Drawable<ShaderCache, WorldData, BoundData> = () => ({
         gl.drawElements(gl.TRIANGLES, bound.trianglesToRender, gl.UNSIGNED_INT, 0)
     },
     drawForMousePicker(ctx: RenderContext, shader: ShaderCache, world: WorldData, bound: BoundData): void {
-        throw new Error("Function not implemented.")
+
+        const { gl, camera } = ctx
+        const { mouseProgram: program, mouseVao: vao } = shader
+        vao.bind()
+        program.use()
+
+        gl.uniformMatrix4fv(program.uniforms['combinedMatrix'], false, toGl(camera.combinedMatrix))
+        gl.uniform1f(program.uniforms['time'], ctx.secondsSinceFirstRender)
+
+        gl.drawElements(gl.TRIANGLES, bound.trianglesToRender, gl.UNSIGNED_INT, 0)
     }
 })
 

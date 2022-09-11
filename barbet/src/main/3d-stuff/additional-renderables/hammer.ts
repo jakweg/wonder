@@ -5,7 +5,7 @@ import {
 	DataOffsetDrawables,
 	DataOffsetPositions,
 	DataOffsetWithActivity,
-	EntityTraitIndicesRecord,
+	EntityTraitIndicesRecord
 } from '../../game-state/entities/traits'
 import { GameState } from '../../game-state/game-state'
 import {
@@ -15,9 +15,11 @@ import {
 	PrecisionHeader,
 	RotationYMatrix,
 	RotationZMatrix, TerrainHeightMultiplierDeclaration,
-	VersionHeader,
+	VersionHeader
 } from '../common-shader'
-import { GlProgram, GPUBuffer, MainRenderer } from '../main-renderer'
+import GPUBuffer from "../gpu-resources/buffer"
+import GlProgram from '../gpu-resources/program'
+import { MainRenderer } from '../main-renderer'
 import { RenderContext } from '../renderable/render-context'
 import { UnitShaderCreationOptions } from '../renderable/unit/shaders'
 
@@ -64,7 +66,7 @@ const initData = () => {
 
 	calculateNormals(finalElementsData, finalVertexData, 6, 3)
 
-	return {vertexes: finalVertexData, elements: finalElementsData, triangles: finalElementsData.length}
+	return { vertexes: finalVertexData, elements: finalElementsData, triangles: finalElementsData.length }
 }
 type Program = GlProgram<'modelPosition' | 'unitData' | 'activityStart' | 'modelNormals', 'time' | 'combinedMatrix'>
 type T = {
@@ -177,7 +179,7 @@ const hammer: AdditionalRenderer<T, B> = {
 		}
 	},
 	prepareBatch(): B {
-		return {unitPositions: [], count: 0}
+		return { unitPositions: [], count: 0 }
 	},
 	appendToBatch(setup: T, batch: B, unit: EntityTraitIndicesRecord): void {
 		const positions = setup.positions.rawData

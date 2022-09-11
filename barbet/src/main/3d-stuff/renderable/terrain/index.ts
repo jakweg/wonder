@@ -4,7 +4,8 @@ import { WORLD_CHUNK_SIZE } from '../../../game-state/world/world'
 import { buildChunkMesh, combineMeshes, Mesh } from '../../../game-state/world/world-to-mesh-converter'
 import CONFIG, { observeSetting } from '../../../util/persistance/observable-settings'
 import { createProgramFromNewShaders, pickViaMouseDefaultFragmentShader } from '../../common-shader'
-import { GPUBuffer, MainRenderer } from '../../main-renderer'
+import GPUBuffer from "../../gpu-resources/buffer"
+import { MainRenderer } from '../../main-renderer'
 import { RenderContext } from '../render-context'
 import {
 	Attributes,

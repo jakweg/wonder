@@ -3,7 +3,7 @@ import { add, clone, fromValues } from '@matrix//vec3'
 import {
 	ActivityId,
 	getAdditionalRendererByActivity,
-	getShaderIdForUnitByActivity,
+	getShaderIdForUnitByActivity
 } from '../../../game-state/activities'
 import { iterateOverDrawableEntities } from '../../../game-state/entities/queries'
 import {
@@ -11,19 +11,21 @@ import {
 	DataOffsetItemHoldable,
 	DataOffsetPositions,
 	DataOffsetWithActivity,
-	EntityTrait,
+	EntityTrait
 } from '../../../game-state/entities/traits'
 import { GameState } from '../../../game-state/game-state'
 import { ItemType } from '../../../game-state/items'
 import { pickViaMouseDefaultFragmentShader } from '../../common-shader'
-import { GlProgram, GPUBuffer, MainRenderer } from '../../main-renderer'
+import GPUBuffer from "../../gpu-resources/buffer"
+import GlProgram from '../../gpu-resources/program'
+import { MainRenderer } from '../../main-renderer'
 import { RenderContext } from '../render-context'
 import {
 	Attributes,
 	constructUnitVertexShaderSource,
 	shaderTransformationSources,
 	standardFragmentShaderSource,
-	Uniforms,
+	Uniforms
 } from './shaders'
 import { buildUnitModel } from './unit-model'
 
@@ -37,7 +39,7 @@ function createBuffersForModelMesh(renderer: MainRenderer) {
 
 	modelBuffer.setContent(mesh.vertexes)
 	modelElementsBuffer.setContent(mesh.elements)
-	return {trianglesToRender, modelBuffer, modelElementsBuffer}
+	return { trianglesToRender, modelBuffer, modelElementsBuffer }
 }
 
 function preparePrograms(renderer: MainRenderer, modelBuffer: GPUBuffer, modelElementsBuffer: GPUBuffer, unitDataBuffer: GPUBuffer) {
@@ -49,8 +51,8 @@ function preparePrograms(renderer: MainRenderer, modelBuffer: GPUBuffer, modelEl
 	const mouseFragmentShader = renderer.createShader(false, pickViaMouseDefaultFragmentShader())
 	const programs: GlProgram<Attributes, Uniforms>[] = []
 	const variants = [
-		{forMousePicker: false, holdingItem: false}, {forMousePicker: false, holdingItem: true},
-		{forMousePicker: true, holdingItem: false}, {forMousePicker: true, holdingItem: true},
+		{ forMousePicker: false, holdingItem: false }, { forMousePicker: false, holdingItem: true },
+		{ forMousePicker: true, holdingItem: false }, { forMousePicker: true, holdingItem: true },
 	]
 
 	const sourceToShaderMap = new Map<string, WebGLShader>()
@@ -93,12 +95,12 @@ function preparePrograms(renderer: MainRenderer, modelBuffer: GPUBuffer, modelEl
 	}
 
 
-	return {programs, vao}
+	return { programs, vao }
 }
 
 export const createNewUnitRenderable = (renderer: MainRenderer,
-                                        game: GameState) => {
-	const {trianglesToRender, modelBuffer, modelElementsBuffer} = createBuffersForModelMesh(renderer)
+	game: GameState) => {
+	const { trianglesToRender, modelBuffer, modelElementsBuffer } = createBuffersForModelMesh(renderer)
 
 
 	const additionalRenderersSetup: any[] = []
@@ -113,11 +115,11 @@ export const createNewUnitRenderable = (renderer: MainRenderer,
 
 	const unitDataBuffer = renderer.createBuffer(true, false)
 
-	const {programs, vao} = preparePrograms(renderer, modelBuffer, modelElementsBuffer, unitDataBuffer)
+	const { programs, vao } = preparePrograms(renderer, modelBuffer, modelElementsBuffer, unitDataBuffer)
 
 	const internalRender = (ctx: RenderContext, forMousePicker: boolean) => {
 
-		const {gl, camera: {combinedMatrix}, gameTickEstimation} = ctx
+		const { gl, camera: { combinedMatrix }, gameTickEstimation } = ctx
 		vao.bind()
 		modelBuffer.bind()
 
