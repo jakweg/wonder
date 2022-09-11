@@ -11,7 +11,7 @@ import terrain from '../drawable/terrain'
 import { MainRenderer } from '../main-renderer'
 import { newPipeline } from '../pipeline'
 import { newMousePicker } from '../pipeline/mouse-picker'
-import { newAnimationFrameCaller, newBeforeDrawWrapper as newDrawWrapper, newInputHandler } from '../pipeline/wrappers'
+import { newAnimationFrameCaller, newBeforeDrawWrapper as newDrawWrapper, newFramesLimiter, newInputHandler } from '../pipeline/wrappers'
 import { createCombinedRenderable } from './combined-renderables'
 import createInputReactor from './input-reactor'
 
@@ -172,8 +172,8 @@ export const startRenderingGame = (
 		}
 	}
 
-
-	const caller = newAnimationFrameCaller(() => true, performRender)
+	const limiter = newFramesLimiter()
+	const caller = newAnimationFrameCaller(limiter.shouldRender, performRender)
 
 	pipeline.useContext(drawHelper.rawContext)
 	pipeline.useGame(game)
@@ -183,6 +183,7 @@ export const startRenderingGame = (
 
 	return () => {
 		caller.stop()
+		limiter.cleanUp()
 	}
 }
 

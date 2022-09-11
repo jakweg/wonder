@@ -1,7 +1,7 @@
 import { ScheduledActionId } from "../../game-state/scheduled-actions"
 import { ActionsQueue } from "../../game-state/scheduled-actions/queue"
 import { AdditionalFrontedFlags, frontedVariables, FrontendVariable } from "../../util/frontend-variables"
-import CONFIG from "../../util/persistance/observable-settings"
+import CONFIG, { observeSetting } from "../../util/persistance/observable-settings"
 import { Camera } from "../camera"
 import { moveCameraByKeys } from "../renderable/camera-keyboard-updater"
 import { MousePickerResultAny } from "./mouse-picker"
@@ -51,6 +51,30 @@ export const newBeforeDrawWrapper = (canvas: HTMLCanvasElement, camera: Camera) 
 
             gl.cullFace(gl.BACK)
             gl.enable(gl.CULL_FACE)
+        }
+    }
+}
+
+export const newFramesLimiter = () => {
+    let minSecondsBetweenFramesFocus = 0
+    let minSecondsBetweenFramesBlur = 0
+
+    const unsub1 = observeSetting('rendering/fps-cap', value => {
+        minSecondsBetweenFramesFocus = (value <= 0) ? 0 : (1 / (+value <= 0 ? 0.00001 : +value))
+    })
+    const unsub2 = observeSetting('rendering/fps-cap-on-blur', value => {
+        minSecondsBetweenFramesBlur = (value <= 0) ? 9999999 : (1 / +value)
+    })
+
+    return {
+        shouldRender: (dt: number): boolean => {
+            const variables = Atomics.load(frontedVariables, FrontendVariable.AdditionalFlags)
+            const hasFocus = (variables & AdditionalFrontedFlags.WindowHasFocus) === AdditionalFrontedFlags.WindowHasFocus
+            return dt >= (hasFocus ? minSecondsBetweenFramesFocus : minSecondsBetweenFramesBlur)
+        },
+        cleanUp() {
+            unsub1()
+            unsub2()
         }
     }
 }
