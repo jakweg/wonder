@@ -113,6 +113,113 @@ export const startRenderingGameOld = (canvas: HTMLCanvasElement,
 	return setupSceneRendering(canvas, game, camera, gameTickEstimation, gameTickRate, handleInputEvents)
 }
 
+interface CanvasObjects {
+	canvas: HTMLCanvasElement,
+	limiter: ReturnType<typeof newFramesLimiter>
+	caller: ReturnType<typeof newAnimationFrameCaller>
+	loadingShadersPromise: Promise<void>
+}
+
+export const createRenderingSession = (actionsQueue: ActionsQueue) => {
+	const pipeline = newPipeline([
+		terrain,
+	].map(e => e()))
+
+	const inputHandler = newInputHandler(actionsQueue)
+	const sunPosition = vec3.fromValues(500, 1500, -500)
+
+	let gameTickEstimation = () => 0
+	let gameTickRate = () => 1
+	let hadGame: boolean = false
+	let camera = Camera.newPerspective()
+
+	let lastCanvas: CanvasObjects | null = null
+
+	return {
+		setCanvas(canvas: HTMLCanvasElement) {
+			if (lastCanvas !== null) {
+				lastCanvas.caller.stop()
+				lastCanvas.limiter.cleanUp()
+			}
+
+			const drawHelper = newDrawWrapper(canvas, camera)
+			const mouse = newMousePicker(drawHelper.rawContext)
+			const performRender = async (elapsedSeconds: number, secondsSinceFirstRender: number) => {
+				inputHandler.handleInputsBeforeDraw(camera, elapsedSeconds)
+
+				if (isInWorker)
+					globalMutex.enter(Lock.Update)
+				else
+					await globalMutex.enterAsync(Lock.Update)
+
+				pipeline.updateWorld()
+				pipeline.prepareRender()
+
+				globalMutex.unlock(Lock.Update)
+
+				camera.updateMatrixIfNeeded()
+				pipeline.doGpuUploads()
+
+				const ctx: RenderContext = {
+					gl: drawHelper.rawContext,
+					camera,
+					sunPosition,
+					gameTickEstimation: gameTickEstimation(),
+					secondsSinceFirstRender,
+					gameTime: secondsSinceFirstRender * gameTickRate() / STANDARD_GAME_TICK_RATE,
+				}
+
+				drawHelper.handleResize()
+				drawHelper.clearBeforeDraw()
+
+				pipeline.draw(ctx)
+
+				const inputs = inputHandler.shouldRenderForInputs()
+				if (inputs !== null) {
+					mouse.prepareBeforeDraw()
+					pipeline.drawForMousePicker(ctx)
+					const computed = mouse.pickAfterDraw(inputs.mouseX, inputs.mouseY)
+					inputHandler.interpretPick(computed, inputs)
+				}
+			}
+
+			const limiter = newFramesLimiter()
+			const caller = newAnimationFrameCaller((dt) => hadGame && limiter.shouldRender(dt), performRender)
+
+			const loadingShadersPromise = pipeline.useContext(drawHelper.rawContext)
+			loadingShadersPromise.then(() => pipeline.bindGpuWithGameIfCan())
+
+			caller.start()
+
+			lastCanvas = {
+				caller, limiter, canvas, loadingShadersPromise
+			}
+		},
+		setGame(game: GameState, _gameTickEstimation: () => number, _gameTickRate: () => number) {
+			hadGame = true
+			gameTickRate = _gameTickRate
+			gameTickEstimation = _gameTickEstimation
+			pipeline.useGame(game)
+			pipeline.bindGpuWithGameIfCan()
+		},
+		setCamera(newCamera: Camera) {
+			camera = newCamera
+		},
+		cleanUp() {
+			if (lastCanvas !== null) {
+				lastCanvas.caller.stop()
+				lastCanvas.limiter.cleanUp()
+			}
+			lastCanvas = null
+			hadGame = false
+
+			pipeline.cleanUp()
+		},
+	}
+}
+
+
+
 
 export const startRenderingGame = (
 	canvas: HTMLCanvasElement,
@@ -121,12 +228,12 @@ export const startRenderingGame = (
 	actionsQueue: ActionsQueue,
 	camera: Camera,
 	gameTickEstimation: () => number): () => void => {
+	const pipeline = /* @__PURE__ */ newPipeline([
+		terrain,
+	].map(e => e()))
 
 	const gameTickRate = () => updater.getTickRate()
 
-	const pipeline = newPipeline([
-		terrain,
-	].map(e => e()))
 
 	const inputHandler = newInputHandler(actionsQueue)
 	const drawHelper = newDrawWrapper(canvas, camera)

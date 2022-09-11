@@ -83,6 +83,7 @@ export const bind = async (args: ConnectArguments): Promise<EnvironmentConnectio
 			gameSnapshotForRenderer = data
 			updater = createStateUpdaterControllerFromReceived(data.updater)
 
+			renderWorker.send.send(ToRender.GameCreateResult, gameSnapshotForRenderer)
 			return {
 				updater,
 				setActionsCallback(forTick: number, playerId: string, actions: TickQueueAction[]) {
@@ -101,8 +102,8 @@ export const bind = async (args: ConnectArguments): Promise<EnvironmentConnectio
 				throw new Error('Create game first')
 
 			const canvasControl = (renderArguments.canvas as any).transferControlToOffscreen()
-			renderWorker.send.send(ToRender.TransferCanvas, { canvas: canvasControl, resetGame: true }, [canvasControl])
-			renderWorker.send.send(ToRender.GameCreateResult, gameSnapshotForRenderer)
+			renderWorker.send.send(ToRender.TransferCanvas, { canvas: canvasControl }, [canvasControl])
+			// renderWorker.send.send(ToRender.GameCreateResult, gameSnapshotForRenderer)
 			if (entityContainerSnapshotForRenderer !== null)
 				renderWorker.send.send(ToRender.UpdateEntityContainer, entityContainerSnapshotForRenderer)
 		},

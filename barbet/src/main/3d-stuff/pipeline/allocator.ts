@@ -98,7 +98,11 @@ export const newGpuAllocator = (gl: WebGL2RenderingContext) => {
             const usage = options.dynamic ? gl.DYNAMIC_DRAW : gl.STATIC_DRAW
             const target = options.forArray ? gl.ARRAY_BUFFER : gl.ELEMENT_ARRAY_BUFFER
             return new GPUBuffer(gl, buffer, target, usage)
-        }
+        },
+
+        cleanUp() {
+            gl['getExtension']('WEBGL_lose_context')?.['loseContext']?.();
+        },
     }
 }
 export type GpuAllocator = ReturnType<typeof newGpuAllocator>

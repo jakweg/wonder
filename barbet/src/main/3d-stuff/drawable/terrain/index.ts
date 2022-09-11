@@ -24,13 +24,14 @@ interface ShaderCache {
 
 interface WorldData {
     game: GameState
-}
-
-interface BoundData {
-    trianglesToRender: number
     lastMeshRecreationId: number
     meshes: Mesh[]
     lastMeshModificationIds: Uint16Array
+    trianglesToRender: number
+}
+
+interface BoundData {
+    needsUpload: boolean
 }
 
 const floatSize = Float32Array.BYTES_PER_ELEMENT
@@ -84,11 +85,7 @@ const drawable: () => Drawable<ShaderCache, WorldData, BoundData> = () => ({
         return { program, vao, vertexBuffer, indicesBuffer, mouseProgram, mouseVao }
     },
     createWorld(game: GameState, previous: WorldData | null): WorldData {
-        return { game }
-    },
-    bindWorldData(allocator: GpuAllocator, shader: ShaderCache, data: WorldData): BoundData {
-
-        const world = data.game.world
+        const world = game.world
         const chunksX = world.size.chunksSizeX
         const chunksZ = world.size.chunksSizeZ
         const meshes: Mesh[] = new Array(chunksX * chunksZ)
@@ -96,16 +93,22 @@ const drawable: () => Drawable<ShaderCache, WorldData, BoundData> = () => ({
         lastMeshModificationIds.fill(-1)
 
         return {
-            trianglesToRender: 0,
-            lastMeshRecreationId: -1,
+            game,
             meshes,
             lastMeshModificationIds,
+            trianglesToRender: 0,
+            lastMeshRecreationId: -1,
+        }
+    },
+    bindWorldData(allocator: GpuAllocator, shader: ShaderCache, data: WorldData): BoundData {
+        return {
+            needsUpload: true,
         }
     },
     updateWorld(shader: ShaderCache, data: WorldData, bound: BoundData): void {
         const lastChangeId = data.game.metaData[MetadataField.LastWorldChange]!
-        if (bound.lastMeshRecreationId === lastChangeId) return
-        bound.lastMeshRecreationId = lastChangeId
+        if (data.lastMeshRecreationId === lastChangeId) return
+        data.lastMeshRecreationId = lastChangeId
 
 
         const chunksZ = data.game.world.size.chunksSizeZ
@@ -114,26 +117,27 @@ const drawable: () => Drawable<ShaderCache, WorldData, BoundData> = () => ({
         for (let j = 0; j < chunksZ; j++) {
             for (let i = 0; i < chunksX; i++) {
                 const modificationId = data.game.world.chunkModificationIds[chunkIndex]!
-                if (bound.lastMeshModificationIds[chunkIndex] !== modificationId) {
-                    bound.lastMeshModificationIds[chunkIndex] = modificationId
-                    bound.meshes[chunkIndex] = buildChunkMesh(data.game.world, i, j, WORLD_CHUNK_SIZE)
+                if (data.lastMeshModificationIds[chunkIndex] !== modificationId) {
+                    data.lastMeshModificationIds[chunkIndex] = modificationId
+                    data.meshes[chunkIndex] = buildChunkMesh(data.game.world, i, j, WORLD_CHUNK_SIZE)
                 }
                 chunkIndex++
             }
         }
 
-        const combinedMesh: Mesh = combineMeshes(bound.meshes)
-
-        shader.vertexBuffer.setContent(combinedMesh.vertexes)
-        shader.indicesBuffer.setContent(combinedMesh.indices)
-        bound.trianglesToRender = (combinedMesh.indices.byteLength / combinedMesh.indices.BYTES_PER_ELEMENT) | 0
-        bound.lastMeshRecreationId = lastChangeId
+        data.lastMeshRecreationId = lastChangeId
+        bound.needsUpload = true
     },
     prepareRender(shader: ShaderCache, world: WorldData, bound: BoundData): void {
 
     },
-    uploadToGpu(shader: ShaderCache, world: WorldData, bound: BoundData): void {
-
+    uploadToGpu(shader: ShaderCache, data: WorldData, bound: BoundData): void {
+        if (!bound.needsUpload) return
+        const combinedMesh: Mesh = combineMeshes(data.meshes)
+        shader.vertexBuffer.setContent(combinedMesh.vertexes)
+        shader.indicesBuffer.setContent(combinedMesh.indices)
+        data.trianglesToRender = (combinedMesh.indices.byteLength / combinedMesh.indices.BYTES_PER_ELEMENT) | 0
+        bound.needsUpload = false
     },
     draw(ctx: RenderContext, shader: ShaderCache, world: WorldData, bound: BoundData): void {
 
@@ -146,7 +150,7 @@ const drawable: () => Drawable<ShaderCache, WorldData, BoundData> = () => ({
         gl.uniform1f(program.uniforms['time'], ctx.secondsSinceFirstRender)
         gl.uniform3fv(program.uniforms['lightPosition'], toGl(ctx.sunPosition))
 
-        gl.drawElements(gl.TRIANGLES, bound.trianglesToRender, gl.UNSIGNED_INT, 0)
+        gl.drawElements(gl.TRIANGLES, world.trianglesToRender, gl.UNSIGNED_INT, 0)
     },
     drawForMousePicker(ctx: RenderContext, shader: ShaderCache, world: WorldData, bound: BoundData): void {
 
@@ -158,7 +162,7 @@ const drawable: () => Drawable<ShaderCache, WorldData, BoundData> = () => ({
         gl.uniformMatrix4fv(program.uniforms['combinedMatrix'], false, toGl(camera.combinedMatrix))
         gl.uniform1f(program.uniforms['time'], ctx.secondsSinceFirstRender)
 
-        gl.drawElements(gl.TRIANGLES, bound.trianglesToRender, gl.UNSIGNED_INT, 0)
+        gl.drawElements(gl.TRIANGLES, world.trianglesToRender, gl.UNSIGNED_INT, 0)
     }
 })
 

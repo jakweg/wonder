@@ -17,11 +17,13 @@ export const newPipeline = (
     const boundStorage = new Array(elementsCount)
     boundStorage.fill(null)
 
+    let isDoneWithShaders = false
     let allocator: GpuAllocator | null = null
+    let lastGame: GameState | null = null
     return {
         async useContext(gl: WebGL2RenderingContext): Promise<void> {
-            if (allocator !== null)
-                throw new Error()
+            isDoneWithShaders = false
+            allocator?.cleanUp()
 
             allocator = newGpuAllocator(gl)
 
@@ -32,14 +34,17 @@ export const newPipeline = (
             const doneShaders = await pendingShaders
             for (let i = 0; i < elementsCount; i++)
                 shaderStorage[i] = doneShaders[i]
+            isDoneWithShaders = true
         },
         useGame(game: GameState) {
+            if (lastGame === game) return
+            lastGame = game
             for (let i = 0; i < elementsCount; i++)
                 worldStorage[i] = elements[i]!.createWorld(game, worldStorage[i])
         },
-        bindGpuWithGame() {
-            if (allocator === null)
-                throw new Error()
+        bindGpuWithGameIfCan() {
+            if (allocator === null || lastGame === null || !isDoneWithShaders)
+                return
 
             for (let i = 0; i < elementsCount; i++)
                 boundStorage[i] = elements[i]!.bindWorldData(allocator, shaderStorage[i], worldStorage[i])
@@ -64,5 +69,14 @@ export const newPipeline = (
             for (let i = 0; i < elementsCount; i++)
                 elements[i]!.drawForMousePicker(ctx, shaderStorage[i], worldStorage[i], boundStorage[i])
         },
+        cleanUp() {
+            lastGame = null
+            allocator?.cleanUp()
+            allocator = null
+
+            shaderStorage.fill(null)
+            worldStorage.fill(null)
+            boundStorage.fill(null)
+        }
     }
 }
