@@ -7,13 +7,18 @@ export interface Drawable<ShaderCache, WorldData, BoundData> {
     /** Called once when gpu is available */
     createShader(allocator: GpuAllocator, previous: ShaderCache | null): Promise<ShaderCache>;
 
+    /** Called once whenever any property has changed
+     * @returns {true} if shader cache should be invalidated
+     */
+    onConfigModified(previous: ShaderCache | null): boolean;
+
     /** Called once when game is available, 
      * has world lock */
     createWorld(game: GameState, previous: WorldData | null): WorldData;
 
     /** Called once after both gpu and game are available,
      *  has world lock */
-    bindWorldData(allocator: GpuAllocator, shader: ShaderCache, world: WorldData): BoundData;
+    bindWorldData(allocator: GpuAllocator, shader: ShaderCache, world: WorldData, previous: BoundData | null): BoundData;
 
     /** Called before render every game tick, 
      * has world lock */

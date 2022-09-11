@@ -14,12 +14,15 @@ import { Attributes, fragmentShaderSource, MousePickerAttributes, MousePickerUni
 
 
 interface ShaderCache {
+    hasAmbient: boolean
+    hasTiles: boolean
     program: GlProgram<Attributes, Uniforms>
     mouseProgram: GlProgram<MousePickerAttributes, MousePickerUniforms>
     vao: VertexArray
     mouseVao: VertexArray
     vertexBuffer: GPUBuffer
     indicesBuffer: GPUBuffer
+    lastMeshUploadId: number
 }
 
 interface WorldData {
@@ -31,13 +34,17 @@ interface WorldData {
 }
 
 interface BoundData {
-    needsUpload: boolean
 }
 
 const floatSize = Float32Array.BYTES_PER_ELEMENT
 const stride = 8 * floatSize
 
 const drawable: () => Drawable<ShaderCache, WorldData, BoundData> = () => ({
+    onConfigModified(previous: ShaderCache | null) {
+        return previous === null
+            || CONFIG.get('rendering/ambient-occlusion') !== previous.hasAmbient
+            || CONFIG.get('rendering/show-tile-borders') !== previous.hasTiles
+    },
     createShader: async function (allocator: GpuAllocator, previous: ShaderCache | null): Promise<ShaderCache> {
         const options = {
             ambientOcclusion: CONFIG.get('rendering/ambient-occlusion'),
@@ -49,16 +56,16 @@ const drawable: () => Drawable<ShaderCache, WorldData, BoundData> = () => ({
             fragmentSource: fragmentShaderSource(options)
         })
 
-        const mouseShader = allocator.newProgram<MousePickerAttributes, MousePickerUniforms>({
+        const mouseShader = previous?.mouseProgram ?? allocator.newProgram<MousePickerAttributes, MousePickerUniforms>({
             vertexSource: vertexShaderSource({ ...options, forMousePicker: true }),
             fragmentSource: pickViaMouseDefaultFragmentShader(),
         })
 
-        const vao = allocator.newVao()
-        const mouseVao = allocator.newVao()
+        const vao = previous?.vao ?? allocator.newVao()
+        const mouseVao = previous?.mouseVao ?? allocator.newVao()
 
-        const vertexBuffer = allocator.newBuffer({ dynamic: false, forArray: true })
-        const indicesBuffer = allocator.newBuffer({ dynamic: false, forArray: false })
+        const vertexBuffer = previous?.vertexBuffer ?? allocator.newBuffer({ dynamic: false, forArray: true })
+        const indicesBuffer = previous?.indicesBuffer ?? allocator.newBuffer({ dynamic: false, forArray: false })
 
         const program = await shader
 
@@ -82,7 +89,11 @@ const drawable: () => Drawable<ShaderCache, WorldData, BoundData> = () => ({
         indicesBuffer.bind()
         mouseVao.unbind()
 
-        return { program, vao, vertexBuffer, indicesBuffer, mouseProgram, mouseVao }
+        return {
+            program, vao, vertexBuffer, indicesBuffer, mouseProgram, mouseVao,
+            hasAmbient: options.ambientOcclusion, hasTiles: options.tileBorders,
+            lastMeshUploadId: previous?.lastMeshUploadId ?? -2,
+        }
     },
     createWorld(game: GameState, previous: WorldData | null): WorldData {
         const world = game.world
@@ -100,10 +111,8 @@ const drawable: () => Drawable<ShaderCache, WorldData, BoundData> = () => ({
             lastMeshRecreationId: -1,
         }
     },
-    bindWorldData(allocator: GpuAllocator, shader: ShaderCache, data: WorldData): BoundData {
-        return {
-            needsUpload: true,
-        }
+    bindWorldData(allocator: GpuAllocator, shader: ShaderCache, data: WorldData, previous: BoundData): BoundData {
+        return {}
     },
     updateWorld(shader: ShaderCache, data: WorldData, bound: BoundData): void {
         const lastChangeId = data.game.metaData[MetadataField.LastWorldChange]!
@@ -126,18 +135,18 @@ const drawable: () => Drawable<ShaderCache, WorldData, BoundData> = () => ({
         }
 
         data.lastMeshRecreationId = lastChangeId
-        bound.needsUpload = true
     },
     prepareRender(shader: ShaderCache, world: WorldData, bound: BoundData): void {
 
     },
     uploadToGpu(shader: ShaderCache, data: WorldData, bound: BoundData): void {
-        if (!bound.needsUpload) return
+        if (shader.lastMeshUploadId === data.lastMeshRecreationId) return
+
         const combinedMesh: Mesh = combineMeshes(data.meshes)
         shader.vertexBuffer.setContent(combinedMesh.vertexes)
         shader.indicesBuffer.setContent(combinedMesh.indices)
         data.trianglesToRender = (combinedMesh.indices.byteLength / combinedMesh.indices.BYTES_PER_ELEMENT) | 0
-        bound.needsUpload = false
+        shader.lastMeshUploadId = data.lastMeshRecreationId
     },
     draw(ctx: RenderContext, shader: ShaderCache, world: WorldData, bound: BoundData): void {
 

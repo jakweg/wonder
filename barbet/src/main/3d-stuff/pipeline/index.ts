@@ -27,7 +27,7 @@ export const newPipeline = (
 
             allocator = newGpuAllocator(gl)
 
-            const pendingShaders = Promise['all'](elements.map((e, i) => e.createShader(allocator!, shaderStorage[i])))
+            const pendingShaders = Promise['all'](elements.map((e, i) => e.createShader(allocator!, null)))
 
             allocator.endProgramCompilationPhase()
 
@@ -47,7 +47,7 @@ export const newPipeline = (
                 return
 
             for (let i = 0; i < elementsCount; i++)
-                boundStorage[i] = elements[i]!.bindWorldData(allocator, shaderStorage[i], worldStorage[i])
+                boundStorage[i] = elements[i]!.bindWorldData(allocator, shaderStorage[i], worldStorage[i], boundStorage[i])
         },
         updateWorld() {
             for (let i = 0; i < elementsCount; i++)
@@ -68,6 +68,15 @@ export const newPipeline = (
         drawForMousePicker(ctx: RenderContext) {
             for (let i = 0; i < elementsCount; i++)
                 elements[i]!.drawForMousePicker(ctx, shaderStorage[i], worldStorage[i], boundStorage[i])
+        },
+        async notifyConfigChanged() {
+            if (!allocator) return
+            for (let i = 0; i < elementsCount; i++) {
+                if (elements[i]!.onConfigModified(shaderStorage[i])) {
+                    shaderStorage[i] = await elements[i]!.createShader(allocator, shaderStorage[i])
+                    boundStorage[i] = elements[i]!.bindWorldData(allocator, shaderStorage[i], worldStorage[i], boundStorage[i])
+                }
+            }
         },
         cleanUp() {
             lastGame = null

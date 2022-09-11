@@ -4,7 +4,7 @@ import { ActionsQueue } from '../../game-state/scheduled-actions/queue'
 import { STANDARD_GAME_TICK_RATE, StateUpdater } from '../../game-state/state-updater'
 import { AdditionalFrontedFlags, frontedVariables, FrontendVariable } from '../../util/frontend-variables'
 import { isInWorker, Lock } from '../../util/mutex'
-import { observeSetting } from '../../util/persistance/observable-settings'
+import CONFIG, { observeSetting } from '../../util/persistance/observable-settings'
 import { globalMutex } from '../../util/worker/global-mutex'
 import { Camera } from '../camera'
 import terrain from '../drawable/terrain'
@@ -135,6 +135,10 @@ export const createRenderingSession = (actionsQueue: ActionsQueue) => {
 
 	let lastCanvas: CanvasObjects | null = null
 
+	const cancelObserver = CONFIG.observeEverything(() => {
+		pipeline.notifyConfigChanged()
+	})
+
 	return {
 		setCanvas(canvas: HTMLCanvasElement) {
 			if (lastCanvas !== null) {
@@ -214,6 +218,7 @@ export const createRenderingSession = (actionsQueue: ActionsQueue) => {
 			hadGame = false
 
 			pipeline.cleanUp()
+			cancelObserver()
 		},
 	}
 }
