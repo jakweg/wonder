@@ -7,6 +7,7 @@ import { isInWorker, Lock } from '../../util/mutex'
 import CONFIG, { observeSetting } from '../../util/persistance/observable-settings'
 import { globalMutex } from '../../util/worker/global-mutex'
 import { Camera } from '../camera'
+import ChunkVisibilityIndex from '../drawable/chunk-visibility'
 import terrain from '../drawable/terrain'
 import { MainRenderer } from '../main-renderer'
 import { newPipeline } from '../pipeline'
@@ -18,6 +19,7 @@ import createInputReactor from './input-reactor'
 export interface RenderContext {
 	readonly gl: WebGL2RenderingContext
 	readonly camera: Camera
+	readonly visibility: ChunkVisibilityIndex
 	readonly gameTickEstimation: number
 	readonly gameTime: number
 	readonly secondsSinceFirstRender: number
@@ -132,6 +134,7 @@ export const createRenderingSession = (actionsQueue: ActionsQueue) => {
 	let gameTickRate = () => 1
 	let hadGame: boolean = false
 	let camera = Camera.newPerspective()
+	let visibility = ChunkVisibilityIndex.create(0, 0)
 
 	let lastCanvas: CanvasObjects | null = null
 
@@ -150,6 +153,8 @@ export const createRenderingSession = (actionsQueue: ActionsQueue) => {
 			const mouse = newMousePicker(drawHelper.rawContext)
 			const performRender = async (elapsedSeconds: number, secondsSinceFirstRender: number) => {
 				inputHandler.handleInputsBeforeDraw(camera, elapsedSeconds)
+				if (camera.updateMatrixIfNeeded())
+					visibility.update(camera.combinedMatrix)
 
 				if (isInWorker)
 					globalMutex.enter(Lock.Update)
@@ -161,13 +166,13 @@ export const createRenderingSession = (actionsQueue: ActionsQueue) => {
 
 				globalMutex.unlock(Lock.Update)
 
-				camera.updateMatrixIfNeeded()
 				pipeline.doGpuUploads()
 
 				const ctx: RenderContext = {
 					gl: drawHelper.rawContext,
 					camera,
 					sunPosition,
+					visibility,
 					gameTickEstimation: gameTickEstimation(),
 					secondsSinceFirstRender,
 					gameTime: secondsSinceFirstRender * gameTickRate() / STANDARD_GAME_TICK_RATE,
@@ -203,11 +208,13 @@ export const createRenderingSession = (actionsQueue: ActionsQueue) => {
 			hadGame = true
 			gameTickRate = _gameTickRate
 			gameTickEstimation = _gameTickEstimation
+			visibility = ChunkVisibilityIndex.create(game.world.size.chunksSizeX, game.world.size.chunksSizeZ)
 			pipeline.useGame(game)
 			pipeline.bindGpuWithGameIfCan()
 		},
 		setCamera(newCamera: Camera) {
 			camera = newCamera
+			visibility.update(newCamera.combinedMatrix)
 		},
 		cleanUp() {
 			if (lastCanvas !== null) {
