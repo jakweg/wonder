@@ -196,9 +196,12 @@ export const createRenderingSession = (actionsQueue: ActionsQueue) => {
 			const caller = newAnimationFrameCaller((dt) => hadGame && limiter.shouldRender(dt), performRender)
 
 			const loadingShadersPromise = pipeline.useContext(drawHelper.rawContext)
-			loadingShadersPromise.then(() => pipeline.bindGpuWithGameIfCan())
-
-			caller.start()
+			loadingShadersPromise
+				.then(() => {
+					pipeline.bindGpuWithGameIfCan()
+					lastCanvas?.caller?.start()
+				})
+				.catch(e => console.error('Refused to start rendering:', e))
 
 			lastCanvas = {
 				caller, limiter, canvas, loadingShadersPromise

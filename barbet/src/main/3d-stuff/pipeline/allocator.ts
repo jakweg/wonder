@@ -33,6 +33,25 @@ const getAllAttributes = (gl: WebGL2RenderingContext, program: WebGLProgram) => 
     return DEBUG ? { ...mapped, names: allNames } : mapped
 }
 
+const isCompilationOk = (gl: WebGL2RenderingContext, program: WebGLProgram,
+    vs: WebGLShader, fs: WebGLShader): boolean => {
+    if (gl.getProgramParameter(program, gl.LINK_STATUS))
+        return true
+
+    const vsStatus = gl.getShaderInfoLog(vs)
+    const fsStatus = gl.getShaderInfoLog(fs)
+
+    const errorText = `Linking error: ${gl.getProgramInfoLog(program)}\nvs: ${vsStatus || 'OK'}\nfs: ${fsStatus || 'OK'}`
+
+    console['groupCollapsed'](errorText)
+
+    console[vsStatus ? 'error' : 'warn'](gl.getShaderSource(vs))
+    console[fsStatus ? 'error' : 'warn'](gl.getShaderSource(fs))
+
+    console['groupEnd']()
+    return false
+}
+
 export const newGpuAllocator = (gl: WebGL2RenderingContext) => {
 
     let resolveProgramsInstantly = false
@@ -65,12 +84,8 @@ export const newGpuAllocator = (gl: WebGL2RenderingContext) => {
 
             return new Promise((resolve, reject) => {
                 const callback = () => {
-                    if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
-                        console.error(`${gl.getProgramInfoLog(program)}`);
-                        console.error(`vs: ${gl.getShaderInfoLog(vertexShader)}`);
-                        console.error(`fs: ${gl.getShaderInfoLog(fragmentShader)}`);
-
-                        reject('Failed to compile program')
+                    if (!isCompilationOk(gl, program, vertexShader, fragmentShader)) {
+                        reject('Compilation failed')
                         return
                     }
 
