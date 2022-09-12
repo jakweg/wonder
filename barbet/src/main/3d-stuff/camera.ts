@@ -57,11 +57,12 @@ export class Camera {
 		this.lastEyeChangeId++
 	}
 
-	public updateMatrixIfNeeded(): void {
-		if (this.lastRegisteredEyeChangeId === this.lastEyeChangeId) return
+	public updateMatrixIfNeeded(): boolean {
+		if (this.lastRegisteredEyeChangeId === this.lastEyeChangeId) return false
 		this.lastRegisteredEyeChangeId = this.lastEyeChangeId
 		mat4.lookAt(this.viewMatrix, this.eye, this.center, universalUpVector)
 		mat4.multiply(this.combinedMatrix, this.perspectiveMatrix, this.viewMatrix)
+		return true
 	}
 
 	public moveCamera(x: number, y: number, z: number): void {

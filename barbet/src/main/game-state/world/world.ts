@@ -2,7 +2,7 @@ import { decodeArray, encodeArray } from '../../util/persistance/serializers'
 import { createNewBuffer } from '../../util/shared-memory'
 import { AIR_ID, BlockId } from './block'
 
-export const WORLD_CHUNK_SIZE = 32
+export const WORLD_CHUNK_SIZE = 64
 
 export interface WorldSize {
 	readonly sizeX: number,
@@ -201,12 +201,12 @@ export class World {
 				this.rawHeightData[z * sizeX + x]! = top
 			}
 
-		this.chunkModificationIds[((x / WORLD_CHUNK_SIZE) | 0) * this.size.chunksSizeX + (z / WORLD_CHUNK_SIZE | 0)]++
+		// this.chunkModificationIds[((x / WORLD_CHUNK_SIZE) | 0) * this.size.chunksSizeX + (z / WORLD_CHUNK_SIZE | 0)]++
 		// notify nearby chunks if affected
-		this.chunkModificationIds[(((x - 1) / WORLD_CHUNK_SIZE) | 0) * this.size.chunksSizeZ + (z / WORLD_CHUNK_SIZE | 0)]++
-		this.chunkModificationIds[(((x + 1) / WORLD_CHUNK_SIZE) | 0) * this.size.chunksSizeZ + (z / WORLD_CHUNK_SIZE | 0)]++
-		this.chunkModificationIds[((x / WORLD_CHUNK_SIZE) | 0) * this.size.chunksSizeZ + ((z - 1) / WORLD_CHUNK_SIZE | 0)]++
-		this.chunkModificationIds[((x / WORLD_CHUNK_SIZE) | 0) * this.size.chunksSizeZ + ((z + 1) / WORLD_CHUNK_SIZE | 0)]++
+		this.chunkModificationIds[(((x - 1) / WORLD_CHUNK_SIZE) | 0) * this.size.chunksSizeZ + ((z + 1) / WORLD_CHUNK_SIZE | 0)]++
+		this.chunkModificationIds[(((x + 1) / WORLD_CHUNK_SIZE) | 0) * this.size.chunksSizeZ + ((z - 1) / WORLD_CHUNK_SIZE | 0)]++
+		this.chunkModificationIds[(((x - 1) / WORLD_CHUNK_SIZE) | 0) * this.size.chunksSizeZ + ((z - 1) / WORLD_CHUNK_SIZE | 0)]++
+		this.chunkModificationIds[(((x + 1) / WORLD_CHUNK_SIZE) | 0) * this.size.chunksSizeZ + ((z + 1) / WORLD_CHUNK_SIZE | 0)]++
 	}
 
 	public replaceBlock(x: number, y: number, z: number, withBlock: BlockId, ifBlock: BlockId) {

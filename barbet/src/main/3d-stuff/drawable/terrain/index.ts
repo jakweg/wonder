@@ -72,14 +72,9 @@ const drawable: () => Drawable<ShaderCache, WorldData, BoundData> = () => ({
             fragmentSource: pickViaMouseDefaultFragmentShader(),
         })
 
-        const program = await shader
-
-        program.use()
-
-        const mouseProgram = await mouseShader
-
         return {
-            program, mouseProgram,
+            program: await shader,
+            mouseProgram: await mouseShader,
             hasAmbient: options.ambientOcclusion,
             hasTiles: options.tileBorders,
             lastMeshUploadId: previous?.lastMeshUploadId ?? -2,
@@ -116,7 +111,7 @@ const drawable: () => Drawable<ShaderCache, WorldData, BoundData> = () => ({
     },
     async bindWorldData(allocator: GpuAllocator, shader: ShaderCache, data: WorldData, previous: BoundData): Promise<BoundData> {
         if (shader.chunks === null) {
-            const chunks = shader.chunks = data.chunks.map(() => ({
+            shader.chunks = data.chunks.map(() => ({
                 vertexes: allocator.newBuffer({ dynamic: false, forArray: true }),
                 indices: allocator.newBuffer({ dynamic: false, forArray: false }),
                 vao: allocator.newVao(),
@@ -124,28 +119,28 @@ const drawable: () => Drawable<ShaderCache, WorldData, BoundData> = () => ({
                 triangles: 0,
                 lastUploadId: -2,
             }))
+        }
 
-            const { program, mouseProgram } = shader
-            for (const c of chunks) {
-                program.use()
-                c.vao.bind()
-                c.vertexes.bind()
-                c.indices.bind()
+        const { program, mouseProgram } = shader
+        for (const c of shader.chunks!) {
+            program.use()
+            c.vao.bind()
+            c.vertexes.bind()
+            c.indices.bind()
 
-                program.enableAttribute(program.attributes['position'], 3, true, stride, 0, 0)
-                program.enableAttribute(program.attributes['color'], 3, true, stride, 3 * floatSize, 0)
-                program.enableAttribute(program.attributes['flags'], 1, true, stride, 6 * floatSize, 0)
-                program.enableAttribute(program.attributes['ambientOcclusion'], 1, true, stride, 7 * floatSize, 0)
-                c.vao.unbind()
+            program.enableAttribute(program.attributes['position'], 3, true, stride, 0, 0)
+            program.enableAttribute(program.attributes['color'], 3, true, stride, 3 * floatSize, 0)
+            program.enableAttribute(program.attributes['flags'], 1, true, stride, 6 * floatSize, 0)
+            program.enableAttribute(program.attributes['ambientOcclusion'], 1, true, stride, 7 * floatSize, 0)
+            c.vao.unbind()
 
-                mouseProgram.use()
-                c.mouseVao.bind()
-                c.vertexes.bind()
-                mouseProgram.enableAttribute(mouseProgram.attributes['position'], 3, true, stride, 0, 0)
-                mouseProgram.enableAttribute(mouseProgram.attributes['flags'], 1, true, stride, 6 * floatSize, 0)
-                c.indices.bind()
-                c.mouseVao.unbind()
-            }
+            mouseProgram.use()
+            c.mouseVao.bind()
+            c.vertexes.bind()
+            mouseProgram.enableAttribute(mouseProgram.attributes['position'], 3, true, stride, 0, 0)
+            mouseProgram.enableAttribute(mouseProgram.attributes['flags'], 1, true, stride, 6 * floatSize, 0)
+            c.indices.bind()
+            c.mouseVao.unbind()
         }
 
         return {}
@@ -177,7 +172,6 @@ const drawable: () => Drawable<ShaderCache, WorldData, BoundData> = () => ({
                 chunkIndex++
             }
         }
-
     },
     prepareRender(shader: ShaderCache, world: WorldData, bound: BoundData): void {
     },
@@ -210,7 +204,7 @@ const drawable: () => Drawable<ShaderCache, WorldData, BoundData> = () => ({
     },
     draw(ctx: RenderContext, shader: ShaderCache, world: WorldData, bound: BoundData): void {
 
-        const { gl, camera } = ctx
+        const { gl, camera, visibility } = ctx
         const { program } = shader
         program.use()
 
@@ -218,31 +212,38 @@ const drawable: () => Drawable<ShaderCache, WorldData, BoundData> = () => ({
         gl.uniform1f(program.uniforms['time'], ctx.secondsSinceFirstRender)
         gl.uniform3fv(program.uniforms['lightPosition'], toGl(ctx.sunPosition))
 
+        let chunkIndex = 0
         for (const chunk of shader.chunks!) {
-            if (chunk.triangles === 0)
-                continue
+            if (chunk.triangles !== 0 && visibility.isChunkIndexVisible(chunkIndex)) {
+                chunk.vao.bind()
+                drawCalls++
+                gl.drawElements(gl.TRIANGLES, chunk.triangles, gl.UNSIGNED_INT, 0)
+            }
 
-            chunk.vao.bind()
-            gl.drawElements(gl.TRIANGLES, chunk.triangles, gl.UNSIGNED_INT, 0)
+            chunkIndex++
         }
+        gl.bindVertexArray(null)
 
     },
     drawForMousePicker(ctx: RenderContext, shader: ShaderCache, world: WorldData, bound: BoundData): void {
 
-        const { gl, camera } = ctx
+        const { gl, camera, visibility } = ctx
         const { mouseProgram: program } = shader
         program.use()
 
         gl.uniformMatrix4fv(program.uniforms['combinedMatrix'], false, toGl(camera.combinedMatrix))
         gl.uniform1f(program.uniforms['time'], ctx.secondsSinceFirstRender)
 
+        let chunkIndex = 0
         for (const chunk of shader.chunks!) {
-            if (chunk.triangles === 0)
-                continue
+            if (chunk.triangles !== 0 && visibility.isChunkIndexVisible(chunkIndex)) {
+                chunk.mouseVao.bind()
+                gl.drawElements(gl.TRIANGLES, chunk.triangles, gl.UNSIGNED_INT, 0)
+            }
 
-            chunk.mouseVao.bind()
-            gl.drawElements(gl.TRIANGLES, chunk.triangles, gl.UNSIGNED_INT, 0)
+            chunkIndex++
         }
+        gl.bindVertexArray(null)
     }
 })
 
