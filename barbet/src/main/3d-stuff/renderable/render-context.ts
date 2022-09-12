@@ -153,6 +153,7 @@ export const createRenderingSession = (actionsQueue: ActionsQueue) => {
 			const mouse = newMousePicker(drawHelper.rawContext)
 			const performRender = async (elapsedSeconds: number, secondsSinceFirstRender: number) => {
 				inputHandler.handleInputsBeforeDraw(camera, elapsedSeconds)
+				drawHelper.handleResize()
 				if (camera.updateMatrixIfNeeded())
 					visibility.update(camera.combinedMatrix)
 
@@ -178,7 +179,6 @@ export const createRenderingSession = (actionsQueue: ActionsQueue) => {
 					gameTime: secondsSinceFirstRender * gameTickRate() / STANDARD_GAME_TICK_RATE,
 				}
 
-				drawHelper.handleResize()
 				drawHelper.clearBeforeDraw()
 
 				pipeline.draw(ctx)
