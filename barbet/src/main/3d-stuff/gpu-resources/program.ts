@@ -1,4 +1,10 @@
 
+type AttributeSpecification = {
+    size: number,
+    divisor?: number,
+    isInt?: boolean
+}
+
 export default class GlProgram<A, U> {
     constructor(private readonly gl: WebGL2RenderingContext,
         private readonly program: WebGLProgram,
@@ -41,5 +47,24 @@ export default class GlProgram<A, U> {
             gl.vertexAttribIPointer(attribute, size | 0, gl.INT, stride | 0, offset | 0);
         }
         gl.vertexAttribDivisor(attribute, divisor | 0);
+    }
+
+    // @ts-ignore
+    public useAttributes(attributes: Readonly<Partial<{ [key in A | ('_' | '__' | '___')]: AttributeSpecification }>>): void {
+        const gl = this.gl;
+        const entries = Object.entries(attributes) as [A, AttributeSpecification][]
+
+        const totalSize = entries.map(([_, v]) => v.size * Float32Array.BYTES_PER_ELEMENT).reduce((a, b) => a + b, 0)
+
+        let offset = 0
+        for (const [key, attribute] of entries) {
+            const index = this.attributes[key]
+            if (index !== undefined) {
+                gl.enableVertexAttribArray(index)
+                gl.vertexAttribPointer(index, attribute.size, attribute.isInt ? gl.INT : gl.FLOAT, false, totalSize, offset * Float32Array.BYTES_PER_ELEMENT)
+                gl.vertexAttribDivisor(index, (attribute.divisor ?? 0) | 0);
+            }
+            offset += attribute.size
+        }
     }
 }

@@ -121,26 +121,26 @@ const drawable: () => Drawable<ShaderCache, WorldData, BoundData> = () => ({
             }))
         }
 
+
         const { program, mouseProgram } = shader
+
+        const attributesSet: Parameters<typeof program.useAttributes>[0] = {
+            'position': { size: 3, },
+            'color': { size: 3 },
+            'flags': { size: 1 },
+            'ambientOcclusion': { size: 1 }
+        }
+
         for (const c of shader.chunks!) {
-            program.use()
             c.vao.bind()
             c.vertexes.bind()
             c.indices.bind()
+            program.useAttributes(attributesSet)
 
-            program.enableAttribute(program.attributes['position'], 3, true, stride, 0, 0)
-            program.enableAttribute(program.attributes['color'], 3, true, stride, 3 * floatSize, 0)
-            program.enableAttribute(program.attributes['flags'], 1, true, stride, 6 * floatSize, 0)
-            program.enableAttribute(program.attributes['ambientOcclusion'], 1, true, stride, 7 * floatSize, 0)
-            c.vao.unbind()
-
-            mouseProgram.use()
             c.mouseVao.bind()
             c.vertexes.bind()
-            mouseProgram.enableAttribute(mouseProgram.attributes['position'], 3, true, stride, 0, 0)
-            mouseProgram.enableAttribute(mouseProgram.attributes['flags'], 1, true, stride, 6 * floatSize, 0)
             c.indices.bind()
-            c.mouseVao.unbind()
+            mouseProgram.useAttributes(attributesSet)
         }
 
         return {}
