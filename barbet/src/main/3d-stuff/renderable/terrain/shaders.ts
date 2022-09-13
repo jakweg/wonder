@@ -16,6 +16,7 @@ export const vertexShaderSource = (options: ShaderOptions): string => {
 	${TerrainHeightMultiplierDeclaration()}
 	in vec3 a_position;
 	in vec3 a_color;
+	in uint a_offsets;
 	in uint a_flags;
 	out vec3 v_vertexPosition;
 	in uint a_ambientOcclusion;
@@ -49,7 +50,7 @@ export const vertexShaderSource = (options: ShaderOptions): string => {
 	if (options.forMousePicker)
 		parts.push(`
 		uint a = uint(a_flags);
-		uint offsets = (a >> 8U);
+		uint offsets = a_offsets;
 		uint ox = ((offsets >> 4U) & 3U);
 		uint oy = ((offsets >> 2U) & 3U);
 		uint oz = ((offsets      ) & 3U);
@@ -184,7 +185,7 @@ export const fragmentShaderSource = (options: ShaderOptions) => {
 }
 
 export type Uniforms = 'time' | 'combinedMatrix' | 'lightPosition' | 'chunkPosition'
-export type Attributes = 'position' | 'color' | 'flags' | 'ambientOcclusion'
+export type Attributes = 'position' | 'color' | 'flags' | 'ambientOcclusion' | 'offsets'
 
 export type MousePickerAttributes = 'position' | 'flags'
 export type MousePickerUniforms = 'time' | 'combinedMatrix' | 'chunkPosition'

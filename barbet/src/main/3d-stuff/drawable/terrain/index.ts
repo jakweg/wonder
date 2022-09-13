@@ -132,10 +132,9 @@ const drawable: () => Drawable<ShaderCache, WorldData, BoundData> = () => ({
 
         const attributesSet: Parameters<typeof program.useAttributes>[0] = {
             'position': { size: 3, type: 'UNSIGNED_BYTE', bytesSize: 1, normalize: false },
-            '_': { size: 1, type: 'UNSIGNED_BYTE', bytesSize: 1, normalize: false },
+            'offsets': { size: 1, isInt: true, type: 'UNSIGNED_BYTE', bytesSize: 1, normalize: false },
             'color': { size: 3, type: 'UNSIGNED_BYTE', bytesSize: 1, normalize: true },
-            '__': { size: 1, type: 'UNSIGNED_BYTE', bytesSize: 1, normalize: false },
-            'flags': { size: 1, isInt: true, type: 'UNSIGNED_SHORT', bytesSize: 2, normalize: false },
+            'flags': { size: 1, isInt: true, type: 'UNSIGNED_BYTE', bytesSize: 1, normalize: false },
             'ambientOcclusion': { size: 1, isInt: true, type: 'UNSIGNED_SHORT', bytesSize: 2, normalize: false }
         }
 
