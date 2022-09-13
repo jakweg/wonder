@@ -63,7 +63,7 @@ export const vertexShaderSource = (options: ShaderOptions): string => {
 	else parts.push(`
 v_normal = vec3(ivec3(((flags >> 4) & ${0b11}) - 1, ((flags >> 2) & ${0b11}) - 1, (flags & ${0b11}) - 1));
 v_color = a_color.zyx;
-v_currentPosition = v_vertexPosition = a_position;
+v_currentPosition = v_vertexPosition = a_position + vec3(u_chunkPosition.x, 0.0, u_chunkPosition.y);
 `)
 
 	parts.push(`
