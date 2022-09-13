@@ -1,10 +1,32 @@
 
+export enum AttrType {
+    Float,
+    UByte,
+    UShort,
+}
+
+const isInt = (type: AttrType) => type !== AttrType.Float
+const getBytesSize = (type: AttrType) => {
+    switch (type) {
+        case AttrType.Float: return 4
+        case AttrType.UShort: return 2
+        case AttrType.UByte: return 1
+        default: throw new Error()
+    }
+}
+const getGlValue = (gl: WebGL2RenderingContext, type: AttrType) => {
+    switch (type) {
+        case AttrType.Float: return gl['FLOAT']
+        case AttrType.UShort: return gl['UNSIGNED_SHORT']
+        case AttrType.UByte: return gl['UNSIGNED_BYTE']
+        default: throw new Error()
+    }
+}
+
 type AttributeSpecification = {
-    size: number,
-    divisor?: number,
-    type?: 'FLOAT' | 'INT' | 'UNSIGNED_INT' | 'UNSIGNED_BYTE' | 'UNSIGNED_SHORT'
-    bytesSize?: number
-    isInt?: boolean
+    count: number
+    type?: AttrType
+    divisor?: number
     normalize?: boolean
 }
 
@@ -57,29 +79,30 @@ export default class GlProgram<A, U> {
         const gl = this.gl;
         const entries = Object.entries(attributes) as [A, AttributeSpecification][]
 
-        const totalSize = entries.map(([_, v]) => v.size * (v.bytesSize ?? Float32Array.BYTES_PER_ELEMENT)).reduce((a, b) => a + b, 0)
+        const totalSize = entries.map(([_, v]) => v.count * getBytesSize(v.type ?? AttrType.Float)).reduce((a, b) => a + b, 0)
 
         let offset = 0
         for (const [key, attribute] of entries) {
             const index = this.attributes[key]
+            const type = attribute.type ?? AttrType.Float
             if (index !== undefined) {
                 gl.enableVertexAttribArray(index)
-                if (attribute.isInt === true)
+                if (attribute?.normalize === undefined ? isInt(type) : false)
                     gl.vertexAttribIPointer(index,
-                        attribute.size,
-                        gl[attribute.type || 'INT'],
+                        attribute.count,
+                        getGlValue(gl, type),
                         totalSize,
                         offset)
                 else
                     gl.vertexAttribPointer(index,
-                        attribute.size,
-                        gl[attribute.type || 'FLOAT'],
-                        !!attribute?.normalize,
+                        attribute.count,
+                        getGlValue(gl, type),
+                        attribute?.normalize ?? false,
                         totalSize,
                         offset)
                 gl.vertexAttribDivisor(index, (attribute.divisor ?? 0) | 0);
             }
-            offset += attribute.size * (attribute.bytesSize ?? Float32Array.BYTES_PER_ELEMENT)
+            offset += attribute.count * getBytesSize(type)
         }
     }
 }

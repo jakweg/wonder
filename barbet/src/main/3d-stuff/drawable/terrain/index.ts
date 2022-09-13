@@ -5,6 +5,7 @@ import { buildChunkMesh, Mesh } from "../../../game-state/world/world-to-mesh-co
 import CONFIG from "../../../util/persistance/observable-settings"
 import { pickViaMouseDefaultFragmentShader } from "../../common-shader"
 import { GlProgram, GPUBuffer, VertexArray } from "../../gpu-resources"
+import { AttrType } from "../../gpu-resources/program"
 import { GpuAllocator } from "../../pipeline/allocator"
 import { Drawable } from "../../pipeline/Drawable"
 import { RenderContext } from "../../renderable/render-context"
@@ -131,11 +132,11 @@ const drawable: () => Drawable<ShaderCache, WorldData, BoundData> = () => ({
         const { program, mouseProgram } = shader
 
         const attributesSet: Parameters<typeof program.useAttributes>[0] = {
-            'position': { size: 3, type: 'UNSIGNED_BYTE', bytesSize: 1, normalize: false },
-            'offsets': { size: 1, isInt: true, type: 'UNSIGNED_BYTE', bytesSize: 1, normalize: false },
-            'color': { size: 3, type: 'UNSIGNED_BYTE', bytesSize: 1, normalize: true },
-            'flags': { size: 1, isInt: true, type: 'UNSIGNED_BYTE', bytesSize: 1, normalize: false },
-            'ambientOcclusion': { size: 1, isInt: true, type: 'UNSIGNED_SHORT', bytesSize: 2, normalize: false }
+            'position': { count: 3, type: AttrType.UByte, normalize: false },
+            'offsets': { count: 1, type: AttrType.UByte },
+            'color': { count: 3, type: AttrType.UByte, normalize: true },
+            'flags': { count: 1, type: AttrType.UByte },
+            'ambientOcclusion': { count: 1, type: AttrType.UShort }
         }
 
         for (const c of shader.chunks!) {
