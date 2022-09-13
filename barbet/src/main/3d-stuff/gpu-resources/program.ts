@@ -2,7 +2,7 @@
 type AttributeSpecification = {
     size: number,
     divisor?: number,
-    type?: 'FLOAT' | 'INT' | 'UNSIGNED_INT' | 'BYTE' | 'UNSIGNED_BYTE'
+    type?: 'FLOAT' | 'INT' | 'UNSIGNED_INT' | 'UNSIGNED_BYTE' | 'UNSIGNED_SHORT'
     bytesSize?: number
     isInt?: boolean
     normalize?: boolean

@@ -26,6 +26,11 @@ export const buildChunkMesh = (world: WorldLike, chunkX: number, chunkZ: number,
 	console.assert(vertexIndexes[0] === NO_ELEMENT_INDEX_MARKER)
 
 	const vertexes: number[] = []
+	const vertexPositions: number[] = []
+	const vertexColors: number[] = []
+	const vertexFlags: number[] = []
+	const vertexComputedAO: number[] = []
+	const vertexAOFlags: number[] = []
 	const indices: number[] = []
 
 	let addedVertexesCounter = 0
@@ -41,7 +46,7 @@ export const buildChunkMesh = (world: WorldLike, chunkX: number, chunkZ: number,
 		return thisBlockId === AIR_ID ? 1 : 0
 	}
 
-	const computeAmbientOcclusionOld = (x: number, y: number, z: number): number => {
+	const computeAmbientOcclusion = (x: number, y: number, z: number): number => {
 		const nx = x - 1
 		const ny = y - 1
 		const nz = z - 1
@@ -55,17 +60,21 @@ export const buildChunkMesh = (world: WorldLike, chunkX: number, chunkZ: number,
 			isBlockAir(nx, ny, nz)
 
 
-		return (index!) << 16
-	}
-
-	const forceAddVertex = (positionIndex: number, x: number, y: number, z: number): number => {
-		vertexes.push(x, y, z, NO_COLOR_VALUE, NO_FLAGS_VALUE | computeAmbientOcclusionOld(x, y, z), NO_FLAGS_VALUE)
-		vertexIndexes[positionIndex] = addedVertexesCounter
-		return addedVertexesCounter++
+		return (index!)
 	}
 
 	const startX = chunkX * chunkSize
 	const startZ = chunkZ * chunkSize
+	const forceAddVertex = (positionIndex: number, x: number, y: number, z: number): number => {
+		vertexPositions.push(x, y, z)
+		vertexColors.push(NO_COLOR_VALUE)
+		vertexFlags.push(NO_FLAGS_VALUE)
+		vertexAOFlags.push(NO_FLAGS_VALUE)
+		vertexComputedAO.push(computeAmbientOcclusion(x, y, z))
+		vertexIndexes[positionIndex] = addedVertexesCounter
+		return addedVertexesCounter++
+	}
+
 	const addVertexIfNotExists = (x: number, y: number, z: number): number => {
 		const positionIndex = y * vertexesPerY + (x - startX) * vertexesPerX + (z - startZ)
 		const elementIndex = vertexIndexes[positionIndex]!
@@ -82,22 +91,22 @@ export const buildChunkMesh = (world: WorldLike, chunkX: number, chunkZ: number,
 		let vertexStartIndex = vertexIndex * FLOATS_PER_VERTEX
 		const wasNeverUsed = vertexes[vertexStartIndex + 3]! === NO_COLOR_VALUE
 
-		const x = vertexes[vertexStartIndex]!
-		const y = vertexes[vertexStartIndex + 1]!
-		const z = vertexes[vertexStartIndex + 2]!
+		const x = vertexPositions[vertexIndex * 3 + 0]!
+		const y = vertexPositions[vertexIndex * 3 + 1]!
+		const z = vertexPositions[vertexIndex * 3 + 2]!
 		if (!wasNeverUsed) {
 			const positionIndex = y * vertexesPerY + (x - startX) * vertexesPerX + (z - startZ)
 			vertexIndex = forceAddVertex(positionIndex, x, y, z)
 			vertexStartIndex = vertexIndex * FLOATS_PER_VERTEX
 		}
-		vertexes[vertexStartIndex + 3] = colorValue
+		vertexColors[vertexIndex] = colorValue
 
 		const ox = x - forX
 		const oy = y - forY
 		const oz = z - forZ
 		if (ox < 0 || oy < 0 || oz < 0 || ox > 1 || oy > 1 || oz > 1)
 			throw new Error(`Invalid offset ${ox} ${oy} ${oz}`)
-		vertexes[vertexStartIndex + 4] = encodedNormal | ((ox << 4 | oy << 2 | oz) << 8) | vertexes[vertexStartIndex + 4]!
+		vertexFlags[vertexIndex] = encodedNormal | ((ox << 4 | oy << 2 | oz) << 8)
 		return vertexIndex
 	}
 
@@ -189,8 +198,8 @@ export const buildChunkMesh = (world: WorldLike, chunkX: number, chunkZ: number,
 		}
 	}
 
-	const extractAOFromVertex = (index: number) => (vertexes[index * FLOATS_PER_VERTEX + 4]! >> 16) & 0b1111
-	const putFlatAOFromVertex = (index: number, a: number, b: number, c: number, d: number) => vertexes[index * FLOATS_PER_VERTEX + 5]
+	const extractAOFromVertex = (index: number) => (vertexComputedAO[index]!) & 0b1111
+	const putFlatAOFromVertex = (index: number, a: number, b: number, c: number, d: number) => vertexAOFlags[index]
 		= (((a & 0b1111) << 0) | ((b & 0b1111) << 4) | ((c & 0b1111) << 8) | ((d & 0b1111) << 12))
 
 	const squaresCount = indices.length / 6 | 0
@@ -212,8 +221,32 @@ export const buildChunkMesh = (world: WorldLike, chunkX: number, chunkZ: number,
 		}
 	}
 
+	const vertexesCount = vertexColors.length
+	// xyz (padding) rgb (padding) 2flags + 2ao
+	const bytesPerVertex = (3 + 1 + 3 + 1 + 2 + 2)
+	const finalVertexes = new Uint8Array(vertexesCount * bytesPerVertex)
+	for (let i = 0; i < vertexesCount; ++i) {
+		finalVertexes[i * bytesPerVertex + 0] = vertexPositions[i * 3 + 0]! - startX
+		finalVertexes[i * bytesPerVertex + 1] = vertexPositions[i * 3 + 1]!
+		finalVertexes[i * bytesPerVertex + 2] = vertexPositions[i * 3 + 2]! - startZ
+
+		const color = vertexColors[i]!
+		finalVertexes[i * bytesPerVertex + 4] = (color >> 0) & 0xFF
+		finalVertexes[i * bytesPerVertex + 5] = (color >> 8) & 0xFF
+		finalVertexes[i * bytesPerVertex + 6] = (color >> 16) & 0xFF
+
+
+		const flags = vertexFlags[i]!
+		finalVertexes[i * bytesPerVertex + 8] = (flags >> 0) & 0xFF
+		finalVertexes[i * bytesPerVertex + 9] = (flags >> 8) & 0xFF
+
+		const aoFlags = vertexAOFlags[i]!
+		finalVertexes[i * bytesPerVertex + 10] = (aoFlags >> 0) & 0xFF
+		finalVertexes[i * bytesPerVertex + 11] = (aoFlags >> 8) & 0xFF
+	}
+
 	return {
-		vertexes: new Uint32Array(vertexes),
+		vertexes: finalVertexes,
 		indices: new Uint32Array(indices),
 	}
 }

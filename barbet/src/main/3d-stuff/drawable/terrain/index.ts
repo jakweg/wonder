@@ -33,12 +33,16 @@ interface BoundData {
 }
 
 interface ChunkDataGame {
+    positionX: number
+    positionZ: number
     vertexes: Float32Array
     indices: Uint32Array
     triangles: number
     lastRecreationId: number
 }
 interface ChunkDataShader {
+    positionX: number
+    positionZ: number
     vertexes: GPUBuffer
     indices: GPUBuffer
     triangles: number
@@ -47,8 +51,6 @@ interface ChunkDataShader {
     lastUploadId: number
 }
 
-const floatSize = Float32Array.BYTES_PER_ELEMENT
-const stride = 8 * floatSize
 
 const drawable: () => Drawable<ShaderCache, WorldData, BoundData> = () => ({
     onConfigModified(previous: ShaderCache | null) {
@@ -94,6 +96,8 @@ const drawable: () => Drawable<ShaderCache, WorldData, BoundData> = () => ({
                     indices: new Uint32Array(),
                     triangles: 0,
                     lastRecreationId: -1,
+                    positionX: i * WORLD_CHUNK_SIZE,
+                    positionZ: j * WORLD_CHUNK_SIZE,
                 })
 
         const meshes: Mesh[] = new Array(chunksX * chunksZ)
@@ -111,13 +115,15 @@ const drawable: () => Drawable<ShaderCache, WorldData, BoundData> = () => ({
     },
     async bindWorldData(allocator: GpuAllocator, shader: ShaderCache, data: WorldData, previous: BoundData): Promise<BoundData> {
         if (shader.chunks === null) {
-            shader.chunks = data.chunks.map(() => ({
+            shader.chunks = data.chunks.map((c) => ({
                 vertexes: allocator.newBuffer({ dynamic: false, forArray: true }),
                 indices: allocator.newBuffer({ dynamic: false, forArray: false }),
                 vao: allocator.newVao(),
                 mouseVao: allocator.newVao(),
                 triangles: 0,
                 lastUploadId: -2,
+                positionX: c.positionX,
+                positionZ: c.positionZ,
             }))
         }
 
@@ -125,10 +131,12 @@ const drawable: () => Drawable<ShaderCache, WorldData, BoundData> = () => ({
         const { program, mouseProgram } = shader
 
         const attributesSet: Parameters<typeof program.useAttributes>[0] = {
-            'position': { size: 3, type: 'INT', normalize: false },
-            'color': { size: 4, type: 'UNSIGNED_BYTE', bytesSize: 1, normalize: true },
-            'flags': { size: 1, isInt: true, type: 'UNSIGNED_INT', normalize: false },
-            'ambientOcclusion': { size: 1, isInt: true, type: 'INT', normalize: false }
+            'position': { size: 3, type: 'UNSIGNED_BYTE', bytesSize: 1, normalize: false },
+            '_': { size: 1, type: 'UNSIGNED_BYTE', bytesSize: 1, normalize: false },
+            'color': { size: 3, type: 'UNSIGNED_BYTE', bytesSize: 1, normalize: true },
+            '__': { size: 1, type: 'UNSIGNED_BYTE', bytesSize: 1, normalize: false },
+            'flags': { size: 1, isInt: true, type: 'UNSIGNED_SHORT', bytesSize: 2, normalize: false },
+            'ambientOcclusion': { size: 1, isInt: true, type: 'UNSIGNED_SHORT', bytesSize: 2, normalize: false }
         }
 
         for (const c of shader.chunks!) {
@@ -212,10 +220,13 @@ const drawable: () => Drawable<ShaderCache, WorldData, BoundData> = () => ({
         gl.uniform1f(program.uniforms['time'], ctx.secondsSinceFirstRender)
         gl.uniform3fv(program.uniforms['lightPosition'], toGl(ctx.sunPosition))
 
+        const chunkPosition = program.uniforms['chunkPosition']
         let chunkIndex = 0
         for (const chunk of shader.chunks!) {
             if (chunk.triangles !== 0 && visibility.isChunkIndexVisible(chunkIndex)) {
                 chunk.vao.bind()
+                gl.uniform2f(chunkPosition, chunk.positionX, chunk.positionZ)
+
                 gl.drawElements(gl.TRIANGLES, chunk.triangles, gl.UNSIGNED_INT, 0)
             }
 

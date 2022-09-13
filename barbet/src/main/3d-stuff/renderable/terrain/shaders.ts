@@ -15,10 +15,10 @@ export const vertexShaderSource = (options: ShaderOptions): string => {
 	${PrecisionHeader()}
 	${TerrainHeightMultiplierDeclaration()}
 	in vec3 a_position;
-	in vec4 a_color;
+	in vec3 a_color;
 	in uint a_flags;
 	out vec3 v_vertexPosition;
-	in int a_ambientOcclusion;
+	in uint a_ambientOcclusion;
 	`)
 	if (options.forMousePicker)
 		parts.push(`flat out vec4 v_color0; flat out vec3 v_color1;`)
@@ -30,6 +30,7 @@ export const vertexShaderSource = (options: ShaderOptions): string => {
 	`)
 
 	parts.push(`
+	uniform vec2 u_chunkPosition;
 	uniform mat4 u_combinedMatrix;
 	uniform float u_time;
 	const float darknessLevels[] = float[](${ambientOcclusionDarknessLevels.map(e => (e / 15.0).toFixed(8)).join(',')});
@@ -62,14 +63,16 @@ export const vertexShaderSource = (options: ShaderOptions): string => {
 	else parts.push(`
 v_normal = vec3(ivec3(((flags >> 4) & ${0b11}) - 1, ((flags >> 2) & ${0b11}) - 1, (flags & ${0b11}) - 1));
 v_color = a_color.zyx;
-v_currentPosition = a_position;
-v_vertexPosition = a_position;`)
+v_currentPosition = v_vertexPosition = a_position;
+`)
 
 	parts.push(`
 		vec3 pos = a_position;
 		if (pos.y < 1.50) {
 			pos.y += sin(u_time * 2.1 + pos.x + pos.z * 100.0) * 0.15 + 0.5;
 		}
+		pos.x += u_chunkPosition.x;
+		pos.z += u_chunkPosition.y;
 		pos.y *= terrainHeightMultiplier;
 		gl_Position = u_combinedMatrix * vec4(pos, 1);
 		gl_PointSize = 10.0;
@@ -180,8 +183,8 @@ export const fragmentShaderSource = (options: ShaderOptions) => {
 	return parts.join('')
 }
 
-export type Uniforms = 'time' | 'combinedMatrix' | 'lightPosition'
+export type Uniforms = 'time' | 'combinedMatrix' | 'lightPosition' | 'chunkPosition'
 export type Attributes = 'position' | 'color' | 'flags' | 'ambientOcclusion'
 
 export type MousePickerAttributes = 'position' | 'flags'
-export type MousePickerUniforms = 'time' | 'combinedMatrix'
+export type MousePickerUniforms = 'time' | 'combinedMatrix' | 'chunkPosition'
