@@ -49,6 +49,8 @@ interface ChunkDataShader {
     vao: VertexArray
     mouseVao: VertexArray
     lastUploadId: number
+    visible: boolean
+    wasBuilt: boolean
 }
 
 
@@ -119,9 +121,11 @@ const drawable: () => Drawable<ShaderCache, WorldData, BoundData> = () => ({
                 vao: allocator.newVao(),
                 mouseVao: allocator.newVao(),
                 triangles: 0,
-                lastUploadId: -2,
+                lastUploadId: -1,
                 positionX: c.positionX,
                 positionZ: c.positionZ,
+                visible: false,
+                wasBuilt: false,
             }))
         }
 
@@ -156,27 +160,37 @@ const drawable: () => Drawable<ShaderCache, WorldData, BoundData> = () => ({
         data.lastMeshRecreationId = lastChangeId
 
         const dataChunks = data.chunks!
+        const shaderChunks = shader.chunks!
         const modificationIds = data.game.world.chunkModificationIds
 
         const chunksZ = data.game.world.size.chunksSizeZ
         const chunksX = data.game.world.size.chunksSizeX
         let chunkIndex = 0
+        let rebuildAnything = false
         for (let i = 0; i < chunksX; i++) {
             for (let j = 0; j < chunksZ; j++) {
+                const shaderChunk = shaderChunks[chunkIndex]!
+                if (shaderChunk.visible) {
+                    const modificationId = modificationIds[chunkIndex]!
+                    const chunkData = dataChunks[chunkIndex]!
+                    if (chunkData.lastRecreationId !== modificationId) {
 
-                const modificationId = modificationIds[chunkIndex]!
-                const chunkData = dataChunks[chunkIndex]!
-                if (chunkData.lastRecreationId !== modificationId) {
-                    chunkData.lastRecreationId = modificationId
+                        chunkData.lastRecreationId = modificationId
 
-                    const mesh = buildChunkMesh(data.game.world, i, j, WORLD_CHUNK_SIZE)
-                    chunkData.indices = mesh.indices
-                    chunkData.vertexes = mesh.vertexes
-                    chunkData.triangles = mesh.indices.length
+                        const mesh = buildChunkMesh(data.game.world, i, j, WORLD_CHUNK_SIZE)
+                        chunkData.indices = mesh.indices
+                        chunkData.vertexes = mesh.vertexes
+                        chunkData.triangles = mesh.indices.length
+
+                        rebuildAnything = true
+                    }
                 }
                 chunkIndex++
             }
         }
+
+        if (rebuildAnything)
+            shader.lastMeshUploadId = -1
     },
     prepareRender(shader: ShaderCache, world: WorldData, bound: BoundData): void {
     },
@@ -202,6 +216,7 @@ const drawable: () => Drawable<ShaderCache, WorldData, BoundData> = () => ({
                     shaderChunkData.vertexes.setContent(chunkData.vertexes)
                     shaderChunkData.indices.setContent(chunkData.indices)
                     shaderChunkData.triangles = chunkData.triangles
+                    shaderChunkData.wasBuilt = true
                 }
                 chunkIndex++
             }
@@ -220,11 +235,21 @@ const drawable: () => Drawable<ShaderCache, WorldData, BoundData> = () => ({
         const chunkPosition = program.uniforms['chunkPosition']
         let chunkIndex = 0
         for (const chunk of shader.chunks!) {
-            if (chunk.triangles !== 0 && visibility.isChunkIndexVisible(chunkIndex)) {
-                chunk.vao.bind()
-                gl.uniform2f(chunkPosition, chunk.positionX, chunk.positionZ)
+            if (visibility.isChunkIndexVisible(chunkIndex)) {
+                chunk.visible = true
+                if (chunk.wasBuilt) {
+                    if (chunk.triangles !== 0) {
+                        chunk.vao.bind()
+                        gl.uniform2f(chunkPosition, chunk.positionX, chunk.positionZ)
 
-                gl.drawElements(gl.TRIANGLES, chunk.triangles, gl.UNSIGNED_SHORT, 0)
+                        gl.drawElements(gl.TRIANGLES, chunk.triangles, gl.UNSIGNED_SHORT, 0)
+                    }
+                } else {
+                    // trigger rebuild need
+                    world.lastMeshRecreationId = -1
+                }
+            } else {
+                chunk.visible = false
             }
 
             chunkIndex++

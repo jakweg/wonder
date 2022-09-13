@@ -2,7 +2,7 @@ import { decodeArray, encodeArray } from '../../util/persistance/serializers'
 import { createNewBuffer } from '../../util/shared-memory'
 import { AIR_ID, BlockId } from './block'
 
-export const WORLD_CHUNK_SIZE = 128
+export const WORLD_CHUNK_SIZE = 64
 
 export interface WorldSize {
 	readonly sizeX: number,

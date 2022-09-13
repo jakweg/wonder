@@ -7,15 +7,12 @@ export const newPipeline = (
     elements: Drawable<any, any, any>[]
 ) => {
 
-    const elementsCount = elements.length
-    const shaderStorage = new Array(elementsCount)
-    shaderStorage.fill(null)
-
-    const worldStorage = new Array(elementsCount)
-    worldStorage.fill(null)
-
-    const boundStorage = new Array(elementsCount)
-    boundStorage.fill(null)
+    const mappedElements = elements.map(e => ({
+        element: e,
+        shader: null,
+        world: null,
+        bound: null,
+    }))
 
     let isDoneWithShaders = false
     let allocator: GpuAllocator | null = null
@@ -33,54 +30,55 @@ export const newPipeline = (
             allocator.endProgramCompilationPhase()
 
             const doneShaders = await pendingShaders
-            for (let i = 0; i < elementsCount; i++)
-                shaderStorage[i] = doneShaders[i]
+            let i = 0
+            for (const e of mappedElements)
+                e.shader = doneShaders[i++]
             isDoneWithShaders = true
         },
         useGame(game: GameState) {
             if (lastGame === game) return
             lastGame = game
             lastRebuildTick = -1
-            for (let i = 0; i < elementsCount; i++)
-                worldStorage[i] = elements[i]!.createWorld(game, worldStorage[i])
+            for (const e of mappedElements)
+                e.world = e.element.createWorld(game, e.world)
         },
         bindGpuWithGameIfCan() {
             if (allocator === null || lastGame === null || !isDoneWithShaders)
                 return
 
-            for (let i = 0; i < elementsCount; i++)
-                boundStorage[i] = elements[i]!.bindWorldData(allocator, shaderStorage[i], worldStorage[i], boundStorage[i])
+            for (const e of mappedElements)
+                e.bound = e.element.bindWorldData(allocator, e.shader, e.world, e.bound)
         },
         updateWorldIfNeeded() {
             const thisTick = lastGame?.currentTick ?? -1
             if (lastRebuildTick === thisTick)
                 return
             lastRebuildTick = thisTick
-            for (let i = 0; i < elementsCount; i++)
-                elements[i]!.updateWorld(shaderStorage[i], worldStorage[i], boundStorage[i])
+            for (const e of mappedElements)
+                e.element.updateWorld(e.shader, e.world, e.bound)
         },
         prepareRender() {
-            for (let i = 0; i < elementsCount; i++)
-                elements[i]!.prepareRender(shaderStorage[i], worldStorage[i], boundStorage[i])
+            for (const e of mappedElements)
+                e.element.prepareRender(e.shader, e.world, e.bound)
         },
         doGpuUploads() {
-            for (let i = 0; i < elementsCount; i++)
-                elements[i]!.uploadToGpu(shaderStorage[i], worldStorage[i], boundStorage[i])
+            for (const e of mappedElements)
+                e.element.uploadToGpu(e.shader, e.world, e.bound)
         },
         draw(ctx: RenderContext) {
-            for (let i = 0; i < elementsCount; i++)
-                elements[i]!.draw(ctx, shaderStorage[i], worldStorage[i], boundStorage[i])
+            for (const e of mappedElements)
+                e.element.draw(ctx, e.shader, e.world, e.bound)
         },
         drawForMousePicker(ctx: RenderContext) {
-            for (let i = 0; i < elementsCount; i++)
-                elements[i]!.drawForMousePicker(ctx, shaderStorage[i], worldStorage[i], boundStorage[i])
+            for (const e of mappedElements)
+                e.element.drawForMousePicker(ctx, e.shader, e.world, e.bound)
         },
         async notifyConfigChanged() {
             if (!allocator) return
-            for (let i = 0; i < elementsCount; i++) {
-                if (elements[i]!.onConfigModified(shaderStorage[i])) {
-                    shaderStorage[i] = await elements[i]!.createShader(allocator, shaderStorage[i])
-                    boundStorage[i] = elements[i]!.bindWorldData(allocator, shaderStorage[i], worldStorage[i], boundStorage[i])
+            for (const e of mappedElements) {
+                if (e.element.onConfigModified(e.shader)) {
+                    e.shader = await e.element.createShader(allocator, e.shader)
+                    e.bound = await e.element.bindWorldData(allocator, e.shader, e.world, e.bound)
                 }
             }
         },
@@ -89,9 +87,8 @@ export const newPipeline = (
             allocator?.cleanUp()
             allocator = null
 
-            shaderStorage.fill(null)
-            worldStorage.fill(null)
-            boundStorage.fill(null)
+            for (const e of mappedElements)
+                e.bound = e.world = e.shader = null
         }
     }
 }
