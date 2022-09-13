@@ -162,7 +162,7 @@ export const createRenderingSession = (actionsQueue: ActionsQueue) => {
 				else
 					await globalMutex.enterAsync(Lock.Update)
 
-				pipeline.updateWorld()
+				pipeline.updateWorldIfNeeded()
 				pipeline.prepareRender()
 
 				globalMutex.unlock(Lock.Update)
@@ -263,7 +263,7 @@ export const startRenderingGame = (
 		else
 			await globalMutex.enterAsync(Lock.Update)
 
-		pipeline.updateWorld()
+		pipeline.updateWorldIfNeeded()
 		pipeline.prepareRender()
 
 		globalMutex.unlock(Lock.Update)

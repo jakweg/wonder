@@ -1,7 +1,7 @@
 import { toGl } from "@matrix/common"
 import { GameState, MetadataField } from "../../../game-state/game-state"
 import { WORLD_CHUNK_SIZE } from "../../../game-state/world/world"
-import { buildChunkMesh, Mesh } from "../../../game-state/world/world-to-mesh-converter"
+import { buildChunkMesh } from "../../../game-state/world/world-to-mesh-converter"
 import CONFIG from "../../../util/persistance/observable-settings"
 import { pickViaMouseDefaultFragmentShader } from "../../common-shader"
 import { GlProgram, GPUBuffer, VertexArray } from "../../gpu-resources"
@@ -25,7 +25,6 @@ interface WorldData {
     game: GameState
     chunks: ChunkDataGame[]
     lastMeshRecreationId: number
-    meshes: Mesh[]
     lastMeshModificationIds: Uint16Array
     trianglesToRender: number
 }
@@ -101,14 +100,12 @@ const drawable: () => Drawable<ShaderCache, WorldData, BoundData> = () => ({
                     positionZ: j * WORLD_CHUNK_SIZE,
                 })
 
-        const meshes: Mesh[] = new Array(chunksX * chunksZ)
         const lastMeshModificationIds: Uint16Array = new Uint16Array(chunksX * chunksZ)
         lastMeshModificationIds.fill(-1)
 
         return {
             chunks,
             game,
-            meshes,
             lastMeshModificationIds,
             trianglesToRender: 0,
             lastMeshRecreationId: -1,

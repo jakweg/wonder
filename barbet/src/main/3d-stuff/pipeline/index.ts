@@ -20,6 +20,7 @@ export const newPipeline = (
     let isDoneWithShaders = false
     let allocator: GpuAllocator | null = null
     let lastGame: GameState | null = null
+    let lastRebuildTick: number = -1
     return {
         async useContext(gl: WebGL2RenderingContext): Promise<void> {
             isDoneWithShaders = false
@@ -39,6 +40,7 @@ export const newPipeline = (
         useGame(game: GameState) {
             if (lastGame === game) return
             lastGame = game
+            lastRebuildTick = -1
             for (let i = 0; i < elementsCount; i++)
                 worldStorage[i] = elements[i]!.createWorld(game, worldStorage[i])
         },
@@ -49,7 +51,11 @@ export const newPipeline = (
             for (let i = 0; i < elementsCount; i++)
                 boundStorage[i] = elements[i]!.bindWorldData(allocator, shaderStorage[i], worldStorage[i], boundStorage[i])
         },
-        updateWorld() {
+        updateWorldIfNeeded() {
+            const thisTick = lastGame?.currentTick ?? -1
+            if (lastRebuildTick === thisTick)
+                return
+            lastRebuildTick = thisTick
             for (let i = 0; i < elementsCount; i++)
                 elements[i]!.updateWorld(shaderStorage[i], worldStorage[i], boundStorage[i])
         },
