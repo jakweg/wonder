@@ -13,12 +13,24 @@ const exchangeMutex = async (receiver: Receiver<SystemMessageTypeToWorker>) => {
 }
 
 export const genericBind = async <S, R>(): Promise<{ sender: Sender<S>; receiver: Receiver<R> }> => {
+    const { start, ...rest } = await delayedBind<S, R>()
+    start()
+    return rest
+}
+
+export const delayedBind = async <S, R>(): Promise<{ sender: Sender<S>; receiver: Receiver<R>, start: () => void }> => {
 
     const sender = createSender<S & SystemMessageTypeFromWorker>(self)
     const receiver = createReceiver<R & SystemMessageTypeToWorker>(self)
 
-    sendPing(sender)
     await exchangeMutex(receiver)
 
-    return { sender, receiver }
+    let started = false
+    const start = () => {
+        if (started) throw new Error()
+        started = true
+        sendPing(sender)
+    }
+
+    return { sender, receiver, start }
 }

@@ -61,6 +61,7 @@ if (args.size > 0) {
 		...(forceSingleThread ? [] : [
 			'update-worker',
 			'render-worker',
+			'render-helper-worker',
 			'feature-environments/first',
 			'feature-environments/second',
 		]),

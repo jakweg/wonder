@@ -26,22 +26,24 @@ export const createReceiver = <T>(worker: { onmessage: null | ((event: MessageEv
     const oneTimeListeners: Map<keyof T, any> = new Map()
 
     worker['onmessage'] = (event) => {
-        const { type, value } = event['data']
+        setTimeout(() => {
+            const { type, value } = event['data']
 
-        let callback = oneTimeListeners['get'](type)
-        let isOneTime = true
-        if (callback === undefined) {
-            callback = listeners['get'](type)
-            isOneTime = false
-        }
+            let callback = oneTimeListeners['get'](type)
+            let isOneTime = true
+            if (callback === undefined) {
+                callback = listeners['get'](type)
+                isOneTime = false
+            }
 
-        if (callback === undefined)
-            throw new Error(`Missing handler for ${type}`)
+            if (callback === undefined)
+                throw new Error(`Missing handler for ${type} in ${location.pathname}`)
 
-        if (isOneTime)
-            oneTimeListeners['delete'](type)
+            if (isOneTime)
+                oneTimeListeners['delete'](type)
 
-        callback(value)
+            callback(value)
+        }, 0)
     }
 
 

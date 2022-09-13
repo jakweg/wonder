@@ -6,6 +6,7 @@ import { AdditionalFrontedFlags, frontedVariables, FrontendVariable } from '../.
 import { isInWorker, Lock } from '../../util/mutex'
 import CONFIG, { observeSetting } from '../../util/persistance/observable-settings'
 import { globalMutex } from '../../util/worker/global-mutex'
+import { spawnNew } from '../../util/worker/message-types/render-helper'
 import { Camera } from '../camera'
 import ChunkVisibilityIndex from '../drawable/chunk-visibility'
 import terrain from '../drawable/terrain'
@@ -122,10 +123,12 @@ interface CanvasObjects {
 	loadingShadersPromise: Promise<void>
 }
 
-export const createRenderingSession = (actionsQueue: ActionsQueue) => {
+export const createRenderingSession = async (actionsQueue: ActionsQueue) => {
 	const pipeline = newPipeline([
 		terrain,
 	].map(e => e()))
+
+	const helper = await spawnNew(globalMutex, 0)
 
 	const inputHandler = newInputHandler(actionsQueue)
 	const sunPosition = vec3.fromValues(500, 1500, -500)
@@ -229,6 +232,7 @@ export const createRenderingSession = (actionsQueue: ActionsQueue) => {
 
 			pipeline.cleanUp()
 			cancelObserver()
+			helper.terminate()
 		},
 	}
 }

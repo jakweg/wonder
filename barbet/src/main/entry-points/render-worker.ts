@@ -7,11 +7,12 @@ import { initFrontedVariablesFromReceived } from '../util/frontend-variables-upd
 import CONFIG from '../util/persistance/observable-settings'
 import { bind, FromWorker, ToWorker } from '../util/worker/message-types/render'
 
-const { sender, receiver } = await bind()
+const { sender, receiver, start } = await bind()
+const actionsQueue = SendActionsQueue.create(action => sender.send(FromWorker.ScheduledAction, action))
+const session = await createRenderingSession(actionsQueue)
+start()
 
 let workerStartDelayDifference = 0
-const actionsQueue = SendActionsQueue.create(action => sender.send(FromWorker.ScheduledAction, action))
-const session = createRenderingSession(actionsQueue)
 let gameSnapshot: unknown | null = null
 let decodedGame: GameState | null = null
 
