@@ -2,7 +2,10 @@
 type AttributeSpecification = {
     size: number,
     divisor?: number,
+    type?: 'FLOAT' | 'INT' | 'UNSIGNED_INT' | 'BYTE' | 'UNSIGNED_BYTE'
+    bytesSize?: number
     isInt?: boolean
+    normalize?: boolean
 }
 
 export default class GlProgram<A, U> {
@@ -54,17 +57,29 @@ export default class GlProgram<A, U> {
         const gl = this.gl;
         const entries = Object.entries(attributes) as [A, AttributeSpecification][]
 
-        const totalSize = entries.map(([_, v]) => v.size * Float32Array.BYTES_PER_ELEMENT).reduce((a, b) => a + b, 0)
+        const totalSize = entries.map(([_, v]) => v.size * (v.bytesSize ?? Float32Array.BYTES_PER_ELEMENT)).reduce((a, b) => a + b, 0)
 
         let offset = 0
         for (const [key, attribute] of entries) {
             const index = this.attributes[key]
             if (index !== undefined) {
                 gl.enableVertexAttribArray(index)
-                gl.vertexAttribPointer(index, attribute.size, attribute.isInt ? gl.INT : gl.FLOAT, false, totalSize, offset * Float32Array.BYTES_PER_ELEMENT)
+                if (attribute.isInt === true)
+                    gl.vertexAttribIPointer(index,
+                        attribute.size,
+                        gl[attribute.type || 'INT'],
+                        totalSize,
+                        offset)
+                else
+                    gl.vertexAttribPointer(index,
+                        attribute.size,
+                        gl[attribute.type || 'FLOAT'],
+                        !!attribute?.normalize,
+                        totalSize,
+                        offset)
                 gl.vertexAttribDivisor(index, (attribute.divisor ?? 0) | 0);
             }
-            offset += attribute.size
+            offset += attribute.size * (attribute.bytesSize ?? Float32Array.BYTES_PER_ELEMENT)
         }
     }
 }

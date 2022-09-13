@@ -15,10 +15,10 @@ export const vertexShaderSource = (options: ShaderOptions): string => {
 	${PrecisionHeader()}
 	${TerrainHeightMultiplierDeclaration()}
 	in vec3 a_position;
-	in vec3 a_color;
-	in float a_flags;
+	in vec4 a_color;
+	in uint a_flags;
 	out vec3 v_vertexPosition;
-	in float a_ambientOcclusion;
+	in int a_ambientOcclusion;
 	`)
 	if (options.forMousePicker)
 		parts.push(`flat out vec4 v_color0; flat out vec3 v_color1;`)
@@ -61,7 +61,7 @@ export const vertexShaderSource = (options: ShaderOptions): string => {
 
 	else parts.push(`
 v_normal = vec3(ivec3(((flags >> 4) & ${0b11}) - 1, ((flags >> 2) & ${0b11}) - 1, (flags & ${0b11}) - 1));
-v_color = a_color;
+v_color = a_color.zyx;
 v_currentPosition = a_position;
 v_vertexPosition = a_position;`)
 

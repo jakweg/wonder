@@ -125,10 +125,10 @@ const drawable: () => Drawable<ShaderCache, WorldData, BoundData> = () => ({
         const { program, mouseProgram } = shader
 
         const attributesSet: Parameters<typeof program.useAttributes>[0] = {
-            'position': { size: 3, },
-            'color': { size: 3 },
-            'flags': { size: 1 },
-            'ambientOcclusion': { size: 1 }
+            'position': { size: 3, type: 'INT', normalize: false },
+            'color': { size: 4, type: 'UNSIGNED_BYTE', bytesSize: 1, normalize: true },
+            'flags': { size: 1, isInt: true, type: 'UNSIGNED_INT', normalize: false },
+            'ambientOcclusion': { size: 1, isInt: true, type: 'INT', normalize: false }
         }
 
         for (const c of shader.chunks!) {

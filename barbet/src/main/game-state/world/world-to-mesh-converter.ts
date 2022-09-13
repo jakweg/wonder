@@ -4,7 +4,7 @@ const NO_ELEMENT_INDEX_MARKER = 4294967295
 const NO_COLOR_VALUE = 2
 const NO_FLAGS_VALUE = 0
 
-const FLOATS_PER_VERTEX = 8
+const FLOATS_PER_VERTEX = 6
 
 
 export interface Mesh {
@@ -59,7 +59,7 @@ export const buildChunkMesh = (world: WorldLike, chunkX: number, chunkZ: number,
 	}
 
 	const forceAddVertex = (positionIndex: number, x: number, y: number, z: number): number => {
-		vertexes.push(x, y, z, NO_COLOR_VALUE, NO_COLOR_VALUE, NO_COLOR_VALUE, NO_FLAGS_VALUE | computeAmbientOcclusionOld(x, y, z), NO_FLAGS_VALUE)
+		vertexes.push(x, y, z, NO_COLOR_VALUE, NO_FLAGS_VALUE | computeAmbientOcclusionOld(x, y, z), NO_FLAGS_VALUE)
 		vertexIndexes[positionIndex] = addedVertexesCounter
 		return addedVertexesCounter++
 	}
@@ -76,13 +76,11 @@ export const buildChunkMesh = (world: WorldLike, chunkX: number, chunkZ: number,
 	}
 
 	const setVertexData = (vertexIndex: number,
-		colorValue: [number, number, number],
+		colorValue: number,
 		encodedNormal: number,
 		forX: number, forY: number, forZ: number): number => {
 		let vertexStartIndex = vertexIndex * FLOATS_PER_VERTEX
 		const wasNeverUsed = vertexes[vertexStartIndex + 3]! === NO_COLOR_VALUE
-			&& vertexes[vertexStartIndex + 4]! === NO_COLOR_VALUE
-			&& vertexes[vertexStartIndex + 5]! === NO_COLOR_VALUE
 
 		const x = vertexes[vertexStartIndex]!
 		const y = vertexes[vertexStartIndex + 1]!
@@ -92,16 +90,14 @@ export const buildChunkMesh = (world: WorldLike, chunkX: number, chunkZ: number,
 			vertexIndex = forceAddVertex(positionIndex, x, y, z)
 			vertexStartIndex = vertexIndex * FLOATS_PER_VERTEX
 		}
-		vertexes[vertexStartIndex + 3] = colorValue[0]
-		vertexes[vertexStartIndex + 4] = colorValue[1]
-		vertexes[vertexStartIndex + 5] = colorValue[2]
+		vertexes[vertexStartIndex + 3] = colorValue
 
 		const ox = x - forX
 		const oy = y - forY
 		const oz = z - forZ
 		if (ox < 0 || oy < 0 || oz < 0 || ox > 1 || oy > 1 || oz > 1)
 			throw new Error(`Invalid offset ${ox} ${oy} ${oz}`)
-		vertexes[vertexStartIndex + 6] = encodedNormal | ((ox << 4 | oy << 2 | oz) << 8) | vertexes[vertexStartIndex + 6]! & (0b11111111 << 16)
+		vertexes[vertexStartIndex + 4] = encodedNormal | ((ox << 4 | oy << 2 | oz) << 8) | vertexes[vertexStartIndex + 4]!
 		return vertexIndex
 	}
 
@@ -139,7 +135,8 @@ export const buildChunkMesh = (world: WorldLike, chunkX: number, chunkZ: number,
 				}
 
 				const thisBlock = allBlocks[thisBlockId]!
-				const color: [number, number, number] = [thisBlock.colorR, thisBlock.colorG, thisBlock.colorB]
+				const color = thisBlock.color
+
 				if (needsTop) {
 					e1 = setVertexData(e1, color, 0b011001, x, y, z)
 					indices.push(
@@ -192,8 +189,8 @@ export const buildChunkMesh = (world: WorldLike, chunkX: number, chunkZ: number,
 		}
 	}
 
-	const extractAOFromVertex = (index: number) => (vertexes[index * FLOATS_PER_VERTEX + 6]! >> 16) & 0b1111
-	const putFlatAOFromVertex = (index: number, a: number, b: number, c: number, d: number) => vertexes[index * FLOATS_PER_VERTEX + 7]
+	const extractAOFromVertex = (index: number) => (vertexes[index * FLOATS_PER_VERTEX + 4]! >> 16) & 0b1111
+	const putFlatAOFromVertex = (index: number, a: number, b: number, c: number, d: number) => vertexes[index * FLOATS_PER_VERTEX + 5]
 		= (((a & 0b1111) << 0) | ((b & 0b1111) << 4) | ((c & 0b1111) << 8) | ((d & 0b1111) << 12))
 
 	const squaresCount = indices.length / 6 | 0
@@ -216,7 +213,7 @@ export const buildChunkMesh = (world: WorldLike, chunkX: number, chunkZ: number,
 	}
 
 	return {
-		vertexes: new Float32Array(vertexes),
+		vertexes: new Uint32Array(vertexes),
 		indices: new Uint32Array(indices),
 	}
 }
