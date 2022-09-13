@@ -53,9 +53,9 @@ export const vertexShaderSource = (options: ShaderOptions): string => {
 		uint ox = ((offsets >> 4U) & 3U);
 		uint oy = ((offsets >> 2U) & 3U);
 		uint oz = ((offsets      ) & 3U);
-		uint x = uint(a_position.x) - ox;
+		uint x = uint(a_position.x + u_chunkPosition.x) - ox;
 		uint y = uint(a_position.y) - oy;
-		uint z = uint(a_position.z) - oz;
+		uint z = uint(a_position.z + u_chunkPosition.y) - oz;
 		
 		v_color0 = vec4((x >> 8U) & 255U, x & 255U, (z >> 8U) & 255U, z & 255U) / 255.0;
 		v_color1 = vec3(y & 255U, uint(a_flags) & 255U, ${MousePickableType.Terrain}) / 255.0;`)

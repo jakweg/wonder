@@ -247,7 +247,7 @@ export const buildChunkMesh = (world: WorldLike, chunkX: number, chunkZ: number,
 
 	return {
 		vertexes: finalVertexes,
-		indices: new Uint32Array(indices),
+		indices: new Uint16Array(indices),
 	}
 }
 

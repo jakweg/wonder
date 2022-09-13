@@ -227,7 +227,7 @@ const drawable: () => Drawable<ShaderCache, WorldData, BoundData> = () => ({
                 chunk.vao.bind()
                 gl.uniform2f(chunkPosition, chunk.positionX, chunk.positionZ)
 
-                gl.drawElements(gl.TRIANGLES, chunk.triangles, gl.UNSIGNED_INT, 0)
+                gl.drawElements(gl.TRIANGLES, chunk.triangles, gl.UNSIGNED_SHORT, 0)
             }
 
             chunkIndex++
@@ -244,11 +244,14 @@ const drawable: () => Drawable<ShaderCache, WorldData, BoundData> = () => ({
         gl.uniformMatrix4fv(program.uniforms['combinedMatrix'], false, toGl(camera.combinedMatrix))
         gl.uniform1f(program.uniforms['time'], ctx.secondsSinceFirstRender)
 
+        const chunkPosition = program.uniforms['chunkPosition']
         let chunkIndex = 0
         for (const chunk of shader.chunks!) {
             if (chunk.triangles !== 0 && visibility.isChunkIndexVisible(chunkIndex)) {
                 chunk.mouseVao.bind()
-                gl.drawElements(gl.TRIANGLES, chunk.triangles, gl.UNSIGNED_INT, 0)
+                gl.uniform2f(chunkPosition, chunk.positionX, chunk.positionZ)
+
+                gl.drawElements(gl.TRIANGLES, chunk.triangles, gl.UNSIGNED_SHORT, 0)
             }
             chunkIndex++
         }
