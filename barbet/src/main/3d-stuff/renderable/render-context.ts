@@ -3,6 +3,7 @@ import { GameState } from '../../game-state/game-state'
 import { ActionsQueue } from '../../game-state/scheduled-actions/queue'
 import { STANDARD_GAME_TICK_RATE, StateUpdater } from '../../game-state/state-updater'
 import { AdditionalFrontedFlags, frontedVariables, FrontendVariable } from '../../util/frontend-variables'
+import { GameMutex } from '../../util/game-mutex'
 import { isInWorker, Lock } from '../../util/mutex'
 import CONFIG, { observeSetting } from '../../util/persistance/observable-settings'
 import { globalMutex } from '../../util/worker/global-mutex'
@@ -123,7 +124,9 @@ interface CanvasObjects {
 	loadingShadersPromise: Promise<void>
 }
 
-export const createRenderingSession = async (actionsQueue: ActionsQueue) => {
+export const createRenderingSession = async (
+	actionsQueue: ActionsQueue,
+	mutex: GameMutex,) => {
 	const pipeline = newPipeline([
 		terrain,
 	].map(e => e()))
@@ -161,14 +164,14 @@ export const createRenderingSession = async (actionsQueue: ActionsQueue) => {
 					visibility.update(camera.combinedMatrix)
 
 				if (isInWorker)
-					globalMutex.enter(Lock.Update)
+					mutex.enterForRender()
 				else
-					await globalMutex.enterAsync(Lock.Update)
+					await mutex.enterForRenderAsync()
 
 				pipeline.updateWorldIfNeeded()
 				pipeline.prepareRender()
 
-				globalMutex.unlock(Lock.Update)
+				mutex.exitRender()
 
 				pipeline.doGpuUploads()
 

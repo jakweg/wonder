@@ -78,7 +78,7 @@ export const newPipeline = (
             for (const e of mappedElements) {
                 if (e.element.onConfigModified(e.shader)) {
                     e.shader = await e.element.createShader(allocator, e.shader)
-                    e.bound = await e.element.bindWorldData(allocator, e.shader, e.world, e.bound)
+                    e.bound = e.element.bindWorldData(allocator, e.shader, e.world, e.bound)
                 }
             }
         },

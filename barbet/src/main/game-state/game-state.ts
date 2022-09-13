@@ -1,4 +1,5 @@
-import Mutex, { isInWorker, Lock } from '../util/mutex'
+import { GameMutex } from '../util/game-mutex'
+import { isInWorker } from '../util/mutex'
 import { decodeArray, encodeArray } from '../util/persistance/serializers'
 import { createNewBuffer } from '../util/shared-memory'
 import { ActivityId, getActivityPerformFunction } from './activities'
@@ -60,7 +61,7 @@ export class GameStateImplementation implements GameState {
 		public readonly tileMetaDataIndex: TileMetaDataIndex,
 		public readonly delayedComputer: DelayedComputer,
 		public readonly surfaceResources: SurfaceResourcesIndex,
-		private readonly mutex: Mutex,
+		private readonly mutex: GameMutex,
 		private readonly stateBroadcastCallback: () => void) {
 	}
 
@@ -75,7 +76,7 @@ export class GameStateImplementation implements GameState {
 		tileMetaDataIndex: TileMetaDataIndex,
 		delayedComputer: DelayedComputer,
 		surfaceResources: SurfaceResourcesIndex,
-		mutex: Mutex,
+		mutex: GameMutex,
 		stateBroadcastCallback: () => void): GameStateImplementation {
 		return new GameStateImplementation(
 			new Int32Array(createNewBuffer(MetadataField.SIZE * Int32Array.BYTES_PER_ELEMENT)),
@@ -84,7 +85,7 @@ export class GameStateImplementation implements GameState {
 			mutex, stateBroadcastCallback)
 	}
 
-	public static deserialize(object: any, mutex: Mutex, stateBroadcastCallback: () => void): GameStateImplementation {
+	public static deserialize(object: any, mutex: GameMutex, stateBroadcastCallback: () => void): GameStateImplementation {
 		const world = World.deserialize(object['world'])
 		const tileMetaDataIndex = TileMetaDataIndex.deserialize(object['tileMetaDataIndex'], world.rawHeightData)
 		return new GameStateImplementation(
@@ -100,7 +101,6 @@ export class GameStateImplementation implements GameState {
 	public passForRenderer(): unknown {
 		return {
 			metadata: this.metaData['buffer'],
-			mutex: this.mutex.pass(),
 			world: this.world.pass(),
 			groundItems: this.groundItems.pass(),
 			entities: this.entities.pass(),
@@ -128,9 +128,9 @@ export class GameStateImplementation implements GameState {
 		this.isRunningLogic = true
 
 		if (isInWorker)
-			this.mutex.enter(Lock.Update)
+			this.mutex.enterForUpdate()
 		else
-			await this.mutex.enterAsync(Lock.Update)
+			await this.mutex.enterForUpdateAsync()
 
 		this.metaData[MetadataField.CurrentTick]++
 
@@ -153,7 +153,7 @@ export class GameStateImplementation implements GameState {
 			this.stateBroadcastCallback()
 		}
 
-		this.mutex.unlock(Lock.Update)
+		this.mutex.exitUpdate()
 		this.isRunningLogic = false
 
 		this.delayedComputer.tick(this)

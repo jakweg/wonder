@@ -4,13 +4,16 @@ import { createGameStateForRenderer, GameState } from '../game-state/game-state'
 import { SendActionsQueue } from '../game-state/scheduled-actions/queue'
 import { createStateUpdaterControllerFromReceived } from '../game-state/state-updater'
 import { initFrontedVariablesFromReceived } from '../util/frontend-variables-updaters'
+import { gameMutexFrom } from '../util/game-mutex'
 import CONFIG from '../util/persistance/observable-settings'
 import { bind, FromWorker, ToWorker } from '../util/worker/message-types/render'
 
-const { sender, receiver, start } = await bind()
+const { sender, receiver } = await bind()
+const mutex = gameMutexFrom(await receiver.await(ToWorker.GameMutex))
 const actionsQueue = SendActionsQueue.create(action => sender.send(FromWorker.ScheduledAction, action))
-const session = await createRenderingSession(actionsQueue)
-start()
+receiver.suspend()
+const session = await createRenderingSession(actionsQueue, mutex)
+receiver.resume()
 
 let workerStartDelayDifference = 0
 let gameSnapshot: unknown | null = null

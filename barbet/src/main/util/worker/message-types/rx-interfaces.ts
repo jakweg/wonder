@@ -3,6 +3,10 @@ export interface Sender<T> {
 }
 
 export interface Receiver<T> {
+    suspend(): void
+
+    resume(): void
+
     on<K extends keyof T>(type: K, callback: (value: T[K]) => void): void
 
     once<K extends keyof T>(type: K, callback: (value: T[K]) => void): () => void
@@ -22,32 +26,53 @@ export const createReceiver = <T>(worker: { onmessage: null | ((event: MessageEv
     if (worker['onmessage'] != null)
         throw new Error()
 
+    let suspended = false
+    let suspendedFunctions: (() => void)[] = []
     const listeners: Map<keyof T, any> = new Map()
     const oneTimeListeners: Map<keyof T, any> = new Map()
 
+    const handleMessageEventCallback = (event: MessageEvent) => {
+        const { type, value } = event['data']
+
+        let callback = oneTimeListeners['get'](type)
+        let isOneTime = true
+        if (callback === undefined) {
+            callback = listeners['get'](type)
+            isOneTime = false
+        }
+
+        if (callback === undefined)
+            throw new Error(`Missing handler for ${type} in ${location.pathname}`)
+
+        if (isOneTime)
+            oneTimeListeners['delete'](type)
+
+        callback(value)
+    }
+
     worker['onmessage'] = (event) => {
         setTimeout(() => {
-            const { type, value } = event['data']
-
-            let callback = oneTimeListeners['get'](type)
-            let isOneTime = true
-            if (callback === undefined) {
-                callback = listeners['get'](type)
-                isOneTime = false
-            }
-
-            if (callback === undefined)
-                throw new Error(`Missing handler for ${type} in ${location.pathname}`)
-
-            if (isOneTime)
-                oneTimeListeners['delete'](type)
-
-            callback(value)
+            if (suspended)
+                suspendedFunctions.push(() => handleMessageEventCallback(event))
+            else
+                handleMessageEventCallback(event)
         }, 0)
     }
 
 
     return {
+        suspend() {
+            if (suspended) throw new Error()
+            suspended = true
+        },
+        resume() {
+            if (!suspended) throw new Error()
+            suspended = false
+            setTimeout(() => {
+                for (const f of suspendedFunctions)
+                    f()
+            }, 0);
+        },
         on(type, callback) {
             if (listeners['has'](type))
                 throw new Error(`Reasign listener ${String(type)}`)

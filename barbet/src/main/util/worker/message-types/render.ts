@@ -2,9 +2,10 @@ import { TerminateGameArguments } from "../../../entry-points/feature-environmen
 import { ScheduledAction } from "../../../game-state/scheduled-actions";
 import Mutex from "../../mutex";
 import { WorkerInstance } from "../worker-instance";
-import { delayedBind, genericBind } from "../worker-listener";
+import { genericBind } from "../worker-listener";
 
 export const enum ToWorker {
+    GameMutex,
     NewSettings,
     FrontendVariables,
     CameraBuffer,
@@ -16,6 +17,7 @@ export const enum ToWorker {
 }
 
 interface ToTypes {
+    [ToWorker.GameMutex]: any
     [ToWorker.NewSettings]: any
     [ToWorker.FrontendVariables]: { buffer: SharedArrayBuffer }
     [ToWorker.CameraBuffer]: { buffer: SharedArrayBuffer }
@@ -37,4 +39,4 @@ interface FromTypes {
 export const spawnNew = (mutex: Mutex) => WorkerInstance
     .spawnNew<ToTypes, FromTypes>('render-worker', 'render', mutex)
 
-export const bind = () => delayedBind<FromTypes, ToTypes>()
+export const bind = () => genericBind<FromTypes, ToTypes>()

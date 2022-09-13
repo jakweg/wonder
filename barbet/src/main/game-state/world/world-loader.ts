@@ -1,8 +1,8 @@
 import { CreateGameArguments } from '../../entry-points/feature-environments/loader'
+import { GameMutex } from '../../util/game-mutex'
 import CONFIG from '../../util/persistance/observable-settings'
 import { readSaveData } from '../../util/persistance/saves-database'
 import { ArrayEncodingType, setArrayEncodingType } from '../../util/persistance/serializers'
-import { globalMutex } from '../../util/worker/global-mutex'
 import { createNewDelayedComputer } from '../delayed-computer'
 import EntityContainer from '../entities/entity-container'
 import { GameState, GameStateImplementation } from '../game-state'
@@ -13,8 +13,7 @@ import { BlockId } from './block'
 import { fillEmptyWorldWithDefaultData } from './generator/example-world-creator'
 import { World } from './world'
 
-export const createEmptyGame = (stateBroadcastCallback: () => void): GameState => {
-	const mutex = globalMutex
+export const createEmptyGame = (mutex: GameMutex, stateBroadcastCallback: () => void): GameState => {
 	let sizeX = 1000
 	let sizeY = 50
 	let sizeZ = 1000
@@ -38,35 +37,35 @@ export const createEmptyGame = (stateBroadcastCallback: () => void): GameState =
 	return gameState
 }
 
-export const loadGameFromDb = async (id: string, stateBroadcastCallback: () => void): Promise<GameState> => {
+export const loadGameFromDb = async (id: string, mutex: GameMutex, stateBroadcastCallback: () => void): Promise<GameState> => {
 	const data = await readSaveData(id)
 	setArrayEncodingType(ArrayEncodingType.Array)
 	try {
-		return GameStateImplementation.deserialize(data, globalMutex, stateBroadcastCallback)
+		return GameStateImplementation.deserialize(data, mutex, stateBroadcastCallback)
 	} finally {
 		setArrayEncodingType(ArrayEncodingType.None)
 	}
 }
 
 
-export const loadGameFromString = async (value: string, stateBroadcastCallback: () => void): Promise<GameState> => {
+export const loadGameFromString = async (value: string, mutex: GameMutex, stateBroadcastCallback: () => void): Promise<GameState> => {
 	setArrayEncodingType(ArrayEncodingType.String)
 	try {
 		const object = JSON.parse(value)
-		return GameStateImplementation.deserialize(object, globalMutex, stateBroadcastCallback)
+		return GameStateImplementation.deserialize(object, mutex, stateBroadcastCallback)
 	} finally {
 		setArrayEncodingType(ArrayEncodingType.None)
 	}
 }
 
-export const loadGameFromFile = async (file: File, stateBroadcastCallback: () => void): Promise<GameState> => {
+export const loadGameFromFile = async (file: File, mutex: GameMutex, stateBroadcastCallback: () => void): Promise<GameState> => {
 	return new Promise((resolve, reject) => {
 		const reader = new FileReader()
 		reader['onerror'] = reject
 		reader['onload'] = () => {
 			try {
 				setArrayEncodingType(ArrayEncodingType.String)
-				const state = GameStateImplementation.deserialize(JSON.parse(reader['result'] as string), globalMutex, stateBroadcastCallback)
+				const state = GameStateImplementation.deserialize(JSON.parse(reader['result'] as string), mutex, stateBroadcastCallback)
 				setArrayEncodingType(ArrayEncodingType.None)
 				resolve(state)
 			} catch (e) {
@@ -78,17 +77,17 @@ export const loadGameFromFile = async (file: File, stateBroadcastCallback: () =>
 }
 
 
-export const loadGameFromArgs = async (args: CreateGameArguments, stateBroadcastCallback: () => any) => {
+export const loadGameFromArgs = async (args: CreateGameArguments, mutex: GameMutex, stateBroadcastCallback: () => any) => {
 	const saveName = args.saveName
 	const file = args.fileToRead
 	const string = args.stringToRead
 
 	if (string !== undefined)
-		return await loadGameFromString(string, stateBroadcastCallback)
+		return await loadGameFromString(string, mutex, stateBroadcastCallback)
 	else if (file !== undefined)
-		return await loadGameFromFile(file, stateBroadcastCallback)
+		return await loadGameFromFile(file, mutex, stateBroadcastCallback)
 	else if (saveName !== undefined)
-		return await loadGameFromDb(saveName, stateBroadcastCallback)
+		return await loadGameFromDb(saveName, mutex, stateBroadcastCallback)
 	else
-		return createEmptyGame(stateBroadcastCallback)
+		return createEmptyGame(mutex, stateBroadcastCallback)
 }

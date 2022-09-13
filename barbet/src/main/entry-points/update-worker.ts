@@ -4,11 +4,12 @@ import { StateUpdaterImplementation } from '../game-state/state-updater/implemen
 import { loadGameFromArgs } from '../game-state/world/world-loader'
 import { performGameSave } from '../game-state/world/world-saver'
 import TickQueue from '../network/tick-queue'
+import { gameMutexFrom } from '../util/game-mutex'
 import CONFIG from '../util/persistance/observable-settings'
 import { bind, FromWorker, ToWorker } from '../util/worker/message-types/update'
 
 const { sender, receiver } = await bind()
-
+const mutex = gameMutexFrom(await receiver.await(ToWorker.GameMutex))
 
 let gameState: GameStateImplementation | null = null
 let stateUpdater: StateUpdaterImplementation | null = null
@@ -33,7 +34,7 @@ receiver.on(ToWorker.CreateGame, async (args) => {
 		})
 	}
 
-	gameState = await loadGameFromArgs(args, stateBroadcastCallback) as GameStateImplementation
+	gameState = await loadGameFromArgs(args, mutex, stateBroadcastCallback) as GameStateImplementation
 
 	tickQueue = TickQueue.createEmpty()
 

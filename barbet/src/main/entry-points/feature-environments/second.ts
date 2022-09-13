@@ -3,6 +3,7 @@ import { SaveGameArguments, SaveGameResult } from '../../game-state/world/world-
 import { TickQueueAction } from '../../network/tick-queue-action'
 import { frontedVariablesBuffer } from '../../util/frontend-variables'
 import { initFrontedVariablesFromReceived } from '../../util/frontend-variables-updaters'
+import { createNewGameMutex } from '../../util/game-mutex'
 import CONFIG from '../../util/persistance/observable-settings'
 import { getCameraBuffer, setCameraBuffer } from '../../util/persistance/serializable-settings'
 import { globalMutex, setGlobalMutex } from '../../util/worker/global-mutex'
@@ -28,10 +29,15 @@ export const bind = async (args: ConnectArguments): Promise<EnvironmentConnectio
 	let listeners: GameListeners | null = null
 	let updater: StateUpdater | null = null
 
+	const mutex = createNewGameMutex()
+
 	const [renderWorker, updateWorker] = await Promise['all']([
 		spawnNewRenderWorker(globalMutex),
 		spawnNewUpdateWorker(globalMutex),
 	])
+
+	renderWorker.send.send(ToRender.GameMutex, mutex.pass())
+	updateWorker.send.send(ToUpdate.GameMutex, mutex.pass())
 
 	CONFIG.observeEverything(snapshot => {
 		updateWorker.send.send(ToUpdate.NewSettings, snapshot)

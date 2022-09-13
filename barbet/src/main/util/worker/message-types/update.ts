@@ -5,7 +5,9 @@ import Mutex from "../../mutex";
 import { WorkerInstance } from "../worker-instance";
 import { genericBind } from "../worker-listener";
 
+
 export const enum ToWorker {
+    GameMutex,
     NewSettings,
     CreateGame,
     SaveGame,
@@ -15,6 +17,7 @@ export const enum ToWorker {
 }
 
 interface ToTypes {
+    [ToWorker.GameMutex]: any
     [ToWorker.NewSettings]: any
     [ToWorker.CreateGame]: CreateGameArguments
     [ToWorker.SaveGame]: SaveGameArguments
