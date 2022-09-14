@@ -6,6 +6,7 @@ import Overlay from './overlay'
 import PauseIndicator from './pause-indicator'
 import PreferencesRoot from './preferences'
 import { createElement } from './utils'
+import './main-styles.css'
 
 interface Props {
 	root: HTMLElement

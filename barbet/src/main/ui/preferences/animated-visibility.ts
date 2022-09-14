@@ -1,4 +1,5 @@
 import { Subject } from '../../util/state/subject'
+import './animated-visibility.css'
 
 const ANIMATION_DURATION = 300
 

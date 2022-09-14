@@ -12,14 +12,14 @@ const hostedFiles = [
 	'index.html',
 	'404.html',
 	'style.css',
-	'build-js/main.js',
-	'build-js/render-worker.js',
-	'build-js/update-worker.js',
-	'build-js/network-worker.js',
-	'build-js/render-helper-worker.js',
-	'build-js/feature-environments/zero.js',
-	'build-js/feature-environments/first.js',
-	'build-js/feature-environments/second.js',
+	'dist/main.js',
+	'dist/render-worker.js',
+	'dist/update-worker.js',
+	'dist/network-worker.js',
+	'dist/render-helper-worker.js',
+	'dist/feature-environments/zero.js',
+	'dist/feature-environments/first.js',
+	'dist/feature-environments/second.js',
 ]
 
 async function cleanTmpFolder() {
@@ -178,8 +178,8 @@ async function shaDestFolder() {
 
 async function prepareDestFolder(): Promise<void> {
 	await Deno.mkdir(`${TMP_FOLDER_ROOT}/${FINAL_FILES_FOLDER_NAME}`)
-	await Deno.mkdir(`${TMP_FOLDER_ROOT}/${FINAL_FILES_FOLDER_NAME}/build-js`)
-	await Deno.mkdir(`${TMP_FOLDER_ROOT}/${FINAL_FILES_FOLDER_NAME}/build-js/feature-environments`)
+	await Deno.mkdir(`${TMP_FOLDER_ROOT}/${FINAL_FILES_FOLDER_NAME}/dist`)
+	await Deno.mkdir(`${TMP_FOLDER_ROOT}/${FINAL_FILES_FOLDER_NAME}/dist/feature-environments`)
 	await Promise.all(hostedFiles.map(name => Deno.copyFile(`${TMP_FOLDER_ROOT}/${FOLDER_TO_CLONE}/barbet/${name}`, `${TMP_FOLDER_ROOT}/${FINAL_FILES_FOLDER_NAME}/${name}`)))
 	await compressFiles(hostedFiles.map(name => `${TMP_FOLDER_ROOT}/${FINAL_FILES_FOLDER_NAME}/${name}`))
 }

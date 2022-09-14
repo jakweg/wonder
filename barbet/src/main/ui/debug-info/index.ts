@@ -4,6 +4,8 @@ import { constant, observeField, Subject } from "../../util/state/subject"
 import animatedVisibility from "../preferences/animated-visibility"
 import { createElement } from "../utils"
 
+import './style.css'
+
 export default (parent: HTMLElement) => {
     const visible = observeField(CONFIG, 'other/show-debug-info')
     const [root] = animatedVisibility(createElement('div', parent, 'debug-info'), visible, [])

@@ -48,9 +48,9 @@ const [commitHash, linesCount] = await Promise['all']([getCommitHash(), getProje
 if (args.size > 0) {
 	console.log('Received unknown options: ', args)
 } else {
-	const jsOutRoot = 'build-js'
+	const compiledOutDirectory = 'dist'
 	try {
-		await Deno.remove(jsOutRoot, { recursive: true })
+		await Deno.remove(compiledOutDirectory, { recursive: true })
 	} catch (_) { // ignore, probably missing folder
 	}
 
@@ -69,16 +69,18 @@ if (args.size > 0) {
 	const config = {
 		define: {
 			_C_DEBUG: JSON.stringify(!buildForProduction),
-			_C_JS_ROOT: JSON.stringify(`/${jsOutRoot}`),
+			_C_JS_ROOT: JSON.stringify(`/${compiledOutDirectory}`),
 			_C_FORCE_ENV_ZERO: JSON.stringify(forceSingleThread),
 			_C_COMMIT_HASH: JSON.stringify(commitHash),
 			_C_CODE_STATS_LINES_COUNT: JSON.stringify(linesCount || 0),
 		},
-		entryPoints: entryPoints.map(name => `src/main/entry-points/${name}.ts`),
+		entryPoints: [
+			...entryPoints.map(name => `src/main/entry-points/${name}.ts`),
+		],
 		bundle: true,
 		treeShaking: buildForProduction,
 		sourcemap: (buildForProduction ? false : 'inline') as 'inline',
-		outdir: jsOutRoot,
+		outdir: compiledOutDirectory,
 		target: 'es2022',
 		splitting: false,
 		format: 'esm',
@@ -100,9 +102,9 @@ if (args.size > 0) {
 			const mangleExcludedPropNames: readonly string[] = (await import('./props-mangle-exclusions.ts')).default
 
 			const results = await esbuild.build({
-				entryPoints: entryPoints.map(e => `${jsOutRoot}/${e}.js`),
+				entryPoints: entryPoints.map(e => `${compiledOutDirectory}/${e}.js`),
 				minify: true,
-				outdir: jsOutRoot,
+				outdir: compiledOutDirectory,
 				allowOverwrite: true,
 				format: 'esm',
 				mangleProps: /./,
@@ -112,6 +114,13 @@ if (args.size > 0) {
 			} as any)
 			if (produceMappings)
 				await Deno.writeTextFile('./mappings.txt', JSON.stringify(results.mangleCache, undefined, 3))
+			await esbuild.build({
+				entryPoints: [`${compiledOutDirectory}/main.css`],
+				minify: true,
+				outdir: compiledOutDirectory,
+				allowOverwrite: true,
+				format: 'esm',
+			})
 		}
 		Deno.exit(0)
 	}

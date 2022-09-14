@@ -2,7 +2,7 @@
   "config": {
     "headers": [
       {
-        "glob": "/build-js/network-worker.js",
+        "glob": "/dist/network-worker.js",
         "headers": {
           "Content-Security-Policy": "require-trusted-types-for 'script';upgrade-insecure-requests;"
         }

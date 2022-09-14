@@ -43,7 +43,7 @@ const constructSubject = <T>(params: {
             if (listeners.length === 0)
                 params.start(valueSetter)
 
-            const newCallback = callback.bind(null)
+            const newCallback = callback['bind'](null)
             listeners.push(newCallback)
 
             if (!ignoreFirstCall)
@@ -89,7 +89,7 @@ export const reduce = <T, U>(sources: ReadonlyArray<Subject<T>>, transform: (val
                     values[i] = v
                     cancelAnimationFrame(updateAnimation)
                     updateAnimation = requestAnimationFrame(() => {
-                        const total = values.reduce(transform, start)
+                        const total = values['reduce'](transform, start)
                         set(() => total)
                     })
                 })

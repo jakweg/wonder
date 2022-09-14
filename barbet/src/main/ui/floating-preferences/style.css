@@ -1,0 +1,25 @@
+.floating-preferences {
+    align-self: start;
+    justify-self: end;
+    background-color: rgba(0, 0, 0, 0.7);
+    margin: 8px;
+    padding: 4px;
+    border-radius: 4px;
+    display: grid;
+    gap: 4px;
+    grid-template-areas:
+            'icon range'
+            'buttons buttons';
+}
+
+.floating-preferences > .buttons {
+    grid-area: buttons;
+    display: flex;
+    justify-content: space-evenly;
+}
+
+.floating-preferences > .buttons > * {
+    cursor: pointer;
+    padding: 2px;
+    aspect-ratio: 1/1;
+}

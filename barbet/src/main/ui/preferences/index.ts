@@ -5,6 +5,7 @@ import AnimatedVisibility from './animated-visibility'
 import BuildInfoSection from './build-info-section'
 import { Button } from './helper-components'
 import OnBlurBehaviourSection from './on-blur-section'
+import './preferences.css'
 import RenderingSection from './rendering-section'
 
 export default (parent: HTMLElement, opened: Subject<boolean>, doneClicked: Callback) => {

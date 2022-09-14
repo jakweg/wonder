@@ -25,6 +25,7 @@
     }
   },
   "exclude": [
-    "build-js"
+    "build-js",
+    "dist",
   ]
 }

@@ -1,0 +1,24 @@
+
+
+.animated-visibility {
+    --duration: 300ms;
+    transition: opacity var(--duration), transform var(--duration);
+    pointer-events: none;
+    opacity: var(--opacity, 1);
+}
+
+.animated-visibility.fully-visible {
+    pointer-events: all;
+}
+
+.animated-visibility.invisible.opacity {
+    opacity: 0;
+}
+.animated-visibility.invisible.translate-y {
+    transform: translateY(var(--translate-y, 100%));
+}
+
+.animated-visibility.gone {
+    display: none;
+    visibility: hidden;
+}
