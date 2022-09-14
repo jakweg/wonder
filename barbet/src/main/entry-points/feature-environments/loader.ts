@@ -97,16 +97,20 @@ export const loadEnvironment = async (name: Environment)
 	return Object.freeze(await connect(args) as EnvironmentConnection)
 }
 
-export const preloadWorkers = (both: boolean) => {
+const addWorkerPrefetch = (name: string) => {
+	const link = document['createElement']('link')
+	link['setAttribute']('rel', 'prefetch')
+	link['setAttribute']('as', 'worker')
+	link['setAttribute']('href', `${JS_ROOT}/${name}-worker.js`)
+	document['head']['appendChild'](link)
+}
+
+const preloadWorkers = (both: boolean) => {
 	if (DEBUG) return
-	for (const name of ['update', both && 'render']) {
-		if (!name) continue
-		const link = document['createElement']('link')
-		link['setAttribute']('rel', 'prefetch')
-		link['setAttribute']('as', 'worker')
-		link['setAttribute']('href', `${JS_ROOT}/${name}-worker.js`)
-		document['head']['appendChild'](link)
-	}
+	addWorkerPrefetch('update')
+	if (both)
+		addWorkerPrefetch('render')
+	addWorkerPrefetch('render-helper')
 }
 
 export const createNewEnvironment = async (): Promise<EnvironmentConnection> => {
