@@ -1,5 +1,6 @@
 import { intervalProducer, newSubject } from '../util/state/subject'
 import CanvasBackground from './canvas-background'
+import DebugInfo from './debug-info'
 import FloatingPreferences from './floating-preferences'
 import Overlay from './overlay'
 import PauseIndicator from './pause-indicator'
@@ -30,6 +31,8 @@ export const createUi = (props: Props) => {
 		() => setSettingsOpened(v => !v),
 		props.onPauseRequested,
 		props.onResumeRequested)
+
+	DebugInfo(root)
 
 	PauseIndicator(root, isPaused)
 

@@ -14,6 +14,7 @@ const settingsToDefaults = {
 	'rendering/ambient-occlusion': true,
 	'other/preferred-environment': 'second' as Environment,
 	'other/generate-debug-world': false,
+	'other/show-debug-info': false,
 }
 
 type SettingName = keyof typeof settingsToDefaults

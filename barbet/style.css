@@ -5,6 +5,7 @@ body {
     height: 100vh;
     overflow: hidden;
     user-select: none;
+    font-family: Arial, Helvetica, sans-serif;
 }
 
 canvas {
@@ -184,4 +185,15 @@ button>svg {
 .animated-visibility.gone {
     display: none;
     visibility: hidden;
+}
+
+.debug-info {
+    font-family: monospace;
+    align-self: flex-start;
+    justify-self: start;
+    padding: 4px;
+}
+
+.debug-info p {
+    margin: 0;
 }
