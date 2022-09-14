@@ -1,4 +1,4 @@
-import { isInWorker } from '../mutex'
+import { isInWorker } from '../game-mutex'
 import { createNewBuffer } from '../shared-memory'
 
 const getStorage = <T extends 'localStorage' | 'sessionStorage'>(name: T) => {

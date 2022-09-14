@@ -1,5 +1,4 @@
-import { GameMutex } from '../util/game-mutex'
-import { isInWorker } from '../util/mutex'
+import { GameMutex, isInWorker } from '../util/game-mutex'
 import { decodeArray, encodeArray } from '../util/persistance/serializers'
 import { createNewBuffer } from '../util/shared-memory'
 import { ActivityId, getActivityPerformFunction } from './activities'

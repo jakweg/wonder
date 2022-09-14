@@ -4,11 +4,13 @@ import { genericBind } from "../worker-listener";
 
 export const enum ToWorker {
     ExecuteTask,
+    SetInitials,
     SetWorld,
 }
 
 type ToTypes = {
     [ToWorker.ExecuteTask]: { id: number, task: Task }
+    [ToWorker.SetInitials]: { mutex: any, id: number }
     [ToWorker.SetWorld]: any
 }
 

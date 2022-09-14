@@ -1,9 +1,20 @@
 import { Task, TaskResult, TaskType } from "../3d-stuff/pipeline/work-scheduler";
 import { World, WORLD_CHUNK_SIZE } from "../game-state/world/world";
 import { buildChunkMesh } from "../game-state/world/world-to-mesh-converter";
+import { gameMutexFrom } from "../util/game-mutex";
 import { bind, FromWorker, ToWorker } from "../util/worker/message-types/render-helper";
 
 const { sender, receiver } = await bind()
+
+const handleInitials = async () => {
+    const initials = await receiver.await(ToWorker.SetInitials)
+    return {
+        mutex: gameMutexFrom(initials.mutex),
+        id: initials.id,
+    }
+}
+
+const { mutex, id } = await handleInitials()
 
 let gotWorld: World | null = null
 
@@ -36,7 +47,10 @@ const executeCreateChunkMesh = (world: World, task: Task): TaskResult => {
     const i = (task.chunkIndex / world.size.chunksSizeX) | 0
     const j = (task.chunkIndex % world.size.chunksSizeX) | 0
 
+    mutex.enterForRenderHelper(id)
     const mesh = buildChunkMesh(world, i, j, WORLD_CHUNK_SIZE)
+    mutex.exitRenderHelper(id)
+
     return {
         type: TaskType.CreateChunkMesh,
         chunkIndex: task.chunkIndex,

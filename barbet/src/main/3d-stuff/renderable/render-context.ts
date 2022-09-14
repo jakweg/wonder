@@ -3,8 +3,7 @@ import { GameState } from '../../game-state/game-state'
 import { ActionsQueue } from '../../game-state/scheduled-actions/queue'
 import { STANDARD_GAME_TICK_RATE, StateUpdater } from '../../game-state/state-updater'
 import { AdditionalFrontedFlags, frontedVariables, FrontendVariable } from '../../util/frontend-variables'
-import { GameMutex } from '../../util/game-mutex'
-import { isInWorker } from '../../util/mutex'
+import { GameMutex, isInWorker } from '../../util/game-mutex'
 import CONFIG, { observeSetting } from '../../util/persistance/observable-settings'
 import { Camera } from '../camera'
 import ChunkVisibilityIndex from '../drawable/chunk-visibility'
@@ -131,7 +130,7 @@ export const createRenderingSession = async (
 	].map(e => e()))
 
 
-	const scheduler = await RenderHelperWorkScheduler.createNew()
+	const scheduler = await RenderHelperWorkScheduler.createNew(mutex)
 
 	const inputHandler = newInputHandler(actionsQueue)
 	const sunPosition = vec3.fromValues(500, 1500, -500)

@@ -1,3 +1,4 @@
+import { GameMutex } from "../../util/game-mutex"
 import { FromWorker, spawnNew, ToWorker } from "../../util/worker/message-types/render-helper"
 
 export enum TaskType {
@@ -31,12 +32,16 @@ export default class RenderHelperWorkScheduler {
     private readonly tasksQueue: { id: number, task: Task }[] = []
     private readonly waitingWorkers: Awaited<ReturnType<typeof spawnNew>>[] = [...this.workers]
 
-    public static async createNew(workersCount?: number): Promise<RenderHelperWorkScheduler> {
+    public static async createNew(mutex: GameMutex, workersCount?: number): Promise<RenderHelperWorkScheduler> {
 
         const count = workersCount === undefined ? Math.max(1, (navigator['hardwareConcurrency'] / 2) | 0) : +workersCount
 
         const workers = await Promise.all([...new Array(count)]
             .map((_, i) => spawnNew(i)))
+
+        let i = 0
+        for (const w of workers)
+            w.send.send(ToWorker.SetInitials, { mutex: mutex.pass(), id: i++ })
 
         return new RenderHelperWorkScheduler(workers)
     }

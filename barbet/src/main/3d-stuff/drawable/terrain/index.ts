@@ -171,7 +171,7 @@ const drawable: () => Drawable<ShaderCache, WorldData, BoundData> = () => ({
         const chunksZ = data.game.world.size.chunksSizeZ
         const chunksX = data.game.world.size.chunksSizeX
         let chunkIndex = 0
-        let rebuildAnything = false
+
         for (let i = 0; i < chunksX; i++) {
             for (let j = 0; j < chunksZ; j++) {
                 const shaderChunk = shaderChunks[chunkIndex]!
