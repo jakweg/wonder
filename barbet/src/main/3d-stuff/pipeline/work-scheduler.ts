@@ -1,4 +1,3 @@
-import { globalMutex } from "../../util/worker/global-mutex"
 import { FromWorker, spawnNew, ToWorker } from "../../util/worker/message-types/render-helper"
 
 export enum TaskType {
@@ -37,7 +36,7 @@ export default class RenderHelperWorkScheduler {
         const count = workersCount === undefined ? Math.max(1, (navigator['hardwareConcurrency'] / 2) | 0) : +workersCount
 
         const workers = await Promise.all([...new Array(count)]
-            .map((_, i) => spawnNew(globalMutex, i)))
+            .map((_, i) => spawnNew(i)))
 
         return new RenderHelperWorkScheduler(workers)
     }

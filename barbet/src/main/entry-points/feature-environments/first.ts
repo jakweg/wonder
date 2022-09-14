@@ -8,7 +8,6 @@ import { TickQueueAction } from '../../network/tick-queue-action'
 import { initFrontedVariablesFromReceived } from '../../util/frontend-variables-updaters'
 import CONFIG from '../../util/persistance/observable-settings'
 import { getCameraBuffer, setCameraBuffer } from '../../util/persistance/serializable-settings'
-import { globalMutex, setGlobalMutex } from '../../util/worker/global-mutex'
 import { FromWorker as FromUpdate, spawnNew as spawnNewUpdateWorker, ToWorker as ToUpdate } from '../../util/worker/message-types/update'
 import {
 	ConnectArguments,
@@ -21,7 +20,6 @@ import {
 // this function is always used
 // noinspection JSUnusedGlobalSymbols
 export const bind = async (args: ConnectArguments): Promise<EnvironmentConnection> => {
-	setGlobalMutex(args.mutex.pass())
 	initFrontedVariablesFromReceived(args.frontendVariables)
 	setCameraBuffer(args.camera)
 	args.settings.observeEverything(s => CONFIG.replace(s))
@@ -30,7 +28,7 @@ export const bind = async (args: ConnectArguments): Promise<EnvironmentConnectio
 	let decodedGame: GameState | null = null
 	let updater: StateUpdater | null = null
 	let listeners: GameListeners | null = null
-	const updateWorker = await spawnNewUpdateWorker(globalMutex)
+	const updateWorker = await spawnNewUpdateWorker()
 
 	CONFIG.observeEverything(snapshot => updateWorker.send.send(ToUpdate.NewSettings, snapshot))
 

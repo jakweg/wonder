@@ -6,7 +6,6 @@ import { initFrontedVariablesFromReceived } from '../../util/frontend-variables-
 import { createNewGameMutex } from '../../util/game-mutex'
 import CONFIG from '../../util/persistance/observable-settings'
 import { getCameraBuffer, setCameraBuffer } from '../../util/persistance/serializable-settings'
-import { globalMutex, setGlobalMutex } from '../../util/worker/global-mutex'
 import { FromWorker as FromRender, spawnNew as spawnNewRenderWorker, ToWorker as ToRender } from '../../util/worker/message-types/render'
 import { FromWorker as FromUpdate, spawnNew as spawnNewUpdateWorker, ToWorker as ToUpdate } from '../../util/worker/message-types/update'
 import {
@@ -19,7 +18,6 @@ import {
 // this function is always used
 // noinspection JSUnusedGlobalSymbols
 export const bind = async (args: ConnectArguments): Promise<EnvironmentConnection> => {
-	setGlobalMutex(args.mutex.pass())
 	initFrontedVariablesFromReceived(args.frontendVariables)
 	setCameraBuffer(args.camera)
 	args.settings.observeEverything(s => CONFIG.replace(s))
@@ -32,8 +30,8 @@ export const bind = async (args: ConnectArguments): Promise<EnvironmentConnectio
 	const mutex = createNewGameMutex()
 
 	const [renderWorker, updateWorker] = await Promise['all']([
-		spawnNewRenderWorker(globalMutex),
-		spawnNewUpdateWorker(globalMutex),
+		spawnNewRenderWorker(),
+		spawnNewUpdateWorker(),
 	])
 
 	renderWorker.send.send(ToRender.GameMutex, mutex.pass())

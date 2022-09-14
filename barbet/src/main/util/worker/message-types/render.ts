@@ -1,6 +1,5 @@
 import { TerminateGameArguments } from "../../../entry-points/feature-environments/loader";
 import { ScheduledAction } from "../../../game-state/scheduled-actions";
-import Mutex from "../../mutex";
 import { WorkerInstance } from "../worker-instance";
 import { genericBind } from "../worker-listener";
 
@@ -36,7 +35,7 @@ interface FromTypes {
     [FromWorker.ScheduledAction]: ScheduledAction
 }
 
-export const spawnNew = (mutex: Mutex) => WorkerInstance
-    .spawnNew<ToTypes, FromTypes>('render-worker', 'render', mutex)
+export const spawnNew = () => WorkerInstance
+    .spawnNew<ToTypes, FromTypes>('render-worker', 'render')
 
 export const bind = () => genericBind<FromTypes, ToTypes>()

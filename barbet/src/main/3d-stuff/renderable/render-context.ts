@@ -4,9 +4,8 @@ import { ActionsQueue } from '../../game-state/scheduled-actions/queue'
 import { STANDARD_GAME_TICK_RATE, StateUpdater } from '../../game-state/state-updater'
 import { AdditionalFrontedFlags, frontedVariables, FrontendVariable } from '../../util/frontend-variables'
 import { GameMutex } from '../../util/game-mutex'
-import { isInWorker, Lock } from '../../util/mutex'
+import { isInWorker } from '../../util/mutex'
 import CONFIG, { observeSetting } from '../../util/persistance/observable-settings'
-import { globalMutex } from '../../util/worker/global-mutex'
 import { Camera } from '../camera'
 import ChunkVisibilityIndex from '../drawable/chunk-visibility'
 import terrain from '../drawable/terrain'
@@ -50,10 +49,10 @@ export const setupSceneRendering = (canvas: HTMLCanvasElement,
 			await handleInputEvents(dt, renderer, lastContext)
 		camera.updateMatrixIfNeeded()
 
-		if (isInWorker)
-			globalMutex.enter(Lock.Update)
-		else
-			await globalMutex.enterAsync(Lock.Update)
+		// if (isInWorker)
+		// 	globalMutex.enter(Lock.Update)
+		// else
+		// 	await globalMutex.enterAsync(Lock.Update)
 
 		renderer.renderStarted()
 
@@ -72,7 +71,7 @@ export const setupSceneRendering = (canvas: HTMLCanvasElement,
 
 		combinedRenderable.render(ctx)
 
-		globalMutex.unlock(Lock.Update)
+		// globalMutex.unlock(Lock.Update)
 	}
 
 	let minSecondsBetweenFramesFocus = 0
@@ -267,15 +266,15 @@ export const startRenderingGame = (
 	const performRender = async (elapsedSeconds: number, secondsSinceFirstRender: number) => {
 		inputHandler.handleInputsBeforeDraw(camera, elapsedSeconds)
 
-		if (isInWorker)
-			globalMutex.enter(Lock.Update)
-		else
-			await globalMutex.enterAsync(Lock.Update)
+		// if (isInWorker)
+		// 	globalMutex.enter(Lock.Update)
+		// else
+		// 	await globalMutex.enterAsync(Lock.Update)
 
 		pipeline.updateWorldIfNeeded()
 		pipeline.prepareRender()
 
-		globalMutex.unlock(Lock.Update)
+		// globalMutex.unlock(Lock.Update)
 
 		camera.updateMatrixIfNeeded()
 		pipeline.doGpuUploads()

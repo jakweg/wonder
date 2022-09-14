@@ -6,7 +6,6 @@ import { SaveMethod } from '../game-state/world/world-saver'
 import ActionsBroadcastHelper from '../network/actions-broadcast-helper'
 import { ConnectionStatus, defaults, NetworkStateField } from '../network/state'
 import IndexedState from '../util/state/indexed-state'
-import { globalMutex } from '../util/worker/global-mutex'
 import { FromWorker, spawnNew, ToWorker } from '../util/worker/message-types/network'
 import { createGenericSession } from './generic'
 
@@ -18,7 +17,7 @@ export type RemoteSession = Awaited<ReturnType<typeof createRemoteSession>>
 
 const loadWebsocket = async (holder: any) => {
 	const state = IndexedState.fromObject(defaults)
-	const ws = await spawnNew(globalMutex)
+	const ws = await spawnNew()
 	ws.receive.on(FromWorker.StateUpdate, data => state.replaceFromArray(data))
 	ws.receive.on(FromWorker.GotPlayerActions, ({ tick, from, actions }) => {
 		holder.generic.forwardPlayerActions(tick, from, actions)

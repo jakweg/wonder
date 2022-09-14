@@ -4,14 +4,11 @@ import { SaveGameArguments, SaveGameResult } from '../../game-state/world/world-
 import { TickQueueAction } from '../../network/tick-queue-action'
 import { DEBUG, FORCE_ENV_ZERO, JS_ROOT } from '../../util/build-info'
 import { frontedVariablesBuffer } from '../../util/frontend-variables'
-import Mutex from '../../util/mutex'
 import CONFIG from '../../util/persistance/observable-settings'
 import { getCameraBuffer } from '../../util/persistance/serializable-settings'
 import { sharedMemoryIsAvailable } from '../../util/shared-memory'
-import { globalMutex } from '../../util/worker/global-mutex'
 
 export interface ConnectArguments {
-	mutex: Mutex
 	frontendVariables: SharedArrayBuffer
 	camera: SharedArrayBuffer
 	settings: typeof CONFIG
@@ -93,7 +90,6 @@ export const loadEnvironment = async (name: Environment)
 	}
 	const connect = (await import((`${JS_ROOT}/feature-environments/${name}.js`)))['bind']
 	const args: ConnectArguments = {
-		mutex: globalMutex,
 		frontendVariables: frontedVariablesBuffer,
 		camera: getCameraBuffer(),
 		settings: CONFIG,

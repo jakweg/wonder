@@ -14,7 +14,6 @@ import { TickQueueAction } from '../../network/tick-queue-action'
 import { initFrontedVariablesFromReceived } from '../../util/frontend-variables-updaters'
 import CONFIG from '../../util/persistance/observable-settings'
 import { getCameraBuffer, setCameraBuffer } from '../../util/persistance/serializable-settings'
-import { setGlobalMutex } from '../../util/worker/global-mutex'
 import {
 	ConnectArguments,
 	CreateGameArguments,
@@ -28,7 +27,6 @@ import {
 // this function is always used
 // noinspection JSUnusedGlobalSymbols
 export const bind = (args: ConnectArguments): EnvironmentConnection => {
-	setGlobalMutex(args.mutex.pass())
 	initFrontedVariablesFromReceived(args.frontendVariables)
 	setCameraBuffer(args.camera)
 	args.settings.observeEverything(s => CONFIG.replace(s))

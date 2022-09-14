@@ -2,8 +2,6 @@ import { GameState } from '../../game-state/game-state'
 import { ScheduledActionId } from '../../game-state/scheduled-actions'
 import { ActionsQueue } from '../../game-state/scheduled-actions/queue'
 import { AdditionalFrontedFlags, frontedVariables, FrontendVariable } from '../../util/frontend-variables'
-import { isInWorker, Lock } from '../../util/mutex'
-import { globalMutex } from '../../util/worker/global-mutex'
 import { MainRenderer } from '../main-renderer'
 import { moveCameraByKeys } from './camera-keyboard-updater'
 import { RenderContext } from './render-context'
@@ -40,10 +38,10 @@ const newInputReactor = (actionsQueue: ActionsQueue) => {
 		const event = eventHappened
 		eventHappened = EventHappened.None
 
-		if (isInWorker)
-			globalMutex.enter(Lock.Update)
-		else
-			await globalMutex.enterAsync(Lock.Update)
+		// if (isInWorker)
+		// 	globalMutex.enter(Lock.Update)
+		// else
+		// 	await globalMutex.enterAsync(Lock.Update)
 
 		const pickResult = ctx.mousePicker.pick(ctx, mousePositionX, renderer.height - mousePositionY)
 
@@ -53,7 +51,7 @@ const newInputReactor = (actionsQueue: ActionsQueue) => {
 			wasLeftClick: event === EventHappened.LeftClick,
 		})
 
-		globalMutex.unlock(Lock.Update)
+		// globalMutex.unlock(Lock.Update)
 	}
 }
 
@@ -94,10 +92,10 @@ const createInputReactor = (game: GameState, actionsQueue: ActionsQueue) => {
 		const event = eventHappened
 		eventHappened = EventHappened.None
 
-		if (isInWorker)
-			globalMutex.enter(Lock.Update)
-		else
-			await globalMutex.enterAsync(Lock.Update)
+		// if (isInWorker)
+		// 	globalMutex.enter(Lock.Update)
+		// else
+		// 	await globalMutex.enterAsync(Lock.Update)
 
 		const pickResult = ctx.mousePicker.pick(ctx, mousePositionX, renderer.height - mousePositionY)
 
@@ -107,7 +105,7 @@ const createInputReactor = (game: GameState, actionsQueue: ActionsQueue) => {
 			wasLeftClick: event === EventHappened.LeftClick,
 		})
 
-		globalMutex.unlock(Lock.Update)
+		// globalMutex.unlock(Lock.Update)
 	}
 }
 

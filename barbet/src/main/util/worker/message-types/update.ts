@@ -1,7 +1,6 @@
 import { CreateGameArguments, TerminateGameArguments } from "../../../entry-points/feature-environments/loader";
 import { SaveGameArguments, SaveGameResult } from "../../../game-state/world/world-saver";
 import { TickQueueAction, UpdaterAction } from "../../../network/tick-queue-action";
-import Mutex from "../../mutex";
 import { WorkerInstance } from "../worker-instance";
 import { genericBind } from "../worker-listener";
 
@@ -40,7 +39,7 @@ interface FromTypes {
     [FromWorker.TickCompleted]: { tick: number, updaterActions: UpdaterAction[] }
 }
 
-export const spawnNew = (mutex: Mutex) => WorkerInstance
-    .spawnNew<ToTypes, FromTypes>('update-worker', 'update', mutex)
+export const spawnNew = () => WorkerInstance
+    .spawnNew<ToTypes, FromTypes>('update-worker', 'update')
 
 export const bind = () => genericBind<FromTypes, ToTypes>()

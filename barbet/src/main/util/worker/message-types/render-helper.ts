@@ -1,5 +1,4 @@
 import { Task, TaskResult } from "../../../3d-stuff/pipeline/work-scheduler";
-import Mutex from "../../mutex";
 import { WorkerInstance } from "../worker-instance";
 import { genericBind } from "../worker-listener";
 
@@ -21,7 +20,7 @@ interface FromTypes {
     [FromWorker.TaskDone]: { id: number, task: TaskResult }
 }
 
-export const spawnNew = (mutex: Mutex, id: number) => WorkerInstance
-    .spawnNew<ToTypes, FromTypes>('render-helper-worker', `render-helper-${id}`, mutex)
+export const spawnNew = (id: number) => WorkerInstance
+    .spawnNew<ToTypes, FromTypes>('render-helper-worker', `render-helper-${id}`)
 
 export const bind = () => genericBind<FromTypes, ToTypes>()
