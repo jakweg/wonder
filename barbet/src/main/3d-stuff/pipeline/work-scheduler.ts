@@ -6,7 +6,13 @@ export enum TaskType {
 }
 
 export type Task = { type: TaskType.CreateChunkMesh, chunkIndex: number }
-export type TaskResult = { type: TaskType.CreateChunkMesh, chunkIndex: number, vertexBuffer: SharedArrayBuffer, indicesBuffer: SharedArrayBuffer }
+export type TaskResult = {
+    type: TaskType.CreateChunkMesh,
+    chunkIndex: number,
+    vertexBuffer: SharedArrayBuffer,
+    indicesBuffer: SharedArrayBuffer,
+    recreationId: number
+}
 
 export default class RenderHelperWorkScheduler {
     private constructor(private readonly workers: Awaited<ReturnType<typeof spawnNew>>[]) {

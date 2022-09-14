@@ -1,3 +1,4 @@
+import { createNewBuffer } from '../../util/shared-memory'
 import { AIR_ID, allBlocks, BlockId } from './block'
 
 const NO_ELEMENT_INDEX_MARKER = 4294967295
@@ -8,8 +9,8 @@ const FLOATS_PER_VERTEX = 6
 
 
 export interface Mesh {
-	vertexes: Float32Array,
-	indices: Uint32Array,
+	vertexes: Uint8Array,
+	indices: Uint16Array,
 }
 
 interface WorldLike {
@@ -224,7 +225,7 @@ export const buildChunkMesh = (world: WorldLike, chunkX: number, chunkZ: number,
 	const vertexesCount = addedVertexesCounter
 	// xyz offsets rgb normals + 2ao
 	const bytesPerVertex = (3 + 1 + 3 + 1 + 2)
-	const finalVertexes = new Uint8Array(vertexesCount * bytesPerVertex)
+	const finalVertexes = new Uint8Array(createNewBuffer(vertexesCount * bytesPerVertex * Uint8Array.BYTES_PER_ELEMENT))
 	for (let i = 0; i < vertexesCount; ++i) {
 		finalVertexes[i * bytesPerVertex + 0] = vertexPositions[i * 3 + 0]! - startX
 		finalVertexes[i * bytesPerVertex + 1] = vertexPositions[i * 3 + 1]!
@@ -244,9 +245,14 @@ export const buildChunkMesh = (world: WorldLike, chunkX: number, chunkZ: number,
 		finalVertexes[i * bytesPerVertex + 9] = (aoFlags >> 8) & 0xFF
 	}
 
+	const finalIndices = new Uint16Array(createNewBuffer(indices.length * Uint16Array.BYTES_PER_ELEMENT))
+	let i = 0
+	for (const value of indices)
+		finalIndices[i++] = value
+
 	return {
 		vertexes: finalVertexes,
-		indices: new Uint16Array(indices),
+		indices: finalIndices,
 	}
 }
 

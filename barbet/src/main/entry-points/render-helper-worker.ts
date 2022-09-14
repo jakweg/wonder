@@ -48,6 +48,7 @@ const executeCreateChunkMesh = (world: World, task: Task): TaskResult => {
     const j = (task.chunkIndex % world.size.chunksSizeX) | 0
 
     mutex.enterForRenderHelper(id)
+    const recreationId = world.chunkModificationIds[task.chunkIndex]!
     const mesh = buildChunkMesh(world, i, j, WORLD_CHUNK_SIZE)
     mutex.exitRenderHelper(id)
 
@@ -56,5 +57,6 @@ const executeCreateChunkMesh = (world: World, task: Task): TaskResult => {
         chunkIndex: task.chunkIndex,
         indicesBuffer: mesh.indices.buffer as SharedArrayBuffer,
         vertexBuffer: mesh.vertexes.buffer as SharedArrayBuffer,
+        recreationId,
     }
 }

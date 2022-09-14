@@ -189,7 +189,7 @@ const drawable: () => Drawable<ShaderCache, WorldData, BoundData> = () => ({
                                 chunkData.vertexes = new Uint8Array(result.vertexBuffer)
                                 chunkData.triangles = chunkData.indices.length
                                 chunkData.scheduledToRebuild = false
-                                chunkData.lastRecreationId = modificationId
+                                chunkData.lastRecreationId = result.recreationId
                                 shader.lastMeshUploadId = -1
                             })
                         }
