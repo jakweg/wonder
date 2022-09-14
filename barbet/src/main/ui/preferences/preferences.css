@@ -1,39 +1,39 @@
 
-.settings {
+._css_settings {
     background-color: rgba(49, 16, 16, 0.9);
     width: max(50%, 300px);
     padding: 8px;
     --translate-y: 12px;
 }
 
-.settings header {
+._css_settings header {
     text-align: center;
     font-size: 1.6em;
     margin: 8px;
 }
 
-.settings header p {
+._css_settings header p {
     margin: 4px;
 }
 
-.settings footer {
+._css_settings footer {
     text-align: center;
     margin-top: 16px;
     font-size: 1em;
 }
 
-.settings main {
+._css_settings main {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 12px;
 }
 
-.settings header.sub-header {
+._css_settings header._css_sub-header {
     text-align: center;
     font-size: 1.3em;
 }
 
-.setting-button {
+._css_setting-button {
     border: 2px solid #363636;
     background: #565656;
     padding: 4px;
@@ -43,11 +43,11 @@
     color: inherit;
 }
 
-.setting-button:hover {
+._css_setting-button:hover {
     background: #3a3a3a;
 }
 
-.setting-range {
+._css_setting-range {
     min-height: 34px;
     background: #2c2c2c;
     display: grid;
@@ -59,7 +59,7 @@
     cursor: pointer;
 }
 
-.setting-range .moving-part {
+._css_setting-range ._css_moving-part {
     --progress: 50%;
     --width: 16px;
     pointer-events: none;
@@ -69,13 +69,13 @@
     transform: translateX(min(calc(100% - var(--width) - var(--width)), max(calc(var(--progress) - var(--width)), 0px)));
 }
 
-.setting-range .title {
+._css_setting-range ._css_title {
     position: absolute;
     text-align: center;
     pointer-events: none;
 }
 
-.build-info {
+._css_build-info {
     text-align: center;
     opacity: .7;
     font-size: .9em;

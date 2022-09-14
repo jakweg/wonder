@@ -11,7 +11,7 @@ const SITE_ID = 'next-wonder'
 const hostedFiles = [
 	'index.html',
 	'404.html',
-	'style.css',
+	'dist/main.css',
 	'dist/main.js',
 	'dist/render-worker.js',
 	'dist/update-worker.js',

@@ -1,4 +1,4 @@
-.floating-preferences {
+._css_floating-preferences {
     align-self: start;
     justify-self: end;
     background-color: rgba(0, 0, 0, 0.7);
@@ -12,13 +12,13 @@
             'buttons buttons';
 }
 
-.floating-preferences > .buttons {
+._css_floating-preferences > ._css_buttons {
     grid-area: buttons;
     display: flex;
     justify-content: space-evenly;
 }
 
-.floating-preferences > .buttons > * {
+._css_floating-preferences > ._css_buttons > * {
     cursor: pointer;
     padding: 2px;
     aspect-ratio: 1/1;

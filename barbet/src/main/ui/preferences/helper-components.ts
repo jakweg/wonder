@@ -12,7 +12,7 @@ export const BooleanSwitch = (main: HTMLElement,
 export const Button = (root: HTMLElement,
 	displayedText: Subject<string>,
 	onClick: Callback) => {
-	const container = createElement('button', root, 'setting-button') as HTMLButtonElement
+	const container = createElement('button', root, '_css_setting-button') as HTMLButtonElement
 	container['type'] = 'button'
 	container.addEventListener('click', onClick)
 
@@ -25,9 +25,9 @@ export const Range = (root: HTMLElement,
 	step: number,
 	value: Subject<number>,
 	setValue: (value: number) => void) => {
-	const container = createElement('div', root, 'setting-range') as HTMLDivElement
-	const movingPart = createElement('div', container, 'moving-part') as HTMLDivElement
-	const title = createElement('div', container, 'title') as HTMLDivElement
+	const container = createElement('div', root, '_css_setting-range') as HTMLDivElement
+	const movingPart = createElement('div', container, '_css_moving-part') as HTMLDivElement
+	const title = createElement('div', container, '_css_title') as HTMLDivElement
 
 	const stepsCount = (range[1] - range[0]) / step
 

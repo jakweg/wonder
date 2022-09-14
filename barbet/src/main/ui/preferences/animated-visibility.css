@@ -1,24 +1,24 @@
 
 
-.animated-visibility {
+._css_animated-visibility {
     --duration: 300ms;
     transition: opacity var(--duration), transform var(--duration);
     pointer-events: none;
     opacity: var(--opacity, 1);
 }
 
-.animated-visibility.fully-visible {
+._css_animated-visibility._css_fully-visible {
     pointer-events: all;
 }
 
-.animated-visibility.invisible.opacity {
+._css_animated-visibility._css_invisible._css_opacity {
     opacity: 0;
 }
-.animated-visibility.invisible.translate-y {
+._css_animated-visibility._css_invisible._css_translate-y {
     transform: translateY(var(--translate-y, 100%));
 }
 
-.animated-visibility.gone {
+._css_animated-visibility._css_gone {
     display: none;
     visibility: hidden;
 }

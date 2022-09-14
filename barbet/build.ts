@@ -114,6 +114,7 @@ if (args.size > 0) {
 			} as any)
 			if (produceMappings)
 				await Deno.writeTextFile('./mappings.txt', JSON.stringify(results.mangleCache, undefined, 3))
+
 			await esbuild.build({
 				entryPoints: [`${compiledOutDirectory}/main.css`],
 				minify: true,
@@ -121,6 +122,86 @@ if (args.size > 0) {
 				allowOverwrite: true,
 				format: 'esm',
 			})
+
+
+			const createNameGenerator = () => {
+				const mappings = new Map()
+				const allowedAsFirstChar = 'qwertyuiopasdfghjklzxcvbnm'
+				const allowedAsFirstCharLength = allowedAsFirstChar.length
+				const allowedAsFollowingChar = allowedAsFirstChar + '1234567890-'
+				const allowedAsFollowingCharLength = allowedAsFollowingChar.length
+
+				const generateClassName = (number: number): string => {
+					if (number < allowedAsFirstCharLength)
+						return allowedAsFirstChar[number]!
+
+					return generateClassName(number / allowedAsFollowingCharLength | 0) + allowedAsFollowingChar[number % allowedAsFollowingCharLength]
+				}
+				return (className: string) => {
+					let mapping = mappings.get(className)
+					if (!mapping) {
+						mapping = generateClassName(mappings.size)
+						mappings.set(className, mapping)
+					}
+					return mapping
+				}
+			}
+
+			const transformNames = (source: string, prefix: string, postfix: RegExp | null, getNameFor: (n: string) => string) => {
+
+				const prefixLength = prefix.length
+				const outputCode = []
+
+				let index = 0
+				while (true) {
+					const newIndex = source.indexOf(prefix, index)
+					if (newIndex < 0) {
+						outputCode.push(source.substring(index))
+						break
+					}
+
+					let mapping
+					let className
+					if (!postfix) {
+						const quot = source.charAt(newIndex - 1)
+						className = source.substring(newIndex + prefixLength, source.indexOf(quot, newIndex + prefixLength))
+						mapping = getNameFor(className)
+					} else {
+						className = source.substring(newIndex + prefixLength, source.substring(newIndex).search(postfix) + newIndex)
+						mapping = getNameFor(className)
+					}
+
+					outputCode.push(source.substring(index, newIndex))
+					outputCode.push(mapping)
+					index = newIndex + prefixLength + className.length
+				}
+				return outputCode.join('')
+			}
+
+			async function getNames(currentPath: string) {
+				const names: string[] = [];
+
+				for await (const dirEntry of Deno.readDir(currentPath)) {
+					const entryPath = `${currentPath}/${dirEntry.name}`;
+
+					if (dirEntry.isDirectory) {
+						names.push(...await getNames(entryPath));
+					} else {
+						names.push(entryPath);
+					}
+				}
+
+				return names;
+			}
+
+			const files = await Promise.all((await getNames(compiledOutDirectory)).map(async (name) => {
+				const content = await Deno.readTextFile(name)
+				return { name, content }
+			}))
+
+			const generator = createNameGenerator()
+			files.forEach(f => f.content = transformNames(f.content, '_css_', f.name.endsWith('.css') ? /[:\.{ >]/ig : null, generator))
+			await Promise.all(files.map(({ name, content }) => Deno.writeTextFile(name, content)))
 		}
 		Deno.exit(0)
 	}

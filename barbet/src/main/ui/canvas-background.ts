@@ -15,7 +15,7 @@ export default (parent: HTMLElement) => {
 			const intervalId = setInterval(() => {
 				if (newElement['width'] !== 0 || triesCounter++ > 100) {
 					clearInterval(intervalId)
-					old['classList']['add']('fade-out')
+					old['classList']['add']('_css_fade-out')
 					setTimeout(() => {
 						old['remove']()
 					}, 1500)

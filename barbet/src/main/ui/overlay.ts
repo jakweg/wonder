@@ -9,6 +9,6 @@ export default (root: HTMLElement,
 
 	const visible = map(total, e => e > 0)
 
-	const [overlay] = AnimatedVisibility(createElement('div', root, 'overlay'), visible, ['opacity'])
+	const [overlay] = AnimatedVisibility(createElement('div', root, '_css_overlay'), visible, ['_css_opacity'])
 	overlay['addEventListener']('click', onClick)
 }

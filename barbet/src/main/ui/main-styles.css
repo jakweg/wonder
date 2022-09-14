@@ -18,16 +18,16 @@ canvas {
     transition: opacity .5s;
 }
 
-canvas.fade-out {
+canvas._css_fade-out {
     pointer-events: none;
     opacity: 0;
 }
 
-.not-loaded-body {
+._css_not-loaded-body {
     display: none;
 }
 
-.root {
+._css_root {
     position: relative;
     height: 100vh;
     width: 100vw;
@@ -36,11 +36,11 @@ canvas.fade-out {
     place-items: center;
 }
 
-.root > * {
+._css_root > * {
     position: absolute;
 }
 
-.overlay {
+._css_overlay {
     height: 100vh;
     width: 100vw;
     overflow: hidden;

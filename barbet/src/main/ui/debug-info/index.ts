@@ -8,7 +8,7 @@ import './style.css'
 
 export default (parent: HTMLElement) => {
     const visible = observeField(CONFIG, 'other/show-debug-info')
-    const [root] = animatedVisibility(createElement('div', parent, 'debug-info'), visible, [])
+    const [root] = animatedVisibility(createElement('div', parent, '_css_debug-info'), visible, [])
 
     DebugText(root, constant(`Next wonder #${COMMIT_HASH}`))
 }

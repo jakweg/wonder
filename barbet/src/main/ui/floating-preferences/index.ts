@@ -9,7 +9,7 @@ export default (parent: HTMLElement,
 	openSettingsClicked: Callback,
 	pauseRequested: Callback,
 	resumeRequested: Callback) => {
-	const root = createElement('div', parent, 'floating-preferences')
+	const root = createElement('div', parent, '_css_floating-preferences')
 
 	TpsIcon(root)
 
@@ -21,7 +21,7 @@ export default (parent: HTMLElement,
 const RangeInput = (parent: HTMLElement,
 	value: Subject<number>,
 	valueChanged: (value: number) => void) => {
-	const input = createElement('input', parent, 'tps-selector') as HTMLInputElement
+	const input = createElement('input', parent, '_css_tps-selector') as HTMLInputElement
 	input['type'] = 'range'
 	input['min'] = '1'
 	input['max'] = '200'
@@ -54,7 +54,7 @@ const ButtonsBar = (parent: HTMLElement,
 	openSettingsClicked: Callback,
 	pauseRequested: Callback,
 	resumeRequested: Callback) => {
-	const bar = createElement('div', parent, 'buttons')
+	const bar = createElement('div', parent, '_css_buttons')
 
 	ButtonWithIcon(bar, 'Restart', RestartIcon, pauseRequested)
 	ButtonWithIcon(bar, 'Restart', RestartIcon, resumeRequested)

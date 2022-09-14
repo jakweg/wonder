@@ -19,7 +19,7 @@ interface Props {
 }
 
 export const createUi = (props: Props) => {
-	const root = createElement('div', props.root, 'root')
+	const root = createElement('div', props.root, '_css_root')
 
 	const isPaused = intervalProducer(props.isPaused, 300)
 	const [settingsOpened, setSettingsOpened] = newSubject(false)

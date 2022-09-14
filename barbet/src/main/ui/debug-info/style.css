@@ -1,11 +1,11 @@
 
-.debug-info {
+._css_debug-info {
     font-family: monospace;
     align-self: flex-start;
     justify-self: start;
     padding: 4px;
 }
 
-.debug-info p {
+._css_debug-info p {
     margin: 0;
 }

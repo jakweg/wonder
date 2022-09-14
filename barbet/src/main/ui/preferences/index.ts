@@ -13,7 +13,7 @@ export default (parent: HTMLElement, opened: Subject<boolean>, doneClicked: Call
 		KeyboardController.INSTANCE?.setMaskEnabled(opened)
 	})
 
-	const [root] = AnimatedVisibility(createElement('div', parent, 'settings'), opened, ['opacity', 'translate-y'])
+	const [root] = AnimatedVisibility(createElement('div', parent, '_css_settings'), opened, ['_css_opacity', '_css_translate-y'])
 
 	Header(root, constant('Game preferences'), false)
 	RenderingSection(root)
@@ -24,7 +24,7 @@ export default (parent: HTMLElement, opened: Subject<boolean>, doneClicked: Call
 }
 
 export const Header = (root: HTMLElement, title: Subject<string>, subHeader: boolean) => {
-	const header = createElement('header', root, subHeader ? 'sub-header' : '')
+	const header = createElement('header', root, subHeader ? '_css_sub-header' : '')
 	const p = createElement('p', header)
 	title.on(title => p['innerText'] = title)
 }
