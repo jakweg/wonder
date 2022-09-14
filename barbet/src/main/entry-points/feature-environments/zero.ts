@@ -1,5 +1,5 @@
 import { Camera } from '../../3d-stuff/camera'
-import { startRenderingGame } from '../../3d-stuff/renderable/render-context'
+import { createRenderingSession } from '../../3d-stuff/renderable/render-context'
 import { GameStateImplementation } from '../../game-state/game-state'
 import { ActionsQueue, SendActionsQueue } from '../../game-state/scheduled-actions/queue'
 import {
@@ -12,6 +12,7 @@ import { performGameSave, SaveGameArguments, SaveGameResult } from '../../game-s
 import TickQueue from '../../network/tick-queue'
 import { TickQueueAction } from '../../network/tick-queue-action'
 import { initFrontedVariablesFromReceived } from '../../util/frontend-variables-updaters'
+import { createNewGameMutex } from '../../util/game-mutex'
 import CONFIG from '../../util/persistance/observable-settings'
 import { getCameraBuffer, setCameraBuffer } from '../../util/persistance/serializable-settings'
 import {
@@ -31,11 +32,11 @@ export const bind = (args: ConnectArguments): EnvironmentConnection => {
 	setCameraBuffer(args.camera)
 	args.settings.observeEverything(s => CONFIG.replace(s))
 
+	let session: Awaited<ReturnType<typeof createRenderingSession>> | null = null
 	let tickQueue: TickQueue | null = null
 	let actionsQueue: ActionsQueue | null = null
 	let game: GameStateImplementation | null = null
 	let updater: StateUpdater | null = null
-	let renderCancelCallback: any = null
 	let gameListeners: GameListeners | null = null
 	return {
 		name: 'zero',
@@ -43,12 +44,18 @@ export const bind = (args: ConnectArguments): EnvironmentConnection => {
 			if (game !== null)
 				this.terminate({})
 
+			const mutex = createNewGameMutex()
 			const stateBroadcastCallback = () => void 0 // ignore, since everything is locally anyway
 			actionsQueue = SendActionsQueue.create(action => {
 				gameListeners?.onInputCaused(action)
 			})
 
-			game = await loadGameFromArgs(gameArgs, stateBroadcastCallback) as GameStateImplementation
+			const pendingSession = createRenderingSession(actionsQueue, mutex)
+
+			game = await loadGameFromArgs(gameArgs, mutex, stateBroadcastCallback) as GameStateImplementation
+
+			session = await pendingSession
+
 			tickQueue = TickQueue.createEmpty()
 
 
@@ -60,7 +67,9 @@ export const bind = (args: ConnectArguments): EnvironmentConnection => {
 				},
 				game.currentTick, tickQueue)
 
+
 			updater = createStateUpdaterControllerFromReceived(updaterInstance.pass())
+			session.setGame(game, () => updater!.estimateCurrentGameTickTime(0), () => updater!.getTickRate())
 			return {
 				updater,
 				setActionsCallback: (forTick: number, playerId: string, actions: TickQueueAction[]) => {
@@ -76,12 +85,11 @@ export const bind = (args: ConnectArguments): EnvironmentConnection => {
 		},
 		async startRender(args: StartRenderArguments): Promise<void> {
 			if (game === null) throw new Error('Start game first')
-			renderCancelCallback?.()
-			const gameTickEstimation = () => updater!.estimateCurrentGameTickTime(0)
-			renderCancelCallback = startRenderingGame(args.canvas, game, updater!, actionsQueue!, Camera.newUsingBuffer(getCameraBuffer()), gameTickEstimation)
+			session!.setCamera(Camera.newUsingBuffer(getCameraBuffer()))
+			session!.setCanvas(args.canvas)
 		},
 		terminate(_: TerminateGameArguments) {
-			renderCancelCallback?.()
+			session?.cleanUp()
 			updater?.stop()
 			gameListeners = actionsQueue = game = updater = null
 		},

@@ -101,11 +101,10 @@ export const gameMutexFrom = (data: any): GameMutex => {
                     if (replaced === value && (replaced & UPDATE_BIT) === 0) {
                         Atomics.notify(array, 0)
                         return // success, we have the lock!}
-                    } else {
-                        // update is happening right now, wait for it to finish
-                        Atomics.wait(array, 0, value)
                     }
                 }
+                // update is happening right now, wait for it to finish
+                Atomics.wait(array, 0, value)
             }
         },
         async enterForRenderAsync(): Promise<void> {
@@ -117,11 +116,10 @@ export const gameMutexFrom = (data: any): GameMutex => {
                     if (replaced === value && (replaced & UPDATE_BIT) === 0) {
                         Atomics.notify(array, 0)
                         return // success, we have the lock!}
-                    } else {
-                        // update is happening right now, wait for it to finish
-                        await waitAsyncCompat(array, 0, value as any).value
                     }
                 }
+                // update is happening right now, wait for it to finish
+                await waitAsyncCompat(array, 0, value as any).value
             }
         },
         exitRender(): void {
@@ -139,11 +137,10 @@ export const gameMutexFrom = (data: any): GameMutex => {
                     if (replaced === value && (replaced & UPDATE_BIT) === 0) {
                         Atomics.notify(array, 0)
                         return // success, we have the lock!}
-                    } else {
-                        // update is happening right now, wait for it to finish
-                        Atomics.wait(array, 0, value)
                     }
                 }
+                // update is happening right now, wait for it to finish
+                Atomics.wait(array, 0, value)
             }
         },
         exitRenderHelper(id: number): void {
