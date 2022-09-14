@@ -16,6 +16,7 @@ const hostedFiles = [
 	'build-js/render-worker.js',
 	'build-js/update-worker.js',
 	'build-js/network-worker.js',
+	'build-js/render-helper-worker.js',
 	'build-js/feature-environments/zero.js',
 	'build-js/feature-environments/first.js',
 	'build-js/feature-environments/second.js',
@@ -23,7 +24,7 @@ const hostedFiles = [
 
 async function cleanTmpFolder() {
 	try {
-		await Deno.remove(`${TMP_FOLDER_ROOT}`, {recursive: true})
+		await Deno.remove(`${TMP_FOLDER_ROOT}`, { recursive: true })
 	} catch (_) {
 		// ignore
 	}
@@ -36,7 +37,7 @@ async function createTmpFolder() {
 
 async function cloneRepo() {
 	const cmd = ['git', 'clone', '--depth', '1', '--branch', BRANCH, GIT_URL, FOLDER_TO_CLONE]
-	const process = Deno.run({cmd, stdout: 'null', cwd: TMP_FOLDER_ROOT})
+	const process = Deno.run({ cmd, stdout: 'null', cwd: TMP_FOLDER_ROOT })
 	if (!(await process.status()).success) {
 		throw new Error('Git clone process failed :(')
 	}
@@ -45,7 +46,7 @@ async function cloneRepo() {
 
 async function buildFrontend() {
 	const cmd = ['deno', 'run', '-A', 'build.ts', '--prod']
-	const process = Deno.run({cmd, stdout: 'null', cwd: `${TMP_FOLDER_ROOT}/${FOLDER_TO_CLONE}/barbet`})
+	const process = Deno.run({ cmd, stdout: 'null', cwd: `${TMP_FOLDER_ROOT}/${FOLDER_TO_CLONE}/barbet` })
 	if (!(await process.status()).success) {
 		throw new Error('Build process failed :(')
 	}
@@ -53,14 +54,14 @@ async function buildFrontend() {
 
 async function activateServiceAccount() {
 	const cmd = ['./google-cloud-sdk/bin/gcloud', 'auth', 'activate-service-account', '--key-file', './private-key.json']
-	const process = Deno.run({cmd, stdout: 'null'})
+	const process = Deno.run({ cmd, stdout: 'null' })
 	if (!(await process.status()).success)
 		throw new Error('gcloud auth activate-service-account process failed :(')
 }
 
 async function getAccessToken(): Promise<string> {
 	const cmd = ['./google-cloud-sdk/bin/gcloud', 'auth', 'print-access-token']
-	const process = Deno.run({cmd, stdout: 'piped'})
+	const process = Deno.run({ cmd, stdout: 'piped' })
 
 	const output = await process.output()
 	const outputString = new TextDecoder().decode(output)
@@ -91,7 +92,7 @@ async function populateFiles(token: string, versionId: string, files: any): Prom
 			'Authorization': `Bearer ${token}`,
 			'Content-Type': 'application/json',
 		},
-		body: JSON.stringify({files}),
+		body: JSON.stringify({ files }),
 	})
 
 	if (!response.ok)
@@ -121,7 +122,7 @@ async function markVersionAsFinalized(token: string, versionId: string): Promise
 			'Authorization': `Bearer ${token}`,
 			'Content-Type': 'application/json',
 		},
-		body: JSON.stringify({'status': 'FINALIZED'}),
+		body: JSON.stringify({ 'status': 'FINALIZED' }),
 	})
 
 	if (!response.ok)
@@ -143,14 +144,14 @@ async function publishRelease(token: string, versionId: string): Promise<void> {
 
 async function compressFiles(files: string[]) {
 	const cmd = ['gzip', ...files]
-	const process = Deno.run({cmd})
+	const process = Deno.run({ cmd })
 	if (!(await process.status()).success)
 		throw new Error('gzip process failed')
 }
 
 async function shaFiles(files: string[]): Promise<string[]> {
 	const cmd = ['openssl', 'dgst', '-sha256', ...files]
-	const process = Deno.run({cmd, stdout: 'piped'})
+	const process = Deno.run({ cmd, stdout: 'piped' })
 
 	const output = await process.output()
 	const outputString = new TextDecoder().decode(output)
@@ -199,7 +200,7 @@ async function prepareAccountAndCreateNewSite() {
 	const firebaseHostingConfig = new TextDecoder().decode(await Deno.readFile(`${TMP_FOLDER_ROOT}/${FOLDER_TO_CLONE}/barbet/firebase-hosting-config.json`))
 
 	const versionId = await createNewSite(token, firebaseHostingConfig)
-	return {token, versionId}
+	return { token, versionId }
 }
 
 async function uploadRequiredFiles(token: string, uploadUrl: string, requiredHashes: string, hash2file: { [key: string]: string }) {
@@ -207,10 +208,10 @@ async function uploadRequiredFiles(token: string, uploadUrl: string, requiredHas
 }
 
 async function prepareReleaseAndPublishIt() {
-	const {file2hash, hash2file} = await prepareFileForUploadAndGetHashes()
-	const {token, versionId} = await prepareAccountAndCreateNewSite()
+	const { file2hash, hash2file } = await prepareFileForUploadAndGetHashes()
+	const { token, versionId } = await prepareAccountAndCreateNewSite()
 
-	const {uploadUrl, uploadRequiredHashes} = await populateFiles(token, versionId, file2hash)
+	const { uploadUrl, uploadRequiredHashes } = await populateFiles(token, versionId, file2hash)
 	await uploadRequiredFiles(token, uploadUrl, uploadRequiredHashes, hash2file)
 
 	await markVersionAsFinalized(token, versionId)
@@ -223,10 +224,10 @@ async function handler(_: Request): Promise<Response> {
 	try {
 		await prepareReleaseAndPublishIt()
 
-		return new Response(null, {status: 200})
+		return new Response(null, { status: 200 })
 	} catch (e) {
 		console.error(e)
-		return new Response(JSON.stringify(e), {status: 500})
+		return new Response(JSON.stringify(e), { status: 500 })
 	}
 }
 

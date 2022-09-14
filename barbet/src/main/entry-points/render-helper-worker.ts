@@ -22,7 +22,7 @@ receiver.on(ToWorker.SetWorld, received => {
     gotWorld = World.fromReceived(received)
 })
 
-receiver.on(ToWorker.ExecuteTask, ({ id, task }) => {
+receiver.on(ToWorker.ExecuteTask, async ({ id, task }) => {
     const world = gotWorld
     if (world == undefined)
         throw new Error()
@@ -30,7 +30,7 @@ receiver.on(ToWorker.ExecuteTask, ({ id, task }) => {
     let result
     switch (task.type) {
         case TaskType.CreateChunkMesh:
-            result = executeCreateChunkMesh(world, task)
+            result = await executeCreateChunkMesh(world, task)
             break
         default:
             throw new Error()
@@ -41,7 +41,7 @@ receiver.on(ToWorker.ExecuteTask, ({ id, task }) => {
     })
 })
 
-const executeCreateChunkMesh = (world: World, task: Task): TaskResult => {
+const executeCreateChunkMesh = async (world: World, task: Task): Promise<TaskResult> => {
     if (task.type !== TaskType.CreateChunkMesh) throw new Error()
 
     const i = (task.chunkIndex / world.size.chunksSizeX) | 0
