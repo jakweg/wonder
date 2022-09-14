@@ -24,6 +24,13 @@ export interface GameState {
 	readonly currentTick: number
 }
 
+export const enum MetadataField {
+	CurrentTick,
+	LastWorldChange,
+	LastBuildingsChange,
+	SIZE
+}
+
 export const createGameStateForRenderer = (object: any): GameState => {
 	return {
 		metaData: new Int32Array(object.metadata),
@@ -40,12 +47,6 @@ export const createGameStateForRenderer = (object: any): GameState => {
 }
 
 
-export const enum MetadataField {
-	CurrentTick,
-	LastWorldChange,
-	LastBuildingsChange,
-	SIZE
-}
 
 export class GameStateImplementation implements GameState {
 	/** @deprecated remove it? it may be used in the future */

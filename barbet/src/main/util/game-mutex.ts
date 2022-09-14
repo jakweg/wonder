@@ -153,7 +153,7 @@ export const gameMutexFrom = (data: any): GameMutex => {
             Atomics.notify(array, 0)
         },
         pass() {
-            return array.buffer
+            return array['buffer']
         }
     }
 }

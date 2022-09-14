@@ -55,8 +55,8 @@ const executeCreateChunkMesh = (world: World, task: Task): TaskResult => {
     return {
         type: TaskType.CreateChunkMesh,
         chunkIndex: task.chunkIndex,
-        indicesBuffer: mesh.indices.buffer as SharedArrayBuffer,
-        vertexBuffer: mesh.vertexes.buffer as SharedArrayBuffer,
+        indicesBuffer: mesh.indices['buffer'] as SharedArrayBuffer,
+        vertexBuffer: mesh.vertexes['buffer'] as SharedArrayBuffer,
         recreationId,
     }
 }

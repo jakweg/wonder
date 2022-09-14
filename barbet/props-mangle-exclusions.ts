@@ -162,6 +162,7 @@ const list = Object.freeze([
 	'substring',
 	'tan',
 	'trim',
+	'uniform2f',
 	'texImage2D',
 	'texParameteri',
 	'TEXTURE_2D',

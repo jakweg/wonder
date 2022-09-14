@@ -43,7 +43,7 @@ const getProjectTotalLinesCount = () => countLines('src')
 const getCommitHash = async () => (await getOutputFromProcess(['git', 'rev-parse', '--short', 'HEAD'])).trim()
 
 
-const [commitHash, linesCount] = await Promise.all([getCommitHash(), getProjectTotalLinesCount()])
+const [commitHash, linesCount] = await Promise['all']([getCommitHash(), getProjectTotalLinesCount()])
 
 if (args.size > 0) {
 	console.log('Received unknown options: ', args)

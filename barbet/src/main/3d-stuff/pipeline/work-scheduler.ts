@@ -42,7 +42,7 @@ export default class RenderHelperWorkScheduler {
 
         const count = workersCount === undefined ? Math.max(1, (navigator['hardwareConcurrency'] / 2) | 0) : +workersCount
 
-        const workers = await Promise.all([...new Array(count)]
+        const workers = await Promise['all']([...new Array(count)]
             .map((_, i) => spawnNew(i)))
 
         let i = 0

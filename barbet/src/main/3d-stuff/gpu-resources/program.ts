@@ -79,7 +79,7 @@ export default class GlProgram<A, U> {
         const gl = this.gl;
         const entries = Object.entries(attributes) as [A, AttributeSpecification][]
 
-        const totalSize = entries.map(([_, v]) => v.count * getBytesSize(v.type ?? AttrType.Float)).reduce((a, b) => a + b, 0)
+        const totalSize = entries.map(([_, v]) => v.count * getBytesSize(v.type ?? AttrType.Float))['reduce']((a, b) => a + b, 0)
 
         let offset = 0
         for (const [key, attribute] of entries) {

@@ -55,6 +55,7 @@ export const newPipeline = (
             if (lastRebuildTick === thisTick)
                 return
             lastRebuildTick = thisTick
+
             for (const e of mappedElements)
                 e.element.updateWorld(e.shader, e.world, e.bound)
         },
