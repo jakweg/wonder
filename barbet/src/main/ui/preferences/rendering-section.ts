@@ -1,12 +1,12 @@
 import { Environment } from '../../entry-points/feature-environments/loader'
 import CONFIG from '../../util/persistance/observable-settings'
-import { constantState, map, observeField } from '../../util/state/observable'
+import { constant, map, observeField } from '../../util/state/subject'
 import { createElement } from '../utils'
 import { Header } from './'
 import { BooleanSwitch, Button, Range } from './helper-components'
 
 export default (root: HTMLElement) => {
-	Header(root, constantState('Video settings'), true)
+	Header(root, constant('Video settings'), true)
 	const main = createElement('main', root)
 
 	BooleanSwitch(main, 'rendering/antialias', (v: boolean) => `Antialiasing: ${v ? 'ON' : 'OFF'}`)

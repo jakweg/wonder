@@ -1,13 +1,13 @@
 import CONFIG from '../../util/persistance/observable-settings'
-import { Observable, observeField } from '../../util/state/observable'
+import { observeField, Subject } from '../../util/state/subject'
 import { RestartIcon, SettingsIcon, TpsIcon } from '../icons'
 import { Callback, createElement } from '../utils'
 
 
 export default (parent: HTMLElement,
-                openSettingsClicked: Callback,
-                pauseRequested: Callback,
-                resumeRequested: Callback) => {
+	openSettingsClicked: Callback,
+	pauseRequested: Callback,
+	resumeRequested: Callback) => {
 	const root = createElement('div', parent, 'floating-preferences')
 
 	TpsIcon(root)
@@ -18,8 +18,8 @@ export default (parent: HTMLElement,
 }
 
 const RangeInput = (parent: HTMLElement,
-                    value: Observable<number>,
-                    valueChanged: (value: number) => void) => {
+	value: Subject<number>,
+	valueChanged: (value: number) => void) => {
 	const input = createElement('input', parent, 'tps-selector') as HTMLInputElement
 	input['type'] = 'range'
 	input['min'] = '1'
@@ -27,7 +27,7 @@ const RangeInput = (parent: HTMLElement,
 	input['step'] = '1'
 	input['title'] = 'Speed of the simulation'
 
-	value(value => input['value'] = `${value}`)
+	value.on(value => input['value'] = `${value}`)
 
 	input.addEventListener('input', (event) => {
 		const value = +(event['target'] as HTMLInputElement)['value']
@@ -36,9 +36,9 @@ const RangeInput = (parent: HTMLElement,
 }
 
 const ButtonWithIcon = (parent: HTMLElement,
-                        title: string,
-                        icon: typeof RestartIcon,
-                        onClick: Callback) => {
+	title: string,
+	icon: typeof RestartIcon,
+	onClick: Callback) => {
 	const btn = createElement('button', parent) as HTMLButtonElement
 	btn['type'] = 'button'
 	btn['title'] = title
@@ -50,9 +50,9 @@ const ButtonWithIcon = (parent: HTMLElement,
 
 
 const ButtonsBar = (parent: HTMLElement,
-                    openSettingsClicked: Callback,
-                    pauseRequested: Callback,
-                    resumeRequested: Callback) => {
+	openSettingsClicked: Callback,
+	pauseRequested: Callback,
+	resumeRequested: Callback) => {
 	const bar = createElement('div', parent, 'buttons')
 
 	ButtonWithIcon(bar, 'Restart', RestartIcon, pauseRequested)

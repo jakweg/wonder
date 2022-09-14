@@ -1,11 +1,11 @@
 import CONFIG from '../../util/persistance/observable-settings'
-import { constantState, map, observeField } from '../../util/state/observable'
+import { constant, map, observeField } from '../../util/state/subject'
 import { createElement } from '../utils'
 import { BooleanSwitch, Range } from './helper-components'
 import { Header } from './index'
 
 export default (root: HTMLElement) => {
-	Header(root, constantState('Behaviour after focus loss'), true)
+	Header(root, constant('Behaviour after focus loss'), true)
 	const main = createElement('main', root)
 
 	BooleanSwitch(main, 'other/pause-on-blur', (v: boolean) => `Auto pause: ${v ? 'ON' : 'OFF'}`)

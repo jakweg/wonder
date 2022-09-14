@@ -1,30 +1,30 @@
 import CONFIG from '../../util/persistance/observable-settings'
-import { map, Observable, observeField } from '../../util/state/observable'
+import { map, observeField, Subject } from '../../util/state/subject'
 import { Callback, createElement } from '../utils'
 
 export const BooleanSwitch = (main: HTMLElement,
-                              key: Parameters<typeof CONFIG.get>[0],
-                              titleFunction: (v: boolean) => string) => {
+	key: Parameters<typeof CONFIG.get>[0],
+	titleFunction: (v: boolean) => string) => {
 	const onClick = () => CONFIG.set(key, !CONFIG.get(key))
 	Button(main, map(observeField(CONFIG, key), titleFunction), onClick)
 }
 
 export const Button = (root: HTMLElement,
-                       displayedText: Observable<string>,
-                       onClick: Callback) => {
+	displayedText: Subject<string>,
+	onClick: Callback) => {
 	const container = createElement('button', root, 'setting-button') as HTMLButtonElement
 	container['type'] = 'button'
 	container.addEventListener('click', onClick)
 
-	displayedText(displayedText => container['innerText'] = displayedText)
+	displayedText.on(displayedText => container['innerText'] = displayedText)
 }
 
 export const Range = (root: HTMLElement,
-                      displayedText: Observable<string>,
-                      range: [number, number],
-                      step: number,
-                      value: Observable<number>,
-                      setValue: (value: number) => void) => {
+	displayedText: Subject<string>,
+	range: [number, number],
+	step: number,
+	value: Subject<number>,
+	setValue: (value: number) => void) => {
 	const container = createElement('div', root, 'setting-range') as HTMLDivElement
 	const movingPart = createElement('div', container, 'moving-part') as HTMLDivElement
 	const title = createElement('div', container, 'title') as HTMLDivElement
@@ -41,7 +41,7 @@ export const Range = (root: HTMLElement,
 		setValue(Math.round((progress * (range[1] - range[0]) + range[0])))
 	}
 
-	value(value => {
+	value.on(value => {
 		const progress = (value - range[0]) / (range[1] - range[0])
 		movingPart['style']['setProperty']('--progress', `${Math.round(progress * 100) | 0}%`)
 	})
@@ -63,7 +63,7 @@ export const Range = (root: HTMLElement,
 	})
 	container.addEventListener('pointermove', event => {
 		if (dragging) handleDragMove(event)
-	}, {'passive': true})
+	}, { 'passive': true })
 
-	displayedText(displayedText => title['innerText'] = displayedText)
+	displayedText.on(displayedText => title['innerText'] = displayedText)
 }

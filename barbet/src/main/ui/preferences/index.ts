@@ -1,5 +1,5 @@
 import KeyboardController from '../../util/keyboard-controller'
-import { constantState, Observable } from '../../util/state/observable'
+import { constant, Subject } from '../../util/state/subject'
 import { Callback, createElement } from '../utils'
 import AnimatedVisibility from './animated-visibility'
 import BuildInfoSection from './build-info-section'
@@ -7,14 +7,14 @@ import { Button } from './helper-components'
 import OnBlurBehaviourSection from './on-blur-section'
 import RenderingSection from './rendering-section'
 
-export default (parent: HTMLElement, opened: Observable<boolean>, doneClicked: Callback) => {
-	opened(opened => {
+export default (parent: HTMLElement, opened: Subject<boolean>, doneClicked: Callback) => {
+	opened.on(opened => {
 		KeyboardController.INSTANCE?.setMaskEnabled(opened)
 	})
 
-	const root = AnimatedVisibility(createElement('div', parent, 'settings'), opened, ['opacity', 'translate-y'])
+	const [root] = AnimatedVisibility(createElement('div', parent, 'settings'), opened, ['opacity', 'translate-y'])
 
-	Header(root, constantState('Game preferences'), false)
+	Header(root, constant('Game preferences'), false)
 	RenderingSection(root)
 	OnBlurBehaviourSection(root)
 	BuildInfoSection(root)
@@ -22,13 +22,13 @@ export default (parent: HTMLElement, opened: Observable<boolean>, doneClicked: C
 	Footer(root, doneClicked)
 }
 
-export const Header = (root: HTMLElement, title: Observable<string>, subHeader: boolean) => {
+export const Header = (root: HTMLElement, title: Subject<string>, subHeader: boolean) => {
 	const header = createElement('header', root, subHeader ? 'sub-header' : '')
 	const p = createElement('p', header)
-	title(title => p['innerText'] = title)
+	title.on(title => p['innerText'] = title)
 }
 
 const Footer = (root: HTMLElement, doneClicked: () => void) => {
 	const footer = createElement('footer', root)
-	Button(footer, constantState('Done'), doneClicked)
+	Button(footer, constant('Done'), doneClicked)
 }

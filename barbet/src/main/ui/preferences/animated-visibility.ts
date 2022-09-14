@@ -1,17 +1,17 @@
-import { Observable } from '../../util/state/observable'
+import { Subject } from '../../util/state/subject'
 
 const ANIMATION_DURATION = 300
 
 type Style = 'opacity' | 'translate-y'
 
 export default <T extends HTMLElement>(element: T,
-                                       visible: Observable<boolean>,
-                                       styles: Style[] = ['opacity', 'translate-y']): T => {
+	visible: Subject<boolean>,
+	styles: Style[] = ['opacity', 'translate-y']): [T, () => void] => {
 	element['classList']['add']('animated-visibility', ...styles)
 	element['style']['setProperty']('--duration', `${ANIMATION_DURATION}ms`)
 	let timeoutId = 0
 	let frameId = 0
-	visible(visible => {
+	const cancel = visible.on(visible => {
 		clearTimeout(timeoutId)
 		cancelAnimationFrame(frameId)
 		if (visible) {
@@ -33,5 +33,5 @@ export default <T extends HTMLElement>(element: T,
 			timeoutId = setTimeout(() => element['classList']['add']('gone'), ANIMATION_DURATION)
 		}
 	})
-	return element
+	return [element, cancel]
 }

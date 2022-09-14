@@ -1,4 +1,4 @@
-import { observableState, observeProducer } from '../util/state/observable'
+import { intervalProducer, newSubject } from '../util/state/subject'
 import CanvasBackground from './canvas-background'
 import FloatingPreferences from './floating-preferences'
 import Overlay from './overlay'
@@ -19,8 +19,8 @@ interface Props {
 export const createUi = (props: Props) => {
 	const root = createElement('div', props.root, 'root')
 
-	const isPaused = observeProducer(props.isPaused, 250)
-	const [settingsOpened, setSettingsOpened] = observableState(false)
+	const isPaused = intervalProducer(props.isPaused, 300)
+	const [settingsOpened, setSettingsOpened] = newSubject(false)
 
 	const canvas = CanvasBackground(root)
 
