@@ -1,5 +1,8 @@
+import { World } from "../../game-state/world/world"
 import { GameMutex } from "../../util/game-mutex"
+import { sharedMemoryIsAvailable } from "../../util/shared-memory"
 import { FromWorker, spawnNew, ToWorker } from "../../util/worker/message-types/render-helper"
+import { dispatch, Environment } from "./scheduler-tasks"
 
 export enum TaskType {
     CreateChunkMesh,
@@ -14,7 +17,13 @@ export type TaskResult = {
     recreationId: number
 }
 
-export default class RenderHelperWorkScheduler {
+export default interface RenderHelperWorkScheduler {
+    setWorld(world: any): void
+    scheduleTask(task: Task): Promise<TaskResult>
+    terminate(): void
+}
+
+class WorkerImplementation implements RenderHelperWorkScheduler {
     private constructor(private readonly workers: Awaited<ReturnType<typeof spawnNew>>[]) {
         for (const w of workers) {
             w.receive.on(FromWorker.TaskDone, result => {
@@ -49,7 +58,7 @@ export default class RenderHelperWorkScheduler {
         for (const w of workers)
             w.send.send(ToWorker.SetInitials, { mutex: mutex.pass(), id: i++ })
 
-        return new RenderHelperWorkScheduler(workers)
+        return new WorkerImplementation(workers)
     }
 
     public setWorld(world: any): void {
@@ -76,3 +85,24 @@ export default class RenderHelperWorkScheduler {
     }
 }
 
+class InstantImplementation implements RenderHelperWorkScheduler {
+    private env: Environment = {
+        mutexEnter: () => void 0,
+        mutexExit: () => void 0,
+        world: null as any
+    }
+
+    setWorld(world: any): void {
+        this.env.world = World.fromReceived(world)
+    }
+    scheduleTask(task: Task): Promise<TaskResult> {
+        return dispatch(this.env, task)
+    }
+    terminate(): void {
+        // nothing to do
+    }
+}
+
+export const newHelperScheduler = (mutex: GameMutex): Promise<RenderHelperWorkScheduler> => {
+    return sharedMemoryIsAvailable ? WorkerImplementation.createNew(mutex) : Promise.resolve(new InstantImplementation())
+}

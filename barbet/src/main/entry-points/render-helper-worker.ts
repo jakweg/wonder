@@ -1,6 +1,5 @@
-import { Task, TaskResult, TaskType } from "../3d-stuff/pipeline/work-scheduler";
-import { World, WORLD_CHUNK_SIZE } from "../game-state/world/world";
-import { buildChunkMesh } from "../game-state/world/world-to-mesh-converter";
+import { dispatch, Environment } from "../3d-stuff/pipeline/scheduler-tasks";
+import { World } from "../game-state/world/world";
 import { gameMutexFrom } from "../util/game-mutex";
 import { bind, FromWorker, ToWorker } from "../util/worker/message-types/render-helper";
 
@@ -16,47 +15,21 @@ const handleInitials = async () => {
 
 const { mutex, id } = await handleInitials()
 
-let gotWorld: World | null = null
+let env: Environment | null = null
 
 receiver.on(ToWorker.SetWorld, received => {
-    gotWorld = World.fromReceived(received)
+    env = {
+        world: World.fromReceived(received),
+        mutexEnter: () => mutex.enterForRenderHelper(id),
+        mutexExit: () => mutex.exitRenderHelper(id),
+    }
 })
 
 receiver.on(ToWorker.ExecuteTask, async ({ id, task }) => {
-    const world = gotWorld
-    if (world == undefined)
+    if (env == undefined)
         throw new Error()
 
-    let result
-    switch (task.type) {
-        case TaskType.CreateChunkMesh:
-            result = await executeCreateChunkMesh(world, task)
-            break
-        default:
-            throw new Error()
-    }
-
     sender.send(FromWorker.TaskDone, {
-        id, task: result
+        id, task: await dispatch(env, task)
     })
 })
-
-const executeCreateChunkMesh = async (world: World, task: Task): Promise<TaskResult> => {
-    if (task.type !== TaskType.CreateChunkMesh) throw new Error()
-
-    const i = (task.chunkIndex / world.size.chunksSizeX) | 0
-    const j = (task.chunkIndex % world.size.chunksSizeX) | 0
-
-    mutex.enterForRenderHelper(id)
-    const recreationId = world.chunkModificationIds[task.chunkIndex]!
-    const mesh = buildChunkMesh(world, i, j, WORLD_CHUNK_SIZE)
-    mutex.exitRenderHelper(id)
-
-    return {
-        type: TaskType.CreateChunkMesh,
-        chunkIndex: task.chunkIndex,
-        indicesBuffer: mesh.indices['buffer'] as SharedArrayBuffer,
-        vertexBuffer: mesh.vertexes['buffer'] as SharedArrayBuffer,
-        recreationId,
-    }
-}

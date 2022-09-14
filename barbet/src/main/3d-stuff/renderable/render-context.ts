@@ -11,7 +11,7 @@ import terrain from '../drawable/terrain'
 import { MainRenderer } from '../main-renderer'
 import { newPipeline } from '../pipeline'
 import { newMousePicker } from '../pipeline/mouse-picker'
-import RenderHelperWorkScheduler from '../pipeline/work-scheduler'
+import { newHelperScheduler } from '../pipeline/work-scheduler'
 import { newAnimationFrameCaller, newBeforeDrawWrapper as newDrawWrapper, newFramesLimiter, newInputHandler } from '../pipeline/wrappers'
 import { createCombinedRenderable } from './combined-renderables'
 import createInputReactor from './input-reactor'
@@ -130,7 +130,7 @@ export const createRenderingSession = async (
 	].map(e => e()))
 
 
-	const scheduler = await RenderHelperWorkScheduler.createNew(mutex)
+	const scheduler = await newHelperScheduler(mutex)
 
 	const inputHandler = newInputHandler(actionsQueue)
 	const sunPosition = vec3.fromValues(500, 1500, -500)
