@@ -7,13 +7,13 @@ import { GameMutex } from '../../util/game-mutex'
 import { isInWorker, Lock } from '../../util/mutex'
 import CONFIG, { observeSetting } from '../../util/persistance/observable-settings'
 import { globalMutex } from '../../util/worker/global-mutex'
-import { spawnNew } from '../../util/worker/message-types/render-helper'
 import { Camera } from '../camera'
 import ChunkVisibilityIndex from '../drawable/chunk-visibility'
 import terrain from '../drawable/terrain'
 import { MainRenderer } from '../main-renderer'
 import { newPipeline } from '../pipeline'
 import { newMousePicker } from '../pipeline/mouse-picker'
+import RenderHelperWorkScheduler from '../pipeline/work-scheduler'
 import { newAnimationFrameCaller, newBeforeDrawWrapper as newDrawWrapper, newFramesLimiter, newInputHandler } from '../pipeline/wrappers'
 import { createCombinedRenderable } from './combined-renderables'
 import createInputReactor from './input-reactor'
@@ -131,7 +131,8 @@ export const createRenderingSession = async (
 		terrain,
 	].map(e => e()))
 
-	const helper = await spawnNew(globalMutex, 0)
+
+	const scheduler = await RenderHelperWorkScheduler.createNew()
 
 	const inputHandler = newInputHandler(actionsQueue)
 	const sunPosition = vec3.fromValues(500, 1500, -500)
@@ -218,7 +219,8 @@ export const createRenderingSession = async (
 			gameTickRate = _gameTickRate
 			gameTickEstimation = _gameTickEstimation
 			visibility = ChunkVisibilityIndex.create(game.world.size.chunksSizeX, game.world.size.chunksSizeZ)
-			pipeline.useGame(game)
+			scheduler.setWorld(game.world.pass())
+			pipeline.useGame(game, scheduler)
 			pipeline.bindGpuWithGameIfCan()
 		},
 		setCamera(newCamera: Camera) {
@@ -235,7 +237,7 @@ export const createRenderingSession = async (
 
 			pipeline.cleanUp()
 			cancelObserver()
-			helper.terminate()
+			scheduler.terminate()
 		},
 	}
 }
@@ -305,7 +307,7 @@ export const startRenderingGame = (
 	const caller = newAnimationFrameCaller(limiter.shouldRender, performRender)
 
 	pipeline.useContext(drawHelper.rawContext)
-	pipeline.useGame(game)
+	pipeline.useGame(game,)
 	pipeline.bindGpuWithGame()
 
 	caller.start()

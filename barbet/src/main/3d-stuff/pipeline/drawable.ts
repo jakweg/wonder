@@ -1,7 +1,12 @@
 import { GameState } from "../../game-state/game-state";
 import { RenderContext } from "../renderable/render-context";
 import { GpuAllocator } from "./allocator";
+import RenderHelperWorkScheduler from "./work-scheduler";
 
+export interface LoadParams {
+    game: GameState
+    scheduler: RenderHelperWorkScheduler
+}
 
 export interface Drawable<ShaderCache, WorldData, BoundData> {
     /** Called once when gpu is available */
@@ -14,7 +19,7 @@ export interface Drawable<ShaderCache, WorldData, BoundData> {
 
     /** Called once when game is available, 
      * has world lock */
-    createWorld(game: GameState, previous: WorldData | null): WorldData;
+    createWorld(params: LoadParams, previous: WorldData | null): WorldData;
 
     /** Called once after both gpu and game are available,
      *  has world lock */

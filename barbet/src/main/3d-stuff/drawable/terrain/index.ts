@@ -1,13 +1,13 @@
 import { toGl } from "@matrix/common"
 import { GameState, MetadataField } from "../../../game-state/game-state"
 import { WORLD_CHUNK_SIZE } from "../../../game-state/world/world"
-import { buildChunkMesh } from "../../../game-state/world/world-to-mesh-converter"
 import CONFIG from "../../../util/persistance/observable-settings"
 import { pickViaMouseDefaultFragmentShader } from "../../common-shader"
 import { GlProgram, GPUBuffer, VertexArray } from "../../gpu-resources"
 import { AttrType } from "../../gpu-resources/program"
 import { GpuAllocator } from "../../pipeline/allocator"
-import { Drawable } from "../../pipeline/Drawable"
+import { Drawable, LoadParams } from "../../pipeline/Drawable"
+import RenderHelperWorkScheduler, { TaskType } from "../../pipeline/work-scheduler"
 import { RenderContext } from "../../renderable/render-context"
 import { Attributes, fragmentShaderSource, MousePickerAttributes, MousePickerUniforms, Uniforms, vertexShaderSource } from "../../renderable/terrain/shaders"
 
@@ -23,6 +23,7 @@ interface ShaderCache {
 
 interface WorldData {
     game: GameState
+    scheduler: RenderHelperWorkScheduler
     chunks: ChunkDataGame[]
     lastMeshRecreationId: number
     lastMeshModificationIds: Uint16Array
@@ -35,9 +36,10 @@ interface BoundData {
 interface ChunkDataGame {
     positionX: number
     positionZ: number
-    vertexes: Float32Array
-    indices: Uint32Array
+    vertexes: Uint8Array
+    indices: Uint16Array
     triangles: number
+    scheduledToRebuild: boolean
     lastRecreationId: number
 }
 interface ChunkDataShader {
@@ -85,7 +87,8 @@ const drawable: () => Drawable<ShaderCache, WorldData, BoundData> = () => ({
             chunks: previous?.chunks ?? null
         }
     },
-    createWorld(game: GameState, previous: WorldData | null): WorldData {
+    createWorld(params: LoadParams, previous: WorldData | null): WorldData {
+        const { game, scheduler } = params
         const world = game.world
         const chunksX = world.size.chunksSizeX
         const chunksZ = world.size.chunksSizeZ
@@ -94,8 +97,9 @@ const drawable: () => Drawable<ShaderCache, WorldData, BoundData> = () => ({
         for (let i = 0; i < chunksX; ++i)
             for (let j = 0; j < chunksZ; ++j)
                 chunks.push({
-                    vertexes: new Float32Array(),
-                    indices: new Uint32Array(),
+                    vertexes: new Uint8Array(),
+                    indices: new Uint16Array(),
+                    scheduledToRebuild: false,
                     triangles: 0,
                     lastRecreationId: -1,
                     positionX: i * WORLD_CHUNK_SIZE,
@@ -108,6 +112,7 @@ const drawable: () => Drawable<ShaderCache, WorldData, BoundData> = () => ({
         return {
             chunks,
             game,
+            scheduler,
             lastMeshModificationIds,
             trianglesToRender: 0,
             lastMeshRecreationId: -1,
@@ -171,26 +176,28 @@ const drawable: () => Drawable<ShaderCache, WorldData, BoundData> = () => ({
             for (let j = 0; j < chunksZ; j++) {
                 const shaderChunk = shaderChunks[chunkIndex]!
                 if (shaderChunk.visible) {
-                    const modificationId = modificationIds[chunkIndex]!
                     const chunkData = dataChunks[chunkIndex]!
-                    if (chunkData.lastRecreationId !== modificationId) {
-
-                        chunkData.lastRecreationId = modificationId
-
-                        const mesh = buildChunkMesh(data.game.world, i, j, WORLD_CHUNK_SIZE)
-                        chunkData.indices = mesh.indices
-                        chunkData.vertexes = mesh.vertexes
-                        chunkData.triangles = mesh.indices.length
-
-                        rebuildAnything = true
+                    if (!chunkData.scheduledToRebuild) {
+                        const modificationId = modificationIds[chunkIndex]!
+                        if (chunkData.lastRecreationId !== modificationId) {
+                            chunkData.scheduledToRebuild = true
+                            data.scheduler.scheduleTask({
+                                type: TaskType.CreateChunkMesh,
+                                chunkIndex,
+                            }).then(result => {
+                                chunkData.indices = new Uint16Array(result.indicesBuffer)
+                                chunkData.vertexes = new Uint8Array(result.vertexBuffer)
+                                chunkData.triangles = chunkData.indices.length
+                                chunkData.scheduledToRebuild = false
+                                chunkData.lastRecreationId = modificationId
+                                shader.lastMeshUploadId = -1
+                            })
+                        }
                     }
                 }
                 chunkIndex++
             }
         }
-
-        if (rebuildAnything)
-            shader.lastMeshUploadId = -1
     },
     prepareRender(shader: ShaderCache, world: WorldData, bound: BoundData): void {
     },

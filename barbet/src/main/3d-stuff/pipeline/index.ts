@@ -2,6 +2,7 @@ import { GameState } from "../../game-state/game-state"
 import { RenderContext } from "../renderable/render-context"
 import { GpuAllocator, newGpuAllocator } from "./allocator"
 import { Drawable } from "./drawable"
+import RenderHelperWorkScheduler from "./work-scheduler"
 
 export const newPipeline = (
     elements: Drawable<any, any, any>[]
@@ -35,12 +36,12 @@ export const newPipeline = (
                 e.shader = doneShaders[i++]
             isDoneWithShaders = true
         },
-        useGame(game: GameState) {
+        useGame(game: GameState, scheduler: RenderHelperWorkScheduler) {
             if (lastGame === game) return
             lastGame = game
             lastRebuildTick = -1
             for (const e of mappedElements)
-                e.world = e.element.createWorld(game, e.world)
+                e.world = e.element.createWorld({ game, scheduler }, e.world)
         },
         bindGpuWithGameIfCan() {
             if (allocator === null || lastGame === null || !isDoneWithShaders)
