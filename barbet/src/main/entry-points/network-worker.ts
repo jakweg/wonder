@@ -18,10 +18,10 @@ receiver.on(ToWorker.Connect, async request => {
 
     const endpoint = request.address
 
-    state.set(
-        NetworkStateField.Endpoint, endpoint,
-        NetworkStateField.ConnectionStatus, ConnectionStatus.Connected
-    )
+    state.edit()
+        .set(NetworkStateField.Endpoint, endpoint,)
+        .set(NetworkStateField.ConnectionStatus, ConnectionStatus.Connected)
+        .commit()
 
     wsSocket = wrapWebsocket(new WebSocket(`ws://${endpoint}`))
 
@@ -32,18 +32,20 @@ receiver.on(ToWorker.Connect, async request => {
         const idPacket = await wsSocket.receive.await('your-info', abortAfterTimeout(1000).signal)
 
 
-        state.set(
-            NetworkStateField.MyId, idPacket['id'],
-            NetworkStateField.ConnectionStatus, ConnectionStatus.Connected
-        )
+        state.edit()
+            .set(NetworkStateField.MyId, idPacket['id'],)
+            .set(NetworkStateField.ConnectionStatus, ConnectionStatus.Connected)
+            .commit()
+
         sender.send(FromWorker.ConnectionMade, { success: true })
     } catch (e) {
         wsSocket = null
-        state.set(
-            NetworkStateField.MyId, null,
-            NetworkStateField.Endpoint, null,
-            NetworkStateField.ConnectionStatus, ConnectionStatus.Error
-        )
+        state.edit()
+            .set(NetworkStateField.MyId, null,)
+            .set(NetworkStateField.Endpoint, null,)
+            .set(NetworkStateField.ConnectionStatus, ConnectionStatus.Error)
+            .commit()
+
         sender.send(FromWorker.ConnectionMade, { success: false })
         return
     }
@@ -51,18 +53,13 @@ receiver.on(ToWorker.Connect, async request => {
 
     wsSocket.connection.awaitDisconnected()
         .then(({ error }) => {
-            state.set(
-                NetworkStateField.MyId, null,
-                NetworkStateField.Endpoint, null,
-                NetworkStateField.ConnectionStatus, ConnectionStatus.Error
-            )
-            state.set(
-                NetworkStateField.Endpoint, null,
-                NetworkStateField.MyId, null,
-                NetworkStateField.RoomId, null,
-                NetworkStateField.ConnectionStatus, error ? ConnectionStatus.Error : ConnectionStatus.Disconnected,
-                NetworkStateField.PlayersInRoom, null,
-            )
+            state.edit()
+                .set(NetworkStateField.MyId, null,)
+                .set(NetworkStateField.Endpoint, null,)
+                .set(NetworkStateField.ConnectionStatus, error ? ConnectionStatus.Error : ConnectionStatus.Disconnected)
+                .set(NetworkStateField.PlayersInRoom, null)
+                .commit()
+
             sender.send(FromWorker.ConnectionDropped, null)
         })
 })
@@ -91,11 +88,11 @@ receiver.on(ToWorker.JoinRoom, async ({ roomId }) => {
     const doReceiveRoomUpdates = async () => {
         while (state.get(NetworkStateField.RoomId) === myRoomId && wsSocket?.connection.isConnected()) {
             const snapshot = await wsSocket.receive.await('room-info-update')
-            state.set(
-                NetworkStateField.RoomIsLocked, snapshot['preventJoining'],
-                NetworkStateField.LatencyTicks, snapshot['latencyTicks'],
-                NetworkStateField.PlayersInRoom, snapshot['players'],
-            )
+            state.edit()
+                .set(NetworkStateField.RoomIsLocked, snapshot['preventJoining'],)
+                .set(NetworkStateField.LatencyTicks, snapshot['latencyTicks'],)
+                .set(NetworkStateField.PlayersInRoom, snapshot['players'],)
+                .commit()
         }
     }
 

@@ -1,3 +1,9 @@
+interface Batch<T> {
+    set<K extends keyof T>(key: K, value: T[K]): this
+
+    commit(): void
+}
+
 export default class IndexedState<T> {
     private everythingObservers: ((value: any) => void)[] = []
     private constructor(
@@ -24,32 +30,32 @@ export default class IndexedState<T> {
 
 
     public set<
-        K1 extends keyof T,
-        K2 extends keyof T,
-        K3 extends keyof T,
-        K4 extends keyof T,
-        K5 extends keyof T,
+        K extends keyof T,
     >(
-        key1: K1, value1: T[K1],
-        key2?: K2, value2?: T[K2],
-        key3?: K3, value3?: T[K3],
-        key4?: K4, value4?: T[K4],
-        key5?: K5, value5?: T[K5],
+        key: K, value: T[K],
     ): void {
-        let anyChanged = this.singleChange(key1, value1)
+        this.edit().set(key, value).commit()
+    }
 
-        if (key2 !== undefined && this.singleChange(key2, value2))
-            anyChanged = true
-        if (key3 !== undefined && this.singleChange(key3, value3))
-            anyChanged = true
-        if (key4 !== undefined && this.singleChange(key4, value4))
-            anyChanged = true
-        if (key5 !== undefined && this.singleChange(key5, value5))
-            anyChanged = true
+    public edit(): Batch<T> {
+        let pendingChanges: any[] = []
+        const self = this
+        return {
+            commit() {
+                let anyChanged = false
+                for (const [key, value] of pendingChanges)
+                    anyChanged = self.singleChange(key, value) || anyChanged
 
-        if (anyChanged || this.everythingObservers['length'] > 0) {
-            const pass = this.pass()
-            this.everythingObservers['forEach'](e => e(pass))
+
+                if (anyChanged && self.everythingObservers['length'] > 0) {
+                    const pass = self.pass()
+                    self.everythingObservers['forEach'](e => e(pass))
+                }
+            },
+            set(key, value) {
+                pendingChanges.push([key, value])
+                return this
+            },
         }
     }
 
