@@ -85,6 +85,8 @@ export const bind = (args: ConnectArguments): EnvironmentConnection => {
 		},
 		async startRender(args: StartRenderArguments): Promise<void> {
 			if (game === null) throw new Error('Start game first')
+			if (!session) return
+
 			session!.setCamera(Camera.newUsingBuffer(getCameraBuffer()))
 			session!.setCanvas(args.canvas)
 		},

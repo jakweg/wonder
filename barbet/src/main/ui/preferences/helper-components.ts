@@ -43,7 +43,7 @@ export const Range = (root: HTMLElement,
 
 	value.on(value => {
 		const progress = (value - range[0]) / (range[1] - range[0])
-		movingPart['style']['setProperty']('--progress', `${Math.round(progress * 100) | 0}%`)
+		movingPart['style']['setProperty']('--_css_progress', `${Math.round(progress * 100) | 0}%`)
 	})
 
 	let dragging = false

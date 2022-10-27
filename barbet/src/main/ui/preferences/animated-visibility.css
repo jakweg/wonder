@@ -1,10 +1,10 @@
 
 
 ._css_animated-visibility {
-    --duration: 300ms;
-    transition: opacity var(--duration), transform var(--duration);
+    --_css_duration: 300ms;
+    transition: opacity var(--_css_duration), transform var(--_css_duration);
     pointer-events: none;
-    opacity: var(--opacity, 1);
+    opacity: var(--_css_opacity, 1);
 }
 
 ._css_animated-visibility._css_fully-visible {
@@ -15,7 +15,7 @@
     opacity: 0;
 }
 ._css_animated-visibility._css_invisible._css_translate-y {
-    transform: translateY(var(--translate-y, 100%));
+    transform: translateY(var(--_css_translate-y, 100%));
 }
 
 ._css_animated-visibility._css_gone {

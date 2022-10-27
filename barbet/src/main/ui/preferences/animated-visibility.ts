@@ -9,7 +9,7 @@ export default <T extends HTMLElement>(element: T,
 	visible: Subject<boolean>,
 	styles: Style[] = ['_css_opacity', '_css_translate-y']): [T, () => void] => {
 	element['classList']['add']('_css_animated-visibility', ...styles)
-	element['style']['setProperty']('--duration', `${ANIMATION_DURATION}ms`)
+	element['style']['setProperty']('--_css_duration', `${ANIMATION_DURATION}ms`)
 	let timeoutId = 0
 	let frameId = 0
 	const cancel = visible.on(visible => {

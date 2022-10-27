@@ -45,7 +45,7 @@ canvas._css_fade-out {
     width: 100vw;
     overflow: hidden;
     background-color: black;
-    --opacity: .7;
+    --_css_opacity: .7;
 }
 
 
