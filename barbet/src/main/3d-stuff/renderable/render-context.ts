@@ -1,4 +1,5 @@
 import * as vec3 from '@matrix/vec3'
+import TimeMeter from '@seampan/time-meter'
 import { GameState } from '../../game-state/game-state'
 import { ActionsQueue } from '../../game-state/scheduled-actions/queue'
 import { STANDARD_GAME_TICK_RATE, StateUpdater } from '../../game-state/state-updater'
@@ -15,6 +16,7 @@ import { newMousePicker } from '../pipeline/mouse-picker'
 import { newHelperScheduler } from '../pipeline/work-scheduler'
 import { newAnimationFrameCaller, newBeforeDrawWrapper as newDrawWrapper, newFramesLimiter, newInputHandler } from '../pipeline/wrappers'
 import { createCombinedRenderable } from './combined-renderables'
+import { DrawPhase } from './draw-phase'
 import createInputReactor from './input-reactor'
 
 export interface RenderContext {
@@ -161,26 +163,37 @@ export const createRenderingSession = async (
 			const drawHelper = newDrawWrapper(canvas, camera)
 			stats.setRendererName(drawHelper.getRendererName())
 			const mouse = newMousePicker(drawHelper.rawContext)
+			const timeMeter = new TimeMeter<DrawPhase>(DrawPhase.SIZE)
 			const performRender = async (elapsedSeconds: number, secondsSinceFirstRender: number) => {
+				timeMeter.beginSession(DrawPhase.HandleInputs)
+
 				inputHandler.handleInputsBeforeDraw(camera, elapsedSeconds)
 				drawHelper.handleResize()
+
 				if (camera.updateMatrixIfNeeded()) {
 					const count = visibility.update(camera.combinedMatrix)
 					stats.setVisibleChunksCount(count)
 				}
+
+				timeMeter.nowStart(DrawPhase.LockMutex)
 
 				if (isInWorker)
 					mutex.enterForRender()
 				else
 					await mutex.enterForRenderAsync()
 
+				timeMeter.nowStart(DrawPhase.UpdateWorld)
 				pipeline.updateWorldIfNeeded()
+
+				timeMeter.nowStart(DrawPhase.PrepareRender)
 				pipeline.prepareRender()
 
 				mutex.exitRender()
 
+				timeMeter.nowStart(DrawPhase.GPUUpload)
 				pipeline.doGpuUploads()
 
+				timeMeter.nowStart(DrawPhase.Draw)
 				const ctx: RenderContext = {
 					gl: drawHelper.rawContext,
 					camera,
@@ -196,6 +209,7 @@ export const createRenderingSession = async (
 
 				pipeline.draw(ctx)
 
+				timeMeter.nowStart(DrawPhase.DrawForMousePicker)
 				const inputs = inputHandler.shouldRenderForInputs()
 				if (inputs !== null) {
 					mouse.prepareBeforeDraw()
@@ -203,6 +217,7 @@ export const createRenderingSession = async (
 					const computed = mouse.pickAfterDraw(inputs.mouseX, inputs.mouseY)
 					inputHandler.interpretPick(computed, inputs)
 				}
+				stats.updateWithTimeMeasurements(timeMeter.endSessionAndGetRawResults())
 			}
 
 			const limiter = newFramesLimiter()

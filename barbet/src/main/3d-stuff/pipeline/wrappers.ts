@@ -86,7 +86,7 @@ export const newFramesLimiter = () => {
         shouldRender: (dt: number): boolean => {
             const variables = Atomics.load(frontedVariables, FrontendVariable.AdditionalFlags)
             const hasFocus = (variables & AdditionalFrontedFlags.WindowHasFocus) === AdditionalFrontedFlags.WindowHasFocus
-            return dt >= (hasFocus ? minSecondsBetweenFramesFocus : minSecondsBetweenFramesBlur)
+            return dt >= ((hasFocus ? minSecondsBetweenFramesFocus : minSecondsBetweenFramesBlur)) * 0.97
         },
         cleanUp() {
             unsub1()
@@ -109,7 +109,7 @@ export const newAnimationFrameCaller = (
 
         if ((shouldRender(elapsedSeconds)) === true) {
             await actualRender(elapsedSeconds, (now - firstFrameTime) / 1000)
-            lastFrameTime = performance.now()
+            lastFrameTime = now
         }
 
         // someone could cancel rendering in render callback

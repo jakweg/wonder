@@ -15,6 +15,9 @@
     padding: 2px 4px;
     background-color: #000000AA;
 }
+._css_debug-info table {
+    background-color: #000000AA;
+}
 ._css_debug-info  ._css_key_value_p >span:first-child:after {
     content: ':';
 }
