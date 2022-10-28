@@ -164,8 +164,10 @@ export const createRenderingSession = async (
 			const performRender = async (elapsedSeconds: number, secondsSinceFirstRender: number) => {
 				inputHandler.handleInputsBeforeDraw(camera, elapsedSeconds)
 				drawHelper.handleResize()
-				if (camera.updateMatrixIfNeeded())
-					visibility.update(camera.combinedMatrix)
+				if (camera.updateMatrixIfNeeded()) {
+					const count = visibility.update(camera.combinedMatrix)
+					stats.setVisibleChunksCount(count)
+				}
 
 				if (isInWorker)
 					mutex.enterForRender()

@@ -36,16 +36,19 @@ export default class ChunkVisibilityIndex {
         return new ChunkVisibilityIndex(sizeX, sizeY, new Uint8Array(sizeX * sizeY))
     }
 
-    public update(matrix: any) {
+    /** @returns number of visible chunks */
+    public update(matrix: any): number {
         this.visibility.fill(Status.INVISIBLE)
 
         const threshold = 1
 
+        let visibleCounter = 0
         let chunkIndex = 0
         for (let i = 0, li = this.sizeX; i < li; i++) {
             for (let j = 0, lj = this.sizeY; j < lj; j++) {
                 const visible = check2dPointVisibility(i * WORLD_CHUNK_SIZE, j * WORLD_CHUNK_SIZE, matrix, threshold)
                 if (visible) {
+                    visibleCounter++
                     this.visibility[chunkIndex] = Status.VISIBLE
                     this.visibility[chunkIndex - 1] = Status.VISIBLE
                     this.visibility[chunkIndex - li] = Status.VISIBLE
@@ -55,6 +58,7 @@ export default class ChunkVisibilityIndex {
                 chunkIndex++
             }
         }
+        return visibleCounter
     }
 
     public isPointInViewport(pointX: number, pointZ: number): boolean {

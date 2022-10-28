@@ -59,10 +59,12 @@ receiver.on(ToWorker.TerminateGame, args => {
 		close()
 })
 
+let timeoutId: ReturnType<typeof setTimeout>
 CONFIG.observe('other/show-debug-info', show => {
 	if (show) {
 		session.stats.receiveUpdates((data) => {
-			sender.send(FromWorker.DebugStatsUpdate, data)
+			clearTimeout(timeoutId)
+			timeoutId = setTimeout(() => void sender.send(FromWorker.DebugStatsUpdate, data), 0);
 		})
 	} else session.stats.stopUpdates()
 })

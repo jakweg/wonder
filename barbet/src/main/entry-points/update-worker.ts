@@ -73,10 +73,12 @@ receiver.on(ToWorker.SetPlayerIds, ({ playerIds }) => {
 	tickQueue?.setRequiredPlayers(playerIds)
 })
 
+let timeoutId: ReturnType<typeof setTimeout>
 CONFIG.observe('other/show-debug-info', show => {
 	if (show) {
 		stats.receiveUpdates((data) => {
-			sender.send(FromWorker.DebugStatsUpdate, data)
+			clearTimeout(timeoutId)
+			timeoutId = setTimeout(() => void sender.send(FromWorker.DebugStatsUpdate, data), 0);
 		})
 	} else stats.stopUpdates()
 })

@@ -3,11 +3,13 @@ import IndexedState from "../../state/indexed-state"
 export const enum StatField {
     RendererName,
     DrawCallsCount,
+    VisibleChunksCount,
 }
 
 export const newStatsObject = () => IndexedState.fromObject({
     [StatField.RendererName]: '?' as string,
     [StatField.DrawCallsCount]: 0 as number,
+    [StatField.VisibleChunksCount]: 0 as number,
 })
 
 export type RenderDebugStats = ReturnType<typeof newStatsObject>
@@ -26,6 +28,9 @@ export class RenderDebugDataCollector {
 
     public incrementDrawCalls() {
         this.rawStats.set(StatField.DrawCallsCount, this.rawStats.get(StatField.DrawCallsCount) + 1)
+    }
+    public setVisibleChunksCount(count: number) {
+        this.rawStats.set(StatField.VisibleChunksCount, count)
     }
 
     public receiveUpdates(callback: (stats: any) => void) {
