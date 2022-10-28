@@ -14,6 +14,7 @@ export default (root: HTMLElement) => {
 	BooleanSwitch(main, 'rendering/show-tile-borders', (v: boolean) => `Tile borders: ${v ? 'ON' : 'OFF'}`)
 	BooleanSwitch(main, 'rendering/ambient-occlusion', (v: boolean) => `Ambient occlusion: ${v ? 'ON' : 'OFF'}`)
 	PreferredEnvironment(main)
+	PreferredPowerPreference(main)
 	BooleanSwitch(main, 'other/generate-debug-world', (v: boolean) => `Debug world: ${v ? 'ON' : 'OFF'}`)
 }
 
@@ -37,6 +38,26 @@ const PreferredEnvironment = (main: HTMLElement) => {
 				break
 			default:
 				CONFIG.set(key, 'first')
+				break
+		}
+	})
+}
+
+
+const PreferredPowerPreference = (main: HTMLElement) => {
+	const key = 'rendering/power-preference'
+	const setting = observeField(CONFIG, key)
+	const titleMapFunction = (v: WebGLPowerPreference) => 'Prefer GPU: ' + (v === 'high-performance' ? 'discrete' : (v === 'low-power' ? 'integrated' : 'auto'))
+	Button(main, map(setting, titleMapFunction), () => {
+		switch (CONFIG.get(key)) {
+			case 'high-performance':
+				CONFIG.set(key, 'low-power')
+				break
+			case 'low-power':
+				CONFIG.set(key, 'default')
+				break
+			default:
+				CONFIG.set(key, 'high-performance')
 				break
 		}
 	})

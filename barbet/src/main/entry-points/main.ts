@@ -58,6 +58,7 @@ observeSetting('other/tps', tps => {
 })
 
 observeSetting('rendering/antialias', () => setTimeout(() => session?.resetRendering(), 10))
+observeSetting('rendering/power-preference', () => setTimeout(() => session?.resetRendering(), 10))
 
 const waitForOtherPlayers = async (
 	state: IndexedState<typeof defaults>,

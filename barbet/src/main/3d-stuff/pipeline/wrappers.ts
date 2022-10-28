@@ -13,6 +13,7 @@ const obtainWebGl2ContextFromCanvas = (canvas: HTMLCanvasElement): WebGL2Renderi
         'depth': true,
         'stencil': false,
         'failIfMajorPerformanceCaveat': true,
+        'powerPreference': CONFIG.get('rendering/power-preference'),
     }) as WebGL2RenderingContext
     if (context == null)
         throw new Error('Unable to obtain context')
