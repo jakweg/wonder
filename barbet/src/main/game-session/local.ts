@@ -32,5 +32,6 @@ export const createLocalSession = async (props: Props) => {
             generic.start([LOCAL_PLAYER_ID], tps)
         },
         terminate: generic.terminate,
+        getCurrentGame: generic.getCurrentGame,
     } as GameSession
 }

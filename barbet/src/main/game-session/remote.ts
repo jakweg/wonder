@@ -141,6 +141,7 @@ export const createRemoteSession = async (props: Props) => {
 		terminate(): void {
 			ws.terminate()
 			generic.terminate()
-		}
+		},
+		getCurrentGame: generic.getCurrentGame,
 	}
 }

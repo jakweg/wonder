@@ -58,3 +58,11 @@ receiver.on(ToWorker.TerminateGame, args => {
 	if (args.terminateEverything)
 		close()
 })
+
+CONFIG.observe('other/show-debug-info', show => {
+	if (show) {
+		session.stats.receiveUpdates((data) => {
+			sender.send(FromWorker.DebugStatsUpdate, data)
+		})
+	} else session.stats.stopUpdates()
+})

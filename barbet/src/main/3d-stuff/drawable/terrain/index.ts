@@ -231,7 +231,7 @@ const drawable: () => Drawable<ShaderCache, WorldData, BoundData> = () => ({
     },
     draw(ctx: RenderContext, shader: ShaderCache, world: WorldData, bound: BoundData): void {
 
-        const { gl, camera, visibility } = ctx
+        const { gl, camera, visibility, stats } = ctx
         const { program } = shader
         program.use()
 
@@ -250,6 +250,7 @@ const drawable: () => Drawable<ShaderCache, WorldData, BoundData> = () => ({
                         gl.uniform2f(chunkPosition, chunk.positionX, chunk.positionZ)
 
                         gl.drawElements(gl.TRIANGLES, chunk.triangles, gl.UNSIGNED_SHORT, 0)
+                        stats.incrementDrawCalls()
                     }
                 } else {
                     // trigger rebuild need

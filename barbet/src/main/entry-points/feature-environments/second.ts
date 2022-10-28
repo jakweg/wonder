@@ -6,6 +6,7 @@ import { initFrontedVariablesFromReceived } from '../../util/frontend-variables-
 import { createNewGameMutex } from '../../util/game-mutex'
 import CONFIG from '../../util/persistance/observable-settings'
 import { getCameraBuffer, setCameraBuffer } from '../../util/persistance/serializable-settings'
+import { newStatsObject } from '../../util/worker/debug-stats/render'
 import { FromWorker as FromRender, spawnNew as spawnNewRenderWorker, ToWorker as ToRender } from '../../util/worker/message-types/render'
 import { FromWorker as FromUpdate, spawnNew as spawnNewUpdateWorker, ToWorker as ToUpdate } from '../../util/worker/message-types/update'
 import {
@@ -74,6 +75,9 @@ export const bind = async (args: ConnectArguments): Promise<EnvironmentConnectio
 		}
 	}
 
+	const renderDebugStats = newStatsObject()
+	renderWorker.receive.on(FromRender.DebugStatsUpdate, data => renderDebugStats.replaceFromArray(data))
+
 	return {
 		name: 'second',
 		async createNewGame(gameArgs) {
@@ -89,6 +93,7 @@ export const bind = async (args: ConnectArguments): Promise<EnvironmentConnectio
 
 			renderWorker.send.send(ToRender.GameCreateResult, gameSnapshotForRenderer)
 			return {
+				renderDebugStats,
 				updater,
 				setActionsCallback(forTick: number, playerId: string, actions: TickQueueAction[]) {
 					updateWorker.send.send(ToUpdate.AppendToTickQueue, { forTick, playerId, actions })

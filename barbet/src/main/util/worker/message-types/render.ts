@@ -29,10 +29,12 @@ interface ToTypes {
 
 export const enum FromWorker {
     ScheduledAction,
+    DebugStatsUpdate,
 }
 
 interface FromTypes {
     [FromWorker.ScheduledAction]: ScheduledAction
+    [FromWorker.DebugStatsUpdate]: any
 }
 
 export const spawnNew = () => WorkerInstance

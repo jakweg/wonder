@@ -1,4 +1,5 @@
 import State from "."
+import IndexedState from "./indexed-state"
 
 type Setter<T> = (setter: (previous: T | undefined) => T) => void
 
@@ -124,7 +125,7 @@ export const intervalProducer = <T>(value: () => T, interval: number): Subject<T
 }
 
 
-export const observeField = <S, K extends keyof S>(state: State<S>, key: K): Subject<Readonly<S[K]>> => {
+export const observeField = <S, K extends keyof S>(state: State<S> | IndexedState<S>, key: K): Subject<Readonly<S[K]>> => {
     let cancel: any = null
     return constructSubject({
         defaultValue: state.get(key),

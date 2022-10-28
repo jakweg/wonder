@@ -6,6 +6,13 @@
     padding: 4px;
 }
 
-._css_debug-info p {
+
+._css_debug-info  ._css_key_value_p {
     margin: 0;
+}
+._css_debug-info  ._css_key_value_p >span {
+    padding: 4px;
+}
+._css_debug-info  ._css_key_value_p >span:first-child:after {
+    content: ':';
 }

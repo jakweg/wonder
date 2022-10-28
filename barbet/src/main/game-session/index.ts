@@ -1,4 +1,4 @@
-import { CreateGameArguments } from "../entry-points/feature-environments/loader"
+import { CreateGameArguments, CreateGameResult } from "../entry-points/feature-environments/loader"
 
 export type Operation =
     | { type: 'start', tps: number, }
@@ -19,4 +19,6 @@ export interface GameSession {
     isPaused(): boolean
 
     terminate(): void
+
+    getCurrentGame(): CreateGameResult | null
 }

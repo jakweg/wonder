@@ -109,6 +109,8 @@ const startLocal = async () => {
 		canvasProvider: uiHandlers.canvas.recreate
 	})
 	await local.createNewGame({})
+	local.getCurrentGame()?.renderDebugStats.observeEverything(uiHandlers.debug.updateValues)
+
 	local.resume(CONFIG.get('other/tps'))
 }
 

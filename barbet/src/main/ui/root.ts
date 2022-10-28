@@ -2,11 +2,11 @@ import { intervalProducer, newSubject } from '../util/state/subject'
 import CanvasBackground from './canvas-background'
 import DebugInfo from './debug-info'
 import FloatingPreferences from './floating-preferences'
+import './main-styles.css'
 import Overlay from './overlay'
 import PauseIndicator from './pause-indicator'
 import PreferencesRoot from './preferences'
 import { createElement } from './utils'
-import './main-styles.css'
 
 interface Props {
 	root: HTMLElement
@@ -33,13 +33,14 @@ export const createUi = (props: Props) => {
 		props.onPauseRequested,
 		props.onResumeRequested)
 
-	DebugInfo(root)
+	const debug = DebugInfo(root)
 
 	PauseIndicator(root, isPaused)
 
 	PreferencesRoot(root, settingsOpened, () => setSettingsOpened(() => false))
 
 	return {
+		debug,
 		canvas,
 	}
 }

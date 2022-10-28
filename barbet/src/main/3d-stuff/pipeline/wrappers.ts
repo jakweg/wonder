@@ -19,6 +19,18 @@ const obtainWebGl2ContextFromCanvas = (canvas: HTMLCanvasElement): WebGL2Renderi
     return context
 }
 
+const obtainRendererNameFromContext = (gl: WebGL2RenderingContext | undefined): string | null => {
+    if (gl) {
+        const ext = gl['getExtension']('WEBGL_debug_renderer_info') as any
+        if (ext) {
+            const value = gl['getParameter'](ext['UNMASKED_RENDERER_WEBGL'])
+            if (value)
+                return `${value}`
+        }
+    }
+    return null
+}
+
 export const newBeforeDrawWrapper = (canvas: HTMLCanvasElement, camera: Camera) => {
     const gl = obtainWebGl2ContextFromCanvas(canvas)
 
@@ -29,6 +41,9 @@ export const newBeforeDrawWrapper = (canvas: HTMLCanvasElement, camera: Camera) 
 
     return {
         rawContext: gl,
+        getRendererName() {
+            return obtainRendererNameFromContext(gl) ?? ''
+        },
         handleResize() {
             const width = frontedVariables[FrontendVariable.CanvasDrawingWidth]!
             const height = frontedVariables[FrontendVariable.CanvasDrawingHeight]!

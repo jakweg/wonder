@@ -5,6 +5,7 @@ import { STANDARD_GAME_TICK_RATE, StateUpdater } from '../../game-state/state-up
 import { AdditionalFrontedFlags, frontedVariables, FrontendVariable } from '../../util/frontend-variables'
 import { GameMutex, isInWorker } from '../../util/game-mutex'
 import CONFIG, { observeSetting } from '../../util/persistance/observable-settings'
+import { RenderDebugDataCollector } from '../../util/worker/debug-stats/render'
 import { Camera } from '../camera'
 import ChunkVisibilityIndex from '../drawable/chunk-visibility'
 import terrain from '../drawable/terrain'
@@ -20,6 +21,7 @@ export interface RenderContext {
 	readonly gl: WebGL2RenderingContext
 	readonly camera: Camera
 	readonly visibility: ChunkVisibilityIndex
+	readonly stats: RenderDebugDataCollector
 	readonly gameTickEstimation: number
 	readonly gameTime: number
 	readonly secondsSinceFirstRender: number
@@ -125,6 +127,7 @@ interface CanvasObjects {
 export const createRenderingSession = async (
 	actionsQueue: ActionsQueue,
 	mutex: GameMutex,) => {
+	const stats = new RenderDebugDataCollector()
 	const pipeline = newPipeline([
 		terrain,
 	].map(e => e()))
@@ -148,6 +151,7 @@ export const createRenderingSession = async (
 	})
 
 	return {
+		stats,
 		setCanvas(canvas: HTMLCanvasElement) {
 			if (lastCanvas !== null) {
 				lastCanvas.caller.stop()
@@ -155,6 +159,7 @@ export const createRenderingSession = async (
 			}
 
 			const drawHelper = newDrawWrapper(canvas, camera)
+			stats.setRendererName(drawHelper.getRendererName())
 			const mouse = newMousePicker(drawHelper.rawContext)
 			const performRender = async (elapsedSeconds: number, secondsSinceFirstRender: number) => {
 				inputHandler.handleInputsBeforeDraw(camera, elapsedSeconds)
@@ -177,6 +182,7 @@ export const createRenderingSession = async (
 				const ctx: RenderContext = {
 					gl: drawHelper.rawContext,
 					camera,
+					stats,
 					sunPosition,
 					visibility,
 					gameTickEstimation: gameTickEstimation(),
