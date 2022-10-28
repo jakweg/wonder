@@ -30,6 +30,7 @@ export const enum FromWorker {
     UpdateEntityContainer,
     GameSaved,
     TickCompleted,
+    DebugStatsUpdate,
 }
 
 interface FromTypes {
@@ -37,6 +38,7 @@ interface FromTypes {
     [FromWorker.UpdateEntityContainer]: { buffers: SharedArrayBuffer[] }
     [FromWorker.GameSaved]: SaveGameResult | false
     [FromWorker.TickCompleted]: { tick: number, updaterActions: UpdaterAction[] }
+    [FromWorker.DebugStatsUpdate]: any
 }
 
 export const spawnNew = () => WorkerInstance

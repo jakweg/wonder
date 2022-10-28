@@ -1,18 +1,16 @@
 import IndexedState from "../../state/indexed-state"
 
 export const enum StatField {
-    RendererName,
-    DrawCallsCount,
+    GameLoadTimeMs,
 }
 
 export const newStatsObject = () => IndexedState.fromObject({
-    [StatField.RendererName]: '?' as string,
-    [StatField.DrawCallsCount]: 0 as number,
+    [StatField.GameLoadTimeMs]: 0,
 })
 
-export type RenderDebugStats = ReturnType<typeof newStatsObject>
+export type UpdateDebugStats = ReturnType<typeof newStatsObject>
 
-export class RenderDebugDataCollector {
+export class UpdateDebugDataCollector {
 
     private readonly rawStats = newStatsObject()
     private observingEnabled: boolean = false
@@ -20,12 +18,8 @@ export class RenderDebugDataCollector {
     public constructor() {
     }
 
-    public setRendererName(name: string) {
-        this.rawStats.set(StatField.RendererName, name || '?')
-    }
-
-    public incrementDrawCalls() {
-        this.rawStats.set(StatField.DrawCallsCount, this.rawStats.get(StatField.DrawCallsCount) + 1)
+    public setLoadingGameTime(ms: number) {
+        this.rawStats.set(StatField.GameLoadTimeMs, ms)
     }
 
     public receiveUpdates(callback: (stats: any) => void) {

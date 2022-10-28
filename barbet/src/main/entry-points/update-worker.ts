@@ -1,3 +1,4 @@
+import { measureMillisecondsAsync } from '@seampan/util'
 import { GameStateImplementation } from '../game-state/game-state'
 import { createNewStateUpdater } from '../game-state/state-updater'
 import { StateUpdaterImplementation } from '../game-state/state-updater/implementation'
@@ -6,11 +7,13 @@ import { performGameSave } from '../game-state/world/world-saver'
 import TickQueue from '../network/tick-queue'
 import { gameMutexFrom } from '../util/game-mutex'
 import CONFIG from '../util/persistance/observable-settings'
+import { UpdateDebugDataCollector } from '../util/worker/debug-stats/update'
 import { bind, FromWorker, ToWorker } from '../util/worker/message-types/update'
 
 const { sender, receiver } = await bind()
 const mutex = gameMutexFrom(await receiver.await(ToWorker.GameMutex))
 
+const stats = new UpdateDebugDataCollector()
 let gameState: GameStateImplementation | null = null
 let stateUpdater: StateUpdaterImplementation | null = null
 let tickQueue: TickQueue | null = null
@@ -34,7 +37,9 @@ receiver.on(ToWorker.CreateGame, async (args) => {
 		})
 	}
 
-	gameState = await loadGameFromArgs(args, mutex, stateBroadcastCallback) as GameStateImplementation
+	let loadingMs = 0;
+	[gameState, loadingMs] = await measureMillisecondsAsync(async () => await loadGameFromArgs(args, mutex, stateBroadcastCallback) as GameStateImplementation)
+	stats.setLoadingGameTime(loadingMs)
 
 	tickQueue = TickQueue.createEmpty()
 
@@ -66,4 +71,12 @@ receiver.on(ToWorker.AppendToTickQueue, ({ actions, playerId, forTick }) => {
 
 receiver.on(ToWorker.SetPlayerIds, ({ playerIds }) => {
 	tickQueue?.setRequiredPlayers(playerIds)
+})
+
+CONFIG.observe('other/show-debug-info', show => {
+	if (show) {
+		stats.receiveUpdates((data) => {
+			sender.send(FromWorker.DebugStatsUpdate, data)
+		})
+	} else stats.stopUpdates()
 })

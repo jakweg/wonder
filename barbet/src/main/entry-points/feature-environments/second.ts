@@ -6,7 +6,8 @@ import { initFrontedVariablesFromReceived } from '../../util/frontend-variables-
 import { createNewGameMutex } from '../../util/game-mutex'
 import CONFIG from '../../util/persistance/observable-settings'
 import { getCameraBuffer, setCameraBuffer } from '../../util/persistance/serializable-settings'
-import { newStatsObject } from '../../util/worker/debug-stats/render'
+import { newStatsObject as newRenderStatsObject } from '../../util/worker/debug-stats/render'
+import { newStatsObject as newUpdateStatsObject } from '../../util/worker/debug-stats/update'
 import { FromWorker as FromRender, spawnNew as spawnNewRenderWorker, ToWorker as ToRender } from '../../util/worker/message-types/render'
 import { FromWorker as FromUpdate, spawnNew as spawnNewUpdateWorker, ToWorker as ToUpdate } from '../../util/worker/message-types/update'
 import {
@@ -75,8 +76,10 @@ export const bind = async (args: ConnectArguments): Promise<EnvironmentConnectio
 		}
 	}
 
-	const renderDebugStats = newStatsObject()
+	const renderDebugStats = newRenderStatsObject()
+	const updateDebugStats = newUpdateStatsObject()
 	renderWorker.receive.on(FromRender.DebugStatsUpdate, data => renderDebugStats.replaceFromArray(data))
+	updateWorker.receive.on(FromUpdate.DebugStatsUpdate, data => updateDebugStats.replaceFromArray(data))
 
 	return {
 		name: 'second',
@@ -94,6 +97,7 @@ export const bind = async (args: ConnectArguments): Promise<EnvironmentConnectio
 			renderWorker.send.send(ToRender.GameCreateResult, gameSnapshotForRenderer)
 			return {
 				renderDebugStats,
+				updateDebugStats,
 				updater,
 				setActionsCallback(forTick: number, playerId: string, actions: TickQueueAction[]) {
 					updateWorker.send.send(ToUpdate.AppendToTickQueue, { forTick, playerId, actions })

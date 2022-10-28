@@ -8,6 +8,7 @@ import CONFIG from '../../util/persistance/observable-settings'
 import { getCameraBuffer } from '../../util/persistance/serializable-settings'
 import { sharedMemoryIsAvailable } from '../../util/shared-memory'
 import { RenderDebugStats } from '../../util/worker/debug-stats/render'
+import { UpdateDebugStats } from '../../util/worker/debug-stats/update'
 
 export interface ConnectArguments {
 	frontendVariables: SharedArrayBuffer
@@ -50,6 +51,7 @@ export interface GameListeners {
 
 export interface CreateGameResult {
 	renderDebugStats: RenderDebugStats
+	updateDebugStats: UpdateDebugStats
 	updater: StateUpdater
 	setPlayerIdsCallback: (ids: string[]) => void
 	setActionsCallback: SetActionsCallback

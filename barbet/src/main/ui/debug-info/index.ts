@@ -1,9 +1,10 @@
 import { COMMIT_HASH } from "../../util/build-info"
 import CONFIG from "../../util/persistance/observable-settings"
-import { constant, map, observeField, Subject } from "../../util/state/subject"
-import { newStatsObject, StatFields } from "../../util/worker/debug-stats/render"
+import { constant, observeField, Subject } from "../../util/state/subject"
 import animatedVisibility from "../preferences/animated-visibility"
 import { createElement } from "../utils"
+import Render from "./render"
+import Update from "./update"
 
 import './style.css'
 
@@ -13,21 +14,20 @@ export default (parent: HTMLElement) => {
 
     KeyValueText(root, `Next wonder`, constant(`#${COMMIT_HASH}`))
 
-    const stats = newStatsObject()
-
-    KeyValueText(root, `Renderer`, observeField(stats, StatFields.RendererName))
-    KeyValueText(root, `Draw calls`, map(observeField(stats, StatFields.DrawCallsCount), e => `${e}`))
-
-
+    const renderStats = Render(root)
+    const updateStats = Update(root)
 
     return {
-        updateValues(values: any) {
-            stats.replaceFromArray(values)
-        }
+        updateRenderValues(values: any) {
+            renderStats.replaceFromArray(values)
+        },
+        updateUpdateValues(values: any) {
+            updateStats.replaceFromArray(values)
+        },
     }
 }
 
-const KeyValueText = (div: HTMLElement, keyText: string, value: Subject<string>) => {
+export const KeyValueText = (div: HTMLElement, keyText: string, value: Subject<string>) => {
     const p = createElement('p', div, '_css_key_value_p')
     const keySpan = createElement('span', p,)
     const valueSpan = createElement('span', p,)
