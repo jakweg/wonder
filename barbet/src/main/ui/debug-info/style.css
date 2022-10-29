@@ -18,6 +18,12 @@
 ._css_debug-info table {
     background-color: #000000AA;
 }
+._css_debug-info td:not(:first-child) {
+    padding-left: 8px;
+    font-variant-numeric: tabular-nums;
+    min-width: 6ch;
+    text-align: end;
+}
 ._css_debug-info  ._css_key_value_p >span:first-child:after {
     content: ':';
 }

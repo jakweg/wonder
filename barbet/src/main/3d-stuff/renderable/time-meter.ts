@@ -1,21 +1,25 @@
 import { createNewBuffer } from "../../util/shared-memory";
+import { REQUESTED_MEASUREMENTS } from "./draw-phase";
 
 const currentTime = () => performance['now']()
 
 export const enum HeaderFields {
     USING_SHIFTED,
+    SAMPLES_PER_SESSION,
     SIZE,
 }
 
 class TimeMeterSum<T extends number> {
     private lastReset: number = 0
     private usingShifted: boolean = false
+    private measuredSamples: number = 0
 
     public constructor(
         private readonly count: T,
         private readonly durationMs: number,
         private readonly measurements: Float32Array) {
 
+        this.measurements[HeaderFields.SAMPLES_PER_SESSION] = this.measuredSamples
         this.measurements[HeaderFields.USING_SHIFTED] = this.usingShifted ? 0 : 1
     }
 
@@ -24,6 +28,7 @@ class TimeMeterSum<T extends number> {
     }
 
     public endSession(now: number) {
+        this.measuredSamples++
         if (now - this.lastReset > this.durationMs) {
             this.lastReset = now
             this.usingShifted = !this.usingShifted
@@ -31,26 +36,30 @@ class TimeMeterSum<T extends number> {
                 HeaderFields.SIZE + (this.usingShifted ? this.count : 0),
                 HeaderFields.SIZE + this.count + (this.usingShifted ? this.count : 0))
             this.measurements[HeaderFields.USING_SHIFTED] = this.usingShifted ? 0 : 1
+            this.measurements[HeaderFields.SAMPLES_PER_SESSION] = this.measuredSamples
+            this.measuredSamples = 0
         }
     }
 }
 
 export default class TimeMeter<T extends number> {
     private readonly rawBuffer: SharedArrayBuffer
-    // private readonly measurements: Float32Array
+    private readonly measurements: TimeMeterSum<T>[] = []
 
     private currentStep: T = 0 as T
     private currentStepStart: number = 0
 
     public constructor(private readonly count: T) {
-        const measurementsCount = 1
+        const measurementsCount = REQUESTED_MEASUREMENTS['length']
+
         const buffer = createNewBuffer(Float32Array.BYTES_PER_ELEMENT * (count * 2 + HeaderFields.SIZE) * measurementsCount)
+
         const bytesOffset = (this.count * 2 + HeaderFields.SIZE) * Float32Array.BYTES_PER_ELEMENT
         this.rawBuffer = buffer
-        this.sum5s = new TimeMeterSum<T>(this.count, 1_000, new Float32Array(buffer, bytesOffset * 0, this.count * 2 + HeaderFields.SIZE))
-    }
 
-    private readonly sum5s
+        this.measurements = REQUESTED_MEASUREMENTS['map']((m, i) => new TimeMeterSum<T>(this.count, m.intervalMilliseconds,
+            new Float32Array(buffer, bytesOffset * i, this.count * 2 + HeaderFields.SIZE)))
+    }
 
     public beginSession(firstStep: T): void {
         this.currentStep = firstStep
@@ -62,7 +71,8 @@ export default class TimeMeter<T extends number> {
         const duration = now - this.currentStepStart
         const currentStep = this.currentStep;
 
-        this.sum5s.submitTime(currentStep, duration)
+        for (const m of this.measurements)
+            m.submitTime(currentStep, duration)
 
         this.currentStep = nextStep
         this.currentStepStart = now
@@ -71,7 +81,8 @@ export default class TimeMeter<T extends number> {
     public endSessionAndGetRawResults(): Readonly<ArrayBuffer> {
         this.nowStart(0 as T)
         const now = currentTime();
-        this.sum5s.endSession(now)
+        for (const m of this.measurements)
+            m.endSession(now)
 
         return this.rawBuffer
     }
