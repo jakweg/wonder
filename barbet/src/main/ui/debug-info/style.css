@@ -5,6 +5,9 @@
     justify-self: start;
     padding: 4px;
 }
+._css_debug-info._css_debug-info-gone {
+    display: none;
+}
 
 
 ._css_debug-info  ._css_key_value_p {

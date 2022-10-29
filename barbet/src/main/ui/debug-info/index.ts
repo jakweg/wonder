@@ -10,7 +10,10 @@ import './style.css'
 
 export default (parent: HTMLElement) => {
     const visible = observeField(CONFIG, 'other/show-debug-info')
-    const [root] = animatedVisibility(createElement('div', parent, '_css_debug-info'), visible, [])
+    const [root] = animatedVisibility(createElement('div', parent, '_css_debug-info _css_debug-info-gone'), visible, [])
+    setTimeout(() => {
+        root['classList']['remove']('_css_debug-info-gone')
+    }, 500);
 
     KeyValueText(root, `Next wonder`, constant(`#${COMMIT_HASH}`))
 

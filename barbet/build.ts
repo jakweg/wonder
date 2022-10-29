@@ -200,7 +200,7 @@ if (args.size > 0) {
 			}))
 
 			const generator = createNameGenerator()
-			files.forEach(f => f.content = transformNames(f.content, '_css_', f.name.endsWith('.css') ? /[\):\.{ >,]/ig : /['"`]/ig, generator))
+			files.forEach(f => f.content = transformNames(f.content, '_css_', f.name.endsWith('.css') ? /[\):\.{ >,]/ig : /['"` ]/ig, generator))
 			await Promise.all(files.map(({ name, content }) => Deno.writeTextFile(name, content)))
 
 		}

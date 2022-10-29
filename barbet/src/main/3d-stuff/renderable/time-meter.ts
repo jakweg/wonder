@@ -4,7 +4,7 @@ import { REQUESTED_MEASUREMENTS } from "./draw-phase";
 const currentTime = () => performance['now']()
 
 export const enum HeaderFields {
-    USING_SHIFTED,
+    SESSION_INDEX,
     SAMPLES_PER_SESSION,
     SIZE,
 }
@@ -20,7 +20,7 @@ class TimeMeterSum<T extends number> {
         private readonly measurements: Float32Array) {
 
         this.measurements[HeaderFields.SAMPLES_PER_SESSION] = this.measuredSamples
-        this.measurements[HeaderFields.USING_SHIFTED] = this.usingShifted ? 0 : 1
+        this.measurements[HeaderFields.SESSION_INDEX] = this.usingShifted ? 0 : 1
     }
 
     public submitTime(step: T, value: number): void {
@@ -35,7 +35,7 @@ class TimeMeterSum<T extends number> {
             this.measurements.fill(0,
                 HeaderFields.SIZE + (this.usingShifted ? this.count : 0),
                 HeaderFields.SIZE + this.count + (this.usingShifted ? this.count : 0))
-            this.measurements[HeaderFields.USING_SHIFTED] = this.usingShifted ? 0 : 1
+            this.measurements[HeaderFields.SESSION_INDEX] = (this.measurements[HeaderFields.SESSION_INDEX]! + 1) & 0xFFFF
             this.measurements[HeaderFields.SAMPLES_PER_SESSION] = this.measuredSamples
             this.measuredSamples = 0
         }
