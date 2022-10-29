@@ -1,5 +1,4 @@
 import * as vec3 from '@matrix/vec3'
-import TimeMeter from '@seampan/time-meter'
 import { GameState } from '../../game-state/game-state'
 import { ActionsQueue } from '../../game-state/scheduled-actions/queue'
 import { STANDARD_GAME_TICK_RATE, StateUpdater } from '../../game-state/state-updater'
@@ -18,6 +17,7 @@ import { newAnimationFrameCaller, newBeforeDrawWrapper as newDrawWrapper, newFra
 import { createCombinedRenderable } from './combined-renderables'
 import { DrawPhase } from './draw-phase'
 import createInputReactor from './input-reactor'
+import TimeMeter from './time-meter'
 
 export interface RenderContext {
 	readonly gl: WebGL2RenderingContext
