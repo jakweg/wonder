@@ -1,4 +1,3 @@
-import { sleep } from '@seampan/util'
 import { GameMutex, isInWorker } from '../util/game-mutex'
 import { decodeArray, encodeArray } from '../util/persistance/serializers'
 import { createNewBuffer } from '../util/shared-memory'
@@ -135,9 +134,6 @@ export class GameStateImplementation implements GameState {
 		else
 			await this.mutex.enterForUpdateAsync()
 
-
-		await sleep(Math.abs(Math.sin(Date.now() / 1000) ** 2) * 30)
-
 		this.metaData[MetadataField.CurrentTick]++
 
 		for (const action of additionalActions) {
@@ -164,6 +160,5 @@ export class GameStateImplementation implements GameState {
 
 		this.delayedComputer.tick(this)
 		stats.frames.frameEnded()
-		stats.setLoadingGameTime(Math.random())
 	}
 }

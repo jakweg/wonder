@@ -5,6 +5,8 @@ import { RenderContext } from "../../../3d-stuff/renderable/render-context"
 import CONFIG from "../../persistance/observable-settings"
 import { Attributes, fragmentShaderSource, Uniforms, vertexShaderSource } from "./graph-renderer-shaders"
 
+export const FRAMES_COUNT_RENDERING = 240
+export const FRAMES_COUNT_UPDATE = 180
 
 type ShaderCache = null | {
     enabled: boolean
@@ -20,7 +22,7 @@ interface WorldData {
 interface BoundData {
 }
 
-const drawable: (frameStatsCount: number) => Drawable<ShaderCache, WorldData, BoundData> = (frameStatsCount: number) => ({
+const drawable: () => Drawable<ShaderCache, WorldData, BoundData> = () => ({
     onConfigModified(previous: ShaderCache | null) {
         return !previous
             || CONFIG.get('debug/show-graphs') !== previous.enabled
@@ -32,14 +34,14 @@ const drawable: (frameStatsCount: number) => Drawable<ShaderCache, WorldData, Bo
 
         if (previous) return { ...previous, enabled: true, tps: CONFIG.get('other/tps'), needsTpsUpdate: true }
 
-        const makeShader = (left: boolean) => allocator.newProgram<Attributes, Uniforms>({
-            vertexSource: vertexShaderSource({ samplesCount: frameStatsCount, left, }),
-            fragmentSource: fragmentShaderSource({ samplesCount: frameStatsCount, left, })
+        const makeShader = (samplesCount: number, left: boolean) => allocator.newProgram<Attributes, Uniforms>({
+            vertexSource: vertexShaderSource({ samplesCount, left, }),
+            fragmentSource: fragmentShaderSource({ samplesCount, left, })
         })
 
         const programs = await Promise.all([
-            makeShader(true),
-            makeShader(false),
+            makeShader(FRAMES_COUNT_RENDERING, true),
+            makeShader(FRAMES_COUNT_UPDATE, false),
         ])
 
         programs[0].use()

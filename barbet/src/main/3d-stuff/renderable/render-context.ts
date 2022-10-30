@@ -8,7 +8,7 @@ import CONFIG, { observeSetting } from '../../util/persistance/observable-settin
 import { observeField, reduce } from '../../util/state/subject'
 import { DrawPhase } from '../../util/worker/debug-stats/draw-phase'
 import { FramesMeter } from '../../util/worker/debug-stats/frames-meter'
-import graphRenderer from '../../util/worker/debug-stats/graph-renderer'
+import graphRenderer, { FRAMES_COUNT_RENDERING } from '../../util/worker/debug-stats/graph-renderer'
 import { RenderDebugDataCollector } from '../../util/worker/debug-stats/render'
 import TimeMeter from '../../util/worker/debug-stats/time-meter'
 import { Camera } from '../camera'
@@ -129,15 +129,14 @@ interface CanvasObjects {
 	loadingShadersPromise: Promise<void>
 }
 
-const FRAME_STATS_COUNT = 180
 
 export const createRenderingSession = async (
 	actionsQueue: ActionsQueue,
 	mutex: GameMutex,) => {
-	const stats = new RenderDebugDataCollector(new FramesMeter(FRAME_STATS_COUNT))
+	const stats = new RenderDebugDataCollector(new FramesMeter(FRAMES_COUNT_RENDERING))
 	const pipeline = newPipeline([
 		terrain(),
-		graphRenderer(FRAME_STATS_COUNT),
+		graphRenderer(),
 	])
 
 

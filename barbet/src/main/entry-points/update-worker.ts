@@ -7,13 +7,14 @@ import TickQueue from '../network/tick-queue'
 import { gameMutexFrom } from '../util/game-mutex'
 import CONFIG from '../util/persistance/observable-settings'
 import { FramesMeter } from '../util/worker/debug-stats/frames-meter'
+import { FRAMES_COUNT_UPDATE } from '../util/worker/debug-stats/graph-renderer'
 import { UpdateDebugDataCollector } from '../util/worker/debug-stats/update'
 import { bind, FromWorker, ToWorker } from '../util/worker/message-types/update'
 
 const { sender, receiver } = await bind()
 const mutex = gameMutexFrom(await receiver.await(ToWorker.GameMutex))
 
-const stats = new UpdateDebugDataCollector(new FramesMeter(180))
+const stats = new UpdateDebugDataCollector(new FramesMeter(FRAMES_COUNT_UPDATE))
 let gameState: GameStateImplementation | null = null
 let stateUpdater: StateUpdaterImplementation | null = null
 let tickQueue: TickQueue | null = null
@@ -72,6 +73,8 @@ receiver.on(ToWorker.SetPlayerIds, ({ playerIds }) => {
 })
 
 let timeoutId: ReturnType<typeof setTimeout>
+const previous = CONFIG.get('debug/show-info')
+CONFIG.set('debug/show-info', true)
 CONFIG.observe('debug/show-info', show => {
 	if (show) {
 		stats.receiveUpdates((data) => {
@@ -80,3 +83,4 @@ CONFIG.observe('debug/show-info', show => {
 		})
 	} else stats.stopUpdates()
 })
+CONFIG.set('debug/show-info', previous)

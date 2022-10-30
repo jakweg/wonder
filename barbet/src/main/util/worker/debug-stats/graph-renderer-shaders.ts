@@ -70,8 +70,12 @@ if (abs(v_position.y - u_targetMs) < 0.003 * u_heightScale)
     finalColor = vec4(1.0, 0.0, 0.0, 1.0);
 else if (v_position.y > myValue) 
     discard;
-else
+else if (myValue > u_targetMs) 
     finalColor = vec4(1.0, 0.3, 0.4, 0.9);
+else if (myValue > u_targetMs * 0.5) 
+    finalColor = vec4(0.9, 0.6, 0.3, 0.9);
+else
+    finalColor = vec4(0.1, 0.8, 0.4, 0.9);
 }
 	`)
 
