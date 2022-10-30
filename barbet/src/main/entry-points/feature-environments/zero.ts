@@ -15,9 +15,12 @@ import { initFrontedVariablesFromReceived } from '../../util/frontend-variables-
 import { createNewGameMutex } from '../../util/game-mutex'
 import CONFIG from '../../util/persistance/observable-settings'
 import { getCameraBuffer, setCameraBuffer } from '../../util/persistance/serializable-settings'
+import { observeField, reduce } from '../../util/state/subject'
 import { FramesMeter } from '../../util/worker/debug-stats/frames-meter'
 import { newStatsObject as newRenderStatsObject } from '../../util/worker/debug-stats/render'
-import { newStatsObject as newUpdateStatsObject, UpdateDebugDataCollector } from '../../util/worker/debug-stats/update'
+import TimeMeter from '../../util/worker/debug-stats/time-meter'
+import { newStatsObject as newUpdateStatsObject, StatField, UpdateDebugDataCollector } from '../../util/worker/debug-stats/update'
+import { UpdatePhase } from '../../util/worker/debug-stats/update-phase'
 import {
 	ConnectArguments,
 	CreateGameArguments,
@@ -43,7 +46,7 @@ export const bind = (args: ConnectArguments): EnvironmentConnection => {
 	let gameListeners: GameListeners | null = null
 
 	const renderDebugStats = newRenderStatsObject()
-	const stats = new UpdateDebugDataCollector(new FramesMeter(180))
+	const stats = new UpdateDebugDataCollector(new FramesMeter(180), new TimeMeter(UpdatePhase.SIZE))
 	const updateDebugStats = newUpdateStatsObject()
 	stats.receiveUpdates(data => updateDebugStats.replaceFromArray(data))
 
@@ -64,6 +67,7 @@ export const bind = (args: ConnectArguments): EnvironmentConnection => {
 			game = await loadGameFromArgs(gameArgs, stats, mutex, stateBroadcastCallback) as GameStateImplementation
 
 			session = await pendingSession
+			session.stats.updateTimesBuffer = updateDebugStats.get(StatField.UpdateTimes) as SharedArrayBuffer
 			let timeoutId: ReturnType<typeof setTimeout>
 			CONFIG.observe('debug/show-info', show => {
 				if (show) {
@@ -71,8 +75,16 @@ export const bind = (args: ConnectArguments): EnvironmentConnection => {
 						clearTimeout(timeoutId)
 						timeoutId = setTimeout(() => renderDebugStats.replaceFromArray(data), 0);
 					})
-				} else session!.stats.stopUpdates()
+				} else {
+					session!.stats.stopUpdates()
+				}
 			})
+
+			reduce([
+				observeField(CONFIG, 'debug/show-info'),
+				observeField(CONFIG, 'debug/show-graphs')
+			], (v, a) => (a || v), false)
+				.on(v => stats.timeMeter.setEnabled(!!v))
 
 
 			tickQueue = TickQueue.createEmpty()

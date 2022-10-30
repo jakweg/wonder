@@ -1,3 +1,5 @@
+import { MeasurementType } from "../../../ui/debug-info";
+
 export const enum DrawPhase {
     HandleInputs,
     LockMutex,
@@ -9,10 +11,6 @@ export const enum DrawPhase {
     SIZE,
 }
 
-interface MeasurementType {
-    intervalMilliseconds: number
-    isSum: boolean
-}
 
 export const REQUESTED_MEASUREMENTS: MeasurementType[] = [
     { intervalMilliseconds: 1000, isSum: true },

@@ -6,15 +6,18 @@ import { performGameSave } from '../game-state/world/world-saver'
 import TickQueue from '../network/tick-queue'
 import { gameMutexFrom } from '../util/game-mutex'
 import CONFIG from '../util/persistance/observable-settings'
+import { observeField, reduce } from '../util/state/subject'
 import { FramesMeter } from '../util/worker/debug-stats/frames-meter'
 import { FRAMES_COUNT_UPDATE } from '../util/worker/debug-stats/graph-renderer'
+import TimeMeter from '../util/worker/debug-stats/time-meter'
 import { UpdateDebugDataCollector } from '../util/worker/debug-stats/update'
+import { UpdatePhase } from '../util/worker/debug-stats/update-phase'
 import { bind, FromWorker, ToWorker } from '../util/worker/message-types/update'
 
 const { sender, receiver } = await bind()
 const mutex = gameMutexFrom(await receiver.await(ToWorker.GameMutex))
 
-const stats = new UpdateDebugDataCollector(new FramesMeter(FRAMES_COUNT_UPDATE))
+const stats = new UpdateDebugDataCollector(new FramesMeter(FRAMES_COUNT_UPDATE), new TimeMeter(UpdatePhase.SIZE))
 let gameState: GameStateImplementation | null = null
 let stateUpdater: StateUpdaterImplementation | null = null
 let tickQueue: TickQueue | null = null
@@ -84,3 +87,10 @@ CONFIG.observe('debug/show-info', show => {
 	} else stats.stopUpdates()
 })
 CONFIG.set('debug/show-info', previous)
+
+
+reduce([
+	observeField(CONFIG, 'debug/show-info'),
+	observeField(CONFIG, 'debug/show-graphs')
+], (v, a) => (a || v), false)
+	.on(v => stats.timeMeter.setEnabled(!!v))

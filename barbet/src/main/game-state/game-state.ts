@@ -2,6 +2,7 @@ import { GameMutex, isInWorker } from '../util/game-mutex'
 import { decodeArray, encodeArray } from '../util/persistance/serializers'
 import { createNewBuffer } from '../util/shared-memory'
 import { UpdateDebugDataCollector } from '../util/worker/debug-stats/update'
+import { UpdatePhase } from '../util/worker/debug-stats/update-phase'
 import { ActivityId, getActivityPerformFunction } from './activities'
 import { DelayedComputer, deserializeDelayedComputer } from './delayed-computer'
 import EntityContainer from './entities/entity-container'
@@ -129,6 +130,7 @@ export class GameStateImplementation implements GameState {
 		this.isRunningLogic = true
 		stats.frames.frameStarted()
 
+		stats.timeMeter.beginSession(UpdatePhase.LockMutex)
 		if (isInWorker)
 			this.mutex.enterForUpdate()
 		else
@@ -136,10 +138,12 @@ export class GameStateImplementation implements GameState {
 
 		this.metaData[MetadataField.CurrentTick]++
 
+		stats.timeMeter.nowStart(UpdatePhase.ScheduledActions)
 		for (const action of additionalActions) {
 			execute(action, this)
 		}
 
+		stats.timeMeter.nowStart(UpdatePhase.EntityActivities)
 		const container = this.entities
 		for (const entity of iterateOverEntitiesWithActivity(container)) {
 			const currentActivity = (container.withActivities.rawData)[entity.withActivity + DataOffsetWithActivity.CurrentId]! as ActivityId
@@ -148,6 +152,7 @@ export class GameStateImplementation implements GameState {
 			perform?.(this, entity)
 		}
 
+		stats.timeMeter.nowStart(UpdatePhase.ActionsQueue)
 		this.actionsQueue.executeAllUntilEmpty(this)
 
 		if (container.buffersChanged) {
@@ -158,7 +163,10 @@ export class GameStateImplementation implements GameState {
 		this.mutex.exitUpdate()
 		this.isRunningLogic = false
 
+		stats.timeMeter.nowStart(UpdatePhase.DelayedComputer)
 		this.delayedComputer.tick(this)
+
+		stats.timeMeter.endSessionAndGetRawResults()
 		stats.frames.frameEnded()
 	}
 }

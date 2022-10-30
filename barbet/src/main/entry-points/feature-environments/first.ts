@@ -10,7 +10,7 @@ import { createNewGameMutex } from '../../util/game-mutex'
 import CONFIG from '../../util/persistance/observable-settings'
 import { getCameraBuffer, setCameraBuffer } from '../../util/persistance/serializable-settings'
 import { newStatsObject as newRenderStatsObject } from '../../util/worker/debug-stats/render'
-import { newStatsObject as newUpdateStatsObject } from '../../util/worker/debug-stats/update'
+import { newStatsObject as newUpdateStatsObject, StatField } from '../../util/worker/debug-stats/update'
 import { FromWorker as FromUpdate, spawnNew as spawnNewUpdateWorker, ToWorker as ToUpdate } from '../../util/worker/message-types/update'
 import {
 	ConnectArguments,
@@ -69,6 +69,10 @@ export const bind = async (args: ConnectArguments): Promise<EnvironmentConnectio
 				timeoutId = setTimeout(() => renderDebugStats.replaceFromArray(data), 0);
 			})
 		} else session!.stats.stopUpdates()
+	})
+	updateWorker.receive.once(FromUpdate.DebugStatsUpdate, data => {
+		updateDebugStats.replaceFromArray(data)
+		session.stats.updateTimesBuffer = updateDebugStats.get(StatField.UpdateTimes) as SharedArrayBuffer
 	})
 	updateWorker.receive.on(FromUpdate.DebugStatsUpdate, data => updateDebugStats.replaceFromArray(data))
 

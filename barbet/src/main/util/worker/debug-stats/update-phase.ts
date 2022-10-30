@@ -1,12 +1,12 @@
+import { MeasurementType } from "../../../ui/debug-info";
+
 export const enum UpdatePhase {
     LockMutex,
-    UpdateWorld,
+    ScheduledActions,
+    EntityActivities,
+    ActionsQueue,
+    DelayedComputer,
     SIZE,
-}
-
-interface MeasurementType {
-    intervalMilliseconds: number
-    isSum: boolean
 }
 
 export const REQUESTED_MEASUREMENTS: MeasurementType[] = [

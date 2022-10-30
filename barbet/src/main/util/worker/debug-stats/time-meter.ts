@@ -109,4 +109,8 @@ export default class TimeMeter<T extends number> {
 
         return this.rawBuffer
     }
+
+    public getRawBuffer(): SharedArrayBuffer {
+        return this.rawBuffer
+    }
 }
