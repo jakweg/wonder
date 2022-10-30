@@ -58,6 +58,9 @@ export const newGpuAllocator = (gl: WebGL2RenderingContext) => {
     const programsToResolve: (() => void)[] = []
 
     return {
+        unsafeRawContext() {
+            return gl
+        },
         endProgramCompilationPhase() {
             resolveProgramsInstantly = true
             for (const p of programsToResolve)

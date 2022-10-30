@@ -5,6 +5,7 @@ import { STANDARD_GAME_TICK_RATE, StateUpdater } from '../../game-state/state-up
 import { AdditionalFrontedFlags, frontedVariables, FrontendVariable } from '../../util/frontend-variables'
 import { GameMutex, isInWorker } from '../../util/game-mutex'
 import CONFIG, { observeSetting } from '../../util/persistance/observable-settings'
+import graphRenderer from '../../util/worker/debug-stats/graph-renderer'
 import { RenderDebugDataCollector } from '../../util/worker/debug-stats/render'
 import { Camera } from '../camera'
 import ChunkVisibilityIndex from '../drawable/chunk-visibility'
@@ -126,13 +127,16 @@ interface CanvasObjects {
 	loadingShadersPromise: Promise<void>
 }
 
+const FRAME_STATS_COUNT = 180
+
 export const createRenderingSession = async (
 	actionsQueue: ActionsQueue,
 	mutex: GameMutex,) => {
-	const stats = new RenderDebugDataCollector()
+	const stats = new RenderDebugDataCollector(FRAME_STATS_COUNT)
 	const pipeline = newPipeline([
-		terrain,
-	].map(e => e()))
+		terrain(),
+		graphRenderer(FRAME_STATS_COUNT),
+	])
 
 
 	const scheduler = await newHelperScheduler(mutex)
@@ -167,6 +171,7 @@ export const createRenderingSession = async (
 			CONFIG.observe('other/show-debug-info', value => timeMeter.setEnabled(value))
 
 			const performRender = async (elapsedSeconds: number, secondsSinceFirstRender: number) => {
+				stats.frameStarted()
 				timeMeter.beginSession(DrawPhase.HandleInputs)
 
 				inputHandler.handleInputsBeforeDraw(camera, elapsedSeconds)
@@ -220,6 +225,7 @@ export const createRenderingSession = async (
 					inputHandler.interpretPick(computed, inputs)
 				}
 				stats.updateWithTimeMeasurements(timeMeter.endSessionAndGetRawResults())
+				stats.frameEnded()
 			}
 
 			const limiter = newFramesLimiter()
