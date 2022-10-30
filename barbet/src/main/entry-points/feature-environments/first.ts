@@ -62,7 +62,7 @@ export const bind = async (args: ConnectArguments): Promise<EnvironmentConnectio
 	}
 
 	let timeoutId: ReturnType<typeof setTimeout>
-	CONFIG.observe('other/show-debug-info', show => {
+	CONFIG.observe('debug/show-info', show => {
 		if (show) {
 			session!.stats.receiveUpdates((data) => {
 				clearTimeout(timeoutId)

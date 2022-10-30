@@ -9,7 +9,7 @@ import Update from "./update"
 import './style.css'
 
 export default (parent: HTMLElement) => {
-    const visible = observeField(CONFIG, 'other/show-debug-info')
+    const visible = observeField(CONFIG, 'debug/show-info')
     const [root] = animatedVisibility(createElement('div', parent, '_css_debug-info _css_debug-info-gone'), visible, [])
     setTimeout(() => {
         root['classList']['remove']('_css_debug-info-gone')

@@ -10,7 +10,6 @@ export default (root: HTMLElement) => {
 
 	BooleanSwitch(main, 'other/pause-on-blur', (v: boolean) => `Auto pause: ${v ? 'ON' : 'OFF'}`)
 	FpsCapOnBlurSetting(main)
-	BooleanSwitch(main, 'other/show-debug-info', (v: boolean) => `Debug info: ${v ? 'ON' : 'OFF'}`)
 }
 
 const FpsCapOnBlurSetting = (main: HTMLElement) => {

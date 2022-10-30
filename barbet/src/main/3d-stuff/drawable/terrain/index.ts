@@ -241,6 +241,7 @@ const drawable: () => Drawable<ShaderCache, WorldData, BoundData> = () => ({
 
         const chunkPosition = program.uniforms['chunkPosition']
         let chunkIndex = 0
+        let drawCalls = 0
         for (const chunk of shader.chunks!) {
             if (visibility.isChunkIndexVisible(chunkIndex)) {
                 chunk.visible = true
@@ -250,7 +251,7 @@ const drawable: () => Drawable<ShaderCache, WorldData, BoundData> = () => ({
                         gl.uniform2f(chunkPosition, chunk.positionX, chunk.positionZ)
 
                         gl.drawElements(gl.TRIANGLES, chunk.triangles, gl.UNSIGNED_SHORT, 0)
-                        stats.incrementDrawCalls()
+                        drawCalls++
                     }
                 } else {
                     // trigger rebuild need
@@ -263,6 +264,7 @@ const drawable: () => Drawable<ShaderCache, WorldData, BoundData> = () => ({
             chunkIndex++
         }
         gl.bindVertexArray(null)
+        stats.incrementDrawCalls(drawCalls)
 
     },
     drawForMousePicker(ctx: RenderContext, shader: ShaderCache, world: WorldData, bound: BoundData): void {

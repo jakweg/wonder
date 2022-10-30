@@ -3,6 +3,7 @@ import { constant, Subject } from '../../util/state/subject'
 import { Callback, createElement } from '../utils'
 import AnimatedVisibility from './animated-visibility'
 import BuildInfoSection from './build-info-section'
+import DebugSection from './debug-section'
 import { Button } from './helper-components'
 import OnBlurBehaviourSection from './on-blur-section'
 import './preferences.css'
@@ -18,6 +19,7 @@ export default (parent: HTMLElement, opened: Subject<boolean>, doneClicked: Call
 	Header(root, constant('Game preferences'), false)
 	RenderingSection(root)
 	OnBlurBehaviourSection(root)
+	DebugSection(root)
 	BuildInfoSection(root)
 
 	Footer(root, doneClicked)

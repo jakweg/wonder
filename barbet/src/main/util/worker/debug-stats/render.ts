@@ -1,4 +1,5 @@
 import IndexedState from "../../state/indexed-state"
+import { FramesMeter } from "./frames-meter"
 
 export const enum StatField {
     RendererName,
@@ -19,21 +20,18 @@ export type RenderDebugStats = ReturnType<typeof newStatsObject>
 export class RenderDebugDataCollector {
 
     private readonly rawStats = newStatsObject()
-    private frameSamples: Float32Array
-    private currentFrameSample: number = 0
-    private frameStart: number = 0
     private observingEnabled: boolean = false
     private receiveUpdatesCancelCallback: any = null
-    public constructor(private readonly frameSamplesCount: number) {
-        this.frameSamples = new Float32Array(frameSamplesCount + 1)
+    public updateTimesBuffer: SharedArrayBuffer | null = null
+    public constructor(public readonly frames: FramesMeter) {
     }
 
     public setRendererName(name: string) {
         this.rawStats.set(StatField.RendererName, name || '?')
     }
 
-    public incrementDrawCalls() {
-        this.rawStats.set(StatField.DrawCallsCount, this.rawStats.get(StatField.DrawCallsCount) + 1)
+    public incrementDrawCalls(value: number = 1) {
+        this.rawStats.set(StatField.DrawCallsCount, this.rawStats.get(StatField.DrawCallsCount) + value)
     }
     public setVisibleChunksCount(count: number) {
         this.rawStats.set(StatField.VisibleChunksCount, count)
@@ -43,21 +41,6 @@ export class RenderDebugDataCollector {
             .edit()
             .set(StatField.DrawTimesBuffer, raw)
             .commit()
-    }
-
-    public frameStarted(): void {
-        this.frameStart = performance['now']()
-    }
-    public frameEnded(): void {
-        const duration = performance['now']() - this.frameStart
-        if (++this.currentFrameSample === this.frameSamplesCount)
-            this.currentFrameSample = 0
-        this.frameSamples[this.currentFrameSample + 1] = duration
-        this.frameSamples[0] = this.currentFrameSample
-    }
-
-    public getFrameTimeRaw(): Readonly<Float32Array> {
-        return this.frameSamples
     }
 
     public receiveUpdates(callback: (stats: any) => void) {

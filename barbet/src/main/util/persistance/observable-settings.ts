@@ -14,8 +14,9 @@ const settingsToDefaults = {
 	'rendering/ambient-occlusion': true,
 	'rendering/power-preference': 'default' as WebGLPowerPreference,
 	'other/preferred-environment': 'second' as Environment,
-	'other/generate-debug-world': false,
-	'other/show-debug-info': false,
+	'debug/debug-world': false,
+	'debug/show-info': false,
+	'debug/show-graphs': false
 }
 
 type SettingName = keyof typeof settingsToDefaults

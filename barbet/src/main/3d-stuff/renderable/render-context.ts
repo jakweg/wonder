@@ -5,8 +5,12 @@ import { STANDARD_GAME_TICK_RATE, StateUpdater } from '../../game-state/state-up
 import { AdditionalFrontedFlags, frontedVariables, FrontendVariable } from '../../util/frontend-variables'
 import { GameMutex, isInWorker } from '../../util/game-mutex'
 import CONFIG, { observeSetting } from '../../util/persistance/observable-settings'
+import { observeField, reduce } from '../../util/state/subject'
+import { DrawPhase } from '../../util/worker/debug-stats/draw-phase'
+import { FramesMeter } from '../../util/worker/debug-stats/frames-meter'
 import graphRenderer from '../../util/worker/debug-stats/graph-renderer'
 import { RenderDebugDataCollector } from '../../util/worker/debug-stats/render'
+import TimeMeter from '../../util/worker/debug-stats/time-meter'
 import { Camera } from '../camera'
 import ChunkVisibilityIndex from '../drawable/chunk-visibility'
 import terrain from '../drawable/terrain'
@@ -16,9 +20,7 @@ import { newMousePicker } from '../pipeline/mouse-picker'
 import { newHelperScheduler } from '../pipeline/work-scheduler'
 import { newAnimationFrameCaller, newBeforeDrawWrapper as newDrawWrapper, newFramesLimiter, newInputHandler } from '../pipeline/wrappers'
 import { createCombinedRenderable } from './combined-renderables'
-import { DrawPhase } from './draw-phase'
 import createInputReactor from './input-reactor'
-import TimeMeter from './time-meter'
 
 export interface RenderContext {
 	readonly gl: WebGL2RenderingContext
@@ -132,7 +134,7 @@ const FRAME_STATS_COUNT = 180
 export const createRenderingSession = async (
 	actionsQueue: ActionsQueue,
 	mutex: GameMutex,) => {
-	const stats = new RenderDebugDataCollector(FRAME_STATS_COUNT)
+	const stats = new RenderDebugDataCollector(new FramesMeter(FRAME_STATS_COUNT))
 	const pipeline = newPipeline([
 		terrain(),
 		graphRenderer(FRAME_STATS_COUNT),
@@ -168,10 +170,15 @@ export const createRenderingSession = async (
 			stats.setRendererName(drawHelper.getRendererName())
 			const mouse = newMousePicker(drawHelper.rawContext)
 			const timeMeter = new TimeMeter<DrawPhase>(DrawPhase.SIZE)
-			CONFIG.observe('other/show-debug-info', value => timeMeter.setEnabled(value))
+
+			reduce([
+				observeField(CONFIG, 'debug/show-info'),
+				observeField(CONFIG, 'debug/show-graphs')
+			], (v, a) => (a || v), false)
+				.on(v => timeMeter.setEnabled(!!v))
 
 			const performRender = async (elapsedSeconds: number, secondsSinceFirstRender: number) => {
-				stats.frameStarted()
+				stats.frames.frameStarted()
 				timeMeter.beginSession(DrawPhase.HandleInputs)
 
 				inputHandler.handleInputsBeforeDraw(camera, elapsedSeconds)
@@ -225,7 +232,7 @@ export const createRenderingSession = async (
 					inputHandler.interpretPick(computed, inputs)
 				}
 				stats.updateWithTimeMeasurements(timeMeter.endSessionAndGetRawResults())
-				stats.frameEnded()
+				stats.frames.frameEnded()
 			}
 
 			const limiter = newFramesLimiter()

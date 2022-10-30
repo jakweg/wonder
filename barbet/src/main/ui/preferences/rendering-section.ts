@@ -15,7 +15,6 @@ export default (root: HTMLElement) => {
 	BooleanSwitch(main, 'rendering/ambient-occlusion', (v: boolean) => `Ambient occlusion: ${v ? 'ON' : 'OFF'}`)
 	PreferredEnvironment(main)
 	PreferredPowerPreference(main)
-	BooleanSwitch(main, 'other/generate-debug-world', (v: boolean) => `Debug world: ${v ? 'ON' : 'OFF'}`)
 }
 
 const FpsCapSetting = (main: HTMLElement) => {

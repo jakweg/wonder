@@ -3,6 +3,7 @@ import { GameMutex } from '../../util/game-mutex'
 import CONFIG from '../../util/persistance/observable-settings'
 import { readSaveData } from '../../util/persistance/saves-database'
 import { ArrayEncodingType, setArrayEncodingType } from '../../util/persistance/serializers'
+import { UpdateDebugDataCollector } from '../../util/worker/debug-stats/update'
 import { createNewDelayedComputer } from '../delayed-computer'
 import EntityContainer from '../entities/entity-container'
 import { GameState, GameStateImplementation } from '../game-state'
@@ -17,7 +18,7 @@ export const createEmptyGame = (mutex: GameMutex, stateBroadcastCallback: () => 
 	let sizeX = 1000
 	let sizeY = 50
 	let sizeZ = 1000
-	if (CONFIG.get('other/generate-debug-world')) {
+	if (CONFIG.get('debug/debug-world')) {
 		sizeX = 20
 		sizeY = 10
 		sizeZ = 20
@@ -77,17 +78,26 @@ export const loadGameFromFile = async (file: File, mutex: GameMutex, stateBroadc
 }
 
 
-export const loadGameFromArgs = async (args: CreateGameArguments, mutex: GameMutex, stateBroadcastCallback: () => any) => {
+export const loadGameFromArgs = async (args: CreateGameArguments,
+	stats: UpdateDebugDataCollector,
+	mutex: GameMutex,
+	stateBroadcastCallback: () => any) => {
+	const start = performance['now']()
 	const saveName = args.saveName
 	const file = args.fileToRead
 	const string = args.stringToRead
 
-	if (string !== undefined)
-		return await loadGameFromString(string, mutex, stateBroadcastCallback)
-	else if (file !== undefined)
-		return await loadGameFromFile(file, mutex, stateBroadcastCallback)
-	else if (saveName !== undefined)
-		return await loadGameFromDb(saveName, mutex, stateBroadcastCallback)
-	else
-		return createEmptyGame(mutex, stateBroadcastCallback)
+	try {
+		if (string !== undefined)
+			return await loadGameFromString(string, mutex, stateBroadcastCallback)
+		else if (file !== undefined)
+			return await loadGameFromFile(file, mutex, stateBroadcastCallback)
+		else if (saveName !== undefined)
+			return await loadGameFromDb(saveName, mutex, stateBroadcastCallback)
+		else
+			return createEmptyGame(mutex, stateBroadcastCallback)
+	} finally {
+		const duration = performance['now']() - start
+		stats.setLoadingGameTime(duration)
+	}
 }

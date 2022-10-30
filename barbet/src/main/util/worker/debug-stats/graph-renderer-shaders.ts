@@ -1,6 +1,7 @@
 import { PrecisionHeader, VersionHeader } from "../../../3d-stuff/common-shader";
 
 interface Options {
+    left: boolean
     samplesCount: number
 }
 
@@ -23,25 +24,17 @@ vec2(${m1x}, ${m2y}),
 vec2(${m2x}, ${m1y})
 );`
 }
-const createHeightVariables = (): string => {
-    const MS_PER_SCREEN = 64
-    return `
-float heightScale = ${(MS_PER_SCREEN).toFixed(5)};
-`
-}
 
 export const vertexShaderSource = (options: Options): string => {
     const parts: string[] = [];
     parts.push(`${VersionHeader()}
 ${PrecisionHeader()}
 
-uniform float u_width;
-in vec2 a_position;
 out vec2 v_position;
 uniform float u_values[${options.samplesCount + 1}];
+uniform float u_heightScale;
 
-${createPositions(-1, -.2)}
-${createHeightVariables()}
+${options.left ? createPositions(-1, -.2) : createPositions(.2, 1)}
 
 void main() {
     vec2 screenPosition = positions[gl_VertexID];
@@ -49,7 +42,7 @@ void main() {
     float x = (screenPosition.x - left) * width;
     v_position = vec2(
         x + shift,
-        (screenPosition.y / 2.0 + 0.5) * heightScale);
+        (screenPosition.y / 2.0 + 0.5) * u_heightScale);
 
     gl_Position = vec4(screenPosition.xy, 0.0, 1.0);
     gl_PointSize = 10.0;
@@ -66,13 +59,14 @@ export const fragmentShaderSource = (options: Options) => {
 out vec4 finalColor;
 in vec2 v_position;
 uniform float u_values[${options.samplesCount + 1}];
-const float targetMs = 16.6;
+uniform float u_targetMs;
+uniform float u_heightScale;
 
 void main() {
 int index = int(v_position.x * ${options.samplesCount.toFixed(1)});
 float myValue = u_values[1 + index + (index > ${options.samplesCount} ? -${options.samplesCount} : 0)];
 
-if (abs(v_position.y - targetMs) < 0.08) 
+if (abs(v_position.y - u_targetMs) < 0.003 * u_heightScale)
     finalColor = vec4(1.0, 0.0, 0.0, 1.0);
 else if (v_position.y > myValue) 
     discard;
@@ -84,5 +78,5 @@ else
     return parts.join('')
 }
 
-export type Uniforms = 'values[0]' | 'width'
-export type Attributes = 'position'
+export type Uniforms = 'values[0]' | 'heightScale' | 'targetMs'
+export type Attributes = never

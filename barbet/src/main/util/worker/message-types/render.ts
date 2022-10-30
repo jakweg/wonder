@@ -13,6 +13,7 @@ export const enum ToWorker {
     TerminateGame,
     TransferCanvas,
     GameCreateResult,
+    UpdateTimesBuffer,
 }
 
 interface ToTypes {
@@ -25,6 +26,7 @@ interface ToTypes {
     [ToWorker.TerminateGame]: TerminateGameArguments
     [ToWorker.TransferCanvas]: { canvas: unknown }
     [ToWorker.GameCreateResult]: { game: unknown, updater: unknown }
+    [ToWorker.UpdateTimesBuffer]: { buffer: SharedArrayBuffer }
 }
 
 export const enum FromWorker {

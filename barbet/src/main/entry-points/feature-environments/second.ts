@@ -7,7 +7,7 @@ import { createNewGameMutex } from '../../util/game-mutex'
 import CONFIG from '../../util/persistance/observable-settings'
 import { getCameraBuffer, setCameraBuffer } from '../../util/persistance/serializable-settings'
 import { newStatsObject as newRenderStatsObject } from '../../util/worker/debug-stats/render'
-import { newStatsObject as newUpdateStatsObject } from '../../util/worker/debug-stats/update'
+import { newStatsObject as newUpdateStatsObject, StatField } from '../../util/worker/debug-stats/update'
 import { FromWorker as FromRender, spawnNew as spawnNewRenderWorker, ToWorker as ToRender } from '../../util/worker/message-types/render'
 import { FromWorker as FromUpdate, spawnNew as spawnNewUpdateWorker, ToWorker as ToUpdate } from '../../util/worker/message-types/update'
 import {
@@ -79,6 +79,10 @@ export const bind = async (args: ConnectArguments): Promise<EnvironmentConnectio
 	const renderDebugStats = newRenderStatsObject()
 	const updateDebugStats = newUpdateStatsObject()
 	renderWorker.receive.on(FromRender.DebugStatsUpdate, data => renderDebugStats.replaceFromArray(data))
+	updateWorker.receive.once(FromUpdate.DebugStatsUpdate, data => {
+		updateDebugStats.replaceFromArray(data)
+		renderWorker.send.send(ToRender.UpdateTimesBuffer, { buffer: updateDebugStats.get(StatField.UpdateTimes) as SharedArrayBuffer })
+	})
 	updateWorker.receive.on(FromUpdate.DebugStatsUpdate, data => updateDebugStats.replaceFromArray(data))
 
 	return {

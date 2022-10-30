@@ -15,8 +15,9 @@ import { initFrontedVariablesFromReceived } from '../../util/frontend-variables-
 import { createNewGameMutex } from '../../util/game-mutex'
 import CONFIG from '../../util/persistance/observable-settings'
 import { getCameraBuffer, setCameraBuffer } from '../../util/persistance/serializable-settings'
+import { FramesMeter } from '../../util/worker/debug-stats/frames-meter'
 import { newStatsObject as newRenderStatsObject } from '../../util/worker/debug-stats/render'
-import { newStatsObject as newUpdateStatsObject } from '../../util/worker/debug-stats/update'
+import { newStatsObject as newUpdateStatsObject, UpdateDebugDataCollector } from '../../util/worker/debug-stats/update'
 import {
 	ConnectArguments,
 	CreateGameArguments,
@@ -42,7 +43,10 @@ export const bind = (args: ConnectArguments): EnvironmentConnection => {
 	let gameListeners: GameListeners | null = null
 
 	const renderDebugStats = newRenderStatsObject()
+	const stats = new UpdateDebugDataCollector(new FramesMeter(180))
 	const updateDebugStats = newUpdateStatsObject()
+	stats.receiveUpdates(data => updateDebugStats.replaceFromArray(data))
+
 	return {
 		name: 'zero',
 		async createNewGame(gameArgs: CreateGameArguments): Promise<CreateGameResult> {
@@ -57,11 +61,11 @@ export const bind = (args: ConnectArguments): EnvironmentConnection => {
 
 			const pendingSession = createRenderingSession(actionsQueue, mutex)
 
-			game = await loadGameFromArgs(gameArgs, mutex, stateBroadcastCallback) as GameStateImplementation
+			game = await loadGameFromArgs(gameArgs, stats, mutex, stateBroadcastCallback) as GameStateImplementation
 
 			session = await pendingSession
 			let timeoutId: ReturnType<typeof setTimeout>
-			CONFIG.observe('other/show-debug-info', show => {
+			CONFIG.observe('debug/show-info', show => {
 				if (show) {
 					session!.stats.receiveUpdates((data) => {
 						clearTimeout(timeoutId)
@@ -76,7 +80,7 @@ export const bind = (args: ConnectArguments): EnvironmentConnection => {
 
 			const updaterInstance = createNewStateUpdater(
 				async (gameActions) => {
-					await game!.advanceActivities(gameActions)
+					await game!.advanceActivities(gameActions, stats)
 					const currentTick = game!.currentTick
 					gameListeners?.onTickCompleted(currentTick)
 				},

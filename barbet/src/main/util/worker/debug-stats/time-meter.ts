@@ -1,4 +1,4 @@
-import { createNewBuffer } from "../../util/shared-memory";
+import { createNewBuffer } from "../../shared-memory";
 import { REQUESTED_MEASUREMENTS } from "./draw-phase";
 
 const currentTime = () => performance['now']()
@@ -77,8 +77,8 @@ export default class TimeMeter<T extends number> {
             new Float32Array(buffer, bytesOffset * i, this.count * 2 + HeaderFields.SIZE)))
     }
 
-    public setEnabled(value: boolean): void {
-        this.enabled = value
+    public setEnabled(enabled: boolean): void {
+        this.enabled = enabled
     }
 
     public beginSession(firstStep: T): void {

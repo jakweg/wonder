@@ -1,9 +1,9 @@
 import { KeyValueText } from "."
-import { DrawPhase, REQUESTED_MEASUREMENTS } from "../../3d-stuff/renderable/draw-phase"
-import { HeaderFields } from "../../3d-stuff/renderable/time-meter"
 import CONFIG from "../../util/persistance/observable-settings"
 import { map, observeField } from "../../util/state/subject"
+import { DrawPhase, REQUESTED_MEASUREMENTS } from "../../util/worker/debug-stats/draw-phase"
 import { newStatsObject, StatField } from "../../util/worker/debug-stats/render"
+import { HeaderFields } from "../../util/worker/debug-stats/time-meter"
 import { createElement } from "../utils"
 
 export default (root: HTMLElement) => {
@@ -91,7 +91,7 @@ const TimesTable = (root: HTMLElement, stats: ReturnType<typeof newStatsObject>)
         frameId = requestAnimationFrame(update)
     }
 
-    CONFIG.observe('other/show-debug-info', show => {
+    CONFIG.observe('debug/show-info', show => {
         if (show)
             frameId = requestAnimationFrame(update)
         else

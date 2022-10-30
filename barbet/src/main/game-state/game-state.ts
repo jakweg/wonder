@@ -1,6 +1,8 @@
+import { sleep } from '@seampan/util'
 import { GameMutex, isInWorker } from '../util/game-mutex'
 import { decodeArray, encodeArray } from '../util/persistance/serializers'
 import { createNewBuffer } from '../util/shared-memory'
+import { UpdateDebugDataCollector } from '../util/worker/debug-stats/update'
 import { ActivityId, getActivityPerformFunction } from './activities'
 import { DelayedComputer, deserializeDelayedComputer } from './delayed-computer'
 import EntityContainer from './entities/entity-container'
@@ -123,14 +125,18 @@ export class GameStateImplementation implements GameState {
 		}
 	}
 
-	public async advanceActivities(additionalActions: ScheduledAction[]) {
+	public async advanceActivities(additionalActions: ScheduledAction[], stats: UpdateDebugDataCollector) {
 		if (this.isRunningLogic) throw new Error()
 		this.isRunningLogic = true
+		stats.frames.frameStarted()
 
 		if (isInWorker)
 			this.mutex.enterForUpdate()
 		else
 			await this.mutex.enterForUpdateAsync()
+
+
+		await sleep(Math.abs(Math.sin(Date.now() / 1000) ** 2) * 30)
 
 		this.metaData[MetadataField.CurrentTick]++
 
@@ -157,5 +163,7 @@ export class GameStateImplementation implements GameState {
 		this.isRunningLogic = false
 
 		this.delayedComputer.tick(this)
+		stats.frames.frameEnded()
+		stats.setLoadingGameTime(Math.random())
 	}
 }

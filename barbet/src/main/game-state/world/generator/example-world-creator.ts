@@ -52,7 +52,7 @@ const placeMoreRealTerrain = (game: GameState) => {
 }
 
 export function fillEmptyWorldWithDefaultData(game: GameState) {
-	if (CONFIG.get('other/generate-debug-world'))
+	if (CONFIG.get('debug/debug-world'))
 		placeDebugFeatures(game)
 	else
 		placeMoreRealTerrain(game)

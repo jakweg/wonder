@@ -1,4 +1,3 @@
-import { measureMillisecondsAsync } from '@seampan/util'
 import { GameStateImplementation } from '../game-state/game-state'
 import { createNewStateUpdater } from '../game-state/state-updater'
 import { StateUpdaterImplementation } from '../game-state/state-updater/implementation'
@@ -7,13 +6,14 @@ import { performGameSave } from '../game-state/world/world-saver'
 import TickQueue from '../network/tick-queue'
 import { gameMutexFrom } from '../util/game-mutex'
 import CONFIG from '../util/persistance/observable-settings'
+import { FramesMeter } from '../util/worker/debug-stats/frames-meter'
 import { UpdateDebugDataCollector } from '../util/worker/debug-stats/update'
 import { bind, FromWorker, ToWorker } from '../util/worker/message-types/update'
 
 const { sender, receiver } = await bind()
 const mutex = gameMutexFrom(await receiver.await(ToWorker.GameMutex))
 
-const stats = new UpdateDebugDataCollector()
+const stats = new UpdateDebugDataCollector(new FramesMeter(180))
 let gameState: GameStateImplementation | null = null
 let stateUpdater: StateUpdaterImplementation | null = null
 let tickQueue: TickQueue | null = null
@@ -37,16 +37,14 @@ receiver.on(ToWorker.CreateGame, async (args) => {
 		})
 	}
 
-	let loadingMs = 0;
-	[gameState, loadingMs] = await measureMillisecondsAsync(async () => await loadGameFromArgs(args, mutex, stateBroadcastCallback) as GameStateImplementation)
-	stats.setLoadingGameTime(loadingMs)
+	gameState = await loadGameFromArgs(args, stats, mutex, stateBroadcastCallback) as GameStateImplementation
 
 	tickQueue = TickQueue.createEmpty()
 
 	stateUpdater = createNewStateUpdater(
 		async (gameActions, updaterActions) => {
 
-			await gameState!.advanceActivities(gameActions)
+			await gameState!.advanceActivities(gameActions, stats)
 
 			const currentTick = gameState!.currentTick
 
@@ -74,7 +72,7 @@ receiver.on(ToWorker.SetPlayerIds, ({ playerIds }) => {
 })
 
 let timeoutId: ReturnType<typeof setTimeout>
-CONFIG.observe('other/show-debug-info', show => {
+CONFIG.observe('debug/show-info', show => {
 	if (show) {
 		stats.receiveUpdates((data) => {
 			clearTimeout(timeoutId)
