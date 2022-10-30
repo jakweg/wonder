@@ -9,6 +9,8 @@ import { initFrontedVariablesFromReceived } from '../../util/frontend-variables-
 import { createNewGameMutex } from '../../util/game-mutex'
 import CONFIG from '../../util/persistance/observable-settings'
 import { getCameraBuffer, setCameraBuffer } from '../../util/persistance/serializable-settings'
+import { newStatsObject as newRenderStatsObject } from '../../util/worker/debug-stats/render'
+import { newStatsObject as newUpdateStatsObject } from '../../util/worker/debug-stats/update'
 import { FromWorker as FromUpdate, spawnNew as spawnNewUpdateWorker, ToWorker as ToUpdate } from '../../util/worker/message-types/update'
 import {
 	ConnectArguments,
@@ -46,6 +48,8 @@ export const bind = async (args: ConnectArguments): Promise<EnvironmentConnectio
 		listeners?.onTickCompleted(data.tick)
 	})
 
+	const renderDebugStats = newRenderStatsObject()
+	const updateDebugStats = newUpdateStatsObject()
 
 
 	const terminate = (args: TerminateGameArguments) => {
@@ -56,6 +60,17 @@ export const bind = async (args: ConnectArguments): Promise<EnvironmentConnectio
 		if (args.terminateEverything)
 			setTimeout(() => updateWorker.terminate(), 10_000)
 	}
+
+	let timeoutId: ReturnType<typeof setTimeout>
+	CONFIG.observe('other/show-debug-info', show => {
+		if (show) {
+			session!.stats.receiveUpdates((data) => {
+				clearTimeout(timeoutId)
+				timeoutId = setTimeout(() => renderDebugStats.replaceFromArray(data), 0);
+			})
+		} else session!.stats.stopUpdates()
+	})
+	updateWorker.receive.on(FromUpdate.DebugStatsUpdate, data => updateDebugStats.replaceFromArray(data))
 
 	return {
 		name: 'first',
@@ -73,6 +88,8 @@ export const bind = async (args: ConnectArguments): Promise<EnvironmentConnectio
 			session.setGame(decodedGame, () => updater!.estimateCurrentGameTickTime(updateWorker.startDelay), () => updater!.getTickRate())
 
 			return {
+				renderDebugStats,
+				updateDebugStats,
 				updater,
 				setActionsCallback(forTick: number, playerId: string, actions: TickQueueAction[]) {
 					updateWorker.send.send(ToUpdate.AppendToTickQueue, { forTick, playerId, actions })

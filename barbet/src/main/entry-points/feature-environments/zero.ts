@@ -15,6 +15,8 @@ import { initFrontedVariablesFromReceived } from '../../util/frontend-variables-
 import { createNewGameMutex } from '../../util/game-mutex'
 import CONFIG from '../../util/persistance/observable-settings'
 import { getCameraBuffer, setCameraBuffer } from '../../util/persistance/serializable-settings'
+import { newStatsObject as newRenderStatsObject } from '../../util/worker/debug-stats/render'
+import { newStatsObject as newUpdateStatsObject } from '../../util/worker/debug-stats/update'
 import {
 	ConnectArguments,
 	CreateGameArguments,
@@ -38,6 +40,9 @@ export const bind = (args: ConnectArguments): EnvironmentConnection => {
 	let game: GameStateImplementation | null = null
 	let updater: StateUpdater | null = null
 	let gameListeners: GameListeners | null = null
+
+	const renderDebugStats = newRenderStatsObject()
+	const updateDebugStats = newUpdateStatsObject()
 	return {
 		name: 'zero',
 		async createNewGame(gameArgs: CreateGameArguments): Promise<CreateGameResult> {
@@ -55,6 +60,16 @@ export const bind = (args: ConnectArguments): EnvironmentConnection => {
 			game = await loadGameFromArgs(gameArgs, mutex, stateBroadcastCallback) as GameStateImplementation
 
 			session = await pendingSession
+			let timeoutId: ReturnType<typeof setTimeout>
+			CONFIG.observe('other/show-debug-info', show => {
+				if (show) {
+					session!.stats.receiveUpdates((data) => {
+						clearTimeout(timeoutId)
+						timeoutId = setTimeout(() => renderDebugStats.replaceFromArray(data), 0);
+					})
+				} else session!.stats.stopUpdates()
+			})
+
 
 			tickQueue = TickQueue.createEmpty()
 
@@ -71,6 +86,8 @@ export const bind = (args: ConnectArguments): EnvironmentConnection => {
 			updater = createStateUpdaterControllerFromReceived(updaterInstance.pass())
 			session.setGame(game, () => updater!.estimateCurrentGameTickTime(0), () => updater!.getTickRate())
 			return {
+				renderDebugStats,
+				updateDebugStats,
 				updater,
 				setActionsCallback: (forTick: number, playerId: string, actions: TickQueueAction[]) => {
 					tickQueue!.setForTick(forTick, playerId, actions)

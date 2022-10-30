@@ -25,13 +25,16 @@ const TimesTable = (root: HTMLElement, stats: ReturnType<typeof newStatsObject>)
     const theadTr = createElement('tr', createElement('thead', table,),)
     createElement('td', theadTr,)['textContent'] = 'Render phase'
 
-
     const tbody = createElement('tbody', table,)
-    const MEASUREMENTS = REQUESTED_MEASUREMENTS.map(m => `${m.intervalMilliseconds / 1000}s`)
+    const MEASUREMENTS = REQUESTED_MEASUREMENTS.map(m => ({
+        title: `${m.isSum ? 'AVG' : 'TOP'} ${m.intervalMilliseconds / 1000}s`,
+        isSum: m.isSum,
+        interval: 1000 / m.intervalMilliseconds,
+    }))
     const MEASUREMENTS_COUNT = MEASUREMENTS['length']
 
-    for (const title of MEASUREMENTS) {
-        createElement('td', theadTr,)['textContent'] = title
+    for (const m of MEASUREMENTS) {
+        createElement('td', theadTr,)['textContent'] = m.title
     }
 
     const formatNumber = (value: number) => value.toFixed(2)
@@ -63,6 +66,7 @@ const TimesTable = (root: HTMLElement, stats: ReturnType<typeof newStatsObject>)
         if (array['length'] !== 0) {
             const MEASUREMENTS_BLOCK_SIZE = (DrawPhase.SIZE * 2 + HeaderFields.SIZE);
             for (let measurementIndex = 0; measurementIndex < MEASUREMENTS_COUNT; ++measurementIndex) {
+                const isSum = !!MEASUREMENTS[measurementIndex]!.isSum;
                 const sessionIndex = array[measurementIndex * MEASUREMENTS_BLOCK_SIZE + HeaderFields.SESSION_INDEX]!;
                 if (sessionIndexes[measurementIndex]! === sessionIndex) continue
                 sessionIndexes[measurementIndex] = sessionIndex
@@ -74,13 +78,13 @@ const TimesTable = (root: HTMLElement, stats: ReturnType<typeof newStatsObject>)
                 for (let drawValueIndex = 0; drawValueIndex < DrawPhase.SIZE; ++drawValueIndex) {
                     const valueIndex = drawValueIndex + offset
 
-                    const value = array[valueIndex]! / samples
+                    const value = isSum ? array[valueIndex]! / samples : array[valueIndex]!
 
                     const cell = allCells[drawValueIndex * MEASUREMENTS_COUNT + measurementIndex]!
                     cell['textContent'] = formatNumber(value)
                 }
 
-                allCells[(DrawPhase.SIZE) * MEASUREMENTS_COUNT + measurementIndex]!['textContent'] = Math.round(samples * 1000 / REQUESTED_MEASUREMENTS[measurementIndex]!.intervalMilliseconds).toString()
+                allCells[(DrawPhase.SIZE) * MEASUREMENTS_COUNT + measurementIndex]!['textContent'] = Math.round(samples * MEASUREMENTS[measurementIndex]!.interval).toString()
             }
 
         }

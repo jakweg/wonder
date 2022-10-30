@@ -164,6 +164,8 @@ export const createRenderingSession = async (
 			stats.setRendererName(drawHelper.getRendererName())
 			const mouse = newMousePicker(drawHelper.rawContext)
 			const timeMeter = new TimeMeter<DrawPhase>(DrawPhase.SIZE)
+			CONFIG.observe('other/show-debug-info', value => timeMeter.setEnabled(value))
+
 			const performRender = async (elapsedSeconds: number, secondsSinceFirstRender: number) => {
 				timeMeter.beginSession(DrawPhase.HandleInputs)
 

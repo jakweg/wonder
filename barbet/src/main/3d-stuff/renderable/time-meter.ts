@@ -9,7 +9,7 @@ export const enum HeaderFields {
     SIZE,
 }
 
-class TimeMeterSum<T extends number> {
+abstract class TimeMeterGeneric<T extends number> {
     private lastReset: number = 0
     private usingShifted: boolean = false
     private measuredSamples: number = 0
@@ -17,15 +17,17 @@ class TimeMeterSum<T extends number> {
     public constructor(
         private readonly count: T,
         private readonly durationMs: number,
-        private readonly measurements: Float32Array) {
+        protected readonly measurements: Float32Array) {
 
         this.measurements[HeaderFields.SAMPLES_PER_SESSION] = this.measuredSamples
         this.measurements[HeaderFields.SESSION_INDEX] = this.usingShifted ? 0 : 1
     }
 
     public submitTime(step: T, value: number): void {
-        this.measurements[step + (this.usingShifted ? this.count : 0) + HeaderFields.SIZE] += value
+        this.handleSubmitTime(value, step + (this.usingShifted ? this.count : 0) + HeaderFields.SIZE)
     }
+
+    protected abstract handleSubmitTime(value: number, index: number): void
 
     public endSession(now: number) {
         this.measuredSamples++
@@ -42,10 +44,24 @@ class TimeMeterSum<T extends number> {
     }
 }
 
+class TimeMeterSum<T extends number> extends TimeMeterGeneric<T> {
+    protected handleSubmitTime(value: number, index: number): void {
+        this.measurements[index] += value
+    }
+}
+
+class TimeMeterMax<T extends number> extends TimeMeterGeneric<T> {
+    protected handleSubmitTime(value: number, index: number): void {
+        if (this.measurements[index]! < value)
+            this.measurements[index] = value
+    }
+}
+
 export default class TimeMeter<T extends number> {
     private readonly rawBuffer: SharedArrayBuffer
-    private readonly measurements: TimeMeterSum<T>[] = []
+    private readonly measurements: TimeMeterGeneric<T>[] = []
 
+    private enabled: boolean = false
     private currentStep: T = 0 as T
     private currentStepStart: number = 0
 
@@ -57,8 +73,12 @@ export default class TimeMeter<T extends number> {
         const bytesOffset = (this.count * 2 + HeaderFields.SIZE) * Float32Array.BYTES_PER_ELEMENT
         this.rawBuffer = buffer
 
-        this.measurements = REQUESTED_MEASUREMENTS['map']((m, i) => new TimeMeterSum<T>(this.count, m.intervalMilliseconds,
+        this.measurements = REQUESTED_MEASUREMENTS['map']((m, i) => new (m.isSum ? TimeMeterSum : TimeMeterMax)<T>(this.count, m.intervalMilliseconds,
             new Float32Array(buffer, bytesOffset * i, this.count * 2 + HeaderFields.SIZE)))
+    }
+
+    public setEnabled(value: boolean): void {
+        this.enabled = value
     }
 
     public beginSession(firstStep: T): void {
@@ -67,6 +87,7 @@ export default class TimeMeter<T extends number> {
     }
 
     public nowStart(nextStep: T): void {
+        if (!this.enabled) return
         const now = currentTime();
         const duration = now - this.currentStepStart
         const currentStep = this.currentStep;
@@ -79,10 +100,12 @@ export default class TimeMeter<T extends number> {
     }
 
     public endSessionAndGetRawResults(): Readonly<ArrayBuffer> {
-        this.nowStart(0 as T)
-        const now = currentTime();
-        for (const m of this.measurements)
-            m.endSession(now)
+        if (this.enabled) {
+            this.nowStart(0 as T)
+            const now = currentTime();
+            for (const m of this.measurements)
+                m.endSession(now)
+        }
 
         return this.rawBuffer
     }
