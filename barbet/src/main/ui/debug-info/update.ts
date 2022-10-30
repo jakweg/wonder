@@ -1,6 +1,6 @@
 import { KeyValueText, TimesTable } from "."
 import { map, observeField } from "../../util/state/subject"
-import { REQUESTED_MEASUREMENTS } from "../../util/worker/debug-stats/draw-phase"
+import { REQUESTED_MEASUREMENTS } from "../../util/worker/debug-stats/requsted-measurements"
 import { newStatsObject, StatField } from "../../util/worker/debug-stats/update"
 import { UpdatePhase } from "../../util/worker/debug-stats/update-phase"
 

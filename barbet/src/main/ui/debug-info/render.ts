@@ -1,7 +1,8 @@
 import { KeyValueText, TimesTable } from "."
 import { map, observeField } from "../../util/state/subject"
-import { DrawPhase, REQUESTED_MEASUREMENTS } from "../../util/worker/debug-stats/draw-phase"
+import { DrawPhase } from "../../util/worker/debug-stats/draw-phase"
 import { newStatsObject, StatField } from "../../util/worker/debug-stats/render"
+import { REQUESTED_MEASUREMENTS } from "../../util/worker/debug-stats/requsted-measurements"
 
 export default (root: HTMLElement) => {
 

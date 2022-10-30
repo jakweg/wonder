@@ -6,7 +6,6 @@ import { createElement } from "../utils"
 import Render from "./render"
 import Update from "./update"
 
-import { REQUESTED_MEASUREMENTS } from "../../util/worker/debug-stats/draw-phase"
 import { HeaderFields } from "../../util/worker/debug-stats/time-meter"
 import './style.css'
 
@@ -87,7 +86,7 @@ export const TimesTable = <T>(root: HTMLElement,
     }
     StatRow(totalSessionsTitle)
 
-    const sessionIndexes: number[] = REQUESTED_MEASUREMENTS.map(() => -1)
+    const sessionIndexes: number[] = measurements.map(() => -1)
     let frameId: ReturnType<typeof requestAnimationFrame>
     const update = () => {
         const array = stats()

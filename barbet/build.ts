@@ -1,4 +1,4 @@
-import * as esbuild from 'https://deno.land/x/esbuild@v0.14.25/mod.js'
+import * as esbuild from 'https://deno.land/x/esbuild@v0.15.12/mod.js'
 
 const args = new Set<string>(Deno.args as string[])
 

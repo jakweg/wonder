@@ -40,12 +40,13 @@ class WorkerImplementation implements RenderHelperWorkScheduler {
                 }
             })
         }
+        this.waitingWorkers = [...this.workers]
     }
 
     private nextTaskId: number = 1
     private readonly taskIdToResolve: Map<number, (result: TaskResult) => void> = new Map()
     private readonly tasksQueue: { id: number, task: Task }[] = []
-    private readonly waitingWorkers: Awaited<ReturnType<typeof spawnNew>>[] = [...this.workers]
+    private readonly waitingWorkers: Awaited<ReturnType<typeof spawnNew>>[]
 
     public static async createNew(mutex: GameMutex, workersCount?: number): Promise<RenderHelperWorkScheduler> {
 

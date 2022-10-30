@@ -9,7 +9,7 @@ const createPositions = (p1x: number, p2x: number): string => {
     const m1x = p1x.toFixed(5)
     const m1y = (-1).toFixed(5)
     const m2x = p2x.toFixed(5)
-    const m2y = (1).toFixed(5)
+    const m2y = (0 + 1).toFixed(5) // trick esbuild to work properly
     const width = 1 / Math.abs(p1x - p2x);
 
     return `

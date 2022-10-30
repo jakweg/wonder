@@ -14,7 +14,7 @@ import {
 	EntityTraitIndicesRecord,
 	hasTrait,
 	initializeTraitsOfNewEntity,
-	NO_INDEX,
+	NO_INDEX
 } from './traits'
 
 export const ACTIVITY_MEMORY_SIZE = 20
@@ -27,67 +27,77 @@ interface ContainerAllocator<T> extends ArrayAllocator<T> {
 }
 
 const createInt32Allocator = (buffers: SharedArrayBuffer[],
-                              notify: ArraysChangedNotifyCallback): ContainerAllocator<Int32Array> => ({
-	buffers: buffers,
-	reuseCounter: buffers.length,
-	notifyArraysChanged: notify,
-	create(initialCapacity: number): Int32Array {
-		let buffer
-		if (this.reuseCounter > 0) {
-			buffer = this.buffers[this.buffers.length - this.reuseCounter]!
-			this.reuseCounter--
-		} else {
-			buffer = createNewBuffer(initialCapacity * Int32Array.BYTES_PER_ELEMENT)
-			this.buffers.push(buffer)
-		}
-		return new Int32Array(buffer)
-	},
-	resize(oldArray: Int32Array, resizeTo: number): Int32Array {
-		const oldBuffer = oldArray['buffer']
-
-		const newBuffer = createNewBuffer(resizeTo * Int32Array.BYTES_PER_ELEMENT)
-		const newArray = new Int32Array(newBuffer)
-		const buffers = this['buffers']
-		for (let i = 0, l = buffers.length; i < l; i++) {
-			if (buffers[i] === oldBuffer) {
-				buffers[i] = newBuffer
-				break
+	notify: ArraysChangedNotifyCallback): ContainerAllocator<Int32Array> => ({
+		buffers: buffers,
+		reuseCounter: buffers.length,
+		notifyArraysChanged: notify,
+		create(initialCapacity: number): Int32Array {
+			let buffer
+			if (this.reuseCounter > 0) {
+				buffer = this.buffers[this.buffers.length - this.reuseCounter]!
+				this.reuseCounter--
+			} else {
+				buffer = createNewBuffer(initialCapacity * Int32Array.BYTES_PER_ELEMENT)
+				this.buffers.push(buffer)
 			}
-		}
+			return new Int32Array(buffer)
+		},
+		resize(oldArray: Int32Array, resizeTo: number): Int32Array {
+			const oldBuffer = oldArray['buffer']
 
-		for (let i = 0, l = oldArray.length; i < l; ++i)
-			newArray[i] = oldArray[i]!
+			const newBuffer = createNewBuffer(resizeTo * Int32Array.BYTES_PER_ELEMENT)
+			const newArray = new Int32Array(newBuffer)
+			const buffers = this['buffers']
+			for (let i = 0, l = buffers.length; i < l; i++) {
+				if (buffers[i] === oldBuffer) {
+					buffers[i] = newBuffer
+					break
+				}
+			}
 
-		this.notifyArraysChanged()
-		return newArray
-	},
-})
+			for (let i = 0, l = oldArray.length; i < l; ++i)
+				newArray[i] = oldArray[i]!
+
+			this.notifyArraysChanged()
+			return newArray
+		},
+	})
 
 class EntityContainer {
 	public buffersChanged: boolean = false
-	public readonly ids = DataStore.create(this.allocator, DataOffsetIds.SIZE)
-	public readonly positions = DataStore.create(this.allocator, DataOffsetPositions.SIZE)
-	public readonly drawables = DataStore.create(this.allocator, DataOffsetDrawables.SIZE)
-	public readonly withActivities = DataStore.create(this.allocator, DataOffsetWithActivity.SIZE)
-	public readonly activitiesMemory = DataStore.create(this.allocator, ACTIVITY_MEMORY_SIZE)
-	public readonly itemHoldables = DataStore.create(this.allocator, DataOffsetItemHoldable.SIZE)
-	public readonly interruptibles = DataStore.create(this.allocator, DataOffsetInterruptible.SIZE)
-	public readonly buildingData = DataStore.create(this.allocator, DataOffsetBuildingData.SIZE)
+	public readonly ids: DataStore<Int32Array>
+	public readonly positions: DataStore<Int32Array>
+	public readonly drawables: DataStore<Int32Array>
+	public readonly withActivities: DataStore<Int32Array>
+	public readonly activitiesMemory: DataStore<Int32Array>
+	public readonly itemHoldables: DataStore<Int32Array>
+	public readonly interruptibles: DataStore<Int32Array>
+	public readonly buildingData: DataStore<Int32Array>
 
-	public readonly allStores = Object.freeze([
-		this.ids,
-		this.positions,
-		this.drawables,
-		this.withActivities,
-		this.activitiesMemory,
-		this.itemHoldables,
-		this.interruptibles,
-	])
+	public readonly allStores: Readonly<DataStore<Int32Array>[]>
 
 	constructor(
 		private nextEntityId: number,
 		private readonly allocator: ContainerAllocator<Int32Array>,
 	) {
+		this.ids = DataStore.create(this.allocator, DataOffsetIds.SIZE)
+		this.positions = DataStore.create(this.allocator, DataOffsetPositions.SIZE)
+		this.drawables = DataStore.create(this.allocator, DataOffsetDrawables.SIZE)
+		this.withActivities = DataStore.create(this.allocator, DataOffsetWithActivity.SIZE)
+		this.activitiesMemory = DataStore.create(this.allocator, ACTIVITY_MEMORY_SIZE)
+		this.itemHoldables = DataStore.create(this.allocator, DataOffsetItemHoldable.SIZE)
+		this.interruptibles = DataStore.create(this.allocator, DataOffsetInterruptible.SIZE)
+		this.buildingData = DataStore.create(this.allocator, DataOffsetBuildingData.SIZE)
+
+		this.allStores = Object.freeze([
+			this.ids,
+			this.positions,
+			this.drawables,
+			this.withActivities,
+			this.activitiesMemory,
+			this.itemHoldables,
+			this.interruptibles,
+		])
 	}
 
 	public static createEmptyContainer(): EntityContainer {
@@ -179,7 +189,7 @@ class EntityContainer {
 		return record
 	}
 
-	public* iterate(requiredTraits: EntityTrait): Generator<Readonly<EntityTraitIndicesRecord>> {
+	public * iterate(requiredTraits: EntityTrait): Generator<Readonly<EntityTraitIndicesRecord>> {
 		const record = createEmptyTraitRecord()
 
 		const rawData = this.ids.rawData

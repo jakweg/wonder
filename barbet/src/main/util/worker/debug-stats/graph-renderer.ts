@@ -39,7 +39,7 @@ const drawable: () => Drawable<ShaderCache, WorldData, BoundData> = () => ({
             fragmentSource: fragmentShaderSource({ samplesCount, left, })
         })
 
-        const programs = await Promise.all([
+        const programs = await Promise['all']([
             makeShader(FRAMES_COUNT_RENDERING, true),
             makeShader(FRAMES_COUNT_UPDATE, false),
         ])

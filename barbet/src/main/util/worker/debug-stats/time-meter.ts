@@ -1,5 +1,5 @@
 import { createNewBuffer } from "../../shared-memory";
-import { REQUESTED_MEASUREMENTS } from "./draw-phase";
+import { REQUESTED_MEASUREMENTS } from "./requsted-measurements";
 
 const currentTime = () => performance['now']()
 

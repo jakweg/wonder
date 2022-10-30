@@ -19,8 +19,8 @@ const defaultKeyMapping: { [key: string]: PressedKey } = {
 
 class KeyboardController {
 	public static INSTANCE: KeyboardController | undefined = undefined
-	private pressedKeys: { [key: string]: boolean } = {}
-	private pressedCount: number = 0
+	private pressedKeys: Set<string> = new Set()
+	private keyReleasedListeners: Map<string, (code: string) => void> = new Map()
 	private maskEnabled: boolean = false
 
 	private constructor(private readonly frontedVariables: Int16Array) {
@@ -45,39 +45,42 @@ class KeyboardController {
 	}
 
 	public cancelAllPressed(): void {
-		const keys = this.pressedKeys
-		for (const code in keys)
-			keys[code] = false
-		this.pressedCount = 0
+		this.pressedKeys['clear']()
 		Atomics.store(this.frontedVariables, FrontendVariable.PressedKeys, PressedKey.None)
 	}
 
 	public isAnyPressed(): boolean {
-		return this.pressedCount !== 0
+		return this.pressedKeys['size'] !== 0
 	}
 
 	public isPressed(code: string): boolean {
-		if (this.pressedCount === 0) return false
-		return this.pressedKeys[code] ?? false
+		return this.pressedKeys['has'](code)
 	}
 
 	private setKeyPressed(code: string, pressed: boolean): void {
 		if (this.maskEnabled) return
-		const pressedKeys = this.pressedKeys
-		if (pressedKeys[code] === pressed) return
-		pressedKeys[code] = pressed
-		this.pressedCount += pressed ? 1 : -1
-		if (this.pressedCount < 0)
-			this.pressedCount = 0
+		if (pressed)
+			this.pressedKeys['add'](code)
+		else
+			this.pressedKeys['delete'](code)
 
 		const mapped = defaultKeyMapping[code] ?? PressedKey.None
 
-		if (mapped === PressedKey.None) return
+		if (mapped === PressedKey.None) {
+			if (!pressed)
+				this.keyReleasedListeners['get'](code)?.(code)
+			return
+		}
 
 		if (pressed)
 			Atomics.or(this.frontedVariables, FrontendVariable.PressedKeys, mapped)
 		else
 			Atomics.and(this.frontedVariables, FrontendVariable.PressedKeys, ~mapped)
+	}
+
+	public setKeyReleasedListener<T extends string>(code: T, callback: (key: T) => void) {
+		if (this.keyReleasedListeners['has'](code)) throw new Error()
+		this.keyReleasedListeners['set'](code, callback)
 	}
 }
 

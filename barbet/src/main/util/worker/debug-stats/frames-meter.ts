@@ -1,4 +1,4 @@
-import { createNewBuffer } from "../../shared-memory"
+import { createNewBuffer } from "../../shared-memory";
 
 export class FramesMeter {
 

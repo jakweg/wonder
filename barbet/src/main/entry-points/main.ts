@@ -6,6 +6,7 @@ import { createRemoteSession } from '../game-session/remote'
 import { defaults, NetworkStateField } from '../network/state'
 import { createUi } from '../ui/root'
 import { initFrontendVariableAndRegisterToWindow } from '../util/frontend-variables-updaters'
+import { initKeyboardMappings } from '../util/keyboard-mappings'
 import CONFIG, {
 	initSettingsFromLocalStorage,
 	observeSetting,
@@ -18,6 +19,7 @@ initSettingsFromLocalStorage()
 addSaveCallback(() => saveSettingsToLocalStorage())
 registerSaveSettingsCallback()
 initFrontendVariableAndRegisterToWindow()
+initKeyboardMappings()
 
 document['body'].classList['remove']('not-loaded-body')
 
@@ -109,6 +111,7 @@ const startLocal = async () => {
 	const local = session = await createLocalSession({
 		canvasProvider: uiHandlers.canvas.recreate
 	})
+
 	await local.createNewGame({})
 	local.getCurrentGame()?.renderDebugStats.observeEverything(uiHandlers.debug.updateRenderValues)
 	local.getCurrentGame()?.updateDebugStats.observeEverything(uiHandlers.debug.updateUpdateValues)
