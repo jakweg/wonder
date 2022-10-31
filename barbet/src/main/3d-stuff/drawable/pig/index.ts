@@ -46,6 +46,7 @@ const drawable: () => Drawable<ShaderCache, WorldData, BoundData> = () => ({
 
         program.useAttributes({
             'modelPosition': { count: 3, type: AttrType.Float },
+            'modelExtra': { count: 1, type: AttrType.Float },
         })
 
         indicesBuffer.setContent(new Uint8Array([...pig.indices]))

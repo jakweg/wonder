@@ -15,7 +15,10 @@ export const vertexShaderSource = (options: ShaderOptions): string => {
 uniform mat4 u_combinedMatrix;
 uniform float u_time;
 in vec3 a_modelPosition;
+in float a_modelExtra;
+out float v_modelExtra;
 void main() {
+	v_modelExtra = a_modelExtra;
 	vec3 model = a_modelPosition;
 	${options.modelTransformationsSource}
 
@@ -33,9 +36,10 @@ export const fragmentShaderSource = (options: ShaderOptions) => {
 	parts.push(`${VersionHeader()}
 ${PrecisionHeader()}
 out vec3 finalColor;
+in float v_modelExtra;
 
 void main() {
-	finalColor = vec3(1.0, 0.0, 0.0);
+	finalColor = vec3(1.0, v_modelExtra, 0.0);
 }
 `)
 
@@ -43,4 +47,4 @@ void main() {
 }
 
 export type Uniforms = 'combinedMatrix' | 'time'
-export type Attributes = 'modelPosition'
+export type Attributes = 'modelPosition' | 'modelExtra'
