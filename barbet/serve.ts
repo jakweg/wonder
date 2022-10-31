@@ -36,7 +36,7 @@ const handler = async (request: Request): Promise<Response> => {
 			contentType = extensionsToContentTypeMap[extension]
 		}
 
-		const csp = (pathname === '/dist/network-worker.js') ? '' : `require-trusted-types-for 'script';upgrade-insecure-requests; default-src 'self';`
+		const csp = (pathname === '/dist/network-worker.js') ? '' : `require-trusted-types-for 'script'; default-src 'self';`
 
 		return new Response(await file, {
 			headers: {

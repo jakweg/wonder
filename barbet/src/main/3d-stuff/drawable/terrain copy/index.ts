@@ -9,7 +9,7 @@ import { GpuAllocator } from "../../pipeline/allocator"
 import { Drawable, LoadParams } from "../../pipeline/Drawable"
 import RenderHelperWorkScheduler, { TaskType } from "../../pipeline/work-scheduler"
 import { RenderContext } from "../../renderable/render-context"
-import { Attributes, fragmentShaderSource, MousePickerAttributes, MousePickerUniforms, Uniforms, vertexShaderSource } from "./shaders"
+import { Attributes, fragmentShaderSource, MousePickerAttributes, MousePickerUniforms, Uniforms, vertexShaderSource } from "../terrain/shaders"
 
 
 interface ShaderCache {
@@ -220,7 +220,6 @@ const drawable: () => Drawable<ShaderCache, WorldData, BoundData> = () => ({
                 if (shaderChunkData.lastUploadId !== chunkData.lastRecreationId) {
                     shaderChunkData.lastUploadId = chunkData.lastRecreationId
 
-                    shaderChunkData.vao.bind()
                     shaderChunkData.vertexes.setContent(chunkData.vertexes)
                     shaderChunkData.indices.setContent(chunkData.indices)
                     shaderChunkData.triangles = chunkData.triangles

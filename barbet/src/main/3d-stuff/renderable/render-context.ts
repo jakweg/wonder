@@ -14,6 +14,7 @@ import TimeMeter from '../../util/worker/debug-stats/time-meter'
 import { Camera } from '../camera'
 import ChunkVisibilityIndex from '../drawable/chunk-visibility'
 import terrain from '../drawable/terrain'
+import pig from '../drawable/pig'
 import { MainRenderer } from '../main-renderer'
 import { newPipeline } from '../pipeline'
 import { newMousePicker } from '../pipeline/mouse-picker'
@@ -136,6 +137,7 @@ export const createRenderingSession = async (
 	const stats = new RenderDebugDataCollector(new FramesMeter(FRAMES_COUNT_RENDERING))
 	const pipeline = newPipeline([
 		terrain(),
+		pig(),
 		graphRenderer(),
 	])
 
