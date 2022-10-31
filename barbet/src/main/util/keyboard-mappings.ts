@@ -15,6 +15,6 @@ export const initKeyboardMappings = () => {
 		toggleSetting('debug/show-graphs')
 	})
 	KeyboardController.INSTANCE?.setKeyReleasedListener('F5', () => {
-		toggleSetting('rendering/ambient-occlusion')
+		toggleSetting('debug/disable-culling')
 	})
 }

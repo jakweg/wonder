@@ -16,7 +16,8 @@ const settingsToDefaults = {
 	'other/preferred-environment': 'second' as Environment,
 	'debug/debug-world': false,
 	'debug/show-info': false,
-	'debug/show-graphs': false
+	'debug/show-graphs': false,
+	'debug/disable-culling': false,
 }
 
 type SettingName = keyof typeof settingsToDefaults

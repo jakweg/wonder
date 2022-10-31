@@ -45,8 +45,8 @@ const drawable: () => Drawable<ShaderCache, WorldData, BoundData> = () => ({
         ])
 
         programs[0].use()
-        allocator.unsafeRawContext().uniform1f(programs[0].uniforms.heightScale, 64.0)
-        allocator.unsafeRawContext().uniform1f(programs[0].uniforms.targetMs, 16.0)
+        allocator.unsafeRawContext().uniform1f(programs[0].uniforms['heightScale'], 64.0)
+        allocator.unsafeRawContext().uniform1f(programs[0].uniforms['targetMs'], 16.0)
 
         return {
             programFps: programs[0],
@@ -72,9 +72,9 @@ const drawable: () => Drawable<ShaderCache, WorldData, BoundData> = () => ({
         const { gl, stats, stats: { frames, updateTimesBuffer } } = ctx
         if (shader === null || !shader.enabled) return
 
-        gl.disable(gl.DEPTH_TEST)
-        gl.enable(gl.BLEND)
-        gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
+        gl['disable'](gl.DEPTH_TEST)
+        gl['enable'](gl.BLEND)
+        gl['blendFunc'](gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
 
         const { programFps, programUps } = shader
         programFps.use()
@@ -96,8 +96,8 @@ const drawable: () => Drawable<ShaderCache, WorldData, BoundData> = () => ({
             stats.incrementDrawCalls()
         }
 
-        gl.enable(gl.DEPTH_TEST)
-        gl.disable(gl.BLEND)
+        gl['enable'](gl.DEPTH_TEST)
+        gl['disable'](gl.BLEND)
 
         gl.bindVertexArray(null)
 

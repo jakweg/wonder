@@ -157,6 +157,12 @@ export const createRenderingSession = async (
 		pipeline.notifyConfigChanged()
 	})
 
+	CONFIG.observe('debug/disable-culling', v => {
+		visibility.setCullingDisabled(v)
+		if (camera)
+			stats.setVisibleChunksCount(visibility.update(camera.combinedMatrix))
+	})
+
 	return {
 		stats,
 		setCanvas(canvas: HTMLCanvasElement) {
@@ -254,13 +260,14 @@ export const createRenderingSession = async (
 			gameTickRate = _gameTickRate
 			gameTickEstimation = _gameTickEstimation
 			visibility = ChunkVisibilityIndex.create(game.world.size.chunksSizeX, game.world.size.chunksSizeZ)
+			visibility.setCullingDisabled(CONFIG.get('debug/disable-culling'))
 			scheduler.setWorld(game.world.pass())
 			pipeline.useGame(game, scheduler)
 			pipeline.bindGpuWithGameIfCan()
 		},
 		setCamera(newCamera: Camera) {
 			camera = newCamera
-			visibility.update(newCamera.combinedMatrix)
+			stats.setVisibleChunksCount(visibility.update(newCamera.combinedMatrix))
 		},
 		cleanUp() {
 			if (lastCanvas !== null) {

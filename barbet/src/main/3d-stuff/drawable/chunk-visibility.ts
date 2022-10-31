@@ -24,6 +24,7 @@ const check2dPointVisibility = (x: number, z: number, matrix: any, threshold: nu
 }
 
 export default class ChunkVisibilityIndex {
+    private cullingDisabled: boolean = false
     private constructor(
         private readonly sizeX: number,
         private readonly sizeY: number,
@@ -36,8 +37,19 @@ export default class ChunkVisibilityIndex {
         return new ChunkVisibilityIndex(sizeX, sizeY, new Uint8Array(sizeX * sizeY))
     }
 
+    public setCullingDisabled(disabled: boolean, matrixToUpdate?: any): void {
+        if (this.cullingDisabled === disabled) return
+        this.cullingDisabled = disabled
+
+        if (disabled)
+            this.visibility.fill(Status.VISIBLE)
+        else if (matrixToUpdate)
+            this.update(matrixToUpdate)
+    }
+
     /** @returns number of visible chunks */
     public update(matrix: any): number {
+        if (this.cullingDisabled) return this.visibility.length
         this.visibility.fill(Status.INVISIBLE)
 
         const threshold = 1
