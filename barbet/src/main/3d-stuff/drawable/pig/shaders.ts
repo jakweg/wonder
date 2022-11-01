@@ -19,13 +19,13 @@ in vec3 a_modelSideColor;
 in uint a_modelFlags;
 
 out float v_modelExtra;
-out vec3 v_color;
+flat out vec3 v_color;
 void main() {
 	v_color = a_modelSideColor;
 	vec3 model = a_modelPosition;
 	${options.modelTransformationsSource}
 
-	gl_Position = u_combinedMatrix * vec4(model + vec3(5.0, 2.1, 5.0), 1.0);
+	gl_Position = u_combinedMatrix * vec4(model + vec3(5.0, 1.0, 5.0), 1.0);
 	gl_PointSize = 10.0;
 }
 	`)
@@ -39,7 +39,7 @@ export const fragmentShaderSource = (options: ShaderOptions) => {
 	parts.push(`${VersionHeader()}
 ${PrecisionHeader()}
 out vec3 finalColor;
-in vec3 v_color;
+flat in vec3 v_color;
 
 void main() {
 	finalColor = v_color;

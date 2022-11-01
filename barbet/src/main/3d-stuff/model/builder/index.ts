@@ -1,7 +1,6 @@
 import * as mat4 from "@matrix/mat4"
-import * as vec4 from "@matrix/vec4"
 import { RotationXMatrix, RotationYMatrix, RotationZMatrix } from "../../common-shader"
-import { newCubeModel } from "./cube"
+import { newCubeModel, newCubeModel2 } from "./cube"
 import { mergeModels, Model, transformPointsByMatrix, TypedArray } from "./model"
 import { DynamicTransform, StaticTransform, TransformType } from "./transform"
 
@@ -43,19 +42,6 @@ const matrixFromStaticTransform = (operations: ReadonlyArray<StaticTransform>) =
         }
     }
     return matrix
-}
-
-const transformPoints = (points: ReadonlyArray<[number, number, number, number]>, matrix: any) => {
-    const tmpVector: [number, number, number, number] = [0, 0, 0, 0]
-    const transformed: Array<[number, number, number, number]> = points.map(([x, y, z, extra]) => {
-        tmpVector[0] = x
-        tmpVector[1] = y
-        tmpVector[2] = z
-        tmpVector[3] = 1
-        vec4.transformMat4(tmpVector, tmpVector, matrix)
-        return [tmpVector[0], tmpVector[1], tmpVector[2], extra]
-    })
-    return transformed
 }
 
 const formatNumberOrString = (value: string | number) => {
@@ -157,13 +143,149 @@ const defineModel = <T extends TypedArray>(description: ModelDefinition<T>): Def
 export const foo = () => {
 
     const defined = defineModel({
-        mesh: newCubeModel(0xFF00FF),
+        children: [
+            {
+                mesh: newCubeModel2(0, [
+                    0xFF0000,
+                    0xFF00FF,
+                    0xFFFFFF,
+                    0x00FFFF,
+                    0x00FF00,
+                    0x0000FF,
+                ]),
+                staticTransform: [
+                    { type: TransformType.Scale, by: [1.1, 1, 0.8] }
+                ],
+                dynamicTransformCondition: 'true',
+                dynamicTransform: [],
+            },
+            {
+                mesh: newCubeModel(4, 0xFF0000),
+                staticTransform: [
+                    { type: TransformType.Translate, by: [0.25, -0.6, -0.29] },
+                    { type: TransformType.Scale, by: [0.2, 0.3, 0.2] },
+                ],
+                dynamicTransformCondition: '(a_modelFlags >> (4U)) == 4U',
+                dynamicTransform: [
+                    { type: TransformType.Translate, by: [-0.25, 0.3, 0.29] },
+                    { type: TransformType.RotateZ, by: 'sin(u_time * 5.0) * 0.2' },
+                    { type: TransformType.Translate, by: [0.25, -0.3, -0.29] },
+                ],
+            }, {
+                mesh: newCubeModel(5, 0xFF0000),
+                staticTransform: [
+                    { type: TransformType.Translate, by: [-0.25, -0.6, -0.29] },
+                    { type: TransformType.Scale, by: [0.2, 0.3, 0.2] },
+                ],
+                dynamicTransformCondition: '(a_modelFlags >> (4U)) == 5U',
+                dynamicTransform: [
+                    { type: TransformType.Translate, by: [0.25, 0.3, 0.29] },
+                    { type: TransformType.RotateZ, by: 'sin(u_time * 5.0) * 0.2' },
+                    { type: TransformType.Translate, by: [-0.25, -0.3, -0.29] },
+                ],
+            },
+            {
+                mesh: newCubeModel(6, 0xFF0000),
+                staticTransform: [
+                    { type: TransformType.Translate, by: [0.25, -0.6, 0.29] },
+                    { type: TransformType.Scale, by: [0.2, 0.3, 0.2] },
+                ],
+                dynamicTransformCondition: '(a_modelFlags >> (4U)) == 6U',
+                dynamicTransform: [
+                    { type: TransformType.Translate, by: [-0.25, 0.3, -0.29] },
+                    { type: TransformType.RotateZ, by: 'sin(u_time * -5.0) * 0.2' },
+                    { type: TransformType.Translate, by: [0.25, -0.3, 0.29] },
+                ],
+            }, {
+                mesh: newCubeModel(7, 0xFF0000),
+                staticTransform: [
+                    { type: TransformType.Translate, by: [-0.25, -0.6, 0.29] },
+                    { type: TransformType.Scale, by: [0.2, 0.3, 0.2] },
+                ],
+                dynamicTransformCondition: '(a_modelFlags >> (4U)) == 7U',
+                dynamicTransform: [
+                    { type: TransformType.Translate, by: [0.25, 0.3, -0.29] },
+                    { type: TransformType.RotateZ, by: 'sin(u_time * -5.0) * 0.2' },
+                    { type: TransformType.Translate, by: [-0.25, -0.3, 0.29] },
+                ],
+            },
+            {
+                children: [
+                    {
+                        mesh: newCubeModel2(1, [
+                            0x0000FF,
+                            0xFF0000,
+                            0xFF00FF,
+                            0x00FFFF,
+                            0x00FF00,
+                            0xFFFFFF,
+                        ]),
+                        staticTransform: [
+                            { type: TransformType.Scale, by: [0.5, 0.5, 0.5] },
+                        ],
+                        dynamicTransformCondition: '(a_modelFlags >> (4U)) == 1U',
+                        dynamicTransform: [
+                        ],
+                    },
+                    {
+                        mesh: newCubeModel(8, 0x000000),
+                        staticTransform: [
+                            { type: TransformType.Translate, by: [0.22, 0.1, 0.1] },
+                            { type: TransformType.Scale, by: [0.09, 0.09, 0.09] },
+                        ],
+                        dynamicTransformCondition: '(a_modelFlags >> (4U)) == 8U',
+                        dynamicTransform: [
+                            { type: TransformType.Translate, by: [-0.22, -0.1, -0.1] },
+                            {
+                                beforeBlock: 'float _v0 = fract(u_time) - 0.1; float _v1 = abs(clamp(_v0, -0.1, 0.1)) * 10.0;float _v2 = abs(clamp(_v0, -0.1, 0.1)) * 2.0 + 0.8;',
+                                type: TransformType.Scale, by: [`_v2`, '_v1', '_v2']
+                            },
+                            { type: TransformType.Translate, by: [0.22, 0.1, 0.1] },
+                        ],
+                    }, {
+                        mesh: newCubeModel(9, 0x000000),
+                        staticTransform: [
+                            { type: TransformType.Translate, by: [0.22, 0.1, -0.1] },
+                            { type: TransformType.Scale, by: [0.09, 0.09, 0.09] },
+                        ],
+                        dynamicTransformCondition: '(a_modelFlags >> (4U)) == 9U',
+                        dynamicTransform: [
+                            { type: TransformType.Translate, by: [-0.22, -0.1, 0.1] },
+                            {
+                                beforeBlock: 'float _v0 = fract(u_time) - 0.1; float _v1 = abs(clamp(_v0, -0.1, 0.1)) * 10.0;float _v2 = abs(clamp(_v0, -0.1, 0.1)) * 2.0 + 0.8;',
+                                type: TransformType.Scale, by: [`_v2`, '_v1', '_v2']
+                            },
+                            { type: TransformType.Translate, by: [0.22, 0.1, -0.1] },
+                        ],
+                    }, {
+                        mesh: newCubeModel(3, 0x000000),
+                        staticTransform: [
+                            { type: TransformType.Translate, by: [0.22, -0.1, 0] },
+                            { type: TransformType.Scale, by: [0.09, 0.07, 0.3] },
+                        ],
+                        dynamicTransformCondition: 'true',
+                        dynamicTransform: [
+                        ],
+                    },
+                ],
+                staticTransform: [
+                ],
+                dynamicTransformCondition: '(a_modelFlags >> (4U)) == 1U || (a_modelFlags >> (4U)) == 3U|| (a_modelFlags >> (4U)) == 8U|| (a_modelFlags >> (4U)) == 9U',
+                dynamicTransform: [
+                    { type: TransformType.Translate, by: [0.1, 0.1, 0] },
+                    { type: TransformType.RotateZ, by: 'sin(u_time * 5.0) / 8.0' },
+                    { type: TransformType.RotateY, by: 'sin(u_time) / 3.0' },
+                    { type: TransformType.Translate, by: [0.5, 0.5, 0] },
+                ],
+            }
+        ],
         staticTransform: [
+            { type: TransformType.Translate, by: [0, 1.5, 0] },
         ],
         dynamicTransformCondition: 'true',
         dynamicTransform: [
             { type: TransformType.RotateY, by: `(u_time)` },
-            { type: TransformType.Translate, by: [null, `a_modelFlags == 1U ? sin(u_time * 3.0) * 0.5 : 0.0`, null] },
+            // { type: TransformType.Translate, by: [null, `a_modelFlags == 1U ? sin(u_time * 3.0) * 0.5 : 0.0`, null] },
         ]
     })
 

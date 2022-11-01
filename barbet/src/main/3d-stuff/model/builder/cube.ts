@@ -1,6 +1,10 @@
 import { Model } from "./model"
 
-export const newCubeModel = (color: number): Model<Uint8Array> => {
+export const newCubeModel = (partId: number, color: number): Model<Uint8Array> => {
+    return newCubeModel2(partId, [color, color, color, color, color, color])
+}
+
+export const newCubeModel2 = (partId: number, colors: [number, number, number, number, number, number]): Model<Uint8Array> => {
     const vertexCoordinates: Array<number> = [
         -0.5, -0.5, -0.5,
         0.5, -0.5, -0.5,
@@ -12,10 +16,17 @@ export const newCubeModel = (color: number): Model<Uint8Array> => {
         -0.5, 0.5, 0.5,
     ]
 
+    partId = (partId & 0b1111) << 4
     const vertexData = [
-        0, 0, 0, 0,
-        1, 1, 1, 1,
-    ].flatMap(e => [(color >> 16) & 0xFF, (color >> 8) & 0xFF, (color >> 0) & 0xFF, e])
+        [partId | 0b0000, colors[0]],
+        [partId | 0b0000, colors[1]],
+        [partId | 0b0000, colors[2]],
+        [partId | 0b0000, colors[3]],
+        [partId | 0b0001, 0],
+        [partId | 0b0001, colors[4]],
+        [partId | 0b0001, 0],
+        [partId | 0b0001, colors[5]],
+    ].flatMap(([top, color], i) => [((color ?? 0) >> 16) & 0xFF, ((color ?? 0) >> 8) & 0xFF, ((color ?? 0) >> 0) & 0xFF, top])
 
     const indices: number[] = [
         // bottom

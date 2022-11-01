@@ -59,7 +59,7 @@ const drawable: () => Drawable<ShaderCache, WorldData, BoundData> = () => ({
         return {
             program,
             vao,
-            triangles: 36,
+            triangles: pig.indices.length | 0,
         }
     },
     createWorld(params: LoadParams, previous: WorldData | null): WorldData {

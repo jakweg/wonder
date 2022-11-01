@@ -21,6 +21,7 @@ export interface Model<VertexData extends TypedArray> {
 const getConstructor = <T extends TypedArray>(array: T): (new (length: number) => T) => {
     if (array instanceof Float32Array) return Float32Array as any
     if (array instanceof Int32Array) return Int32Array as any
+    if (array instanceof Uint8Array) return Uint8Array as any
     throw new Error()
 }
 
@@ -73,9 +74,11 @@ export const transformPointsByMatrix = (points: Float32Array, matrix: any): void
         tmpVector[0] = points[i + 0]!
         tmpVector[1] = points[i + 1]!
         tmpVector[2] = points[i + 2]!
+        tmpVector[3] = 1.0
         vec4.transformMat4(tmpVector, tmpVector, matrix)
-        points[i + 0] = tmpVector[0]!
-        points[i + 1] = tmpVector[1]!
-        points[i + 2] = tmpVector[2]!
+        const w = tmpVector[3]
+        points[i + 0] = tmpVector[0]! / w
+        points[i + 1] = tmpVector[1]! / w
+        points[i + 2] = tmpVector[2]! / w
     }
 }
