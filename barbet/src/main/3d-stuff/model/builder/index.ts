@@ -1,20 +1,17 @@
 import * as mat4 from "@matrix/mat4"
 import * as vec4 from "@matrix/vec4"
 import { RotationXMatrix, RotationYMatrix, RotationZMatrix } from "../../common-shader"
+import { newCubeModel } from "./cube"
+import { mergeModels, Model, transformPointsByMatrix, TypedArray } from "./model"
 import { DynamicTransform, StaticTransform, TransformType } from "./transform"
 
-interface ModelMesh {
-    points: ReadonlyArray<[number, number, number, number]>
-    indices: ReadonlyArray<number>
-}
-
-type ModelDefinition = (
+type ModelDefinition<T extends TypedArray> = (
     {
-        mesh: ModelMesh
+        mesh: Model<T>
         children?: undefined
     } | {
         mesh?: undefined
-        children: ModelDefinition[]
+        children: ModelDefinition<T>[]
     }
 ) & {
     staticTransform: ReadonlyArray<StaticTransform>
@@ -22,40 +19,6 @@ type ModelDefinition = (
     dynamicTransform: ReadonlyArray<DynamicTransform>
 }
 
-const newCube = (extra: number) => {
-    const points: Array<[number, number, number, number]> = [
-        [-0.5, -0.5, -0.5, extra],
-        [0.5, -0.5, -0.5, extra],
-        [0.5, -0.5, 0.5, extra],
-        [-0.5, -0.5, 0.5, extra],
-        [-0.5, 0.5, -0.5, extra],
-        [0.5, 0.5, -0.5, extra],
-        [0.5, 0.5, 0.5, extra],
-        [-0.5, 0.5, 0.5, extra],
-    ]
-
-    const indices: number[] = [
-        // bottom
-        1, 2, 0,
-        2, 3, 0,
-        // front
-        0, 4, 1,
-        4, 5, 1,
-        // right side
-        1, 5, 2,
-        5, 6, 2,
-        // left side
-        0, 3, 7,
-        4, 0, 7,
-        // back
-        2, 6, 3,
-        6, 7, 3,
-        // top
-        4, 7, 5,
-        7, 6, 5,
-    ]
-    return { points, indices }
-}
 
 const matrixFromStaticTransform = (operations: ReadonlyArray<StaticTransform>) => {
     const matrix = mat4.create()
@@ -155,87 +118,56 @@ const shaderCodeFromDynamicTransform = (
     return shaderParts.join('')
 }
 
-type DefinedModel = {
-    points: ReadonlyArray<[number, number, number, number]>
-    indices: ReadonlyArray<number>
-    triangles: number
+type DefinedModel<T> = {
+    vertexPoints: Float32Array
+    indices: Uint16Array
+    vertexDataArray: T
     shader: string
 }
 
-const defineModel = (description: ModelDefinition): DefinedModel => {
+const defineModel = <T extends TypedArray>(description: ModelDefinition<T>): DefinedModel<T> => {
     if (description.mesh) {
-        const { points, indices } = description.mesh as ModelMesh
+        const model = description.mesh
 
         const staticTransform = matrixFromStaticTransform(description.staticTransform)
-        const transformed = transformPoints(points, staticTransform)
+        transformPointsByMatrix(model.vertexPoints, staticTransform)
 
         const shader = shaderCodeFromDynamicTransform(description.dynamicTransformCondition, description.dynamicTransform, [])
 
-        return { points: transformed, indices, triangles: indices.length, shader }
-    } else {
+        return { vertexPoints: model.vertexPoints, indices: model.indices, vertexDataArray: model.vertexDataArray, shader }
+    } else if (description.children && description.children.length > 0) {
         const children = description.children
         const defined = children.map(e => defineModel(e))
 
-        const points = defined.map(e => e.points).flat()
-
-        let indicesSum = 0
-        const indices = []
-        for (const c of defined) {
-            for (const i of c.indices)
-                indices.push(i + indicesSum)
-
-            indicesSum += c.points.length
-        }
+        const merged = mergeModels(defined)
 
         const needsConvertStaticToDynamic = description.children.some(c => c.dynamicTransform.length > 0)
 
         const staticTransform = matrixFromStaticTransform(description.staticTransform)
-        const transformed = needsConvertStaticToDynamic ? points : transformPoints(points, staticTransform)
+        if (!needsConvertStaticToDynamic)
+            transformPointsByMatrix(merged.vertexPoints, staticTransform)
 
         const shader = shaderCodeFromDynamicTransform(description.dynamicTransformCondition, description.dynamicTransform,
             [...defined.map(e => e.shader), shaderCodeFromDynamicTransform('true', needsConvertStaticToDynamic ? description.staticTransform : [], [])])
 
-        return { points: transformed, indices, triangles: indices.length, shader }
-    }
+        return { vertexPoints: merged.vertexPoints, indices: merged.indices, vertexDataArray: merged.vertexDataArray, shader }
+    } else throw new Error()
 }
 
 export const foo = () => {
 
     const defined = defineModel({
-        children: [
-            {
-                mesh: newCube(0.9),
-                staticTransform: [
-                    { type: TransformType.Scale, by: [0.4, 0.4, 0.4] },
-                ],
-                dynamicTransformCondition: 'a_modelExtra == 0.9',
-                dynamicTransform: [
-                    { type: TransformType.RotateY, by: `u_time / -1.0` },
-                ],
-            },
-            {
-                mesh: newCube(0.2),
-                staticTransform: [
-                    { type: TransformType.Translate, by: [0, 0, 1] },
-                    // { type: TransformType.Translate, by: [1.0, 0.4, 0] },
-                    { type: TransformType.Scale, by: [0.2, 0.2, 0.2] },
-                ],
-                dynamicTransformCondition: 'a_modelExtra == 0.2',
-                dynamicTransform: [
-                ],
-            },
-        ],
+        mesh: newCubeModel(0xFF00FF),
         staticTransform: [
         ],
         dynamicTransformCondition: 'true',
         dynamicTransform: [
             { type: TransformType.RotateY, by: `(u_time)` },
-            { type: TransformType.Translate, by: [1, 0, 2] },
+            { type: TransformType.Translate, by: [null, `a_modelFlags == 1U ? sin(u_time * 3.0) * 0.5 : 0.0`, null] },
         ]
     })
 
     console.log(defined);
 
-
-    return { ...defined, points: defined.points.flat() }
+    return defined
 }

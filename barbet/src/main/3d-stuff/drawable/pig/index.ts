@@ -35,26 +35,31 @@ const drawable: () => Drawable<ShaderCache, WorldData, BoundData> = () => ({
 
         const vao = allocator.newVao()
         const modelBuffer = allocator.newBuffer({ dynamic: false, forArray: true })
+        const modelDataBuffer = allocator.newBuffer({ dynamic: false, forArray: true })
         const indicesBuffer = allocator.newBuffer({ dynamic: false, forArray: false })
 
         program.use()
         vao.bind()
-        modelBuffer.bind()
-        indicesBuffer.bind()
 
-        modelBuffer.setContent(new Float32Array([...pig.points]))
+        indicesBuffer.setContent(pig.indices)
 
+
+        modelDataBuffer.setContent(pig.vertexDataArray)
         program.useAttributes({
-            'modelPosition': { count: 3, type: AttrType.Float },
-            'modelExtra': { count: 1, type: AttrType.Float },
+            'modelSideColor': { count: 3, type: AttrType.UByte, normalize: true, divisor: 0 },
+            'modelFlags': { count: 1, type: AttrType.UByte, divisor: 0 },
         })
 
-        indicesBuffer.setContent(new Uint8Array([...pig.indices]))
+
+        modelBuffer.setContent(pig.vertexPoints)
+        program.useAttributes({
+            'modelPosition': { count: 3, type: AttrType.Float, divisor: 0 },
+        })
 
         return {
             program,
             vao,
-            triangles: pig.triangles,
+            triangles: 36,
         }
     },
     createWorld(params: LoadParams, previous: WorldData | null): WorldData {
@@ -81,7 +86,7 @@ const drawable: () => Drawable<ShaderCache, WorldData, BoundData> = () => ({
         vao.bind()
 
         // gl.disable(gl.CULL_FACE)
-        gl.drawElements(gl.TRIANGLES, triangles, gl.UNSIGNED_BYTE, 0)
+        gl.drawElementsInstanced(gl.TRIANGLES, triangles, gl.UNSIGNED_SHORT, 0, 1)
         gl.enable(gl.CULL_FACE)
         // vao.unbind()
     },
