@@ -14,9 +14,13 @@ type ModelDefinition<T extends TypedArray> = (
     }
 ) & {
     staticTransform: ReadonlyArray<StaticTransform>
+} & ({
     dynamicTransformCondition: string,
     dynamicTransform: ReadonlyArray<DynamicTransform>
-}
+} | {
+    dynamicTransformCondition?: undefined,
+    dynamicTransform?: undefined
+})
 
 
 const matrixFromStaticTransform = (operations: ReadonlyArray<StaticTransform>) => {
@@ -105,6 +109,8 @@ const shaderCodeFromDynamicTransform = (
             default:
                 throw new Error()
         }
+        if (operation.afterBlock)
+            shaderParts.push(operation.afterBlock, '\n')
         shaderParts.push('}\n')
     }
     shaderParts.push('}\n\n')
@@ -126,7 +132,9 @@ const defineModel = <T extends TypedArray>(description: ModelDefinition<T>): Def
         const staticTransform = matrixFromStaticTransform(description.staticTransform)
         transformPointsByMatrix(model.vertexPoints, staticTransform)
 
-        const shader = shaderCodeFromDynamicTransform(description.dynamicTransformCondition, description.dynamicTransform, [])
+        const shader = (description.dynamicTransformCondition !== undefined && description.dynamicTransform !== undefined)
+            ? shaderCodeFromDynamicTransform(description.dynamicTransformCondition, description.dynamicTransform, [])
+            : ''
 
         return { vertexPoints: model.vertexPoints, indices: model.indices, vertexDataArray: model.vertexDataArray, shader }
     } else if (description.children && description.children.length > 0) {
@@ -135,13 +143,13 @@ const defineModel = <T extends TypedArray>(description: ModelDefinition<T>): Def
 
         const merged = mergeModels(defined)
 
-        const needsConvertStaticToDynamic = description.children.some(c => c.dynamicTransform.length > 0)
+        const needsConvertStaticToDynamic = description.children.some(c => c.dynamicTransform !== undefined && c.dynamicTransform.length > 0)
 
         const staticTransform = matrixFromStaticTransform(description.staticTransform)
         if (!needsConvertStaticToDynamic)
             transformPointsByMatrix(merged.vertexPoints, staticTransform)
 
-        const shader = shaderCodeFromDynamicTransform(description.dynamicTransformCondition, description.dynamicTransform,
+        const shader = shaderCodeFromDynamicTransform(description.dynamicTransformCondition ?? 'true', description.dynamicTransform ?? [],
             [...defined.map(e => e.shader), shaderCodeFromDynamicTransform('true', needsConvertStaticToDynamic ? description.staticTransform : [], [])])
 
         return { vertexPoints: merged.vertexPoints, indices: merged.indices, vertexDataArray: merged.vertexDataArray, shader }
@@ -158,8 +166,8 @@ export const foo = () => {
         mesh: newCubeModel(ModelPart.Eye, 0x111111),
         staticTransform: [
             { type: TransformType.Translate, by: [0, 0.25, 0.23 * (left ? -1 : 1)] },
-            { type: TransformType.Translate, by: [0.55, 0, 0] },
-            { type: TransformType.Scale, by: [0.04, 0.16, 0.16] },
+            { type: TransformType.Translate, by: [0.53, 0, 0] },
+            { type: TransformType.Scale, by: [0.1, 0.16, 0.16] },
         ],
         dynamicTransformCondition: 'true',
         dynamicTransform: [],
@@ -169,8 +177,8 @@ export const foo = () => {
         mesh: newCubeModel(ModelPart.Mouth, 0x111111),
         staticTransform: [
             { type: TransformType.Translate, by: [0, -0.15, 0.03] },
-            { type: TransformType.Translate, by: [0.55, 0, 0] },
-            { type: TransformType.Scale, by: [0.04, 0.12, 0.12] },
+            { type: TransformType.Translate, by: [0.53, 0, 0] },
+            { type: TransformType.Scale, by: [0.1, 0.12, 0.12] },
         ],
         dynamicTransformCondition: `(modelPart & (${ModelPart.Mouth}U)) == ${ModelPart.Mouth}U`,
         dynamicTransform: [
@@ -183,28 +191,27 @@ export const foo = () => {
         ],
     })
 
+    const makeBody = (): ModelDefinition<Uint8Array> => ({
+        mesh: newCubeModel(0, 0x00FFFF),
+        staticTransform: [],
+        dynamicTransformCondition: 'true',
+        dynamicTransform: [],
+    })
+
+
     const defined = defineModel({
         children: [
             makeEye(true),
             makeEye(false),
             makeMouth(),
-            {
-                mesh: newCubeModel(0, 0x00FFFF),
-                staticTransform: [
-                    // { type: TransformType.Scale, by: [0.5, 0.5, 0.5] }
-                ],
-                dynamicTransformCondition: 'true',
-                dynamicTransform: [
-                    // { type: TransformType.RotateY, by: `sin(u_time * float(a_modelFlags & 1U)) * 0.2`, normalToo: true },
-                ],
-            }
+            makeBody()
         ],
         staticTransform: [
         ],
         dynamicTransformCondition: 'true',
         dynamicTransform: [
-            { type: TransformType.RotateY, by: `float(a_entityId) * ${Math.PI / 4}`, normalToo: true },
-            { type: TransformType.RotateY, by: `pow(pow(sin(float(a_entityId) + u_time * (1.0 + float(a_entityId) / 9.0)), 5.0), 5.0) * (model.y + 0.5) * 0.3`, },
+            { type: TransformType.RotateY, by: `float(a_entityRotation) * ${Math.PI / 4}`, normalToo: true },
+            { type: TransformType.RotateY, by: `pow(pow(sin(float(a_entityId) + u_time * (0.7 + fract(float(a_entityId) / 9.0))), 5.0), 5.0) * (model.y + 0.5) * 0.3`, },
             {
                 type: TransformType.Translate, by: [
                     null,
@@ -212,12 +219,9 @@ export const foo = () => {
                     null,
                 ],
             },
+            { beforeBlock: `model.y += 0.5;`, type: TransformType.Scale, by: `float(a_entitySize) / 2.0`, afterBlock: `model.y -= 0.5;` },
             { type: TransformType.Translate, by: [`float(a_entityPosition.x) + 0.5`, `float(a_entityPosition.y) * terrainHeightMultiplier + 0.5`, `float(a_entityPosition.z) + 0.5`] },
-            // {
-            // type: TransformType.Translate, by: [null,
-            // `clamp(sin(u_time * 10.0), 0.0, 1.0)`,
-            //     null]
-            // },
+            { type: TransformType.Translate, by: [null, `pow(sin(1.321 * float(a_entityId) + u_time * (0.7 + fract(float(a_entityId) / 9.0))), 30.0) * float(a_entitySize) * 0.5`, null] },
         ]
     })
 

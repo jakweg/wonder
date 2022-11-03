@@ -22,4 +22,4 @@ export type DynamicTransform =
         | { type: TransformType.Scale, by: [DynamicTransformResolvable, DynamicTransformResolvable, DynamicTransformResolvable] | DynamicTransformResolvable }
         | { type: TransformType.RotateY | TransformType.RotateX | TransformType.RotateZ, by: DynamicTransformResolvable, normalToo?: true }
     )
-    & { beforeBlock?: string }
+    & { beforeBlock?: string, afterBlock?: string }

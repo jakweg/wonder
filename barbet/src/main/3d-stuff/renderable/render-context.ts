@@ -13,7 +13,7 @@ import { RenderDebugDataCollector } from '../../util/worker/debug-stats/render'
 import TimeMeter from '../../util/worker/debug-stats/time-meter'
 import { Camera } from '../camera'
 import ChunkVisibilityIndex from '../drawable/chunk-visibility'
-import pig from '../drawable/slime'
+import slime from '../drawable/slime'
 import terrain from '../drawable/terrain'
 import { MainRenderer } from '../main-renderer'
 import { newPipeline } from '../pipeline'
@@ -137,7 +137,7 @@ export const createRenderingSession = async (
 	const stats = new RenderDebugDataCollector(new FramesMeter(FRAMES_COUNT_RENDERING))
 	const pipeline = newPipeline([
 		terrain(),
-		pig(),
+		slime(),
 		graphRenderer(),
 	])
 

@@ -1,4 +1,4 @@
-import { PrecisionHeader, TerrainHeightMultiplierDeclaration, VersionHeader } from '../../common-shader';
+import { PrecisionHeader, RotationYMatrix, TerrainHeightMultiplierDeclaration, VersionHeader } from '../../common-shader';
 
 interface ShaderOptions {
 	modelTransformationsSource: string
@@ -22,6 +22,8 @@ in uint a_modelFlags;
 in uvec3 a_entityPosition;
 in uint a_entityId;
 in vec3 a_entityColor;
+in uint a_entitySize;
+in uint a_entityRotation;
 
 flat out vec3 v_color;
 
@@ -62,4 +64,5 @@ void main() {
 }
 
 export type Uniforms = 'combinedMatrix' | 'time'
-export type Attributes = 'modelPosition' | 'modelSideColor' | 'modelFlags' | 'modelNormal' | 'entityPosition' | 'entityId' | 'entityColor'
+export type Attributes = 'modelPosition' | 'modelSideColor' | 'modelFlags' | 'modelNormal'
+	| 'entityPosition' | 'entityId' | 'entityColor' | 'entitySize' | 'entityRotation'

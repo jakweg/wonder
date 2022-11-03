@@ -1,5 +1,6 @@
 import { toGl } from '@matrix/common'
-import { GlProgram, VertexArray } from '../../gpu-resources'
+import SeededRandom from '@seampan/seeded-random'
+import { GlProgram, GPUBuffer, VertexArray } from '../../gpu-resources'
 import { AttrType } from '../../gpu-resources/program'
 import { foo } from '../../model/builder/index'
 import { GpuAllocator } from "../../pipeline/allocator"
@@ -7,13 +8,25 @@ import { Drawable, LoadParams } from "../../pipeline/Drawable"
 import { RenderContext } from "../../renderable/render-context"
 import { Attributes, fragmentShaderSource, Uniforms, vertexShaderSource } from './shaders'
 
+interface Slime {
+    id: number
+    positionX: number
+    positionY: number
+    positionZ: number
+    color: [number, number, number]
+    size: number
+    rotation: number
+}
+
 interface ShaderCache {
     program: GlProgram<Attributes, Uniforms>
     vao: VertexArray
+    entityDataBuffer: GPUBuffer
     triangles: number
 }
 
 interface WorldData {
+    slimes: Slime[]
 }
 
 interface BoundData {
@@ -36,8 +49,7 @@ const drawable: () => Drawable<ShaderCache, WorldData, BoundData> = () => ({
         const vao = allocator.newVao()
         const modelBuffer = allocator.newBuffer({ dynamic: false, forArray: true })
         const modelDataBuffer = allocator.newBuffer({ dynamic: false, forArray: true })
-        const entityDataBuffer = allocator.newBuffer({ dynamic: false, forArray: true })
-        const entityColorsBuffer = allocator.newBuffer({ dynamic: false, forArray: true })
+        const entityDataBuffer = allocator.newBuffer({ dynamic: true, forArray: true })
         const indicesBuffer = allocator.newBuffer({ dynamic: false, forArray: false })
 
         program.use()
@@ -53,29 +65,14 @@ const drawable: () => Drawable<ShaderCache, WorldData, BoundData> = () => ({
             'modelFlags': { count: 1, type: AttrType.UByte, divisor: 0 },
         })
 
-        const positions = [
-            [1, 5, 2, 7],
-            [2, 3, 2, 5],
-            [3, 6, 2, 4],
-        ].flat()
-
-        entityDataBuffer.setContent(new Uint16Array(positions))
+        entityDataBuffer.bind()
         program.useAttributes({
             'entityId': { count: 1, type: AttrType.UShort, divisor: 1 },
             'entityPosition': { count: 3, type: AttrType.UShort, divisor: 1 },
+            'entityColor': { count: 3, type: AttrType.UShort, normalize: true, divisor: 1 },
+            'entitySize': { count: 1, type: AttrType.UShort, divisor: 1 },
+            'entityRotation': { count: 1, type: AttrType.UShort, divisor: 1 },
         })
-
-        const colors = [
-            [255, 50, 127,],
-            [255, 0, 255,],
-            [30, 233, 89,],
-        ].flat()
-
-        entityColorsBuffer.setContent(new Uint8Array(colors))
-        program.useAttributes({
-            'entityColor': { count: 3, type: AttrType.UByte, normalize: true, divisor: 1 },
-        })
-
 
         modelBuffer.setContent(pig.vertexPoints)
         program.useAttributes({
@@ -85,15 +82,27 @@ const drawable: () => Drawable<ShaderCache, WorldData, BoundData> = () => ({
         return {
             program,
             vao,
+            entityDataBuffer,
             triangles: pig.indices.length | 0,
         }
     },
     createWorld(params: LoadParams, previous: WorldData | null): WorldData {
-        return {
+        const random = SeededRandom.fromSeed(Date.now())
+        const obj: WorldData = {
+            slimes: [...new Array(10_000)].map((_, i) => (
+                {
+                    id: i + 1, size: random.nextInt(2) + Math.ceil(random.nextInt(2) / 2.0) + 1, rotation: random.nextInt(8),
+                    positionX: random.nextInt(500) + 200, positionZ: random.nextInt(500) + 200,
+                    positionY: 2, color: [random.nextInt(255 ** 2), random.nextInt(255 ** 2), random.nextInt(255 ** 2),],
+                }
+            )),
         }
+        obj.slimes.forEach(s => s.positionY = params.game.world.getHighestBlockHeight(s.positionX, s.positionZ) + 1)
+        return obj
     },
     async bindWorldData(allocator: GpuAllocator, shader: ShaderCache, data: WorldData, previous: BoundData): Promise<BoundData> {
-
+        const asNumbers = data.slimes.flatMap(slime => [slime.id, slime.positionX, slime.positionY, slime.positionZ, ...slime.color, slime.size, slime.rotation]);
+        shader.entityDataBuffer.setContent(new Uint16Array(asNumbers))
         return {}
     },
     updateWorld(shader: ShaderCache, data: WorldData, bound: BoundData): void {
@@ -103,7 +112,7 @@ const drawable: () => Drawable<ShaderCache, WorldData, BoundData> = () => ({
     uploadToGpu(shader: ShaderCache, data: WorldData, bound: BoundData): void {
     },
     draw(ctx: RenderContext, shader: ShaderCache, world: WorldData, bound: BoundData): void {
-        const { gl, camera: { combinedMatrix } } = ctx
+        const { gl, camera: { combinedMatrix }, stats } = ctx
         const { program, vao, triangles } = shader
 
         program.use()
@@ -111,10 +120,8 @@ const drawable: () => Drawable<ShaderCache, WorldData, BoundData> = () => ({
         gl.uniformMatrix4fv(program.uniforms['combinedMatrix'], false, toGl(combinedMatrix))
         vao.bind()
 
-        // gl.disable(gl.CULL_FACE)
-        gl.drawElementsInstanced(gl.TRIANGLES, triangles, gl.UNSIGNED_SHORT, 0, 3)
-        gl.enable(gl.CULL_FACE)
-        // vao.unbind()
+        gl.drawElementsInstanced(gl.TRIANGLES, triangles, gl.UNSIGNED_SHORT, 0, world.slimes.length)
+        stats.incrementDrawCalls(1)
     },
     drawForMousePicker(ctx: RenderContext, shader: ShaderCache, world: WorldData, bound: BoundData): void {
     }
