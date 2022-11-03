@@ -1,10 +1,10 @@
-import { singleMiningAnimationLoopDuration } from '../../3d-stuff/additional-renderables/hammer'
 import { Direction } from '../../util/direction'
 import { DataOffsetDrawables, DataOffsetWithActivity, EntityTraitIndicesRecord } from '../entities/traits'
 import { GameState } from '../game-state'
 import { ActivityId } from './index'
 import * as itemPickup from './item-pickup'
 
+export const singleMiningAnimationLoopDuration = 20
 
 const enum MemoryField {
 	ActivityFinishTick,

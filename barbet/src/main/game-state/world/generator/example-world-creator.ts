@@ -1,4 +1,3 @@
-import { UnitColorPaletteId } from '../../../3d-stuff/renderable/unit/unit-color'
 import { Direction } from '../../../util/direction'
 import CONFIG from '../../../util/persistance/observable-settings'
 import { GameState } from '../../game-state'
@@ -34,7 +33,7 @@ const placeDebugFeatures = (game: GameState) => {
 		z: 0, sz: world.size.sizeZ,
 	})
 
-	spawnUnit({ game, x: 7, z: 8, color: UnitColorPaletteId.GreenOrange, facing: Direction.PositiveXNegativeZ })
+	spawnUnit({ game, x: 7, z: 8, color: 0/* UnitColorPaletteId.GreenOrange */, facing: Direction.PositiveXNegativeZ })
 
 	groundItems.setItem(17, 14, ItemType.Box)
 	groundItems.setItem(16, 14, ItemType.Box)
@@ -47,7 +46,7 @@ const placeDebugFeatures = (game: GameState) => {
 const placeMoreRealTerrain = (game: GameState) => {
 	const groundItems = game.groundItems
 	generateRandomTerrain(game.world)
-	spawnUnit({ game, x: 57, z: 88, color: UnitColorPaletteId.GreenOrange, facing: Direction.PositiveXNegativeZ })
+	spawnUnit({ game, x: 57, z: 88, color: 0/*UnitColorPaletteId.GreenOrange*/, facing: Direction.PositiveXNegativeZ })
 	groundItems.setItem(67, 77, ItemType.Box)
 }
 

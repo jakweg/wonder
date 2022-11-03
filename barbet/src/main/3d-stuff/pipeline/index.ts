@@ -1,5 +1,5 @@
 import { GameState } from "../../game-state/game-state"
-import { RenderContext } from "../renderable/render-context"
+import { RenderContext } from "../render-context"
 import { GpuAllocator, newGpuAllocator } from "./allocator"
 import { Drawable } from "./drawable"
 import RenderHelperWorkScheduler from "./work-scheduler"

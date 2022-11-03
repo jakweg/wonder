@@ -1,5 +1,5 @@
 import { frontedVariables, FrontendVariable } from '../util/frontend-variables'
-import { RenderContext } from './renderable/render-context'
+import { RenderContext } from './render-context'
 
 const TEXTURE_PIXEL_MULTIPLIER = 1 / 4
 

@@ -5,7 +5,7 @@ import { AttrType } from '../../gpu-resources/program'
 import { foo } from '../../model/builder/index'
 import { GpuAllocator } from "../../pipeline/allocator"
 import { Drawable, LoadParams } from "../../pipeline/Drawable"
-import { RenderContext } from "../../renderable/render-context"
+import { RenderContext } from "../../render-context"
 import { Attributes, fragmentShaderSource, Uniforms, vertexShaderSource } from './shaders'
 
 interface Slime {

@@ -1,5 +1,5 @@
 import { Camera } from '../../3d-stuff/camera'
-import { createRenderingSession } from '../../3d-stuff/renderable/render-context'
+import { createRenderingSession } from '../../3d-stuff/render-context'
 import { GameStateImplementation } from '../../game-state/game-state'
 import { ActionsQueue, SendActionsQueue } from '../../game-state/scheduled-actions/queue'
 import {

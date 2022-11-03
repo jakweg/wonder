@@ -1,4 +1,3 @@
-import { UnitColorPaletteId } from '../../3d-stuff/renderable/unit/unit-color'
 import { Direction } from '../../util/direction'
 import * as idle from '../activities/idle'
 import { DataOffsetDrawables, DataOffsetPositions, EntityTrait } from '../entities/traits'
@@ -8,7 +7,7 @@ interface Props {
 	game: GameState
 	x: number
 	z: number
-	color: UnitColorPaletteId
+	color: any //UnitColorPaletteId
 	facing?: Direction
 }
 
@@ -27,11 +26,11 @@ export default (props: Props): Result => {
 
 	if (x < 0 || x >= props.game.world.size.sizeX || x !== (x | 0)
 		|| z < 0 || z >= props.game.world.size.sizeZ || z !== (z | 0))
-		return {success: false, reason: ErrorReason.CoordinatesOutOfBounds}
+		return { success: false, reason: ErrorReason.CoordinatesOutOfBounds }
 
 	const y = props.game.world.getHighestBlockHeight(x, z)
 	if (y <= 0)
-		return {success: false, reason: ErrorReason.InvalidHeightOfCoordinates}
+		return { success: false, reason: ErrorReason.InvalidHeightOfCoordinates }
 
 	const entities = props.game.entities
 
@@ -45,5 +44,5 @@ export default (props: Props): Result => {
 
 	idle.setup(props.game, unit)
 
-	return {success: true, unitId: unit.thisId}
+	return { success: true, unitId: unit.thisId }
 }

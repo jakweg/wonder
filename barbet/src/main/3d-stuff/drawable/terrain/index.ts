@@ -8,7 +8,7 @@ import { AttrType } from "../../gpu-resources/program"
 import { GpuAllocator } from "../../pipeline/allocator"
 import { Drawable, LoadParams } from "../../pipeline/Drawable"
 import RenderHelperWorkScheduler, { TaskType } from "../../pipeline/work-scheduler"
-import { RenderContext } from "../../renderable/render-context"
+import { RenderContext } from "../../render-context"
 import { Attributes, fragmentShaderSource, MousePickerAttributes, MousePickerUniforms, Uniforms, vertexShaderSource } from "./shaders"
 
 

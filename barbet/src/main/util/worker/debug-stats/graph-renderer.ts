@@ -1,7 +1,7 @@
 import GlProgram from "../../../3d-stuff/gpu-resources/program"
 import { GpuAllocator } from "../../../3d-stuff/pipeline/allocator"
 import { Drawable, LoadParams } from "../../../3d-stuff/pipeline/Drawable"
-import { RenderContext } from "../../../3d-stuff/renderable/render-context"
+import { RenderContext } from "../../../3d-stuff/render-context"
 import CONFIG from "../../persistance/observable-settings"
 import { Attributes, fragmentShaderSource, Uniforms, vertexShaderSource } from "./graph-renderer-shaders"
 

@@ -1,5 +1,5 @@
-import { Camera } from '../camera'
-import { frontedVariables, FrontendVariable, PressedKey } from '../../util/frontend-variables'
+import { frontedVariables, FrontendVariable, PressedKey } from '../util/frontend-variables'
+import { Camera } from './camera'
 
 export const moveCameraByKeys = (camera: Camera, dt: number) => {
 	const keys = Atomics.load(frontedVariables, FrontendVariable.PressedKeys) as PressedKey

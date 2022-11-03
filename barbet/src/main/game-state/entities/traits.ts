@@ -1,4 +1,3 @@
-import { UnitColorPaletteId } from '../../3d-stuff/renderable/unit/unit-color'
 import { Direction } from '../../util/direction'
 import { ActivityId } from '../activities'
 import { InterruptType } from '../activities/interrupt'
@@ -109,7 +108,7 @@ export const initializeTraitsOfNewEntity = (container: EntityContainer, record: 
 	if (index !== NO_INDEX) {
 		const data = container.drawables.rawData
 		data[index + DataOffsetDrawables.Rotation] = Direction.PositiveX
-		data[index + DataOffsetDrawables.ColorPaletteId] = UnitColorPaletteId.LightOrange
+		data[index + DataOffsetDrawables.ColorPaletteId] = 0 //UnitColorPaletteId.LightOrange
 	}
 
 	index = record.withActivity

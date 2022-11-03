@@ -3,7 +3,7 @@ import { ActionsQueue } from "../../game-state/scheduled-actions/queue"
 import { AdditionalFrontedFlags, frontedVariables, FrontendVariable } from "../../util/frontend-variables"
 import CONFIG, { observeSetting } from "../../util/persistance/observable-settings"
 import { Camera } from "../camera"
-import { moveCameraByKeys } from "../renderable/camera-keyboard-updater"
+import { moveCameraByKeys } from "../camera-keyboard-updater"
 import { MousePickerResultAny } from "./mouse-picker"
 
 const obtainWebGl2ContextFromCanvas = (canvas: HTMLCanvasElement): WebGL2RenderingContext => {
