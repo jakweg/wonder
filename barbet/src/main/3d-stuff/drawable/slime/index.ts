@@ -36,6 +36,8 @@ const drawable: () => Drawable<ShaderCache, WorldData, BoundData> = () => ({
         const vao = allocator.newVao()
         const modelBuffer = allocator.newBuffer({ dynamic: false, forArray: true })
         const modelDataBuffer = allocator.newBuffer({ dynamic: false, forArray: true })
+        const entityDataBuffer = allocator.newBuffer({ dynamic: false, forArray: true })
+        const entityColorsBuffer = allocator.newBuffer({ dynamic: false, forArray: true })
         const indicesBuffer = allocator.newBuffer({ dynamic: false, forArray: false })
 
         program.use()
@@ -47,7 +49,31 @@ const drawable: () => Drawable<ShaderCache, WorldData, BoundData> = () => ({
         modelDataBuffer.setContent(pig.vertexDataArray)
         program.useAttributes({
             'modelSideColor': { count: 3, type: AttrType.UByte, normalize: true, divisor: 0 },
+            'modelNormal': { count: 1, type: AttrType.UByte, divisor: 0 },
             'modelFlags': { count: 1, type: AttrType.UByte, divisor: 0 },
+        })
+
+        const positions = [
+            [1, 5, 2, 7],
+            [2, 3, 2, 5],
+            [3, 6, 2, 4],
+        ].flat()
+
+        entityDataBuffer.setContent(new Uint16Array(positions))
+        program.useAttributes({
+            'entityId': { count: 1, type: AttrType.UShort, divisor: 1 },
+            'entityPosition': { count: 3, type: AttrType.UShort, divisor: 1 },
+        })
+
+        const colors = [
+            [255, 50, 127,],
+            [255, 0, 255,],
+            [30, 233, 89,],
+        ].flat()
+
+        entityColorsBuffer.setContent(new Uint8Array(colors))
+        program.useAttributes({
+            'entityColor': { count: 3, type: AttrType.UByte, normalize: true, divisor: 1 },
         })
 
 
@@ -86,7 +112,7 @@ const drawable: () => Drawable<ShaderCache, WorldData, BoundData> = () => ({
         vao.bind()
 
         // gl.disable(gl.CULL_FACE)
-        gl.drawElementsInstanced(gl.TRIANGLES, triangles, gl.UNSIGNED_SHORT, 0, 1)
+        gl.drawElementsInstanced(gl.TRIANGLES, triangles, gl.UNSIGNED_SHORT, 0, 3)
         gl.enable(gl.CULL_FACE)
         // vao.unbind()
     },
