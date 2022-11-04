@@ -2,8 +2,9 @@ import { RenderTimeUniform } from "../../common-shader"
 import { defineModel, ModelDefinition } from "../builder"
 import { newCubeModel } from "../builder/cube"
 import { TransformType } from "../builder/transform"
+import { ModelPrototype } from "../model-id"
 
-const construct = () => {
+export const construct = () => {
 
     const enum ModelPart {
         Eye = 0b0001,
@@ -72,4 +73,21 @@ const construct = () => {
     return defined
 }
 
-export default construct
+const enum Pose {
+    Idle,
+    SIZE,
+}
+
+const proto: ModelPrototype<Pose> = {
+    posesCount: Pose.SIZE,
+    buildPose(which: Pose) {
+        switch (which) {
+            case Pose.Idle:
+                return construct()
+
+            default:
+                throw new Error()
+        }
+    },
+}
+export default proto

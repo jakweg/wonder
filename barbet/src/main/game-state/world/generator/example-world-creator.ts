@@ -3,6 +3,7 @@ import CONFIG from '../../../util/persistance/observable-settings'
 import { GameState } from '../../game-state'
 import { ItemType } from '../../items'
 import fillTerrain from '../../sync-operations/fill-terrain'
+import spawnSlime from '../../sync-operations/spawn-slime'
 import spawnUnit from '../../sync-operations/spawn-unit'
 import { allBiomes } from '../biome'
 import { BlockId } from '../block'
@@ -33,7 +34,8 @@ const placeDebugFeatures = (game: GameState) => {
 		z: 0, sz: world.size.sizeZ,
 	})
 
-	spawnUnit({ game, x: 7, z: 8, color: 0/* UnitColorPaletteId.GreenOrange */, facing: Direction.PositiveXNegativeZ })
+	// spawnUnit({ game, x: 7, z: 8, color: 0/* UnitColorPaletteId.GreenOrange */, facing: Direction.PositiveXNegativeZ })
+	spawnSlime({ game, x: 7, z: 8, facing: Direction.PositiveXNegativeZ })
 
 	groundItems.setItem(17, 14, ItemType.Box)
 	groundItems.setItem(16, 14, ItemType.Box)

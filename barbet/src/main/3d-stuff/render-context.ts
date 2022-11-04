@@ -12,7 +12,7 @@ import { RenderDebugDataCollector } from '../util/worker/debug-stats/render'
 import TimeMeter from '../util/worker/debug-stats/time-meter'
 import { Camera } from './camera'
 import ChunkVisibilityIndex from './drawable/chunk-visibility'
-import slime from './drawable/slime'
+import genericEntity from './drawable/generic-entity'
 import terrain from './drawable/terrain'
 import { GlProgram } from './gpu-resources'
 import { newPipeline } from './pipeline'
@@ -88,7 +88,7 @@ export const createRenderingSession = async (
 	const pipeline = newPipeline(makeShaderGlobals,
 		[
 			terrain(),
-			slime(),
+			genericEntity(),
 			graphRenderer(),
 		])
 

@@ -107,10 +107,8 @@ export const iterateOverDrawableEntities = function* (container: EntityContainer
 			yield record
 		}
 
-		if (hasTrait(traits, EntityTrait.WithActivity)) record.withActivity += DataOffsetWithActivity.SIZE
 		if (hasTrait(traits, EntityTrait.Drawable)) record.drawable += DataOffsetDrawables.SIZE
 		if (hasTrait(traits, EntityTrait.Position)) record.position += DataOffsetPositions.SIZE
-		if (hasTrait(traits, EntityTrait.ItemHoldable)) record.itemHoldable += DataOffsetItemHoldable.SIZE
 	}
 }
 
@@ -135,8 +133,7 @@ export const getEntityById_drawableItem = function (container: EntityContainer, 
 	return null
 }
 
-export const queryBuildingDataById = (container: EntityContainer, id: number):
-	{ position: [number, number, number], typeId: BuildingId, buildingProgress: number } | null => {
+export const queryBuildingDataById = (container: EntityContainer, id: number): { position: [number, number, number], typeId: BuildingId, buildingProgress: number } | null => {
 	const record = createEmptyTraitRecord()
 	const rawData = container.ids.rawData
 	for (let i = 0, l = container.ids.size; i < l; i++) {

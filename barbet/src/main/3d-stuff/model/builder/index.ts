@@ -126,11 +126,11 @@ const shaderCodeFromDynamicTransform = (
     return shaderParts.join('')
 }
 
-type DefinedModel<T> = {
+export type DefinedModel<T> = {
     vertexPoints: Float32Array
     indices: Uint16Array
     vertexDataArray: T
-    shader: string
+    modelTransformationShader: string
 }
 
 export const defineModel = <T extends TypedArray>(description: ModelDefinition<T>): DefinedModel<T> => {
@@ -144,7 +144,7 @@ export const defineModel = <T extends TypedArray>(description: ModelDefinition<T
             ? shaderCodeFromDynamicTransform(description.dynamicTransformCondition, description.dynamicTransform, [])
             : ''
 
-        return { vertexPoints: model.vertexPoints, indices: model.indices, vertexDataArray: model.vertexDataArray, shader }
+        return { vertexPoints: model.vertexPoints, indices: model.indices, vertexDataArray: model.vertexDataArray, modelTransformationShader: shader }
     } else if (description.children && description.children.length > 0) {
         const children = description.children
         const defined = children.map(e => defineModel(e))
@@ -158,9 +158,9 @@ export const defineModel = <T extends TypedArray>(description: ModelDefinition<T
             transformPointsByMatrix(merged.vertexPoints, staticTransform)
 
         const shader = shaderCodeFromDynamicTransform(description.dynamicTransformCondition ?? 'true', description.dynamicTransform ?? [],
-            [...defined.map(e => e.shader), shaderCodeFromDynamicTransform('true', needsConvertStaticToDynamic ? description.staticTransform : [], [])])
+            [...defined.map(e => e.modelTransformationShader), shaderCodeFromDynamicTransform('true', needsConvertStaticToDynamic ? description.staticTransform : [], [])])
 
-        return { vertexPoints: merged.vertexPoints, indices: merged.indices, vertexDataArray: merged.vertexDataArray, shader }
+        return { vertexPoints: merged.vertexPoints, indices: merged.indices, vertexDataArray: merged.vertexDataArray, modelTransformationShader: shader }
     } else throw new Error()
 }
 

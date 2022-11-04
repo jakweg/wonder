@@ -29,6 +29,8 @@ export const enum DataOffsetPositions {
 }
 
 export const enum DataOffsetDrawables {
+	ModelId,
+	PoseId,
 	ColorPaletteId,
 	Rotation,
 	SIZE,
@@ -107,6 +109,8 @@ export const initializeTraitsOfNewEntity = (container: EntityContainer, record: 
 	index = record.drawable
 	if (index !== NO_INDEX) {
 		const data = container.drawables.rawData
+		data[index + DataOffsetDrawables.ModelId] = -1
+		data[index + DataOffsetDrawables.PoseId] = -1
 		data[index + DataOffsetDrawables.Rotation] = Direction.PositiveX
 		data[index + DataOffsetDrawables.ColorPaletteId] = 0 //UnitColorPaletteId.LightOrange
 	}
