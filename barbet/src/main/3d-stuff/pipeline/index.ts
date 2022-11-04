@@ -4,8 +4,9 @@ import { GpuAllocator, newGpuAllocator } from "./allocator"
 import { Drawable } from "./drawable"
 import RenderHelperWorkScheduler from "./work-scheduler"
 
-export const newPipeline = (
-    elements: Drawable<any, any, any>[]
+export const newPipeline = <ShaderGlobals>(
+    newShaderGlobals: (allocator: GpuAllocator) => ShaderGlobals,
+    elements: Drawable<ShaderGlobals, any, any, any>[]
 ) => {
 
     const mappedElements = elements.map(e => ({
@@ -17,16 +18,21 @@ export const newPipeline = (
 
     let isDoneWithShaders = false
     let allocator: GpuAllocator | null = null
+    let shaderGlobals: ShaderGlobals | null = null
     let lastGame: GameState | null = null
     let lastRebuildTick: number = -1
     return {
+        getGlobals(): ShaderGlobals {
+            return shaderGlobals!
+        },
         async useContext(gl: WebGL2RenderingContext): Promise<void> {
             isDoneWithShaders = false
             allocator?.cleanUp()
 
             allocator = newGpuAllocator(gl)
+            shaderGlobals = newShaderGlobals(allocator)
 
-            const pendingShaders = Promise['all'](elements.map((e, i) => e.createShader(allocator!, null)))
+            const pendingShaders = Promise['all'](elements.map((e, i) => e.createShader(allocator!, shaderGlobals!, null)))
 
             allocator.endProgramCompilationPhase()
 
@@ -79,7 +85,7 @@ export const newPipeline = (
             if (!allocator) return
             for (const e of mappedElements) {
                 if (e.element.onConfigModified(e.shader)) {
-                    e.shader = await e.element.createShader(allocator, e.shader)
+                    e.shader = await e.element.createShader(allocator, shaderGlobals!, e.shader)
                     e.bound = e.element.bindWorldData(allocator, e.shader, e.world, e.bound)
                 }
             }

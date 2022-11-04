@@ -8,9 +8,9 @@ export interface LoadParams {
     scheduler: RenderHelperWorkScheduler
 }
 
-export interface Drawable<ShaderCache, WorldData, BoundData> {
+export interface Drawable<ShaderGlobals, ShaderCache, WorldData, BoundData> {
     /** Called once when gpu is available */
-    createShader(allocator: GpuAllocator, previous: ShaderCache | null): Promise<ShaderCache>;
+    createShader(allocator: GpuAllocator, globals: ShaderGlobals, previous: ShaderCache | null): Promise<ShaderCache>;
 
     /** Called once whenever any property has changed
      * @returns {true} if shader cache should be invalidated

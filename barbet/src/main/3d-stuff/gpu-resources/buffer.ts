@@ -11,6 +11,9 @@ export default class GPUBuffer {
     public bind() {
         this.gl.bindBuffer(this.target, this.id);
     }
+    public rawHandle() {
+        return this.id
+    }
 
     public setContent(data: BufferSource) {
         const gl = this.gl;

@@ -22,13 +22,13 @@ interface WorldData {
 interface BoundData {
 }
 
-const drawable: () => Drawable<ShaderCache, WorldData, BoundData> = () => ({
+const drawable: () => Drawable<never, ShaderCache, WorldData, BoundData> = () => ({
     onConfigModified(previous: ShaderCache | null) {
         return !previous
             || CONFIG.get('debug/show-graphs') !== previous.enabled
             || CONFIG.get('other/tps') !== previous.tps
     },
-    createShader: async function (allocator: GpuAllocator, previous: ShaderCache | null): Promise<ShaderCache> {
+    createShader: async function (allocator: GpuAllocator, _: never, previous: ShaderCache | null): Promise<ShaderCache> {
         const enabled = CONFIG.get('debug/show-graphs')
         if (!enabled) return (previous ? { ...previous, enabled: false } : null)
 

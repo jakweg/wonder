@@ -14,7 +14,9 @@ import { Camera } from './camera'
 import ChunkVisibilityIndex from './drawable/chunk-visibility'
 import slime from './drawable/slime'
 import terrain from './drawable/terrain'
+import { GlProgram } from './gpu-resources'
 import { newPipeline } from './pipeline'
+import { GpuAllocator } from './pipeline/allocator'
 import { newMousePicker } from './pipeline/mouse-picker'
 import { newHelperScheduler } from './pipeline/work-scheduler'
 import { newAnimationFrameCaller, newBeforeDrawWrapper as newDrawWrapper, newFramesLimiter, newInputHandler } from './pipeline/wrappers'
@@ -24,10 +26,6 @@ export interface RenderContext {
 	readonly camera: Camera
 	readonly visibility: ChunkVisibilityIndex
 	readonly stats: RenderDebugDataCollector
-	readonly gameTickEstimation: number
-	readonly gameTime: number
-	readonly secondsSinceFirstRender: number
-	readonly sunPosition: [number, number, number]
 }
 
 interface CanvasObjects {
@@ -38,21 +36,63 @@ interface CanvasObjects {
 }
 
 
+const makeShaderGlobals = (allocator: GpuAllocator) => {
+	const BUFFER = new Float32Array(0
+		+ 16 // camera matrix
+		+ 4 // times (last field is ignored)
+		+ 4 // light direction + ambient
+	)
+
+	const { buffer, raw } = allocator.newUniformBuffer()
+	const light = [0.55, 1, -0.6, 0.4]
+	vec3.normalize(light, light)
+
+	return ({
+		bindProgram<A extends string, U extends string>(program: GlProgram<A, U>): GlProgram<A, U> {
+			const BINDING_POINT = 0
+			const gl = program.rawGl()
+			const programRaw = program.rawHandle();
+			const blockIndex = gl.getUniformBlockIndex(programRaw, 'Globals')
+
+			gl.uniformBlockBinding(programRaw, blockIndex, BINDING_POINT)
+			gl.bindBufferBase(gl.UNIFORM_BUFFER, BINDING_POINT, raw)
+
+			return program
+		},
+		update(camera: Camera,
+			secondsSinceFirstRender: number, gameTime: number, gameTickEstimation: number) {
+
+			BUFFER[16 + 0] = secondsSinceFirstRender
+			BUFFER[16 + 1] = gameTime
+			BUFFER[16 + 2] = gameTickEstimation
+			BUFFER[16 + 4] = light[0]!
+			BUFFER[16 + 5] = light[1]!
+			BUFFER[16 + 6] = light[2]!
+			BUFFER[16 + 7] = light[3]!
+			for (let i = 0; i < 16; ++i)
+				BUFFER[i] = camera.combinedMatrix[i]
+			buffer.setContent(BUFFER)
+		}
+	})
+}
+
+export type ShaderGlobals = ReturnType<typeof makeShaderGlobals>
+
 export const createRenderingSession = async (
 	actionsQueue: ActionsQueue,
 	mutex: GameMutex,) => {
 	const stats = new RenderDebugDataCollector(new FramesMeter(FRAMES_COUNT_RENDERING))
-	const pipeline = newPipeline([
-		terrain(),
-		slime(),
-		graphRenderer(),
-	])
+	const pipeline = newPipeline(makeShaderGlobals,
+		[
+			terrain(),
+			slime(),
+			graphRenderer(),
+		])
 
 
 	const scheduler = await newHelperScheduler(mutex)
 
 	const inputHandler = newInputHandler(actionsQueue)
-	const sunPosition = vec3.fromValues(500, 1500, -500)
 
 	let gameTickEstimation = () => 0
 	let gameTickRate = () => 1
@@ -111,6 +151,7 @@ export const createRenderingSession = async (
 					await mutex.enterForRenderAsync()
 
 				timeMeter.nowStart(DrawPhase.UpdateWorld)
+				const gameTickValue = gameTickEstimation()
 				pipeline.updateWorldIfNeeded()
 
 				timeMeter.nowStart(DrawPhase.PrepareRender)
@@ -119,6 +160,12 @@ export const createRenderingSession = async (
 				mutex.exitRender()
 
 				timeMeter.nowStart(DrawPhase.GPUUpload)
+				pipeline.getGlobals().update(
+					camera,
+					secondsSinceFirstRender,
+					secondsSinceFirstRender * gameTickRate() / STANDARD_GAME_TICK_RATE,
+					gameTickValue)
+
 				pipeline.doGpuUploads()
 
 				timeMeter.nowStart(DrawPhase.Draw)
@@ -126,11 +173,7 @@ export const createRenderingSession = async (
 					gl: drawHelper.rawContext,
 					camera,
 					stats,
-					sunPosition,
 					visibility,
-					gameTickEstimation: gameTickEstimation(),
-					secondsSinceFirstRender,
-					gameTime: secondsSinceFirstRender * gameTickRate() / STANDARD_GAME_TICK_RATE,
 				}
 
 				drawHelper.clearBeforeDraw()

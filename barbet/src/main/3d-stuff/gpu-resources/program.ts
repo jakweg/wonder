@@ -41,6 +41,13 @@ export default class GlProgram<A extends string, U extends string> {
         }) {
     }
 
+    public rawGl(): WebGL2RenderingContext {
+        return this.gl
+    }
+    public rawHandle(): WebGLProgram {
+        return this.program
+    }
+
     public use() {
         this.gl.useProgram(this.program);
     }

@@ -30,14 +30,14 @@ export const newCubeModel2 = (partId: number, colors: [number, number, number, n
 
     partId = (partId & 0b1111) << 4
     const vertexData = [
-        [partId | CubePart.VertexBottom, 0b010001, colors[0]],
-        [partId | CubePart.VertexBottom, 0b110101, colors[1]],
-        [partId | CubePart.VertexBottom, 0b010111, colors[2]],
-        [partId | CubePart.VertexBottom, 0b000101, colors[3]],
-        [partId | CubePart.VertexTop, 0b010101, 0],
-        [partId | CubePart.VertexTop, 0b011101, colors[4]],
-        [partId | CubePart.VertexTop, 0b010101, 0],
-        [partId | CubePart.VertexTop, 0b010100, colors[5]],
+        [partId | CubePart.VertexBottom, 0b00_01_00_01, colors[0]], // bottom
+        [partId | CubePart.VertexBottom, 0b00_01_01_00, colors[1]], // front
+        [partId | CubePart.VertexBottom, 0b00_11_01_01, colors[2]], // right
+        [partId | CubePart.VertexBottom, 0b00_01_01_11, colors[3]], // back
+        [partId | CubePart.VertexTop, 0b00_01_01_01, 0],
+        [partId | CubePart.VertexTop, 0b00_01_11_01, colors[4]], // top
+        [partId | CubePart.VertexTop, 0b00_01_01_01, 0],
+        [partId | CubePart.VertexTop, 0b00_00_01_01, colors[5]], // left
     ].flatMap(([top, normal, color,], i) => [((color ?? 0) >> 16) & 0xFF, ((color ?? 0) >> 8) & 0xFF, ((color ?? 0) >> 0) & 0xFF, normal, top,])
 
     const indices: number[] = [

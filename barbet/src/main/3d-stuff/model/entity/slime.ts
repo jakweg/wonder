@@ -1,3 +1,4 @@
+import { RenderTimeUniform } from "../../common-shader"
 import { defineModel, ModelDefinition } from "../builder"
 import { newCubeModel } from "../builder/cube"
 import { TransformType } from "../builder/transform"
@@ -31,7 +32,7 @@ const construct = () => {
                 type: TransformType.Scale, by: [
                     null,
                     null,
-                    `pow((sin(u_time * 1.0) + 1.0) * 0.5, 20.0) + 1.0`]
+                    `pow((sin(${RenderTimeUniform} * 1.0) + 1.0) * 0.5, 20.0) + 1.0`]
             },
         ],
     })
@@ -54,17 +55,17 @@ const construct = () => {
         dynamicTransformCondition: 'true',
         dynamicTransform: [
             { type: TransformType.RotateY, by: `float(a_entityRotation) * ${Math.PI / 4}`, normalToo: true },
-            { type: TransformType.RotateY, by: `pow(pow(sin(float(a_entityId) + u_time * (0.7 + fract(float(a_entityId) / 9.0))), 5.0), 5.0) * (model.y + 0.5) * 0.3`, },
+            { type: TransformType.RotateY, by: `pow(pow(sin(float(a_entityId) + ${RenderTimeUniform} * (0.7 + fract(float(a_entityId) / 9.0))), 5.0), 5.0) * (model.y + 0.5) * 0.3`, },
             {
                 type: TransformType.Translate, by: [
                     null,
-                    `(model.y + 0.5) * (sin(float(a_entityId) + u_time) * 0.5 + 0.5) * 0.1`,
+                    `(model.y + 0.5) * (sin(float(a_entityId) + ${RenderTimeUniform}) * 0.5 + 0.5) * 0.1`,
                     null,
                 ],
             },
             { beforeBlock: `model.y += 0.5;`, type: TransformType.Scale, by: `float(a_entitySize) / 2.0`, afterBlock: `model.y -= 0.5;` },
             { type: TransformType.Translate, by: [`float(a_entityPosition.x) + 0.5`, `float(a_entityPosition.y) * terrainHeightMultiplier + 0.5`, `float(a_entityPosition.z) + 0.5`] },
-            { type: TransformType.Translate, by: [null, `pow(sin(1.321 * float(a_entityId) + u_time * (0.7 + fract(float(a_entityId) / 9.0))), 30.0) * float(a_entitySize) * 0.5`, null] },
+            { type: TransformType.Translate, by: [null, `pow(sin(1.321 * float(a_entityId) + ${RenderTimeUniform} * (0.7 + fract(float(a_entityId) / 9.0))), 30.0) * float(a_entitySize) * 0.5`, null] },
         ]
     })
 

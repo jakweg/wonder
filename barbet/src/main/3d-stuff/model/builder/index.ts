@@ -150,7 +150,7 @@ export const defineModel = <T extends TypedArray>(description: ModelDefinition<T
 
         const merged = mergeModels(defined)
 
-        const needsConvertStaticToDynamic = description.children.some(c => c.dynamicTransform !== undefined && c.dynamicTransform.length > 0)
+        const needsConvertStaticToDynamic = description.children['some'](c => c.dynamicTransform !== undefined && c.dynamicTransform.length > 0)
 
         const staticTransform = matrixFromStaticTransform(description.staticTransform)
         if (!needsConvertStaticToDynamic)

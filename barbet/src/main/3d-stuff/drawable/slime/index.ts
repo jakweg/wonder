@@ -1,11 +1,10 @@
-import { toGl } from '@matrix/common'
 import SeededRandom from '@seampan/seeded-random'
 import { GlProgram, GPUBuffer, VertexArray } from '../../gpu-resources'
 import { AttrType } from '../../gpu-resources/program'
 import constructSlime from '../../model/entity/slime'
 import { GpuAllocator } from "../../pipeline/allocator"
 import { Drawable, LoadParams } from "../../pipeline/Drawable"
-import { RenderContext } from "../../render-context"
+import { RenderContext, ShaderGlobals } from "../../render-context"
 import { Attributes, fragmentShaderSource, Uniforms, vertexShaderSource } from './shaders'
 
 interface Slime {
@@ -32,19 +31,20 @@ interface WorldData {
 interface BoundData {
 }
 
-const drawable: () => Drawable<ShaderCache, WorldData, BoundData> = () => ({
+const drawable: () => Drawable<ShaderGlobals, ShaderCache, WorldData, BoundData> = () => ({
     onConfigModified(previous: ShaderCache | null) {
         return false
     },
-    createShader: async function (allocator: GpuAllocator, previous: ShaderCache | null): Promise<ShaderCache> {
+    createShader: async function (allocator: GpuAllocator, globals: ShaderGlobals, previous: ShaderCache | null): Promise<ShaderCache> {
         const slime = constructSlime()
-        console.log(slime.shader);
 
         const options: Parameters<typeof vertexShaderSource>[0] = { modelTransformationsSource: slime.shader }
         const program = await allocator.newProgram<Attributes, Uniforms>({
             vertexSource: vertexShaderSource(options),
             fragmentSource: fragmentShaderSource(options),
         })
+
+        globals.bindProgram(program)
 
         const vao = allocator.newVao()
         const modelBuffer = allocator.newBuffer({ dynamic: false, forArray: true })
@@ -56,7 +56,6 @@ const drawable: () => Drawable<ShaderCache, WorldData, BoundData> = () => ({
         vao.bind()
 
         indicesBuffer.setContent(slime.indices)
-
 
         modelDataBuffer.setContent(slime.vertexDataArray)
         program.useAttributes({
@@ -79,6 +78,7 @@ const drawable: () => Drawable<ShaderCache, WorldData, BoundData> = () => ({
             'modelPosition': { count: 3, type: AttrType.Float, divisor: 0 },
         })
 
+
         return {
             program,
             vao,
@@ -89,7 +89,7 @@ const drawable: () => Drawable<ShaderCache, WorldData, BoundData> = () => ({
     createWorld(params: LoadParams, previous: WorldData | null): WorldData {
         const random = SeededRandom.fromSeed(Date.now())
         const obj: WorldData = {
-            slimes: [...new Array(10_000)].map((_, i) => (
+            slimes: [...new Array(1_000)].map((_, i) => (
                 {
                     id: i + 1, size: random.nextInt(2) + Math.ceil(random.nextInt(2) / 2.0) + 1, rotation: random.nextInt(8),
                     positionX: random.nextInt(500) + 200, positionZ: random.nextInt(500) + 200,
@@ -112,12 +112,10 @@ const drawable: () => Drawable<ShaderCache, WorldData, BoundData> = () => ({
     uploadToGpu(shader: ShaderCache, data: WorldData, bound: BoundData): void {
     },
     draw(ctx: RenderContext, shader: ShaderCache, world: WorldData, bound: BoundData): void {
-        const { gl, camera: { combinedMatrix }, stats } = ctx
+        const { gl, stats } = ctx
         const { program, vao, triangles } = shader
 
         program.use()
-        gl.uniform1f(program.uniforms['time'], ctx.secondsSinceFirstRender)
-        gl.uniformMatrix4fv(program.uniforms['combinedMatrix'], false, toGl(combinedMatrix))
         vao.bind()
 
         gl.drawElementsInstanced(gl.TRIANGLES, triangles, gl.UNSIGNED_SHORT, 0, world.slimes.length)

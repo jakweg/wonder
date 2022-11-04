@@ -1,4 +1,3 @@
-import { toGl } from "@matrix/common"
 import { GameState, MetadataField } from "../../../game-state/game-state"
 import { WORLD_CHUNK_SIZE } from "../../../game-state/world/world"
 import CONFIG from "../../../util/persistance/observable-settings"
@@ -8,7 +7,7 @@ import { AttrType } from "../../gpu-resources/program"
 import { GpuAllocator } from "../../pipeline/allocator"
 import { Drawable, LoadParams } from "../../pipeline/Drawable"
 import RenderHelperWorkScheduler, { TaskType } from "../../pipeline/work-scheduler"
-import { RenderContext } from "../../render-context"
+import { RenderContext, ShaderGlobals } from "../../render-context"
 import { Attributes, fragmentShaderSource, MousePickerAttributes, MousePickerUniforms, Uniforms, vertexShaderSource } from "./shaders"
 
 
@@ -56,13 +55,13 @@ interface ChunkDataShader {
 }
 
 
-const drawable: () => Drawable<ShaderCache, WorldData, BoundData> = () => ({
+const drawable: () => Drawable<ShaderGlobals, ShaderCache, WorldData, BoundData> = () => ({
     onConfigModified(previous: ShaderCache | null) {
         return previous === null
             || CONFIG.get('rendering/ambient-occlusion') !== previous.hasAmbient
             || CONFIG.get('rendering/show-tile-borders') !== previous.hasTiles
     },
-    createShader: async function (allocator: GpuAllocator, previous: ShaderCache | null): Promise<ShaderCache> {
+    createShader: async function (allocator: GpuAllocator, globals: ShaderGlobals, previous: ShaderCache | null): Promise<ShaderCache> {
         const options = {
             ambientOcclusion: CONFIG.get('rendering/ambient-occlusion'),
             tileBorders: CONFIG.get('rendering/show-tile-borders'),
@@ -71,12 +70,12 @@ const drawable: () => Drawable<ShaderCache, WorldData, BoundData> = () => ({
         const shader = allocator.newProgram<Attributes, Uniforms>({
             vertexSource: vertexShaderSource(options),
             fragmentSource: fragmentShaderSource(options)
-        })
+        }).then(globals.bindProgram)
 
         const mouseShader = previous?.mouseProgram ?? allocator.newProgram<MousePickerAttributes, MousePickerUniforms>({
             vertexSource: vertexShaderSource({ ...options, forMousePicker: true }),
             fragmentSource: pickViaMouseDefaultFragmentShader(),
-        })
+        }).then(globals.bindProgram)
 
         return {
             program: await shader,
@@ -232,13 +231,9 @@ const drawable: () => Drawable<ShaderCache, WorldData, BoundData> = () => ({
     },
     draw(ctx: RenderContext, shader: ShaderCache, world: WorldData, bound: BoundData): void {
 
-        const { gl, camera, visibility, stats } = ctx
+        const { gl, visibility, stats } = ctx
         const { program } = shader
         program.use()
-
-        gl.uniformMatrix4fv(program.uniforms['combinedMatrix'], false, toGl(camera.combinedMatrix))
-        gl.uniform1f(program.uniforms['time'], ctx.secondsSinceFirstRender)
-        gl.uniform3fv(program.uniforms['lightPosition'], toGl(ctx.sunPosition))
 
         const chunkPosition = program.uniforms['chunkPosition']
         let chunkIndex = 0
@@ -270,12 +265,9 @@ const drawable: () => Drawable<ShaderCache, WorldData, BoundData> = () => ({
     },
     drawForMousePicker(ctx: RenderContext, shader: ShaderCache, world: WorldData, bound: BoundData): void {
 
-        const { gl, camera, visibility } = ctx
+        const { gl, visibility } = ctx
         const { mouseProgram: program } = shader
         program.use()
-
-        gl.uniformMatrix4fv(program.uniforms['combinedMatrix'], false, toGl(camera.combinedMatrix))
-        gl.uniform1f(program.uniforms['time'], ctx.secondsSinceFirstRender)
 
         const chunkPosition = program.uniforms['chunkPosition']
         let chunkIndex = 0

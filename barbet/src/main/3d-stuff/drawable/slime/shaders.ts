@@ -1,4 +1,4 @@
-import { PrecisionHeader, RotationYMatrix, TerrainHeightMultiplierDeclaration, VersionHeader } from '../../common-shader';
+import { GlobalUniformBlockDeclaration, PrecisionHeader, TerrainHeightMultiplierDeclaration, VersionHeader } from '../../common-shader';
 
 interface ShaderOptions {
 	modelTransformationsSource: string
@@ -6,14 +6,15 @@ interface ShaderOptions {
 
 export const vertexShaderSource = (options: ShaderOptions): string => {
 	const parts: string[] = [];
-	parts.push(`${VersionHeader()}
-	${PrecisionHeader()}
-	${TerrainHeightMultiplierDeclaration()}
-	`)
+	parts.push(
+		VersionHeader(),
+		PrecisionHeader(),
+		TerrainHeightMultiplierDeclaration(),
+		GlobalUniformBlockDeclaration(),
+	)
 
 	parts.push(`
-uniform mat4 u_combinedMatrix;
-uniform float u_time;
+
 in vec3 a_modelPosition;
 in uint a_modelNormal;
 in vec3 a_modelSideColor;
@@ -32,12 +33,10 @@ void main() {
 
 	uint modelPart = a_modelFlags >> 4U;
 	vec3 faceColor = modelPart > 0U ? a_modelSideColor : a_entityColor;
-//	vec3 faceColor = a_modelSideColor;
 	vec3 model = a_modelPosition;
 	${options.modelTransformationsSource}
-
-	float light = (dot(normal, normalize(vec3(700.0, 500.0, 2000.0))));
-	v_color = mix(faceColor, faceColor * light, 0.3);
+	float light = clamp(dot(normalize(normal), u_light.xyz), u_light.w, 1.0);
+	v_color = mix(faceColor, faceColor * light, 0.8);
 
 	gl_Position = u_combinedMatrix * vec4(model, 1.0);
 	gl_PointSize = 10.0;
@@ -50,8 +49,8 @@ void main() {
 
 export const fragmentShaderSource = (options: ShaderOptions) => {
 	const parts: string[] = [];
-	parts.push(`${VersionHeader()}
-${PrecisionHeader()}
+	parts.push(VersionHeader(), PrecisionHeader())
+	parts.push(`
 out vec3 finalColor;
 flat in vec3 v_color;
 
@@ -63,6 +62,6 @@ void main() {
 	return parts.join('')
 }
 
-export type Uniforms = 'combinedMatrix' | 'time'
+export type Uniforms = never
 export type Attributes = 'modelPosition' | 'modelSideColor' | 'modelFlags' | 'modelNormal'
 	| 'entityPosition' | 'entityId' | 'entityColor' | 'entitySize' | 'entityRotation'

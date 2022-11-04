@@ -68,7 +68,7 @@ export const newGpuAllocator = (gl: WebGL2RenderingContext) => {
             programsToResolve.length = 0
         },
 
-        newProgram<Attributes, Uniforms>(params: {
+        newProgram<Attributes extends string, Uniforms extends string>(params: {
             vertexSource: string,
             fragmentSource: string
         }): Promise<GlProgram<Attributes, Uniforms>> {
@@ -116,6 +116,14 @@ export const newGpuAllocator = (gl: WebGL2RenderingContext) => {
             const usage = options.dynamic ? gl.DYNAMIC_DRAW : gl.STATIC_DRAW
             const target = options.forArray ? gl.ARRAY_BUFFER : gl.ELEMENT_ARRAY_BUFFER
             return new GPUBuffer(gl, buffer, target, usage)
+        },
+
+        newUniformBuffer() {
+            const buffer = gl.createBuffer()!
+
+            const usage = gl.DYNAMIC_DRAW
+            const target = gl.UNIFORM_BUFFER
+            return { buffer: new GPUBuffer(gl, buffer, target, usage), raw: buffer }
         },
 
         cleanUp() {

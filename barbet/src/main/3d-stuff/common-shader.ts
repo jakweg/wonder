@@ -1,8 +1,8 @@
 import { walkingDurationByDirection } from '../game-state/activities/walking'
 
-export const VersionHeader = () => `#version 300 es`
+export const VersionHeader = () => `#version 300 es\n`
 
-export const PrecisionHeader = () => `precision highp float;`
+export const PrecisionHeader = () => `precision highp float;\n`
 
 export const PIConstantHeader = () => `const float PI = ${Math.PI};\nconst float PI_OVER1 = ${1 / Math.PI};`
 
@@ -16,8 +16,18 @@ export const RotationXMatrix = (angleVariableName: string) => `mat3(1, 0, 0, 0, 
 
 export const RotationZMatrix = (angleVariableName: string) => `mat3(cos(${angleVariableName}), sin(${angleVariableName}), 0, -sin(${angleVariableName}), cos(${angleVariableName}), 0, 0, 0, 1)`
 
-export const terrainHeightMultiplierValue = 0.7;
-export const TerrainHeightMultiplierDeclaration = (variableName: string = 'terrainHeightMultiplier') => `const float ${variableName} = ${terrainHeightMultiplierValue.toFixed(5)};`
+export const terrainHeightMultiplierValue = 0.4;
+export const TerrainHeightMultiplierDeclaration = (variableName: string = 'terrainHeightMultiplier') => `const float ${variableName} = ${terrainHeightMultiplierValue.toFixed(5)};\n`
+
+export const GlobalUniformBlockDeclaration = () => `
+layout(std140) uniform Globals {
+	mat4 u_combinedMatrix;
+	vec3 u_gameTimes;
+	vec4 u_light;
+};\n`
+export const RenderTimeUniform = 'u_gameTimes.x';
+export const GameTimeUniform = 'u_gameTimes.y';
+export const GameTickUniform = 'u_gameTimes.z';
 
 
 export const pickViaMouseDefaultFragmentShader = () => `${VersionHeader()}

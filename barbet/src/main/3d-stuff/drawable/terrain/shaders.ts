@@ -1,4 +1,4 @@
-import { PrecisionHeader, TerrainHeightMultiplierDeclaration, VersionHeader } from '../../common-shader'
+import { GlobalUniformBlockDeclaration, PrecisionHeader, RenderTimeUniform, TerrainHeightMultiplierDeclaration, VersionHeader } from '../../common-shader'
 import { MousePickableType } from '../../mouse-picker'
 
 interface ShaderOptions {
@@ -11,9 +11,11 @@ const ambientOcclusionDarknessLevels = [0, 6, 10, 12, 14, 15, 15, 15]
 
 export const vertexShaderSource = (options: ShaderOptions): string => {
 	const parts: string[] = [];
-	parts.push(`${VersionHeader()}
-	${PrecisionHeader()}
-	${TerrainHeightMultiplierDeclaration()}
+	parts.push(VersionHeader(),
+		PrecisionHeader(),
+		TerrainHeightMultiplierDeclaration(),
+		GlobalUniformBlockDeclaration())
+	parts.push(`
 	in vec3 a_position;
 	in vec3 a_color;
 	in uint a_offsets;
@@ -25,15 +27,12 @@ export const vertexShaderSource = (options: ShaderOptions): string => {
 		parts.push(`flat out vec4 v_color0; flat out vec3 v_color1;`)
 	else parts.push(`
 	flat out vec3 v_color;
-	flat out vec3 v_currentPosition;
 	flat out vec3 v_normal;
 	flat out vec4 v_ambientOcclusionVec;
 	`)
 
 	parts.push(`
 	uniform vec2 u_chunkPosition;
-	uniform mat4 u_combinedMatrix;
-	uniform float u_time;
 	const float darknessLevels[] = float[](${ambientOcclusionDarknessLevels.map(e => (e / 15.0).toFixed(8)).join(',')});
 	
 	void main() {
@@ -62,15 +61,17 @@ export const vertexShaderSource = (options: ShaderOptions): string => {
 		v_color1 = vec3(y & 255U, uint(a_flags) & 255U, ${MousePickableType.Terrain}) / 255.0;`)
 
 	else parts.push(`
-v_normal = vec3(ivec3(((flags >> 4) & ${0b11}) - 1, ((flags >> 2) & ${0b11}) - 1, (flags & ${0b11}) - 1));
+vec3 normal = v_normal = vec3(ivec3(((flags >> 4) & ${0b11}) - 1, ((flags >> 2) & ${0b11}) - 1, (flags & ${0b11}) - 1));
+float directionalLight = clamp(dot(normal, u_light.xyz), u_light.w, 1.0);
 v_color = a_color.zyx;
-v_currentPosition = v_vertexPosition = a_position + vec3(u_chunkPosition.x, 0.0, u_chunkPosition.y);
+v_color = mix(v_color, v_color * directionalLight, 0.8);
+v_vertexPosition = a_position + vec3(u_chunkPosition.x, 0.0, u_chunkPosition.y);
 `)
 
 	parts.push(`
 		vec3 pos = a_position;
 		if (pos.y < 1.50) {
-			pos.y += sin(u_time * 2.1 + pos.x + pos.z * 100.0) * 0.15 + 0.5;
+			pos.y += sin(${RenderTimeUniform} * 2.1 + pos.x + pos.z * 100.0) * 0.15 + 0.5;
 		}
 		pos.x += u_chunkPosition.x;
 		pos.z += u_chunkPosition.y;
@@ -86,17 +87,13 @@ v_currentPosition = v_vertexPosition = a_position + vec3(u_chunkPosition.x, 0.0,
 
 export const fragmentShaderSource = (options: ShaderOptions) => {
 	const parts: string[] = [];
-	parts.push(`${VersionHeader()}
-	${PrecisionHeader()}
+	parts.push(VersionHeader(), PrecisionHeader(), GlobalUniformBlockDeclaration())
+	parts.push(`
 	out vec3 finalColor;
 	in vec3 v_vertexPosition;
 	flat in vec3 v_normal;
 	flat in vec3 v_color;
-	flat in vec3 v_currentPosition;
 	flat in vec4 v_ambientOcclusionVec;
-	uniform float u_time;
-	uniform vec3 u_lightPosition;
-	const float ambientLight = 0.3;
 	
 	float calculateAmbientOcclusion(vec2 vertex, vec4 ambientValues) {
 		float fx = fract(vertex.x);
@@ -120,9 +117,6 @@ export const fragmentShaderSource = (options: ShaderOptions) => {
 	}
 	
 	void main() {
-		vec3 normal = v_normal;
-		vec3 lightDirection = normalize(u_lightPosition - v_currentPosition);
-		float diffuse = clamp(dot(normal, lightDirection), ambientLight, 1.0);
 	`)
 	if (options.ambientOcclusion && !options.forMousePicker)
 		parts.push(`
@@ -151,7 +145,7 @@ export const fragmentShaderSource = (options: ShaderOptions) => {
 		parts.push('float ao = 1.0;');
 
 	parts.push(`
-		finalColor = v_color * diffuse * ao;
+		finalColor = v_color * ao;
 	`)
 
 	if (options.tileBorders && !options.forMousePicker)
@@ -184,8 +178,8 @@ export const fragmentShaderSource = (options: ShaderOptions) => {
 	return parts.join('')
 }
 
-export type Uniforms = 'time' | 'combinedMatrix' | 'lightPosition' | 'chunkPosition'
+export type Uniforms = 'chunkPosition'
 export type Attributes = 'position' | 'color' | 'flags' | 'ambientOcclusion' | 'offsets'
 
 export type MousePickerAttributes = 'position' | 'flags'
-export type MousePickerUniforms = 'time' | 'combinedMatrix' | 'chunkPosition'
+export type MousePickerUniforms = 'chunkPosition'
