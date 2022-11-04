@@ -1,3 +1,4 @@
+import SeededRandom from '@seampan/seeded-random'
 import { GameMutex, isInWorker } from '../util/game-mutex'
 import { decodeArray, encodeArray } from '../util/persistance/serializers'
 import { createNewBuffer } from '../util/shared-memory'
@@ -63,6 +64,7 @@ export class GameStateImplementation implements GameState {
 		public readonly tileMetaDataIndex: TileMetaDataIndex,
 		public readonly delayedComputer: DelayedComputer,
 		public readonly surfaceResources: SurfaceResourcesIndex,
+		public readonly seededRandom: SeededRandom,
 		private readonly mutex: GameMutex,
 		private readonly stateBroadcastCallback: () => void) {
 	}
@@ -78,12 +80,14 @@ export class GameStateImplementation implements GameState {
 		tileMetaDataIndex: TileMetaDataIndex,
 		delayedComputer: DelayedComputer,
 		surfaceResources: SurfaceResourcesIndex,
+		seededRandom: SeededRandom,
 		mutex: GameMutex,
 		stateBroadcastCallback: () => void): GameStateImplementation {
 		return new GameStateImplementation(
 			new Int32Array(createNewBuffer(MetadataField.SIZE * Int32Array.BYTES_PER_ELEMENT)),
 			world, groundItems, entities,
-			tileMetaDataIndex, delayedComputer, surfaceResources,
+			tileMetaDataIndex, delayedComputer,
+			surfaceResources, seededRandom,
 			mutex, stateBroadcastCallback)
 	}
 
@@ -97,6 +101,7 @@ export class GameStateImplementation implements GameState {
 			EntityContainer.deserialize(object['entities']),
 			tileMetaDataIndex, deserializeDelayedComputer(object['delayedComputer']),
 			SurfaceResourcesIndex.deserialize(object['surfaceResources']),
+			SeededRandom.fromSeed(object['random']),
 			mutex, stateBroadcastCallback)
 	}
 
@@ -122,6 +127,7 @@ export class GameStateImplementation implements GameState {
 			'surfaceResources': this.surfaceResources.serialize(),
 			'tileMetaDataIndex': this.tileMetaDataIndex.serialize(),
 			'delayedComputer': this.delayedComputer.serialize(),
+			'random': this.seededRandom.getCurrentSeed(),
 		}
 	}
 

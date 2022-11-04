@@ -1,3 +1,4 @@
+import SeededRandom from '@seampan/seeded-random'
 import { CreateGameArguments } from '../../entry-points/feature-environments/loader'
 import { GameMutex } from '../../util/game-mutex'
 import CONFIG from '../../util/persistance/observable-settings'
@@ -29,9 +30,10 @@ export const createEmptyGame = (mutex: GameMutex, stateBroadcastCallback: () => 
 	const delayedComputer = createNewDelayedComputer()
 	const entityContainer = EntityContainer.createEmptyContainer()
 	const resources = SurfaceResourcesIndex.createNew(world.size)
+	const random = SeededRandom.fromSeed(1)
 	const gameState = GameStateImplementation.createNew(world, itemsOnGround,
 		entityContainer, tileMetaDataIndex, delayedComputer,
-		resources, mutex, stateBroadcastCallback)
+		resources, random, mutex, stateBroadcastCallback)
 
 	fillEmptyWorldWithDefaultData(gameState)
 

@@ -35,7 +35,9 @@ const placeDebugFeatures = (game: GameState) => {
 	})
 
 	// spawnUnit({ game, x: 7, z: 8, color: 0/* UnitColorPaletteId.GreenOrange */, facing: Direction.PositiveXNegativeZ })
-	spawnSlime({ game, x: 7, z: 8, facing: Direction.PositiveXNegativeZ })
+	spawnSlime({ game, x: 4, z: 11, facing: Direction.PositiveXNegativeZ })
+	spawnSlime({ game, x: 8, z: 8, facing: Direction.PositiveXNegativeZ })
+	spawnSlime({ game, x: 9, z: 4, facing: Direction.PositiveXNegativeZ })
 
 	groundItems.setItem(17, 14, ItemType.Box)
 	groundItems.setItem(16, 14, ItemType.Box)

@@ -6,6 +6,10 @@ class SeededRandom {
 		return new SeededRandom(seed)
 	}
 
+	public getCurrentSeed(): number {
+		return this.seed
+	}
+
 	public next(): number {
 		return ((this.seed = Math.imul(1597334677, this.seed)) >>> 0) / 2 ** 32
 	}
@@ -16,6 +20,10 @@ class SeededRandom {
 
 	public nextInt(max: number): number {
 		return this.next() * max | 0
+	}
+
+	public nextIntRange(min: number, max: number): number {
+		return (min + this.next() * (max - min)) | 0
 	}
 }
 
