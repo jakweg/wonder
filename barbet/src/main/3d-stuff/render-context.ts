@@ -62,6 +62,10 @@ const makeShaderGlobals = (allocator: GpuAllocator) => {
 		update(camera: Camera,
 			secondsSinceFirstRender: number, gameTime: number, gameTickEstimation: number) {
 
+			const combinedMatrix = camera.combinedMatrix
+			for (let i = 0; i < 16; ++i)
+				BUFFER[i] = combinedMatrix[i]
+
 			BUFFER[16 + 0] = secondsSinceFirstRender
 			BUFFER[16 + 1] = gameTime
 			BUFFER[16 + 2] = gameTickEstimation
@@ -69,8 +73,7 @@ const makeShaderGlobals = (allocator: GpuAllocator) => {
 			BUFFER[16 + 5] = light[1]!
 			BUFFER[16 + 6] = light[2]!
 			BUFFER[16 + 7] = light[3]!
-			for (let i = 0; i < 16; ++i)
-				BUFFER[i] = camera.combinedMatrix[i]
+
 			buffer.setContent(BUFFER)
 		}
 	})

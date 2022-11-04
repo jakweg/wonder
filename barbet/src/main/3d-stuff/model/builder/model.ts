@@ -1,16 +1,7 @@
 import * as vec4 from '@matrix/vec4';
+import TypedArray, { TypedArrayConstructor } from '@seampan/typed-array';
 
 const sharedTemporaryVector: [number, number, number, number] = [0, 0, 0, 0]
-export type TypedArray =
-    | Int8Array
-    | Uint8Array
-    | Uint8ClampedArray
-    | Int16Array
-    | Uint16Array
-    | Int32Array
-    | Uint32Array
-    | Float32Array
-    | Float64Array;
 
 export interface Model<VertexData extends TypedArray> {
     readonly vertexPoints: Float32Array
@@ -18,7 +9,7 @@ export interface Model<VertexData extends TypedArray> {
     readonly vertexDataArray: VertexData
 }
 
-const getConstructor = <T extends TypedArray>(array: T): (new (length: number) => T) => {
+const getConstructor = <T extends TypedArray>(array: T): (TypedArrayConstructor<T>) => {
     if (array instanceof Float32Array) return Float32Array as any
     if (array instanceof Int32Array) return Int32Array as any
     if (array instanceof Uint8Array) return Uint8Array as any

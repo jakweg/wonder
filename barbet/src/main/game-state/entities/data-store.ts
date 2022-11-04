@@ -1,19 +1,22 @@
+import TypedArray, { TypedArrayConstructor } from "@seampan/typed-array"
+
 const DEFAULT_STORE_CAPACITY = 10
 const RESIZE_FACTOR = 1.5
 
-export interface ArrayAllocator<T> {
-	create(initialCapacity: number): T
+export interface ArrayAllocator {
+	create<T extends TypedArray>(initialCapacity: number, constructor: TypedArrayConstructor<T>): T
 
-	resize(old: T, resizeTo: number): T
+	resize<T extends TypedArray>(old: T, resizeTo: number, constructor: TypedArrayConstructor<T>): T
 }
 
-export class DataStore<T> {
+export class DataStore<T extends TypedArray> {
 
 	protected constructor(
-		private readonly allocator: ArrayAllocator<T>,
+		private readonly allocator: ArrayAllocator,
 		private readonly singleSize: number,
+		private readonly arrayConstructor: TypedArrayConstructor<T>,
 	) {
-		this._rawData = allocator.create(DEFAULT_STORE_CAPACITY * singleSize + 1)
+		this._rawData = allocator.create(DEFAULT_STORE_CAPACITY * singleSize + 1, this.arrayConstructor)
 	}
 
 	public get size(): number {
@@ -26,12 +29,12 @@ export class DataStore<T> {
 		return this._rawData
 	}
 
-	public static create<T>(allocator: ArrayAllocator<T>, singleSize: number) {
-		return new DataStore(allocator, singleSize)
+	public static create<T extends TypedArray>(allocator: ArrayAllocator, singleSize: number, constructor: TypedArrayConstructor<T>) {
+		return new DataStore(allocator, singleSize, constructor)
 	}
 
 	public replaceInternalsUnsafe() {
-		this._rawData = this.allocator.create(-1)
+		this._rawData = this.allocator.create(-1, this.arrayConstructor)
 	}
 
 	public pushBack(): number {
@@ -42,7 +45,7 @@ export class DataStore<T> {
 		if (newElementIndex + this.singleSize >= currentCapacity) {
 			// need resize
 			const newCapacityInBytes = Math.ceil((currentCapacity - 1) * RESIZE_FACTOR) | 0
-			this._rawData = this.allocator.resize(oldRawData as any, 1 + newCapacityInBytes)
+			this._rawData = this.allocator.resize(oldRawData as any, 1 + newCapacityInBytes, this.arrayConstructor)
 		}
 		return newElementIndex
 	}

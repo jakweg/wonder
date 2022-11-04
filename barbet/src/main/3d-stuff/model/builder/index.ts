@@ -1,6 +1,7 @@
 import * as mat4 from "@matrix/mat4"
+import TypedArray from "@seampan/typed-array"
 import { RotationXMatrix, RotationYMatrix, RotationZMatrix } from "../../common-shader"
-import { mergeModels, Model, transformPointsByMatrix, TypedArray } from "./model"
+import { mergeModels, Model, transformPointsByMatrix } from "./model"
 import { DynamicTransform, StaticTransform, TransformType } from "./transform"
 
 export type ModelDefinition<T extends TypedArray> = (

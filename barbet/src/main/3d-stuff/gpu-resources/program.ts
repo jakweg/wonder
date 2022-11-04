@@ -25,10 +25,10 @@ const getGlValue = (gl: WebGL2RenderingContext, type: AttrType) => {
 
 type AttributeSpecification = {
     count: number
-    type: AttrType
     divisor?: number
-    normalize?: boolean
-}
+} & ({ type: AttrType.Float } // float can't be normalized
+    | { type: Exclude<AttrType, AttrType.Float>, normalize?: boolean })
+
 
 export default class GlProgram<A extends string, U extends string> {
     constructor(private readonly gl: WebGL2RenderingContext,
@@ -64,7 +64,7 @@ export default class GlProgram<A extends string, U extends string> {
             const type = attribute.type
             if (index !== undefined) {
                 gl.enableVertexAttribArray(index)
-                if (attribute?.normalize === undefined ? isInt(type) : false)
+                if ((attribute as any).normalize === undefined ? isInt(type) : false)
                     gl.vertexAttribIPointer(index,
                         attribute.count,
                         getGlValue(gl, type),
@@ -74,7 +74,7 @@ export default class GlProgram<A extends string, U extends string> {
                     gl.vertexAttribPointer(index,
                         attribute.count,
                         getGlValue(gl, type),
-                        attribute?.normalize ?? false,
+                        (attribute as any).normalize ?? false,
                         totalSize,
                         offset)
 

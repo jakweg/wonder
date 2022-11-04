@@ -1,3 +1,4 @@
+import TypedArray, { TypedArrayConstructor } from '@seampan/typed-array'
 import { decodeArray, encodeArray } from '../../util/persistance/serializers'
 import { createNewBuffer } from '../../util/shared-memory'
 import { ArrayAllocator, DataStore } from './data-store'
@@ -20,33 +21,33 @@ import {
 export const ACTIVITY_MEMORY_SIZE = 20
 type ArraysChangedNotifyCallback = () => void
 
-interface ContainerAllocator<T> extends ArrayAllocator<T> {
+interface ContainerAllocator extends ArrayAllocator {
 	buffers: SharedArrayBuffer[]
 	reuseCounter: number
 	readonly notifyArraysChanged: ArraysChangedNotifyCallback
 }
 
-const createInt32Allocator = (buffers: SharedArrayBuffer[],
-	notify: ArraysChangedNotifyCallback): ContainerAllocator<Int32Array> => ({
+const createTypedArrayAllocator = (buffers: SharedArrayBuffer[],
+	notify: ArraysChangedNotifyCallback): ContainerAllocator => ({
 		buffers: buffers,
 		reuseCounter: buffers.length,
 		notifyArraysChanged: notify,
-		create(initialCapacity: number): Int32Array {
+		create<T extends TypedArray>(initialCapacity: number, constructor: TypedArrayConstructor<T>): T {
 			let buffer
 			if (this.reuseCounter > 0) {
 				buffer = this.buffers[this.buffers.length - this.reuseCounter]!
 				this.reuseCounter--
 			} else {
-				buffer = createNewBuffer(initialCapacity * Int32Array.BYTES_PER_ELEMENT)
+				buffer = createNewBuffer(initialCapacity * constructor.BYTES_PER_ELEMENT)
 				this.buffers.push(buffer)
 			}
-			return new Int32Array(buffer)
+			return new constructor(buffer)
 		},
-		resize(oldArray: Int32Array, resizeTo: number): Int32Array {
-			const oldBuffer = oldArray['buffer']
+		resize<T extends TypedArray>(old: T, resizeTo: number, constructor: TypedArrayConstructor<T>): T {
+			const oldBuffer = old['buffer']
 
-			const newBuffer = createNewBuffer(resizeTo * Int32Array.BYTES_PER_ELEMENT)
-			const newArray = new Int32Array(newBuffer)
+			const newBuffer = createNewBuffer(resizeTo * constructor.BYTES_PER_ELEMENT)
+			const newArray = new constructor(newBuffer)
 			const buffers = this.buffers
 			for (let i = 0, l = buffers.length; i < l; i++) {
 				if (buffers[i] === oldBuffer) {
@@ -55,8 +56,8 @@ const createInt32Allocator = (buffers: SharedArrayBuffer[],
 				}
 			}
 
-			for (let i = 0, l = oldArray.length; i < l; ++i)
-				newArray[i] = oldArray[i]!
+			for (let i = 0, l = old.length; i < l; ++i)
+				newArray[i] = old[i]!
 
 			this.notifyArraysChanged()
 			return newArray
@@ -65,29 +66,29 @@ const createInt32Allocator = (buffers: SharedArrayBuffer[],
 
 class EntityContainer {
 	public buffersChanged: boolean = false
-	public readonly ids: DataStore<Int32Array>
-	public readonly positions: DataStore<Int32Array>
-	public readonly drawables: DataStore<Int32Array>
-	public readonly withActivities: DataStore<Int32Array>
-	public readonly activitiesMemory: DataStore<Int32Array>
-	public readonly itemHoldables: DataStore<Int32Array>
-	public readonly interruptibles: DataStore<Int32Array>
-	public readonly buildingData: DataStore<Int32Array>
+	public readonly ids
+	public readonly positions
+	public readonly drawables
+	public readonly withActivities
+	public readonly activitiesMemory
+	public readonly itemHoldables
+	public readonly interruptibles
+	public readonly buildingData
 
-	public readonly allStores: Readonly<DataStore<Int32Array>[]>
+	public readonly allStores: Readonly<DataStore<TypedArray>[]>
 
 	constructor(
 		private nextEntityId: number,
-		private readonly allocator: ContainerAllocator<Int32Array>,
+		private readonly allocator: ContainerAllocator,
 	) {
-		this.ids = DataStore.create(this.allocator, DataOffsetIds.SIZE)
-		this.positions = DataStore.create(this.allocator, DataOffsetPositions.SIZE)
-		this.drawables = DataStore.create(this.allocator, DataOffsetDrawables.SIZE)
-		this.withActivities = DataStore.create(this.allocator, DataOffsetWithActivity.SIZE)
-		this.activitiesMemory = DataStore.create(this.allocator, ACTIVITY_MEMORY_SIZE)
-		this.itemHoldables = DataStore.create(this.allocator, DataOffsetItemHoldable.SIZE)
-		this.interruptibles = DataStore.create(this.allocator, DataOffsetInterruptible.SIZE)
-		this.buildingData = DataStore.create(this.allocator, DataOffsetBuildingData.SIZE)
+		this.ids = DataStore.create(this.allocator, DataOffsetIds.SIZE, Int32Array)
+		this.positions = DataStore.create(this.allocator, DataOffsetPositions.SIZE, Int32Array)
+		this.drawables = DataStore.create(this.allocator, DataOffsetDrawables.SIZE, Int8Array)
+		this.withActivities = DataStore.create(this.allocator, DataOffsetWithActivity.SIZE, Int32Array)
+		this.activitiesMemory = DataStore.create(this.allocator, ACTIVITY_MEMORY_SIZE, Int32Array)
+		this.itemHoldables = DataStore.create(this.allocator, DataOffsetItemHoldable.SIZE, Int32Array)
+		this.interruptibles = DataStore.create(this.allocator, DataOffsetInterruptible.SIZE, Int32Array)
+		this.buildingData = DataStore.create(this.allocator, DataOffsetBuildingData.SIZE, Int32Array)
 
 		this.allStores = Object.freeze([
 			this.ids,
@@ -103,7 +104,7 @@ class EntityContainer {
 	public static createEmptyContainer(): EntityContainer {
 		let container: EntityContainer
 
-		const allocator = createInt32Allocator([],
+		const allocator = createTypedArrayAllocator([],
 			() => container.buffersChanged = true)
 
 		return container = new EntityContainer(1, allocator)
@@ -111,7 +112,7 @@ class EntityContainer {
 
 	public static fromReceived(object: any): EntityContainer {
 		let container: EntityContainer
-		const allocator = createInt32Allocator(object.buffers,
+		const allocator = createTypedArrayAllocator(object.buffers,
 			() => container.buffersChanged = true)
 
 		container = new EntityContainer(-1, allocator)
@@ -122,7 +123,7 @@ class EntityContainer {
 		let container: EntityContainer
 		const buffers = (object['buffers'] as string[]).map(b => decodeArray(b, true, Uint8Array)['buffer'] as SharedArrayBuffer)
 
-		const allocator = createInt32Allocator(buffers,
+		const allocator = createTypedArrayAllocator(buffers,
 			() => container.buffersChanged = true)
 
 		container = new EntityContainer(
