@@ -2,7 +2,7 @@ import { toGl } from '@matrix/common'
 import SeededRandom from '@seampan/seeded-random'
 import { GlProgram, GPUBuffer, VertexArray } from '../../gpu-resources'
 import { AttrType } from '../../gpu-resources/program'
-import { foo } from '../../model/builder/index'
+import constructSlime from '../../model/entity/slime'
 import { GpuAllocator } from "../../pipeline/allocator"
 import { Drawable, LoadParams } from "../../pipeline/Drawable"
 import { RenderContext } from "../../render-context"
@@ -37,10 +37,10 @@ const drawable: () => Drawable<ShaderCache, WorldData, BoundData> = () => ({
         return false
     },
     createShader: async function (allocator: GpuAllocator, previous: ShaderCache | null): Promise<ShaderCache> {
-        const pig = foo()
-        console.log(pig.shader);
+        const slime = constructSlime()
+        console.log(slime.shader);
 
-        const options: Parameters<typeof vertexShaderSource>[0] = { modelTransformationsSource: pig.shader }
+        const options: Parameters<typeof vertexShaderSource>[0] = { modelTransformationsSource: slime.shader }
         const program = await allocator.newProgram<Attributes, Uniforms>({
             vertexSource: vertexShaderSource(options),
             fragmentSource: fragmentShaderSource(options),
@@ -55,10 +55,10 @@ const drawable: () => Drawable<ShaderCache, WorldData, BoundData> = () => ({
         program.use()
         vao.bind()
 
-        indicesBuffer.setContent(pig.indices)
+        indicesBuffer.setContent(slime.indices)
 
 
-        modelDataBuffer.setContent(pig.vertexDataArray)
+        modelDataBuffer.setContent(slime.vertexDataArray)
         program.useAttributes({
             'modelSideColor': { count: 3, type: AttrType.UByte, normalize: true, divisor: 0 },
             'modelNormal': { count: 1, type: AttrType.UByte, divisor: 0 },
@@ -74,7 +74,7 @@ const drawable: () => Drawable<ShaderCache, WorldData, BoundData> = () => ({
             'entityRotation': { count: 1, type: AttrType.UShort, divisor: 1 },
         })
 
-        modelBuffer.setContent(pig.vertexPoints)
+        modelBuffer.setContent(slime.vertexPoints)
         program.useAttributes({
             'modelPosition': { count: 3, type: AttrType.Float, divisor: 0 },
         })
@@ -83,7 +83,7 @@ const drawable: () => Drawable<ShaderCache, WorldData, BoundData> = () => ({
             program,
             vao,
             entityDataBuffer,
-            triangles: pig.indices.length | 0,
+            triangles: slime.indices.length | 0,
         }
     },
     createWorld(params: LoadParams, previous: WorldData | null): WorldData {

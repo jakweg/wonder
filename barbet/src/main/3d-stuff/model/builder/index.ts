@@ -1,10 +1,9 @@
 import * as mat4 from "@matrix/mat4"
 import { RotationXMatrix, RotationYMatrix, RotationZMatrix } from "../../common-shader"
-import { newCubeModel } from "./cube"
 import { mergeModels, Model, transformPointsByMatrix, TypedArray } from "./model"
 import { DynamicTransform, StaticTransform, TransformType } from "./transform"
 
-type ModelDefinition<T extends TypedArray> = (
+export type ModelDefinition<T extends TypedArray> = (
     {
         mesh: Model<T>
         children?: undefined
@@ -84,26 +83,34 @@ const shaderCodeFromDynamicTransform = (
             case TransformType.RotateX:
                 if (operation.by) {
                     shaderParts.push('{\nfloat _angle = ', operation.by,
-                        ';\nmat4 _rotation = ', RotationXMatrix('_angle'),
-                        ';\nmodel = (_rotation * vec4(model, 1.0)).xyz;\n}\n')
+                        ';\nmat3 _rotation = ', RotationXMatrix('_angle'),
+                        ';\nmodel = _rotation * model;\n')
+                    if (operation.normalToo === true)
+                        shaderParts.push('normal = _rotation * normal;\n')
+
+                    shaderParts.push('}\n')
                 }
                 break
             case TransformType.RotateY:
                 if (operation.by) {
                     shaderParts.push('{\nfloat _angle = ', operation.by,
-                        ';\nmat4 _rotation = ', RotationYMatrix('_angle'),
-                        ';\nmodel = (_rotation * vec4(model, 1.0)).xyz;\n')
-                    if (operation.normalToo === true) {
-                        shaderParts.push('normal = (_rotation * vec4(normal, 1.0)).xyz;\n')
-                    }
+                        ';\nmat3 _rotation = ', RotationYMatrix('_angle'),
+                        ';\nmodel = _rotation * model;\n')
+                    if (operation.normalToo === true)
+                        shaderParts.push('normal = _rotation * normal;\n')
+
                     shaderParts.push('}\n')
                 }
                 break
             case TransformType.RotateZ:
                 if (operation.by) {
                     shaderParts.push('{\nfloat _angle = ', operation.by,
-                        ';\nmat4 _rotation = ', RotationZMatrix('_angle'),
-                        ';\nmodel = (_rotation * vec4(model, 1.0)).xyz;\n}\n')
+                        ';\nmat3 _rotation = ', RotationZMatrix('_angle'),
+                        ';\nmodel = _rotation * model;\n')
+                    if (operation.normalToo === true)
+                        shaderParts.push('normal = _rotation * normal;\n')
+
+                    shaderParts.push('}\n')
                 }
                 break
             default:
@@ -125,7 +132,7 @@ type DefinedModel<T> = {
     shader: string
 }
 
-const defineModel = <T extends TypedArray>(description: ModelDefinition<T>): DefinedModel<T> => {
+export const defineModel = <T extends TypedArray>(description: ModelDefinition<T>): DefinedModel<T> => {
     if (description.mesh) {
         const model = description.mesh
 
@@ -156,76 +163,3 @@ const defineModel = <T extends TypedArray>(description: ModelDefinition<T>): Def
     } else throw new Error()
 }
 
-export const foo = () => {
-    const enum ModelPart {
-        Eye = 0b0001,
-        Mouth = 0b0010,
-    }
-
-    const makeEye = (left: boolean): ModelDefinition<Uint8Array> => ({
-        mesh: newCubeModel(ModelPart.Eye, 0x111111),
-        staticTransform: [
-            { type: TransformType.Translate, by: [0, 0.25, 0.23 * (left ? -1 : 1)] },
-            { type: TransformType.Translate, by: [0.53, 0, 0] },
-            { type: TransformType.Scale, by: [0.1, 0.16, 0.16] },
-        ],
-        dynamicTransformCondition: 'true',
-        dynamicTransform: [],
-    })
-
-    const makeMouth = (): ModelDefinition<Uint8Array> => ({
-        mesh: newCubeModel(ModelPart.Mouth, 0x111111),
-        staticTransform: [
-            { type: TransformType.Translate, by: [0, -0.15, 0.03] },
-            { type: TransformType.Translate, by: [0.53, 0, 0] },
-            { type: TransformType.Scale, by: [0.1, 0.12, 0.12] },
-        ],
-        dynamicTransformCondition: `(modelPart & (${ModelPart.Mouth}U)) == ${ModelPart.Mouth}U`,
-        dynamicTransform: [
-            {
-                type: TransformType.Scale, by: [
-                    null,
-                    null,
-                    `pow((sin(u_time * 1.0) + 1.0) * 0.5, 20.0) + 1.0`]
-            },
-        ],
-    })
-
-    const makeBody = (): ModelDefinition<Uint8Array> => ({
-        mesh: newCubeModel(0, 0x00FFFF),
-        staticTransform: [],
-        dynamicTransformCondition: 'true',
-        dynamicTransform: [],
-    })
-
-
-    const defined = defineModel({
-        children: [
-            makeEye(true),
-            makeEye(false),
-            makeMouth(),
-            makeBody()
-        ],
-        staticTransform: [
-        ],
-        dynamicTransformCondition: 'true',
-        dynamicTransform: [
-            { type: TransformType.RotateY, by: `float(a_entityRotation) * ${Math.PI / 4}`, normalToo: true },
-            { type: TransformType.RotateY, by: `pow(pow(sin(float(a_entityId) + u_time * (0.7 + fract(float(a_entityId) / 9.0))), 5.0), 5.0) * (model.y + 0.5) * 0.3`, },
-            {
-                type: TransformType.Translate, by: [
-                    null,
-                    `(model.y + 0.5) * (sin(float(a_entityId) + u_time) * 0.5 + 0.5) * 0.1`,
-                    null,
-                ],
-            },
-            { beforeBlock: `model.y += 0.5;`, type: TransformType.Scale, by: `float(a_entitySize) / 2.0`, afterBlock: `model.y -= 0.5;` },
-            { type: TransformType.Translate, by: [`float(a_entityPosition.x) + 0.5`, `float(a_entityPosition.y) * terrainHeightMultiplier + 0.5`, `float(a_entityPosition.z) + 0.5`] },
-            { type: TransformType.Translate, by: [null, `pow(sin(1.321 * float(a_entityId) + u_time * (0.7 + fract(float(a_entityId) / 9.0))), 30.0) * float(a_entitySize) * 0.5`, null] },
-        ]
-    })
-
-    console.log(defined);
-
-    return defined
-}

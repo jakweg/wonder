@@ -1,5 +1,4 @@
 import { walkingDurationByDirection } from '../game-state/activities/walking'
-import { MainRenderer } from './main-renderer'
 
 export const VersionHeader = () => `#version 300 es`
 
@@ -11,24 +10,14 @@ export const RotationVectorsDeclaration = () => `const vec3 rotationVectors[8] =
 
 export const WalkingDurationsByRotation = () => `const float walkingDurations[8] = float[8](${walkingDurationByDirection.map(e => e.toFixed(8)).join(',')});`
 
-export const RotationYMatrix = (angleVariableName: string) => `mat4(cos(${angleVariableName}), 0, -sin(${angleVariableName}), 0, 0, 1, 0, 0, sin(${angleVariableName}), 0, cos(${angleVariableName}), 0, 0, 0, 0, 1)`
+export const RotationYMatrix = (angleVariableName: string) => `mat3(cos(${angleVariableName}), 0, -sin(${angleVariableName}), 0, 1, 0, sin(${angleVariableName}), 0, cos(${angleVariableName}))`
 
-export const RotationXMatrix = (angleVariableName: string) => `mat4(1, 0, 0, 0, 0, cos(${angleVariableName}), sin(${angleVariableName}), 0, 0, -sin(${angleVariableName}), cos(${angleVariableName}), 0, 0, 0, 0, 1)`
+export const RotationXMatrix = (angleVariableName: string) => `mat3(1, 0, 0, 0, cos(${angleVariableName}), sin(${angleVariableName}), 0, -sin(${angleVariableName}), cos(${angleVariableName}))`
 
-export const RotationZMatrix = (angleVariableName: string) => `mat4(cos(${angleVariableName}), sin(${angleVariableName}), 0, 0, -sin(${angleVariableName}), cos(${angleVariableName}), 0, 0, 0, 0, 1, 0, 0, 0, 0, 1)`
+export const RotationZMatrix = (angleVariableName: string) => `mat3(cos(${angleVariableName}), sin(${angleVariableName}), 0, -sin(${angleVariableName}), cos(${angleVariableName}), 0, 0, 0, 1)`
 
-export const terrainHeightMultiplierValue = 0.4;
+export const terrainHeightMultiplierValue = 0.7;
 export const TerrainHeightMultiplierDeclaration = (variableName: string = 'terrainHeightMultiplier') => `const float ${variableName} = ${terrainHeightMultiplierValue.toFixed(5)};`
-
-export const createProgramFromNewShaders = <A, U>(renderer: MainRenderer,
-	vertexSource: string,
-	fragmentSource: string)
-	// @ts-ignore
-	: GlProgram<A, U> => {
-	const vert = renderer.createShader(true, vertexSource)
-	const frag = renderer.createShader(false, fragmentSource)
-	return renderer.createProgram<A, U>(vert, frag)
-}
 
 
 export const pickViaMouseDefaultFragmentShader = () => `${VersionHeader()}
