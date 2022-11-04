@@ -8,6 +8,7 @@ import ModelId, { getModelPrototype } from '../../model/model-id'
 import { GpuAllocator } from "../../pipeline/allocator"
 import { Drawable, LoadParams } from "../../pipeline/Drawable"
 import { RenderContext, ShaderGlobals } from "../../render-context"
+import ChunkVisibilityIndex from '../chunk-visibility'
 import { Attributes, fragmentShaderSource, Uniforms, vertexShaderSource } from './shaders'
 
 interface ModelPose {
@@ -30,6 +31,7 @@ interface ShaderCache {
 
 interface WorldData {
     entities: EntityContainer
+    visibility: ChunkVisibilityIndex
 }
 
 interface BoundData {
@@ -79,6 +81,7 @@ const drawable: () => Drawable<ShaderGlobals, ShaderCache, WorldData, BoundData>
                         'entityColor': { count: 3, type: AttrType.UShort, normalize: true, divisor: 1 },
                         'entitySize': { count: 1, type: AttrType.UShort, divisor: 1 },
                         'entityRotation': { count: 1, type: AttrType.UShort, divisor: 1 },
+                        'entityRotationChangeTick': { count: 1, type: AttrType.UShort, divisor: 1 },
                     })
 
                     modelBuffer.setContent(pose.vertexPoints)
@@ -108,7 +111,7 @@ const drawable: () => Drawable<ShaderGlobals, ShaderCache, WorldData, BoundData>
     },
     createWorld(params: LoadParams, previous: WorldData | null): WorldData {
         const entities = params.game.entities
-        return { entities }
+        return { entities, visibility: params.visibility }
     },
     async bindWorldData(allocator: GpuAllocator, shader: ShaderCache, data: WorldData, previous: BoundData): Promise<BoundData> {
         return {}
@@ -120,6 +123,7 @@ const drawable: () => Drawable<ShaderGlobals, ShaderCache, WorldData, BoundData>
             }
         }
 
+        const visibility = data.visibility
         const container = data.entities
         const positions = container.positions.rawData
         const drawables = container.drawables.rawData
@@ -127,10 +131,10 @@ const drawable: () => Drawable<ShaderGlobals, ShaderCache, WorldData, BoundData>
         for (const record of iterateOverDrawableEntities(container)) {
 
             const unitX = positions[record.position + DataOffsetPositions.PositionX]!
-            const unitY = positions[record.position + DataOffsetPositions.PositionY]!
             const unitZ = positions[record.position + DataOffsetPositions.PositionZ]!
+            if (!visibility.isPointInViewport(unitX, unitZ)) continue
+            const unitY = positions[record.position + DataOffsetPositions.PositionY]!
 
-            const rotation = drawables[record.drawable + DataOffsetDrawables.Rotation]!
             const modelId = drawables[record.drawable + DataOffsetDrawables.ModelId]!
             const model = shader.models[modelId]
             if (model === undefined) throw new Error()
@@ -139,12 +143,14 @@ const drawable: () => Drawable<ShaderGlobals, ShaderCache, WorldData, BoundData>
             const pose = model.poses[poseId]
             if (pose === undefined) throw new Error()
 
+            const rotation = drawables[record.drawable + DataOffsetDrawables.Rotation]!
+            const rotationChangeTick = drawables[record.drawable + DataOffsetDrawables.RotationChangeTick]!
 
             pose.entityDataNumbersArray.push(record.thisId,
                 unitX, unitY, unitZ,
                 0xFFFF, 0xFFFF, 0xFFFF, // color
                 2, // size
-                rotation,
+                rotation, rotationChangeTick
             )
             pose.entitiesCount++
         }

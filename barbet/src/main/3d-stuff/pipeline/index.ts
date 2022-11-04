@@ -1,4 +1,5 @@
 import { GameState } from "../../game-state/game-state"
+import ChunkVisibilityIndex from "../drawable/chunk-visibility"
 import { RenderContext } from "../render-context"
 import { GpuAllocator, newGpuAllocator } from "./allocator"
 import { Drawable } from "./drawable"
@@ -42,12 +43,12 @@ export const newPipeline = <ShaderGlobals>(
                 e.shader = doneShaders[i++]
             isDoneWithShaders = true
         },
-        useGame(game: GameState, scheduler: RenderHelperWorkScheduler) {
+        useGame(game: GameState, scheduler: RenderHelperWorkScheduler, visibility: ChunkVisibilityIndex) {
             if (lastGame === game) return
             lastGame = game
             lastRebuildTick = -1
             for (const e of mappedElements)
-                e.world = e.element.createWorld({ game, scheduler }, e.world)
+                e.world = e.element.createWorld({ game, scheduler, visibility }, e.world)
         },
         bindGpuWithGameIfCan() {
             if (allocator === null || lastGame === null || !isDoneWithShaders)

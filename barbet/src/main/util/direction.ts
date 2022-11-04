@@ -8,10 +8,16 @@ export const enum Direction {
 	PositiveZ,
 	PositiveXPositiveZ,
 
-	MaskMergePrevious = 0b1000000,
-	MaskCurrentRotation = 0b0000111,
-	MaskPreviousRotation = 0b0111000,
-	FlagMergeWithPrevious = 0b1000000,
+	/** @deprecated */
+	MaskMergePrevious = 0b1_000_000,
+	MaskCurrentRotation = 0b0_000_111,
+	MaskPreviousRotation = 0b0_111_000,
+	PreviousBitShift = 3,
+	/** @deprecated */
+	FlagMergeWithPrevious = 0b1_000_000,
+	RotateCounterBitShift = 7,
+	RotateCounter = 0b10_000_000,
+	MaskRotateCounter = 0b10_000_000,
 }
 
 const rotationChanges = [

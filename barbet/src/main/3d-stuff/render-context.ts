@@ -217,7 +217,7 @@ export const createRenderingSession = async (
 			visibility = ChunkVisibilityIndex.create(game.world.size.chunksSizeX, game.world.size.chunksSizeZ)
 			visibility.setCullingDisabled(CONFIG.get('debug/disable-culling'))
 			scheduler.setWorld(game.world.pass())
-			pipeline.useGame(game, scheduler)
+			pipeline.useGame(game, scheduler, visibility)
 			pipeline.bindGpuWithGameIfCan()
 		},
 		setCamera(newCamera: Camera) {

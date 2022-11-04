@@ -1,6 +1,6 @@
 import TypedArray, { TypedArrayConstructor } from "@seampan/typed-array"
 
-const DEFAULT_STORE_CAPACITY = 10
+const DEFAULT_STORE_CAPACITY = 100000 + 2
 const RESIZE_FACTOR = 1.5
 
 export interface ArrayAllocator {
@@ -38,7 +38,7 @@ export class DataStore<T extends TypedArray> {
 	}
 
 	public pushBack(): number {
-		const oldRawData = this._rawData as unknown as Int16Array
+		const oldRawData = this._rawData as unknown as TypedArray
 		const currentElementsCount = oldRawData[0]++
 		const newElementIndex = currentElementsCount * this.singleSize + 1
 		const currentCapacity = oldRawData.length

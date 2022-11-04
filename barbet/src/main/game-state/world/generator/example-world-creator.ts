@@ -1,16 +1,15 @@
 import { Direction } from '../../../util/direction'
 import CONFIG from '../../../util/persistance/observable-settings'
-import { GameState } from '../../game-state'
+import { GameStateImplementation } from '../../game-state'
 import { ItemType } from '../../items'
 import fillTerrain from '../../sync-operations/fill-terrain'
 import spawnSlime from '../../sync-operations/spawn-slime'
-import spawnUnit from '../../sync-operations/spawn-unit'
 import { allBiomes } from '../biome'
 import { BlockId } from '../block'
 import { World } from '../world'
 import { generateBiomeMap, generateHeightMap } from './generator'
 
-const placeDebugFeatures = (game: GameState) => {
+const placeDebugFeatures = (game: GameStateImplementation) => {
 	const { world, groundItems } = game
 
 	fillTerrain({
@@ -47,14 +46,15 @@ const placeDebugFeatures = (game: GameState) => {
 	groundItems.setItem(3, 3, ItemType.Box)
 }
 
-const placeMoreRealTerrain = (game: GameState) => {
+const placeMoreRealTerrain = (game: GameStateImplementation) => {
 	const groundItems = game.groundItems
 	generateRandomTerrain(game.world)
-	spawnUnit({ game, x: 57, z: 88, color: 0/*UnitColorPaletteId.GreenOrange*/, facing: Direction.PositiveXNegativeZ })
+	for (let i = 0; i < 100000; i++)
+		spawnSlime({ game, x: game.seededRandom.nextInt(game.world.size.sizeX), z: game.seededRandom.nextInt(game.world.size.sizeZ), facing: Direction.PositiveXNegativeZ })
 	groundItems.setItem(67, 77, ItemType.Box)
 }
 
-export function fillEmptyWorldWithDefaultData(game: GameState) {
+export function fillEmptyWorldWithDefaultData(game: GameStateImplementation) {
 	if (CONFIG.get('debug/debug-world'))
 		placeDebugFeatures(game)
 	else

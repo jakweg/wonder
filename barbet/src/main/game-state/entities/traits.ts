@@ -33,6 +33,7 @@ export const enum DataOffsetDrawables {
 	PoseId,
 	ColorPaletteId,
 	Rotation,
+	RotationChangeTick,
 	SIZE,
 }
 

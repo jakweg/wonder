@@ -1,4 +1,5 @@
 import { GameState } from "../../game-state/game-state";
+import ChunkVisibilityIndex from "../drawable/chunk-visibility";
 import { RenderContext } from "../render-context";
 import { GpuAllocator } from "./allocator";
 import RenderHelperWorkScheduler from "./work-scheduler";
@@ -6,6 +7,7 @@ import RenderHelperWorkScheduler from "./work-scheduler";
 export interface LoadParams {
     game: GameState
     scheduler: RenderHelperWorkScheduler
+    visibility: ChunkVisibilityIndex
 }
 
 export interface Drawable<ShaderGlobals, ShaderCache, WorldData, BoundData> {

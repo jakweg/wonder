@@ -3,11 +3,13 @@ export enum AttrType {
     Float,
     UByte,
     UShort,
+    UInt,
 }
 
 const isInt = (type: AttrType) => type !== AttrType.Float
 const getBytesSize = (type: AttrType) => {
     switch (type) {
+        case AttrType.UInt:
         case AttrType.Float: return 4
         case AttrType.UShort: return 2
         case AttrType.UByte: return 1
@@ -19,6 +21,7 @@ const getGlValue = (gl: WebGL2RenderingContext, type: AttrType) => {
         case AttrType.Float: return gl['FLOAT']
         case AttrType.UShort: return gl['UNSIGNED_SHORT']
         case AttrType.UByte: return gl['UNSIGNED_BYTE']
+        case AttrType.UInt: return gl['UNSIGNED_INT']
         default: throw new Error()
     }
 }

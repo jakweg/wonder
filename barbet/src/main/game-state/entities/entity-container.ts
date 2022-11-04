@@ -83,7 +83,7 @@ class EntityContainer {
 	) {
 		this.ids = DataStore.create(this.allocator, DataOffsetIds.SIZE, Int32Array)
 		this.positions = DataStore.create(this.allocator, DataOffsetPositions.SIZE, Int32Array)
-		this.drawables = DataStore.create(this.allocator, DataOffsetDrawables.SIZE, Int8Array)
+		this.drawables = DataStore.create(this.allocator, DataOffsetDrawables.SIZE, Uint8Array)
 		this.withActivities = DataStore.create(this.allocator, DataOffsetWithActivity.SIZE, Int32Array)
 		this.activitiesMemory = DataStore.create(this.allocator, ACTIVITY_MEMORY_SIZE, Int32Array)
 		this.itemHoldables = DataStore.create(this.allocator, DataOffsetItemHoldable.SIZE, Int32Array)

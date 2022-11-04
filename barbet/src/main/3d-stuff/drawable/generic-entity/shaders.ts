@@ -25,6 +25,7 @@ in uint a_entityId;
 in vec3 a_entityColor;
 in uint a_entitySize;
 in uint a_entityRotation;
+in uint a_entityRotationChangeTick;
 
 flat out vec3 v_color;
 
@@ -64,4 +65,4 @@ void main() {
 
 export type Uniforms = never
 export type Attributes = 'modelPosition' | 'modelSideColor' | 'modelFlags' | 'modelNormal'
-	| 'entityPosition' | 'entityId' | 'entityColor' | 'entitySize' | 'entityRotation'
+	| 'entityPosition' | 'entityId' | 'entityColor' | 'entitySize' | 'entityRotation' | 'entityRotationChangeTick'
