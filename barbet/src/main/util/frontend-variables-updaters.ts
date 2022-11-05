@@ -1,5 +1,5 @@
-import KeyboardController from './keyboard-controller'
 import { AdditionalFrontedFlags, frontedVariables, FrontendVariable, setFrontendVariables } from './frontend-variables'
+import KeyboardController from './keyboard-controller'
 import { createNewBuffer } from './shared-memory'
 
 export const initFrontedVariablesFromReceived = (buffer: SharedArrayBuffer) => {
@@ -26,7 +26,7 @@ export const initFrontendVariableAndRegisterToWindow = () => {
 function observeCanvasSizes(canvas: HTMLCanvasElement) {
 	let timeoutId: number = 0
 	let frameId: number = 0
-	const lastSizes = {lastResizeTime: 0, width: 0, height: 0, pixelRatio: 0}
+	const lastSizes = { lastResizeTime: 0, width: 0, height: 0, pixelRatio: 0 }
 	const checkSizesCallback = () => {
 		const width = canvas['clientWidth']
 		const height = canvas['clientHeight']
@@ -42,6 +42,8 @@ function observeCanvasSizes(canvas: HTMLCanvasElement) {
 		lastSizes.height = height
 		lastSizes.pixelRatio = pixelRatio
 		lastSizes.lastResizeTime = performance.now()
+		if (width === 0 || height === 0)
+			return
 
 		Atomics.store(frontedVariables, FrontendVariable.CanvasDrawingWidth, width * pixelRatio | 0)
 		Atomics.store(frontedVariables, FrontendVariable.CanvasDrawingHeight, height * pixelRatio | 0)
@@ -56,7 +58,7 @@ function observeCanvasSizes(canvas: HTMLCanvasElement) {
 			checkSizesCallback()
 		}
 	}
-	window.addEventListener('resize', resizeCallback, {'passive': true})
+	window.addEventListener('resize', resizeCallback, { 'passive': true })
 	return () => {
 		frameId = -1
 		clearTimeout(timeoutId)
@@ -91,7 +93,7 @@ export const bindFrontendVariablesToCanvas = (canvas: HTMLCanvasElement) => {
 	canvas.addEventListener('mousedown', defaultMouseListener)
 	canvas.addEventListener('mouseup', defaultMouseListener)
 	canvas.addEventListener('contextmenu', defaultMouseListener)
-	canvas.addEventListener('mouseleave', leaveListener, {'passive': true})
+	canvas.addEventListener('mouseleave', leaveListener, { 'passive': true })
 
 	return () => {
 		unobserve()

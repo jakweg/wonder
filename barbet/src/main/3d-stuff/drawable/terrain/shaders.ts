@@ -1,5 +1,5 @@
 import { GlobalUniformBlockDeclaration, PrecisionHeader, RenderTimeUniform, TerrainHeightMultiplierDeclaration, VersionHeader } from '../../common-shader'
-import { MousePickableType } from '../../mouse-picker'
+import { MousePickableType } from '../../pipeline/mouse-picker'
 
 interface ShaderOptions {
 	ambientOcclusion: boolean

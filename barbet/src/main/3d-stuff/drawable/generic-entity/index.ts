@@ -42,10 +42,10 @@ const drawable: () => Drawable<ShaderGlobals, ShaderCache, WorldData, BoundData>
         return false
     },
     createShader: async function (allocator: GpuAllocator, globals: ShaderGlobals, previous: ShaderCache | null): Promise<ShaderCache> {
-        const prototypes = await Promise.all([...new Array(ModelId.SIZE)]
+        const prototypes = await Promise['all']([...new Array(ModelId.SIZE)]
             .map(async (_, modelIndex) => {
                 const proto = getModelPrototype(modelIndex)
-                const poses = await Promise.all([...new Array(proto.posesCount)].map(async (_, poseIndex) => {
+                const poses = await Promise['all']([...new Array(proto.posesCount)].map(async (_, poseIndex) => {
                     const pose = proto.buildPose(poseIndex)
 
                     const options: Parameters<typeof vertexShaderSource>[0] = { modelTransformationsSource: pose.modelTransformationShader }

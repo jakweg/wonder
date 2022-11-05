@@ -188,8 +188,8 @@ export const createRenderingSession = async (
 				if (inputs !== null) {
 					mouse.prepareBeforeDraw()
 					pipeline.drawForMousePicker(ctx)
-					const computed = mouse.pickAfterDraw(inputs.mouseX, inputs.mouseY)
-					inputHandler.interpretPick(computed, inputs)
+					mouse.pickAfterDraw(inputs.mouseX, inputs.mouseY)
+						?.then(result => inputHandler.interpretPick(result, inputs))
 				}
 				stats.updateWithTimeMeasurements(timeMeter.endSessionAndGetRawResults())
 				// stats.frames.frameEnded(elapsedSeconds * 1000)

@@ -1,3 +1,4 @@
+import { STANDARD_GAME_TICK_RATE } from '../../game-state/state-updater'
 import CONFIG from '../../util/persistance/observable-settings'
 import { observeField, Subject } from '../../util/state/subject'
 import { RestartIcon, SettingsIcon, TpsIcon } from '../icons'
@@ -11,7 +12,8 @@ export default (parent: HTMLElement,
 	resumeRequested: Callback) => {
 	const root = createElement('div', parent, '_css_floating-preferences')
 
-	TpsIcon(root)
+	const icon = TpsIcon(root)
+	icon['addEventListener']('click', () => CONFIG.set('other/tps', STANDARD_GAME_TICK_RATE))
 
 	RangeInput(root, observeField(CONFIG, 'other/tps'), v => CONFIG.set('other/tps', v))
 

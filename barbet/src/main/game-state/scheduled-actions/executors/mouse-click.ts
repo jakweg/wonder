@@ -1,4 +1,4 @@
-import { MousePickableType, MousePickerResultAny, MousePickerTerrainResult } from '../../../3d-stuff/mouse-picker'
+import { MousePickableType, MousePickerResultAny, MousePickerTerrainResult } from '../../../3d-stuff/pipeline/mouse-picker'
 import { BuildingId } from '../../buildings'
 import { GameState, MetadataField } from '../../game-state'
 import placeBuilding from '../../sync-operations/place-building'
