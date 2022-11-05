@@ -192,6 +192,7 @@ export const createRenderingSession = async (
 					inputHandler.interpretPick(computed, inputs)
 				}
 				stats.updateWithTimeMeasurements(timeMeter.endSessionAndGetRawResults())
+				// stats.frames.frameEnded(elapsedSeconds * 1000)
 				stats.frames.frameEnded()
 			}
 

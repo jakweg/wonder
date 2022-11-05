@@ -37,6 +37,8 @@ const performLogicUpdates = async (memory: Int32Array,
 
 	if (ticksToExecute > 100 || ticksToExecute < 0) {
 		// might have been a lag, return false to reset counter
+		console.warn('lag?');
+
 		return false
 	}
 
@@ -101,7 +103,7 @@ const runNow = async (memory: Int32Array, func: (tick: number) => Promise<boolea
 			if (newTps !== expectedTps) {
 				// tps change occurred, start now again
 				clearInterval(intervalId)
-				runNow(memory, func).then(resolve)
+				resolve()
 				return
 			}
 
@@ -109,9 +111,8 @@ const runNow = async (memory: Int32Array, func: (tick: number) => Promise<boolea
 			if (!everythingOk) {
 				// probably lacking network data, wait some time and then try again
 				clearInterval(intervalId)
-				new Promise(resolve => setTimeout(resolve, 50))
-					.then(() => runNow(memory, func))
-					.then(resolve)
+				await new Promise(resolve => setTimeout(resolve, 50))
+				resolve()
 				return
 			}
 			executing = false

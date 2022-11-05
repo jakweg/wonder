@@ -134,6 +134,7 @@ const constructJumping = () => {
     return constructGeneric([
         genericEntityRotation('20.0'),
         idleBreathingTransformation,
+        lookingAroundTransformation,
         ownSizeTransformation,
         jumpTransformation,
         worldPositionTransformation,

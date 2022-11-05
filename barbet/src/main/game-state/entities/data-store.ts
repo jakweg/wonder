@@ -1,6 +1,6 @@
 import TypedArray, { TypedArrayConstructor } from "@seampan/typed-array"
 
-const DEFAULT_STORE_CAPACITY = 100000 + 2
+const DEFAULT_STORE_CAPACITY = 10000 + 2
 const RESIZE_FACTOR = 1.5
 
 export interface ArrayAllocator {

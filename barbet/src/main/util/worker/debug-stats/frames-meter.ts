@@ -13,8 +13,8 @@ export class FramesMeter {
     public frameStarted(): void {
         this.frameStart = performance['now']()
     }
-    public frameEnded(): void {
-        const duration = performance['now']() - this.frameStart
+    public frameEnded(trueTime?: number): void {
+        const duration = trueTime ?? performance['now']() - this.frameStart
         this.frameSamples[this.currentFrameSample + 1] = duration
         this.frameSamples[0] = this.currentFrameSample + 1
         if (++this.currentFrameSample === this.frameSamplesCount)

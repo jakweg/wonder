@@ -31,7 +31,7 @@ const createSender = <T>(ws: WebSocket): Sender<T> => {
     return {
         send(type, value) {
             if (ws['readyState'] !== ws['OPEN'])
-                throw new Error('not connected')
+                console.error(`Attempt to send ${type as any}, but socket is closed`)
             ws['send'](JSON.stringify({ 'type': type, 'value': value }))
         },
     }
