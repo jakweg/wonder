@@ -12,7 +12,7 @@ import {
 	DataOffsetWithActivity,
 	EntityTrait,
 	EntityTraitIndicesRecord,
-	hasTrait,
+	hasTrait
 } from './traits'
 
 export const iterateOverEntitiesWithActivity = function* (container: EntityContainer): Generator<Readonly<EntityTraitIndicesRecord>> {
@@ -20,7 +20,7 @@ export const iterateOverEntitiesWithActivity = function* (container: EntityConta
 	const record = createEmptyTraitRecord()
 	const rawData = container.ids.rawData
 	for (let i = 0, l = container.ids.size; i < l; i++) {
-		const idIndex = i * DataOffsetIds.SIZE + 1
+		const idIndex = i * DataOffsetIds.SIZE
 		const traits = rawData[idIndex + DataOffsetIds.Traits]!
 
 		if (hasTrait(traits, filterTraits)) {
@@ -47,7 +47,7 @@ export const iterateOverAllSelectedEntities = function* (container: EntityContai
 	const record = createEmptyTraitRecord()
 	const rawData = container.ids.rawData
 	for (let i = 0, l = container.ids.size; i < l; i++) {
-		const idIndex = i * DataOffsetIds.SIZE + 1
+		const idIndex = i * DataOffsetIds.SIZE
 		const traits = rawData[idIndex + DataOffsetIds.Traits]!
 
 		if (hasTrait(traits, filterTraits)) {
@@ -70,7 +70,7 @@ export const iterateOverEntitiesHoldingItems = function* (container: EntityConta
 	const itemHoldables = container.itemHoldables.rawData
 
 	for (let i = 0, l = container.ids.size; i < l; i++) {
-		const idIndex = i * DataOffsetIds.SIZE + 1
+		const idIndex = i * DataOffsetIds.SIZE
 		const traits = rawData[idIndex + DataOffsetIds.Traits]!
 
 		if (hasTrait(traits, filterTraits)) {
@@ -97,7 +97,7 @@ export const iterateOverDrawableEntities = function* (container: EntityContainer
 	const rawData = container.ids.rawData
 
 	for (let i = 0, l = container.ids.size; i < l; i++) {
-		const idIndex = i * DataOffsetIds.SIZE + 1
+		const idIndex = i * DataOffsetIds.SIZE
 		const traits = rawData[idIndex + DataOffsetIds.Traits]!
 
 		if (hasTrait(traits, filterTraits)) {
@@ -116,7 +116,7 @@ export const getEntityById_drawableItem = function (container: EntityContainer, 
 	const record = createEmptyTraitRecord()
 	const rawData = container.ids.rawData
 	for (let i = 0, l = container.ids.size; i < l; i++) {
-		const idIndex = i * DataOffsetIds.SIZE + 1
+		const idIndex = i * DataOffsetIds.SIZE
 		const traits = rawData[idIndex + DataOffsetIds.Traits]!
 		const thisId = rawData[idIndex + DataOffsetIds.ID]!
 
@@ -137,7 +137,7 @@ export const queryBuildingDataById = (container: EntityContainer, id: number): {
 	const record = createEmptyTraitRecord()
 	const rawData = container.ids.rawData
 	for (let i = 0, l = container.ids.size; i < l; i++) {
-		const idIndex = i * DataOffsetIds.SIZE + 1
+		const idIndex = i * DataOffsetIds.SIZE
 		const thisId = rawData[idIndex + DataOffsetIds.ID]!
 		const traits = rawData[idIndex + DataOffsetIds.Traits]!
 
@@ -169,7 +169,7 @@ export const queryBuildingProgress = (container: EntityContainer, id: number):
 	const record = createEmptyTraitRecord()
 	const rawData = container.ids.rawData
 	for (let i = 0, l = container.ids.size; i < l; i++) {
-		const idIndex = i * DataOffsetIds.SIZE + 1
+		const idIndex = i * DataOffsetIds.SIZE
 		const thisId = rawData[idIndex + DataOffsetIds.ID]!
 		const traits = rawData[idIndex + DataOffsetIds.Traits]!
 
@@ -187,7 +187,7 @@ export const updateBuildingProgress = (container: EntityContainer, id: number, n
 	const record = createEmptyTraitRecord()
 	const rawData = container.ids.rawData
 	for (let i = 0, l = container.ids.size; i < l; i++) {
-		const idIndex = i * DataOffsetIds.SIZE + 1
+		const idIndex = i * DataOffsetIds.SIZE
 		const thisId = rawData[idIndex + DataOffsetIds.ID]!
 		const traits = rawData[idIndex + DataOffsetIds.Traits]!
 
@@ -207,7 +207,7 @@ export const queryForAnyUnfinishedBuildingId = (container: EntityContainer): num
 	const record = createEmptyTraitRecord()
 	const rawData = container.ids.rawData
 	for (let i = 0, l = container.ids.size; i < l; i++) {
-		const idIndex = i * DataOffsetIds.SIZE + 1
+		const idIndex = i * DataOffsetIds.SIZE
 		const thisId = rawData[idIndex + DataOffsetIds.ID]!
 		const traits = rawData[idIndex + DataOffsetIds.Traits]!
 

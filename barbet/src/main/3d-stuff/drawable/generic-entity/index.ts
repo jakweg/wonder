@@ -137,7 +137,11 @@ const drawable: () => Drawable<ShaderGlobals, ShaderCache, WorldData, BoundData>
 
             const modelId = drawables[record.drawable + DataOffsetDrawables.ModelId]!
             const model = shader.models[modelId]
-            if (model === undefined) throw new Error()
+            if (model === undefined) {
+                console.error({ modelId, drawables, copyLength: drawables.length, ...record });
+
+                throw new Error()
+            }
 
             const poseId = drawables[record.drawable + DataOffsetDrawables.PoseId]!
             const pose = model.poses[poseId]

@@ -16,7 +16,7 @@ const executors = [
 ]
 
 export const execute = (action: ScheduledAction,
-                        game: GameState) => {
+	game: GameState) => {
 	const func = executors[action.type]
 	if (func === undefined) throw new Error()
 	func(action as any, game)

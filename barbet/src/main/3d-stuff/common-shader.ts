@@ -1,4 +1,3 @@
-import { walkingDurationByDirection } from '../game-state/activities/walking'
 
 export const VersionHeader = () => `#version 300 es\n`
 
@@ -7,8 +6,6 @@ export const PrecisionHeader = () => `precision highp float;\n`
 export const PIConstantHeader = () => `const float PI = ${Math.PI};\nconst float PI_OVER1 = ${1 / Math.PI};`
 
 export const RotationVectorsDeclaration = () => `const vec3 rotationVectors[8] = vec3[8](vec3(1.0, 0.0, 0.0), vec3(1.0, 0.0, -1.0), vec3(0.0, 0.0, -1.0), vec3(-1.0, 0.0, -1.0), vec3(-1.0, 0.0, 0.0), vec3(-1.0, 0.0, 1.0), vec3(0.0, 0.0, 1.0), vec3(1.0, 0.0, 1.0));`
-
-export const WalkingDurationsByRotation = () => `const float walkingDurations[8] = float[8](${walkingDurationByDirection.map(e => e.toFixed(8)).join(',')});`
 
 export const RotationYMatrix = (angleVariableName: string) => `mat3(cos(${angleVariableName}), 0, -sin(${angleVariableName}), 0, 1, 0, sin(${angleVariableName}), 0, cos(${angleVariableName}))`
 

@@ -81,14 +81,27 @@ class EntityContainer {
 		private nextEntityId: number,
 		private readonly allocator: ContainerAllocator,
 	) {
-		this.ids = DataStore.create(this.allocator, DataOffsetIds.SIZE, Int32Array)
-		this.positions = DataStore.create(this.allocator, DataOffsetPositions.SIZE, Int32Array)
-		this.drawables = DataStore.create(this.allocator, DataOffsetDrawables.SIZE, Uint8Array)
-		this.withActivities = DataStore.create(this.allocator, DataOffsetWithActivity.SIZE, Int32Array)
-		this.activitiesMemory = DataStore.create(this.allocator, ACTIVITY_MEMORY_SIZE, Int32Array)
-		this.itemHoldables = DataStore.create(this.allocator, DataOffsetItemHoldable.SIZE, Int32Array)
-		this.interruptibles = DataStore.create(this.allocator, DataOffsetInterruptible.SIZE, Int32Array)
-		this.buildingData = DataStore.create(this.allocator, DataOffsetBuildingData.SIZE, Int32Array)
+		const MAX_DATA_STORES = 32
+		const counts = this.allocator.create(MAX_DATA_STORES, Uint32Array)
+
+		let dataStoreIndex = 0
+		const newDataStore = <T extends TypedArray>(dataSize: number, array: TypedArrayConstructor<T>) => {
+			const index = dataStoreIndex++
+			if (dataStoreIndex >= MAX_DATA_STORES)
+				throw new Error()
+
+			return DataStore.create(new Uint32Array(counts['buffer'], index * Uint32Array.BYTES_PER_ELEMENT, 1),
+				this.allocator, dataSize, array)
+		}
+
+		this.ids = newDataStore(DataOffsetIds.SIZE, Int32Array)
+		this.positions = newDataStore(DataOffsetPositions.SIZE, Int32Array)
+		this.drawables = newDataStore(DataOffsetDrawables.SIZE, Uint8Array)
+		this.withActivities = newDataStore(DataOffsetWithActivity.SIZE, Int32Array)
+		this.activitiesMemory = newDataStore(ACTIVITY_MEMORY_SIZE, Int32Array)
+		this.itemHoldables = newDataStore(DataOffsetItemHoldable.SIZE, Int32Array)
+		this.interruptibles = newDataStore(DataOffsetInterruptible.SIZE, Int32Array)
+		this.buildingData = newDataStore(DataOffsetBuildingData.SIZE, Int32Array)
 
 		this.allStores = Object.freeze([
 			this.ids,
@@ -137,8 +150,11 @@ class EntityContainer {
 
 		this.allocator.buffers = buffers
 		this.allocator.reuseCounter = buffers.length
-		for (let store of this.allStores)
-			store.replaceInternalsUnsafe()
+
+		const counts = this.allocator.create(-1, Uint32Array)
+		let index = 0
+		for (const store of this.allStores)
+			store.replaceInternalsUnsafe(new Uint32Array(counts['buffer'], index * Uint32Array.BYTES_PER_ELEMENT, 1))
 	}
 
 	public passBuffers() {
@@ -195,7 +211,7 @@ class EntityContainer {
 
 		const rawData = this.ids.rawData
 		for (let i = 0, l = this.ids.size; i < l; i++) {
-			const idIndex = i * DataOffsetIds.SIZE + 1
+			const idIndex = i * DataOffsetIds.SIZE
 			const traits = rawData[idIndex + DataOffsetIds.Traits]!
 
 			if ((traits & requiredTraits) === requiredTraits) {
