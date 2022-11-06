@@ -23,74 +23,73 @@ let stateUpdater: StateUpdaterImplementation | null = null
 let tickQueue: TickQueue | null = null
 
 receiver.on(ToWorker.NewSettings, settings => {
-	CONFIG.update(settings)
+  CONFIG.update(settings)
 })
 
 receiver.on(ToWorker.TerminateGame, args => {
-	stateUpdater?.terminate()
-	gameState = stateUpdater = null
-	if (args.terminateEverything)
-		close()
+  stateUpdater?.terminate()
+  gameState = stateUpdater = null
+  if (args.terminateEverything) close()
 })
 
-receiver.on(ToWorker.CreateGame, async (args) => {
-	const stateBroadcastCallback = () => {
-		if (gameState === null) return
-		sender.send(FromWorker.UpdateEntityContainer, {
-			buffers: gameState?.entities?.passBuffers(),
-		})
-	}
+receiver.on(ToWorker.CreateGame, async args => {
+  const stateBroadcastCallback = () => {
+    if (gameState === null) return
+    sender.send(FromWorker.UpdateEntityContainer, {
+      buffers: gameState?.entities?.passBuffers(),
+    })
+  }
 
-	gameState = await loadGameFromArgs(args, stats, mutex, stateBroadcastCallback) as GameStateImplementation
+  gameState = (await loadGameFromArgs(args, stats, mutex, stateBroadcastCallback)) as GameStateImplementation
 
-	tickQueue = TickQueue.createEmpty()
+  tickQueue = TickQueue.createEmpty()
 
-	stateUpdater = createNewStateUpdater(
-		async (gameActions, updaterActions) => {
+  stateUpdater = createNewStateUpdater(
+    async (gameActions, updaterActions) => {
+      await gameState!.advanceActivities(gameActions, stats)
 
-			await gameState!.advanceActivities(gameActions, stats)
+      const currentTick = gameState!.currentTick
 
-			const currentTick = gameState!.currentTick
+      sender.send(FromWorker.TickCompleted, { tick: currentTick, updaterActions })
+    },
+    gameState.currentTick,
+    tickQueue,
+  )
 
-			sender.send(FromWorker.TickCompleted, { tick: currentTick, updaterActions })
-		},
-		gameState.currentTick, tickQueue)
-
-	sender.send(FromWorker.GameCreateResult, {
-		game: gameState!.passForRenderer(),
-		updater: stateUpdater!.pass(),
-	})
+  sender.send(FromWorker.GameCreateResult, {
+    game: gameState!.passForRenderer(),
+    updater: stateUpdater!.pass(),
+  })
 })
 
-receiver.on(ToWorker.SaveGame, async (data) => {
-	const result = gameState ? (await performGameSave(gameState, data)) : false
-	sender.send(FromWorker.GameSaved, result)
+receiver.on(ToWorker.SaveGame, async data => {
+  const result = gameState ? await performGameSave(gameState, data) : false
+  sender.send(FromWorker.GameSaved, result)
 })
 
 receiver.on(ToWorker.AppendToTickQueue, ({ actions, playerId, forTick }) => {
-	tickQueue?.setForTick(forTick, playerId, actions)
+  tickQueue?.setForTick(forTick, playerId, actions)
 })
 
 receiver.on(ToWorker.SetPlayerIds, ({ playerIds }) => {
-	tickQueue?.setRequiredPlayers(playerIds)
+  tickQueue?.setRequiredPlayers(playerIds)
 })
 
 let timeoutId: ReturnType<typeof setTimeout>
 const previous = CONFIG.get('debug/show-info')
 CONFIG.set('debug/show-info', true)
 CONFIG.observe('debug/show-info', show => {
-	if (show) {
-		stats.receiveUpdates((data) => {
-			clearTimeout(timeoutId)
-			timeoutId = setTimeout(() => void sender.send(FromWorker.DebugStatsUpdate, data), 0);
-		})
-	} else stats.stopUpdates()
+  if (show) {
+    stats.receiveUpdates(data => {
+      clearTimeout(timeoutId)
+      timeoutId = setTimeout(() => void sender.send(FromWorker.DebugStatsUpdate, data), 0)
+    })
+  } else stats.stopUpdates()
 })
 CONFIG.set('debug/show-info', previous)
 
-
-reduce([
-	observeField(CONFIG, 'debug/show-info'),
-	observeField(CONFIG, 'debug/show-graphs')
-], (v, a) => (a || v), false)
-	.on(v => stats.timeMeter.setEnabled(!!v))
+reduce(
+  [observeField(CONFIG, 'debug/show-info'), observeField(CONFIG, 'debug/show-graphs')],
+  (v, a) => a || v,
+  false,
+).on(v => stats.timeMeter.setEnabled(!!v))

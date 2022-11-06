@@ -1,45 +1,47 @@
-import { ActivityId } from ".."
-import { Pose } from "../../../3d-stuff/model/entity/slime/pose"
-import { DataOffsetDrawables, DataOffsetWithActivity, EntityTraitIndicesRecord } from "../../entities/traits"
-import { GameStateImplementation } from "../../game-state"
-import { IDLE_JOB_CHECK_INTERVAL_MAX, IDLE_JOB_CHECK_INTERVAL_MIN, JOB_CHANCE_TO_JUMP_INSTEAD_OF_JUST_ROTATE } from "./constants"
+import { ActivityId } from '..'
+import { Pose } from '../../../3d-stuff/model/entity/slime/pose'
+import { DataOffsetDrawables, DataOffsetWithActivity, EntityTraitIndicesRecord } from '../../entities/traits'
+import { GameStateImplementation } from '../../game-state'
+import {
+  IDLE_JOB_CHECK_INTERVAL_MAX,
+  IDLE_JOB_CHECK_INTERVAL_MIN,
+  JOB_CHANCE_TO_JUMP_INSTEAD_OF_JUST_ROTATE,
+} from './constants'
 
 import * as slime_jump from './jump'
 import * as slime_slowRotate from './slow-rotate'
 
 const enum MemoryField {
-    NextJobAttemptTick,
-    SIZE,
+  NextJobAttemptTick,
+  SIZE,
 }
 
 export const setup = (game: GameStateImplementation, unit: EntityTraitIndicesRecord) => {
-    const withActivitiesMemory = game.entities.withActivities.rawData
-    const drawables = game.entities.drawables.rawData
-    const now = game.currentTick
+  const withActivitiesMemory = game.entities.withActivities.rawData
+  const drawables = game.entities.drawables.rawData
+  const now = game.currentTick
 
-    withActivitiesMemory[unit.withActivity + DataOffsetWithActivity.CurrentId] = ActivityId.Slime_Idle
-    withActivitiesMemory[unit.withActivity + DataOffsetWithActivity.StartTick] = now
-    withActivitiesMemory[unit.withActivity + DataOffsetWithActivity.MemoryPointer] = MemoryField.SIZE
+  withActivitiesMemory[unit.withActivity + DataOffsetWithActivity.CurrentId] = ActivityId.Slime_Idle
+  withActivitiesMemory[unit.withActivity + DataOffsetWithActivity.StartTick] = now
+  withActivitiesMemory[unit.withActivity + DataOffsetWithActivity.MemoryPointer] = MemoryField.SIZE
 
-    const pointer = withActivitiesMemory[unit.withActivity + DataOffsetWithActivity.MemoryPointer]! + unit.activityMemory
-    const memory = game.entities.activitiesMemory.rawData
+  const pointer = withActivitiesMemory[unit.withActivity + DataOffsetWithActivity.MemoryPointer]! + unit.activityMemory
+  const memory = game.entities.activitiesMemory.rawData
 
-    const nextJobInterval = game.seededRandom.nextIntRange(IDLE_JOB_CHECK_INTERVAL_MIN, IDLE_JOB_CHECK_INTERVAL_MAX)
-    memory[pointer - MemoryField.NextJobAttemptTick] = now + nextJobInterval
+  const nextJobInterval = game.seededRandom.nextIntRange(IDLE_JOB_CHECK_INTERVAL_MIN, IDLE_JOB_CHECK_INTERVAL_MAX)
+  memory[pointer - MemoryField.NextJobAttemptTick] = now + nextJobInterval
 
-    drawables[unit.drawable + DataOffsetDrawables.PoseId] = Pose.Idle
+  drawables[unit.drawable + DataOffsetDrawables.PoseId] = Pose.Idle
 }
 
 export const perform = (game: GameStateImplementation, unit: EntityTraitIndicesRecord): void => {
-    const withActivitiesMemory = game.entities.withActivities.rawData
+  const withActivitiesMemory = game.entities.withActivities.rawData
 
-    const pointer = withActivitiesMemory[unit.withActivity + DataOffsetWithActivity.MemoryPointer]! + unit.activityMemory
-    const memory = game.entities.activitiesMemory.rawData
-    const now = game.currentTick
-    if (memory[pointer - MemoryField.NextJobAttemptTick]! <= now) {
-        if (game.seededRandom.nextInt(100) < JOB_CHANCE_TO_JUMP_INSTEAD_OF_JUST_ROTATE)
-            slime_jump.setup(game, unit)
-        else
-            slime_slowRotate.setup(game, unit)
-    }
+  const pointer = withActivitiesMemory[unit.withActivity + DataOffsetWithActivity.MemoryPointer]! + unit.activityMemory
+  const memory = game.entities.activitiesMemory.rawData
+  const now = game.currentTick
+  if (memory[pointer - MemoryField.NextJobAttemptTick]! <= now) {
+    if (game.seededRandom.nextInt(100) < JOB_CHANCE_TO_JUMP_INSTEAD_OF_JUST_ROTATE) slime_jump.setup(game, unit)
+    else slime_slowRotate.setup(game, unit)
+  }
 }

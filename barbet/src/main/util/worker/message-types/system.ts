@@ -1,9 +1,7 @@
-
-
 export interface SystemMessageTypeToWorker {
-    'set-global-mutex': { mutex: unknown },
+  'set-global-mutex': { mutex: unknown }
 }
 
 export interface SystemMessageTypeFromWorker {
-    'connection-established': { now: number }
+  'connection-established': { now: number }
 }

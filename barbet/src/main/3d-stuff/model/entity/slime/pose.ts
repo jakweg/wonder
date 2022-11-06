@@ -1,7 +1,6 @@
-
 export const enum Pose {
-    Idle,
-    SlowlyRotating,
-    Jumping,
-    SIZE,
+  Idle,
+  SlowlyRotating,
+  Jumping,
+  SIZE,
 }

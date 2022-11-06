@@ -1,6 +1,5 @@
-import GPUBuffer from './buffer';
-import GlProgram from './program';
-import VertexArray from './vao';
+import GPUBuffer from './buffer'
+import GlProgram from './program'
+import VertexArray from './vao'
 
-export { GPUBuffer, GlProgram, VertexArray };
-
+export { GPUBuffer, GlProgram, VertexArray }

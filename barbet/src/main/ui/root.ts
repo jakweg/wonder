@@ -9,39 +9,35 @@ import PreferencesRoot from './preferences'
 import { createElement } from './utils'
 
 interface Props {
-	root: HTMLElement
+  root: HTMLElement
 
-	isPaused(): boolean
+  isPaused(): boolean
 
-	onPauseRequested(): void
+  onPauseRequested(): void
 
-	onResumeRequested(): void
+  onResumeRequested(): void
 }
 
 export const createUi = (props: Props) => {
-	const root = createElement('div', props.root, '_css_root')
+  const root = createElement('div', props.root, '_css_root')
 
-	const isPaused = intervalProducer(props.isPaused, 300)
-	const [settingsOpened, setSettingsOpened] = newSubject(false)
+  const isPaused = intervalProducer(props.isPaused, 300)
+  const [settingsOpened, setSettingsOpened] = newSubject(false)
 
-	const canvas = CanvasBackground(root)
+  const canvas = CanvasBackground(root)
 
-	Overlay(root, [isPaused, settingsOpened], () => setSettingsOpened(() => false))
+  Overlay(root, [isPaused, settingsOpened], () => setSettingsOpened(() => false))
 
-	FloatingPreferences(root,
-		() => setSettingsOpened(v => !v),
-		props.onPauseRequested,
-		props.onResumeRequested)
+  FloatingPreferences(root, () => setSettingsOpened(v => !v), props.onPauseRequested, props.onResumeRequested)
 
-	const debug = DebugInfo(root)
+  const debug = DebugInfo(root)
 
-	PauseIndicator(root, isPaused)
+  PauseIndicator(root, isPaused)
 
-	PreferencesRoot(root, settingsOpened, () => setSettingsOpened(() => false))
+  PreferencesRoot(root, settingsOpened, () => setSettingsOpened(() => false))
 
-	return {
-		debug,
-		canvas,
-	}
+  return {
+    debug,
+    canvas,
+  }
 }
-

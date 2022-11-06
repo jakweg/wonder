@@ -10,28 +10,31 @@ import './preferences.css'
 import RenderingSection from './rendering-section'
 
 export default (parent: HTMLElement, opened: Subject<boolean>, doneClicked: Callback) => {
-	opened.on(opened => {
-		KeyboardController.INSTANCE?.setMaskEnabled(opened)
-	})
+  opened.on(opened => {
+    KeyboardController.INSTANCE?.setMaskEnabled(opened)
+  })
 
-	const [root] = AnimatedVisibility(createElement('div', parent, '_css_settings'), opened, ['_css_opacity', '_css_translate-y'])
+  const [root] = AnimatedVisibility(createElement('div', parent, '_css_settings'), opened, [
+    '_css_opacity',
+    '_css_translate-y',
+  ])
 
-	Header(root, constant('Game preferences'), false)
-	RenderingSection(root)
-	OnBlurBehaviourSection(root)
-	DebugSection(root)
-	BuildInfoSection(root)
+  Header(root, constant('Game preferences'), false)
+  RenderingSection(root)
+  OnBlurBehaviourSection(root)
+  DebugSection(root)
+  BuildInfoSection(root)
 
-	Footer(root, doneClicked)
+  Footer(root, doneClicked)
 }
 
 export const Header = (root: HTMLElement, title: Subject<string>, subHeader: boolean) => {
-	const header = createElement('header', root, subHeader ? '_css_sub-header' : '')
-	const p = createElement('p', header)
-	title.on(title => p['innerText'] = title)
+  const header = createElement('header', root, subHeader ? '_css_sub-header' : '')
+  const p = createElement('p', header)
+  title.on(title => (p['innerText'] = title))
 }
 
 const Footer = (root: HTMLElement, doneClicked: () => void) => {
-	const footer = createElement('footer', root)
-	Button(footer, constant('Done'), doneClicked)
+  const footer = createElement('footer', root)
+  Button(footer, constant('Done'), doneClicked)
 }

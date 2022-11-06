@@ -1,19 +1,19 @@
-import { GlobalUniformBlockDeclaration, PrecisionHeader, TerrainHeightMultiplierDeclaration, VersionHeader } from '../../common-shader';
+import {
+  GlobalUniformBlockDeclaration,
+  PrecisionHeader,
+  TerrainHeightMultiplierDeclaration,
+  VersionHeader,
+} from '../../common-shader'
 
 interface ShaderOptions {
-	modelTransformationsSource: string
+  modelTransformationsSource: string
 }
 
 export const vertexShaderSource = (options: ShaderOptions): string => {
-	const parts: string[] = [];
-	parts.push(
-		VersionHeader(),
-		PrecisionHeader(),
-		TerrainHeightMultiplierDeclaration(),
-		GlobalUniformBlockDeclaration(),
-	)
+  const parts: string[] = []
+  parts.push(VersionHeader(), PrecisionHeader(), TerrainHeightMultiplierDeclaration(), GlobalUniformBlockDeclaration())
 
-	parts.push(`
+  parts.push(`
 
 in vec3 a_modelPosition;
 in uint a_modelNormal;
@@ -44,14 +44,13 @@ void main() {
 }
 	`)
 
-	return parts.join('')
+  return parts.join('')
 }
 
-
 export const fragmentShaderSource = (options: ShaderOptions) => {
-	const parts: string[] = [];
-	parts.push(VersionHeader(), PrecisionHeader())
-	parts.push(`
+  const parts: string[] = []
+  parts.push(VersionHeader(), PrecisionHeader())
+  parts.push(`
 out vec3 finalColor;
 flat in vec3 v_color;
 
@@ -60,9 +59,18 @@ void main() {
 }
 `)
 
-	return parts.join('')
+  return parts.join('')
 }
 
 export type Uniforms = never
-export type Attributes = 'modelPosition' | 'modelSideColor' | 'modelFlags' | 'modelNormal'
-	| 'entityPosition' | 'entityId' | 'entityColor' | 'entitySize' | 'entityRotation' | 'entityRotationChangeTick'
+export type Attributes =
+  | 'modelPosition'
+  | 'modelSideColor'
+  | 'modelFlags'
+  | 'modelNormal'
+  | 'entityPosition'
+  | 'entityId'
+  | 'entityColor'
+  | 'entitySize'
+  | 'entityRotation'
+  | 'entityRotationChangeTick'

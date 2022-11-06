@@ -10,22 +10,11 @@
     "noImplicitOverride": true,
     "noUncheckedIndexedAccess": true,
     "moduleResolution": "Node",
-    "lib": [
-      "ES2022",
-      "dom",
-      "webworker"
-    ],
+    "lib": ["ES2022", "dom", "webworker"],
     "paths": {
-      "@matrix/*": [
-        "../seampan/matrix/*"
-      ],
-      "@seampan/*": [
-        "../seampan/*"
-      ]
+      "@matrix/*": ["../seampan/matrix/*"],
+      "@seampan/*": ["../seampan/*"]
     }
   },
-  "exclude": [
-    "build-js",
-    "dist",
-  ]
+  "exclude": ["build-js", "dist"]
 }

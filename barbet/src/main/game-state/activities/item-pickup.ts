@@ -1,12 +1,12 @@
 import { Direction, getChangeInXByRotation, getChangeInZByRotation } from '../../util/direction'
 import {
-	DataOffsetDrawables,
-	DataOffsetItemHoldable,
-	DataOffsetPositions,
-	DataOffsetWithActivity,
-	EntityTrait,
-	EntityTraitIndicesRecord,
-	requireTrait,
+  DataOffsetDrawables,
+  DataOffsetItemHoldable,
+  DataOffsetPositions,
+  DataOffsetWithActivity,
+  EntityTrait,
+  EntityTraitIndicesRecord,
+  requireTrait,
 } from '../entities/traits'
 import { GameState } from '../game-state'
 import { ItemType } from '../items'
@@ -42,68 +42,68 @@ if (isLeftArmVertex || isRightArmVertex) {
 `
 
 const enum MemoryField {
-	ActivityFinishTick,
-	Direction,
-	GetResource,
-	SIZE,
+  ActivityFinishTick,
+  Direction,
+  GetResource,
+  SIZE,
 }
 
 export const perform = (game: GameState, unit: EntityTraitIndicesRecord) => {
-	const withActivitiesMemory = game.entities.withActivities.rawData
-	const memory = game.entities.activitiesMemory.rawData
-	const pointer = withActivitiesMemory[unit.withActivity + DataOffsetWithActivity.MemoryPointer]! + unit.activityMemory
+  const withActivitiesMemory = game.entities.withActivities.rawData
+  const memory = game.entities.activitiesMemory.rawData
+  const pointer = withActivitiesMemory[unit.withActivity + DataOffsetWithActivity.MemoryPointer]! + unit.activityMemory
 
-	const finishAt = memory[pointer - MemoryField.ActivityFinishTick]!
-	if (game.currentTick !== finishAt) return
-	const getResource = memory[pointer - MemoryField.GetResource]! === 1
+  const finishAt = memory[pointer - MemoryField.ActivityFinishTick]!
+  if (game.currentTick !== finishAt) return
+  const getResource = memory[pointer - MemoryField.GetResource]! === 1
 
-	const direction = memory[pointer - MemoryField.Direction]! as Direction
+  const direction = memory[pointer - MemoryField.Direction]! as Direction
 
-	const positionsData = game.entities.positions.rawData
-	const unitX = positionsData[unit.position + DataOffsetPositions.PositionX]!
-	const unitZ = positionsData[unit.position + DataOffsetPositions.PositionZ]!
+  const positionsData = game.entities.positions.rawData
+  const unitX = positionsData[unit.position + DataOffsetPositions.PositionX]!
+  const unitZ = positionsData[unit.position + DataOffsetPositions.PositionZ]!
 
-	const itemX = unitX + getChangeInXByRotation(direction)
-	const itemZ = unitZ + getChangeInZByRotation(direction)
+  const itemX = unitX + getChangeInXByRotation(direction)
+  const itemZ = unitZ + getChangeInZByRotation(direction)
 
+  let itemToPickup: ItemType
+  if (getResource) {
+    const resource = game.surfaceResources.extractSingleResource(itemX, itemZ)
+    itemToPickup = getGatheredItem(resource)
+  } else {
+    itemToPickup = game.groundItems.getItem(itemX, itemZ)
+    game.groundItems.setItem(itemX, itemZ, ItemType.None)
+  }
 
-	let itemToPickup: ItemType
-	if (getResource) {
-		const resource = game.surfaceResources.extractSingleResource(itemX, itemZ)
-		itemToPickup = getGatheredItem(resource)
-	} else {
-		itemToPickup = game.groundItems.getItem(itemX, itemZ)
-		game.groundItems.setItem(itemX, itemZ, ItemType.None)
-	}
+  game.entities.itemHoldables.rawData[unit.itemHoldable + DataOffsetItemHoldable.ItemId] = itemToPickup
+  const drawablesData = game.entities.drawables.rawData
+  drawablesData[unit.drawable + DataOffsetDrawables.Rotation] &= ~Direction.MaskMergePrevious
 
-	game.entities.itemHoldables.rawData[unit.itemHoldable + DataOffsetItemHoldable.ItemId] = itemToPickup
-	const drawablesData = game.entities.drawables.rawData
-	drawablesData[unit.drawable + DataOffsetDrawables.Rotation] &= ~Direction.MaskMergePrevious
+  withActivitiesMemory[unit.withActivity + DataOffsetWithActivity.MemoryPointer] -= MemoryField.SIZE
 
-	withActivitiesMemory[unit.withActivity + DataOffsetWithActivity.MemoryPointer] -= MemoryField.SIZE
-
-	if (getResource)
-		activityIdle.setup(game, unit)
-	else
-		activityItemPickupRoot.onPickedUp(game, unit)
+  if (getResource) activityIdle.setup(game, unit)
+  else activityItemPickupRoot.onPickedUp(game, unit)
 }
 
 export const setup = (game: GameState, unit: EntityTraitIndicesRecord, direction: Direction, getResource: boolean) => {
-	requireTrait(unit.thisTraits, EntityTrait.ItemHoldable)
+  requireTrait(unit.thisTraits, EntityTrait.ItemHoldable)
 
-	const now = game.currentTick
-	const withActivitiesMemory = game.entities.withActivities.rawData
-	const memory = game.entities.activitiesMemory.rawData
-	const pointer = (withActivitiesMemory[unit.withActivity + DataOffsetWithActivity.MemoryPointer] += MemoryField.SIZE) + unit.activityMemory
+  const now = game.currentTick
+  const withActivitiesMemory = game.entities.withActivities.rawData
+  const memory = game.entities.activitiesMemory.rawData
+  const pointer =
+    (withActivitiesMemory[unit.withActivity + DataOffsetWithActivity.MemoryPointer] += MemoryField.SIZE) +
+    unit.activityMemory
 
-	withActivitiesMemory[unit.withActivity + DataOffsetWithActivity.CurrentId] = ActivityId.ItemPickUp
-	withActivitiesMemory[unit.withActivity + DataOffsetWithActivity.StartTick] = now
+  withActivitiesMemory[unit.withActivity + DataOffsetWithActivity.CurrentId] = ActivityId.ItemPickUp
+  withActivitiesMemory[unit.withActivity + DataOffsetWithActivity.StartTick] = now
 
-	const drawablesData = game.entities.drawables.rawData
-	const oldRotation = drawablesData[unit.drawable + DataOffsetDrawables.Rotation]!
-	drawablesData[unit.drawable + DataOffsetDrawables.Rotation] = Direction.FlagMergeWithPrevious | ((oldRotation & Direction.MaskCurrentRotation) << 3) | direction
+  const drawablesData = game.entities.drawables.rawData
+  const oldRotation = drawablesData[unit.drawable + DataOffsetDrawables.Rotation]!
+  drawablesData[unit.drawable + DataOffsetDrawables.Rotation] =
+    Direction.FlagMergeWithPrevious | ((oldRotation & Direction.MaskCurrentRotation) << 3) | direction
 
-	memory[pointer - MemoryField.ActivityFinishTick] = now + pickUpItemActivityDuration
-	memory[pointer - MemoryField.Direction] = direction
-	memory[pointer - MemoryField.GetResource] = getResource ? 1 : 0
+  memory[pointer - MemoryField.ActivityFinishTick] = now + pickUpItemActivityDuration
+  memory[pointer - MemoryField.Direction] = direction
+  memory[pointer - MemoryField.GetResource] = getResource ? 1 : 0
 }

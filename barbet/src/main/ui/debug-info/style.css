@@ -1,32 +1,30 @@
-
 ._css_debug-info {
-    font-family: monospace;
-    align-self: flex-start;
-    justify-self: start;
-    padding: 4px;
+  font-family: monospace;
+  align-self: flex-start;
+  justify-self: start;
+  padding: 4px;
 }
 ._css_debug-info._css_debug-info-gone {
-    display: none;
+  display: none;
 }
 
-
-._css_debug-info  ._css_key_value_p {
-    margin: 0;
+._css_debug-info ._css_key_value_p {
+  margin: 0;
 }
-._css_debug-info  ._css_key_value_p >span {
-    display: inline-block;
-    padding: 2px 4px;
-    background-color: #000000AA;
+._css_debug-info ._css_key_value_p > span {
+  display: inline-block;
+  padding: 2px 4px;
+  background-color: #000000aa;
 }
 ._css_debug-info table {
-    background-color: #000000AA;
+  background-color: #000000aa;
 }
 ._css_debug-info td:not(:first-child) {
-    padding-left: 8px;
-    font-variant-numeric: tabular-nums;
-    min-width: 6ch;
-    text-align: end;
+  padding-left: 8px;
+  font-variant-numeric: tabular-nums;
+  min-width: 6ch;
+  text-align: end;
 }
-._css_debug-info  ._css_key_value_p >span:first-child:after {
-    content: ':';
+._css_debug-info ._css_key_value_p > span:first-child:after {
+  content: ':';
 }

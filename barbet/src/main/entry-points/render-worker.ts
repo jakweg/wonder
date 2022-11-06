@@ -20,55 +20,54 @@ let gameSnapshot: unknown | null = null
 let decodedGame: GameState | null = null
 
 receiver.on(ToWorker.NewSettings, settings => {
-	CONFIG.update(settings)
+  CONFIG.update(settings)
 })
 
-receiver.on(ToWorker.TransferCanvas, (data) => {
-	const canvas = data.canvas as HTMLCanvasElement
-	session.setCanvas(canvas)
+receiver.on(ToWorker.TransferCanvas, data => {
+  const canvas = data.canvas as HTMLCanvasElement
+  session.setCanvas(canvas)
 })
 
-receiver.on(ToWorker.SetWorkerLoadDelays, (data) => {
-	workerStartDelayDifference = data.update - data.render
+receiver.on(ToWorker.SetWorkerLoadDelays, data => {
+  workerStartDelayDifference = data.update - data.render
 })
 
-receiver.on(ToWorker.GameCreateResult, (data) => {
-	gameSnapshot = data.game
-	const snapshot = data as any
-	const game = decodedGame = createGameStateForRenderer(snapshot.game)
-	const decodedUpdater = createStateUpdaterControllerFromReceived(snapshot.updater)
-	const gameTickEstimation = () => decodedUpdater!.estimateCurrentGameTickTime(workerStartDelayDifference)
-	session.setGame(game, gameTickEstimation, () => decodedUpdater.getTickRate())
+receiver.on(ToWorker.GameCreateResult, data => {
+  gameSnapshot = data.game
+  const snapshot = data as any
+  const game = (decodedGame = createGameStateForRenderer(snapshot.game))
+  const decodedUpdater = createStateUpdaterControllerFromReceived(snapshot.updater)
+  const gameTickEstimation = () => decodedUpdater!.estimateCurrentGameTickTime(workerStartDelayDifference)
+  session.setGame(game, gameTickEstimation, () => decodedUpdater.getTickRate())
 })
 
-receiver.on(ToWorker.UpdateEntityContainer, (data) => {
-	decodedGame!.entities.replaceBuffersFromReceived(data)
+receiver.on(ToWorker.UpdateEntityContainer, data => {
+  decodedGame!.entities.replaceBuffersFromReceived(data)
 })
 
-receiver.on(ToWorker.CameraBuffer, (data) => {
-	session.setCamera(Camera.newUsingBuffer(data.buffer))
+receiver.on(ToWorker.CameraBuffer, data => {
+  session.setCamera(Camera.newUsingBuffer(data.buffer))
 })
 
-receiver.on(ToWorker.FrontendVariables, (data) => {
-	initFrontedVariablesFromReceived(data.buffer)
+receiver.on(ToWorker.FrontendVariables, data => {
+  initFrontedVariablesFromReceived(data.buffer)
 })
 
 receiver.on(ToWorker.TerminateGame, args => {
-	session.cleanUp()
-	if (args.terminateEverything)
-		close()
+  session.cleanUp()
+  if (args.terminateEverything) close()
 })
 
 receiver.on(ToWorker.UpdateTimesBuffer, ({ buffer }) => {
-	session.stats.updateTimesBuffer = buffer
+  session.stats.updateTimesBuffer = buffer
 })
 
 let timeoutId: ReturnType<typeof setTimeout>
 CONFIG.observe('debug/show-info', show => {
-	if (show) {
-		session.stats.receiveUpdates((data) => {
-			clearTimeout(timeoutId)
-			timeoutId = setTimeout(() => void sender.send(FromWorker.DebugStatsUpdate, data), 0);
-		})
-	} else session.stats.stopUpdates()
+  if (show) {
+    session.stats.receiveUpdates(data => {
+      clearTimeout(timeoutId)
+      timeoutId = setTimeout(() => void sender.send(FromWorker.DebugStatsUpdate, data), 0)
+    })
+  } else session.stats.stopUpdates()
 })

@@ -1,24 +1,21 @@
-import { CreateGameArguments, CreateGameResult } from "../entry-points/feature-environments/loader"
+import { CreateGameArguments, CreateGameResult } from '../entry-points/feature-environments/loader'
 
-export type Operation =
-    | { type: 'start', tps: number, }
-    | { type: 'pause', }
-
+export type Operation = { type: 'start'; tps: number } | { type: 'pause' }
 
 export interface GameSession {
-    isMultiplayer(): boolean
+  isMultiplayer(): boolean
 
-    createNewGame(args: CreateGameArguments): Promise<void>
+  createNewGame(args: CreateGameArguments): Promise<void>
 
-    resetRendering(): void
+  resetRendering(): void
 
-    resume(tps: number): void
+  resume(tps: number): void
 
-    pause(): boolean
+  pause(): boolean
 
-    isPaused(): boolean
+  isPaused(): boolean
 
-    terminate(): void
+  terminate(): void
 
-    getCurrentGame(): CreateGameResult | null
+  getCurrentGame(): CreateGameResult | null
 }

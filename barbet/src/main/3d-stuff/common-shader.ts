@@ -1,20 +1,24 @@
-
 export const VersionHeader = () => `#version 300 es\n`
 
 export const PrecisionHeader = () => `precision highp float;\n`
 
 export const PIConstantHeader = () => `const float PI = ${Math.PI};\nconst float PI_OVER1 = ${1 / Math.PI};`
 
-export const RotationVectorsDeclaration = () => `const vec3 rotationVectors[8] = vec3[8](vec3(1.0, 0.0, 0.0), vec3(1.0, 0.0, -1.0), vec3(0.0, 0.0, -1.0), vec3(-1.0, 0.0, -1.0), vec3(-1.0, 0.0, 0.0), vec3(-1.0, 0.0, 1.0), vec3(0.0, 0.0, 1.0), vec3(1.0, 0.0, 1.0));`
+export const RotationVectorsDeclaration = () =>
+  `const vec3 rotationVectors[8] = vec3[8](vec3(1.0, 0.0, 0.0), vec3(1.0, 0.0, -1.0), vec3(0.0, 0.0, -1.0), vec3(-1.0, 0.0, -1.0), vec3(-1.0, 0.0, 0.0), vec3(-1.0, 0.0, 1.0), vec3(0.0, 0.0, 1.0), vec3(1.0, 0.0, 1.0));`
 
-export const RotationYMatrix = (angleVariableName: string) => `mat3(cos(${angleVariableName}), 0, -sin(${angleVariableName}), 0, 1, 0, sin(${angleVariableName}), 0, cos(${angleVariableName}))`
+export const RotationYMatrix = (angleVariableName: string) =>
+  `mat3(cos(${angleVariableName}), 0, -sin(${angleVariableName}), 0, 1, 0, sin(${angleVariableName}), 0, cos(${angleVariableName}))`
 
-export const RotationXMatrix = (angleVariableName: string) => `mat3(1, 0, 0, 0, cos(${angleVariableName}), sin(${angleVariableName}), 0, -sin(${angleVariableName}), cos(${angleVariableName}))`
+export const RotationXMatrix = (angleVariableName: string) =>
+  `mat3(1, 0, 0, 0, cos(${angleVariableName}), sin(${angleVariableName}), 0, -sin(${angleVariableName}), cos(${angleVariableName}))`
 
-export const RotationZMatrix = (angleVariableName: string) => `mat3(cos(${angleVariableName}), sin(${angleVariableName}), 0, -sin(${angleVariableName}), cos(${angleVariableName}), 0, 0, 0, 1)`
+export const RotationZMatrix = (angleVariableName: string) =>
+  `mat3(cos(${angleVariableName}), sin(${angleVariableName}), 0, -sin(${angleVariableName}), cos(${angleVariableName}), 0, 0, 0, 1)`
 
-export const terrainHeightMultiplierValue = 0.4;
-export const TerrainHeightMultiplierDeclaration = (variableName: string = 'terrainHeightMultiplier') => `const float ${variableName} = ${terrainHeightMultiplierValue.toFixed(5)};\n`
+export const terrainHeightMultiplierValue = 0.4
+export const TerrainHeightMultiplierDeclaration = (variableName: string = 'terrainHeightMultiplier') =>
+  `const float ${variableName} = ${terrainHeightMultiplierValue.toFixed(5)};\n`
 
 export const GlobalUniformBlockDeclaration = () => `
 layout(std140) uniform Globals {
@@ -22,10 +26,9 @@ layout(std140) uniform Globals {
 	vec3 u_gameTimes;
 	vec4 u_light;
 };\n`
-export const RenderTimeUniform = 'u_gameTimes.x';
-export const GameTimeUniform = 'u_gameTimes.y';
-export const GameTickUniform = 'u_gameTimes.z';
-
+export const RenderTimeUniform = 'u_gameTimes.x'
+export const GameTimeUniform = 'u_gameTimes.y'
+export const GameTickUniform = 'u_gameTimes.z'
 
 export const pickViaMouseDefaultFragmentShader = () => `${VersionHeader()}
 ${PrecisionHeader()}
@@ -39,35 +42,35 @@ void main() {
 }
 `
 
-export function calculateNormals(elements: Uint16Array | Uint8Array,
-	vertexes: Float32Array,
-	vertexSize: number,
-	normalsOffset: number): void {
-	for (let i = 0, l = elements.length; i < l;) {
-		const a = elements[i++]!
-		const b = elements[i++]!
-		const c = elements[i++]!
+export function calculateNormals(
+  elements: Uint16Array | Uint8Array,
+  vertexes: Float32Array,
+  vertexSize: number,
+  normalsOffset: number,
+): void {
+  for (let i = 0, l = elements.length; i < l; ) {
+    const a = elements[i++]!
+    const b = elements[i++]!
+    const c = elements[i++]!
 
+    const aIndex = a * vertexSize
+    const ax = vertexes[aIndex]!
+    const ay = vertexes[aIndex + 1]!
+    const az = vertexes[aIndex + 2]!
 
-		const aIndex = a * vertexSize
-		const ax = vertexes[aIndex]!
-		const ay = vertexes[aIndex + 1]!
-		const az = vertexes[aIndex + 2]!
+    const bIndex = b * vertexSize
+    const bx = vertexes[bIndex]!
+    const by = vertexes[bIndex + 1]!
+    const bz = vertexes[bIndex + 2]!
 
-		const bIndex = b * vertexSize
-		const bx = vertexes[bIndex]!
-		const by = vertexes[bIndex + 1]!
-		const bz = vertexes[bIndex + 2]!
+    const cIndex = c * vertexSize
 
-		const cIndex = c * vertexSize
+    const nx = ay * bz - az * by
+    const ny = az * bx - ax * bz
+    const nz = ax * by - ay * bx
 
-		const nx = ay * bz - az * by
-		const ny = az * bx - ax * bz
-		const nz = ax * by - ay * bx
-
-
-		vertexes[cIndex + normalsOffset] = -Math.min(1, Math.max(-1, nx))
-		vertexes[cIndex + normalsOffset + 1] = Math.min(1, Math.max(-1, ny))
-		vertexes[cIndex + normalsOffset + 2] = -Math.min(1, Math.max(-1, nz))
-	}
+    vertexes[cIndex + normalsOffset] = -Math.min(1, Math.max(-1, nx))
+    vertexes[cIndex + normalsOffset + 1] = Math.min(1, Math.max(-1, ny))
+    vertexes[cIndex + normalsOffset + 2] = -Math.min(1, Math.max(-1, nz))
+  }
 }

@@ -1,21 +1,24 @@
-import { GlobalUniformBlockDeclaration, PrecisionHeader, RenderTimeUniform, TerrainHeightMultiplierDeclaration, VersionHeader } from '../../common-shader'
+import {
+  GlobalUniformBlockDeclaration,
+  PrecisionHeader,
+  RenderTimeUniform,
+  TerrainHeightMultiplierDeclaration,
+  VersionHeader,
+} from '../../common-shader'
 import { MousePickableType } from '../../pipeline/mouse-picker'
 
 interface ShaderOptions {
-	ambientOcclusion: boolean
-	tileBorders: boolean
-	forMousePicker: boolean
+  ambientOcclusion: boolean
+  tileBorders: boolean
+  forMousePicker: boolean
 }
 
 const ambientOcclusionDarknessLevels = [0, 6, 10, 12, 14, 15, 15, 15]
 
 export const vertexShaderSource = (options: ShaderOptions): string => {
-	const parts: string[] = [];
-	parts.push(VersionHeader(),
-		PrecisionHeader(),
-		TerrainHeightMultiplierDeclaration(),
-		GlobalUniformBlockDeclaration())
-	parts.push(`
+  const parts: string[] = []
+  parts.push(VersionHeader(), PrecisionHeader(), TerrainHeightMultiplierDeclaration(), GlobalUniformBlockDeclaration())
+  parts.push(`
 	in vec3 a_position;
 	in vec3 a_color;
 	in uint a_offsets;
@@ -23,15 +26,15 @@ export const vertexShaderSource = (options: ShaderOptions): string => {
 	out vec3 v_vertexPosition;
 	in uint a_ambientOcclusion;
 	`)
-	if (options.forMousePicker)
-		parts.push(`flat out vec4 v_color0; flat out vec3 v_color1;`)
-	else parts.push(`
+  if (options.forMousePicker) parts.push(`flat out vec4 v_color0; flat out vec3 v_color1;`)
+  else
+    parts.push(`
 	flat out vec3 v_color;
 	flat out vec3 v_normal;
 	flat out vec4 v_ambientOcclusionVec;
 	`)
 
-	parts.push(`
+  parts.push(`
 	uniform vec2 u_chunkPosition;
 	const float darknessLevels[] = float[](${ambientOcclusionDarknessLevels.map(e => (e / 15.0).toFixed(8)).join(',')});
 	
@@ -39,15 +42,14 @@ export const vertexShaderSource = (options: ShaderOptions): string => {
 		int flags = int(a_flags);
 	`)
 
-
-	if (options.ambientOcclusion && !options.forMousePicker)
-		parts.push(`
+  if (options.ambientOcclusion && !options.forMousePicker)
+    parts.push(`
 			int ao = int(a_ambientOcclusion);
 			v_ambientOcclusionVec = vec4(darknessLevels[(ao >> 0) & ${0b1111}], darknessLevels[(ao >> 4) & ${0b1111}], darknessLevels[(ao >> 8) & ${0b1111}], darknessLevels[(ao >> 12) & ${0b1111}]);
 		`)
 
-	if (options.forMousePicker)
-		parts.push(`
+  if (options.forMousePicker)
+    parts.push(`
 		uint a = uint(a_flags);
 		uint offsets = a_offsets;
 		uint ox = ((offsets >> 4U) & 3U);
@@ -59,8 +61,8 @@ export const vertexShaderSource = (options: ShaderOptions): string => {
 		
 		v_color0 = vec4((x >> 8U) & 255U, x & 255U, (z >> 8U) & 255U, z & 255U) / 255.0;
 		v_color1 = vec3(y & 255U, uint(a_flags) & 255U, ${MousePickableType.Terrain}) / 255.0;`)
-
-	else parts.push(`
+  else
+    parts.push(`
 vec3 normal = v_normal = vec3(ivec3(((flags >> 4) & ${0b11}) - 1, ((flags >> 2) & ${0b11}) - 1, (flags & ${0b11}) - 1));
 float directionalLight = clamp(dot(normal, u_light.xyz), u_light.w, 1.0);
 v_color = a_color.zyx;
@@ -68,7 +70,7 @@ v_color = mix(v_color, v_color * directionalLight, 0.8);
 v_vertexPosition = a_position + vec3(u_chunkPosition.x, 0.0, u_chunkPosition.y);
 `)
 
-	parts.push(`
+  parts.push(`
 		vec3 pos = a_position;
 		if (pos.y < 1.50) {
 			pos.y += sin(${RenderTimeUniform} * 2.1 + pos.x + pos.z * 100.0) * 0.15 + 0.5;
@@ -81,14 +83,14 @@ v_vertexPosition = a_position + vec3(u_chunkPosition.x, 0.0, u_chunkPosition.y);
 	}
 	`)
 
-	return parts.join('')
+  return parts.join('')
 }
 
-
 export const fragmentShaderSource = (options: ShaderOptions) => {
-	const parts: string[] = [];
-	parts.push(VersionHeader(), PrecisionHeader(), GlobalUniformBlockDeclaration())
-	parts.push(`
+  const parts: string[] = []
+  parts.push(VersionHeader(), PrecisionHeader(), GlobalUniformBlockDeclaration())
+  parts.push(
+    `
 	out vec3 finalColor;
 	in vec3 v_vertexPosition;
 	flat in vec3 v_normal;
@@ -99,14 +101,14 @@ export const fragmentShaderSource = (options: ShaderOptions) => {
 		float fx = fract(vertex.x);
 		float fz = fract(vertex.y);
 	` +
-		// `
-		// 	float maxAo = 0.75;
-		// 	float d1 = max(0.0, maxAo - sqrt(fx * fx + fz * fz));
-		// 	float d2 = max(0.0, maxAo - sqrt((1.0 - fx) * (1.0 - fx) + fz * fz));
-		// 	float d3 = max(0.0, maxAo - sqrt((1.0 - fx) * (1.0 - fx) + (1.0 - fz) * (1.0 - fz)));
-		// 	float d4 = max(0.0, maxAo - sqrt(fx * fx + (1.0 - fz) * (1.0 - fz)));
-		// ` +
-		`
+      // `
+      // 	float maxAo = 0.75;
+      // 	float d1 = max(0.0, maxAo - sqrt(fx * fx + fz * fz));
+      // 	float d2 = max(0.0, maxAo - sqrt((1.0 - fx) * (1.0 - fx) + fz * fz));
+      // 	float d3 = max(0.0, maxAo - sqrt((1.0 - fx) * (1.0 - fx) + (1.0 - fz) * (1.0 - fz)));
+      // 	float d4 = max(0.0, maxAo - sqrt(fx * fx + (1.0 - fz) * (1.0 - fz)));
+      // ` +
+      `
 		float power = 2.0;
 		float d1 = pow(1.0 - max(fx, fz), power);
 		float d2 = pow(1.0 - max(1.0 - fx, fz), power);
@@ -117,9 +119,10 @@ export const fragmentShaderSource = (options: ShaderOptions) => {
 	}
 	
 	void main() {
-	`)
-	if (options.ambientOcclusion && !options.forMousePicker)
-		parts.push(`
+	`,
+  )
+  if (options.ambientOcclusion && !options.forMousePicker)
+    parts.push(`
 		vec2 aoVertex;
 		vec4 aoVec;
 	
@@ -140,16 +143,15 @@ export const fragmentShaderSource = (options: ShaderOptions) => {
 			aoVec = v_ambientOcclusionVec.zyxw;
 		}
 		float ao = calculateAmbientOcclusion(aoVertex, aoVec);
-		`);
-	else
-		parts.push('float ao = 1.0;');
+		`)
+  else parts.push('float ao = 1.0;')
 
-	parts.push(`
+  parts.push(`
 		finalColor = v_color * ao;
 	`)
 
-	if (options.tileBorders && !options.forMousePicker)
-		parts.push(`
+  if (options.tileBorders && !options.forMousePicker)
+    parts.push(`
 	float distanceOne;
 	float distanceTwo;
 	if (v_normal.y != 0.0) {
@@ -173,9 +175,9 @@ export const fragmentShaderSource = (options: ShaderOptions) => {
 		finalColor.b *= multiply;
 	}`)
 
-	parts.push(`}`)
+  parts.push(`}`)
 
-	return parts.join('')
+  return parts.join('')
 }
 
 export type Uniforms = 'chunkPosition'

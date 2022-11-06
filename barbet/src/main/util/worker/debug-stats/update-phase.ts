@@ -1,9 +1,8 @@
-
 export const enum UpdatePhase {
-    LockMutex,
-    ScheduledActions,
-    EntityActivities,
-    ActionsQueue,
-    DelayedComputer,
-    SIZE,
+  LockMutex,
+  ScheduledActions,
+  EntityActivities,
+  ActionsQueue,
+  DelayedComputer,
+  SIZE,
 }

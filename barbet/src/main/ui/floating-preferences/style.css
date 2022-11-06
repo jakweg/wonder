@@ -1,25 +1,25 @@
 ._css_floating-preferences {
-    align-self: start;
-    justify-self: end;
-    background-color: rgba(0, 0, 0, 0.7);
-    margin: 8px;
-    padding: 4px;
-    border-radius: 4px;
-    display: grid;
-    gap: 4px;
-    grid-template-areas:
-            'icon range'
-            'buttons buttons';
+  align-self: start;
+  justify-self: end;
+  background-color: rgba(0, 0, 0, 0.7);
+  margin: 8px;
+  padding: 4px;
+  border-radius: 4px;
+  display: grid;
+  gap: 4px;
+  grid-template-areas:
+    'icon range'
+    'buttons buttons';
 }
 
 ._css_floating-preferences > ._css_buttons {
-    grid-area: buttons;
-    display: flex;
-    justify-content: space-evenly;
+  grid-area: buttons;
+  display: flex;
+  justify-content: space-evenly;
 }
 
 ._css_floating-preferences > ._css_buttons > * {
-    cursor: pointer;
-    padding: 2px;
-    aspect-ratio: 1/1;
+  cursor: pointer;
+  padding: 2px;
+  aspect-ratio: 1/1;
 }

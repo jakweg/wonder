@@ -1,24 +1,22 @@
-
-
 ._css_animated-visibility {
-    --_css_duration: 300ms;
-    transition: opacity var(--_css_duration), transform var(--_css_duration);
-    pointer-events: none;
-    opacity: var(--_css_opacity, 1);
+  --_css_duration: 300ms;
+  transition: opacity var(--_css_duration), transform var(--_css_duration);
+  pointer-events: none;
+  opacity: var(--_css_opacity, 1);
 }
 
 ._css_animated-visibility._css_fully-visible {
-    pointer-events: all;
+  pointer-events: all;
 }
 
 ._css_animated-visibility._css_invisible._css_opacity {
-    opacity: 0;
+  opacity: 0;
 }
 ._css_animated-visibility._css_invisible._css_translate-y {
-    transform: translateY(var(--_css_translate-y, 100%));
+  transform: translateY(var(--_css_translate-y, 100%));
 }
 
 ._css_animated-visibility._css_gone {
-    display: none;
-    visibility: hidden;
+  display: none;
+  visibility: hidden;
 }

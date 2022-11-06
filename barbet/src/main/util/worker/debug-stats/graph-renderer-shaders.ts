@@ -1,18 +1,18 @@
-import { PrecisionHeader, VersionHeader } from "../../../3d-stuff/common-shader";
+import { PrecisionHeader, VersionHeader } from '../../../3d-stuff/common-shader'
 
 interface Options {
-    left: boolean
-    samplesCount: number
+  left: boolean
+  samplesCount: number
 }
 
 const createPositions = (p1x: number, p2x: number): string => {
-    const m1x = p1x.toFixed(5)
-    const m1y = (-1).toFixed(5)
-    const m2x = p2x.toFixed(5)
-    const m2y = (0 + 1).toFixed(5) // trick esbuild to work properly
-    const width = 1 / Math.abs(p1x - p2x);
+  const m1x = p1x.toFixed(5)
+  const m1y = (-1).toFixed(5)
+  const m2x = p2x.toFixed(5)
+  const m2y = (0 + 1).toFixed(5) // trick esbuild to work properly
+  const width = 1 / Math.abs(p1x - p2x)
 
-    return `
+  return `
 const float left = ${m1x};
 const float width = ${width.toFixed(5)};
 const vec2 positions[] = vec2[6](
@@ -26,15 +26,15 @@ vec2(${m2x}, ${m1y})
 }
 
 export const vertexShaderSource = (options: Options): string => {
-    const parts: string[] = [];
-    parts.push(`${VersionHeader()}
+  const parts: string[] = []
+  parts.push(`${VersionHeader()}
 ${PrecisionHeader()}
 
 out vec2 v_position;
 uniform float u_values[${options.samplesCount + 1}];
 uniform float u_heightScale;
 
-${options.left ? createPositions(-1, -.2) : createPositions(.2, 1)}
+${options.left ? createPositions(-1, -0.2) : createPositions(0.2, 1)}
 
 void main() {
     vec2 screenPosition = positions[gl_VertexID];
@@ -48,13 +48,12 @@ void main() {
     gl_PointSize = 10.0;
 }
 	`)
-    return parts.join('')
+  return parts.join('')
 }
 
-
 export const fragmentShaderSource = (options: Options) => {
-    const parts: string[] = [];
-    parts.push(`${VersionHeader()}
+  const parts: string[] = []
+  parts.push(`${VersionHeader()}
 	${PrecisionHeader()}
 out vec4 finalColor;
 in vec2 v_position;
@@ -79,7 +78,7 @@ else
 }
 	`)
 
-    return parts.join('')
+  return parts.join('')
 }
 
 export type Uniforms = 'values[0]' | 'heightScale' | 'targetMs'

@@ -1,83 +1,84 @@
-
 ._css_settings {
-    background-color: rgba(49, 16, 16, 0.9);
-    width: max(50%, 300px);
-    padding: 8px;
-    --_css_translate-y: 12px;
+  background-color: rgba(49, 16, 16, 0.9);
+  width: max(50%, 300px);
+  padding: 8px;
+  --_css_translate-y: 12px;
 }
 
 ._css_settings header {
-    text-align: center;
-    font-size: 1.6em;
-    margin: 8px;
+  text-align: center;
+  font-size: 1.6em;
+  margin: 8px;
 }
 
 ._css_settings header p {
-    margin: 4px;
+  margin: 4px;
 }
 
 ._css_settings footer {
-    text-align: center;
-    margin-top: 16px;
-    font-size: 1em;
+  text-align: center;
+  margin-top: 16px;
+  font-size: 1em;
 }
 
 ._css_settings main {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 12px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
 }
 
 ._css_settings header._css_sub-header {
-    text-align: center;
-    font-size: 1.3em;
+  text-align: center;
+  font-size: 1.3em;
 }
 
 ._css_setting-button {
-    border: 2px solid #363636;
-    background: #565656;
-    padding: 4px;
-    font-size: 1.1em;
-    cursor: pointer;
-    transition: background-color .2s;
-    color: inherit;
+  border: 2px solid #363636;
+  background: #565656;
+  padding: 4px;
+  font-size: 1.1em;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  color: inherit;
 }
 
 ._css_setting-button:hover {
-    background: #3a3a3a;
+  background: #3a3a3a;
 }
 
 ._css_setting-range {
-    min-height: 34px;
-    background: #2c2c2c;
-    display: grid;
-    place-items: center;
-    padding-left: 4px;
-    padding-right: 4px;
-    position: relative;
-    overflow: hidden;
-    cursor: pointer;
+  min-height: 34px;
+  background: #2c2c2c;
+  display: grid;
+  place-items: center;
+  padding-left: 4px;
+  padding-right: 4px;
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
 }
 
 ._css_setting-range ._css_moving-part {
-    --_css_progress: 50%;
-    --_css_width: 16px;
-    pointer-events: none;
-    width: 100%;
-    height: 100%;
-    border-left: var(--_css_width) solid #737373;
-    transform: translateX(min(calc(100% - var(--_css_width) - var(--_css_width)), max(calc(var(--_css_progress) - var(--_css_width)), 0px)));
+  --_css_progress: 50%;
+  --_css_width: 16px;
+  pointer-events: none;
+  width: 100%;
+  height: 100%;
+  border-left: var(--_css_width) solid #737373;
+  transform: translateX(
+    min(calc(100% - var(--_css_width) - var(--_css_width)), max(calc(var(--_css_progress) - var(--_css_width)), 0px))
+  );
 }
 
 ._css_setting-range ._css_title {
-    position: absolute;
-    text-align: center;
-    pointer-events: none;
+  position: absolute;
+  text-align: center;
+  pointer-events: none;
 }
 
 ._css_build-info {
-    text-align: center;
-    opacity: .7;
-    font-size: .9em;
-    user-select: text;
+  text-align: center;
+  opacity: 0.7;
+  font-size: 0.9em;
+  user-select: text;
 }
