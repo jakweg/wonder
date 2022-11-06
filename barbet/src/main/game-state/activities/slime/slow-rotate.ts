@@ -2,10 +2,10 @@ import { ActivityId } from ".."
 import { Pose } from "../../../3d-stuff/model/entity/slime/pose"
 import { DataOffsetDrawables, DataOffsetWithActivity, EntityTraitIndicesRecord } from "../../entities/traits"
 import { GameStateImplementation } from "../../game-state"
+import { SLOW_ROTATE_DURATION } from "./constants"
 import * as slime_idle from './idle'
 import { lockRotation, setRotation } from "./rotate-utils"
 
-const SLOW_ROTATE_DURATION = 50
 
 const enum MemoryField {
     FinishTick,

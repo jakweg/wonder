@@ -184,12 +184,14 @@ export const createRenderingSession = async (
 				pipeline.draw(ctx)
 
 				timeMeter.nowStart(DrawPhase.DrawForMousePicker)
-				const inputs = inputHandler.shouldRenderForInputs()
-				if (inputs !== null) {
-					mouse.prepareBeforeDraw()
-					pipeline.drawForMousePicker(ctx)
-					mouse.pickAfterDraw(inputs.mouseX, inputs.mouseY)
-						?.then(result => inputHandler.interpretPick(result, inputs))
+				if (mouse.canPickNow()) {
+					const inputs = inputHandler.shouldRenderForInputs()
+					if (inputs !== null) {
+						mouse.prepareBeforeDraw()
+						pipeline.drawForMousePicker(ctx)
+						mouse.pickAfterDraw(inputs.mouseX, inputs.mouseY)
+							?.then(result => inputHandler.interpretPick(result, inputs))
+					}
 				}
 				stats.updateWithTimeMeasurements(timeMeter.endSessionAndGetRawResults())
 				// stats.frames.frameEnded(elapsedSeconds * 1000)

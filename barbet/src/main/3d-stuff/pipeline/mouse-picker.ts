@@ -125,6 +125,9 @@ export const newMousePicker = (gl: WebGL2RenderingContext) => {
     }
 
     return {
+        canPickNow() {
+            return !isWaitingForRead
+        },
         prepareBeforeDraw() {
             preparePickerIfNeeded()
             if (textureWidth < 0) return

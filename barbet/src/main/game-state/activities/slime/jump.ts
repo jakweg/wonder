@@ -3,10 +3,10 @@ import { Pose } from "../../../3d-stuff/model/entity/slime/pose"
 import { Direction } from "../../../util/direction"
 import { DataOffsetDrawables, DataOffsetWithActivity, EntityTraitIndicesRecord } from "../../entities/traits"
 import { GameStateImplementation } from "../../game-state"
+import { JUMP_DURATION } from "./constants"
 import * as slime_idle from './idle'
 import { lockRotation, setRotation } from "./rotate-utils"
 
-const JUMP_DURATION = 20
 
 const enum MemoryField {
     FinishTick,

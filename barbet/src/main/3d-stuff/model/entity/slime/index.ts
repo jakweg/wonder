@@ -1,3 +1,4 @@
+import { JUMP_DURATION, SLOW_ROTATE_DURATION } from "../../../../game-state/activities/slime/constants"
 import { GameTickUniform, RenderTimeUniform } from "../../../common-shader"
 import { defineModel, ModelDefinition } from "../../builder"
 import { genericEntityRotation } from "../../builder/common"
@@ -41,11 +42,16 @@ const jumpTransformation: DynamicTransform = {
     float currentTick = mod(${GameTickUniform}, ${(0xFF + 1).toFixed(1)});
     float rotationTick = float(a_entityRotationChangeTick);
     float diff = currentTick - rotationTick + (currentTick < rotationTick ? ${(0xFF + 1).toFixed(1)} : 0.0);
-    float progress = clamp(0.0, 1.0, diff / 20.0);
+    float progress = clamp(0.0, 1.0, diff / ${JUMP_DURATION.toFixed(1)});
+    float x = progress;
+    x = clamp((x - 0.5) * 1.6 + 0.5, 0.0, 1.0);
+    float jump = x * (1.0 - x);
+    x = progress;
+    float scale = -x*x*(x-1.0)*(x-1.0)*(x-0.3)*(x-0.7)*sin(${Math.PI.toFixed(8)}*x);
     `,
     by: [
         null,
-        `sin(progress * ${Math.PI}) * (3.0 + model.y) * terrainHeightMultiplier`,
+        `jump * 6.0 * terrainHeightMultiplier + (model.y + 0.5) * scale * 100.0`,
         null,
     ]
 }
@@ -122,7 +128,7 @@ const constructIdle = () => {
 
 const constructSlowlyRotating = () => {
     return constructGeneric([
-        genericEntityRotation('50.0 - model.y * 5.0'),
+        genericEntityRotation(`${SLOW_ROTATE_DURATION.toFixed(1)} - model.y * 5.0`),
         idleBreathingTransformation,
         lookingAroundTransformation,
         ownSizeTransformation,
@@ -132,11 +138,11 @@ const constructSlowlyRotating = () => {
 
 const constructJumping = () => {
     return constructGeneric([
-        genericEntityRotation('20.0'),
+        genericEntityRotation(JUMP_DURATION),
         idleBreathingTransformation,
         lookingAroundTransformation,
-        ownSizeTransformation,
         jumpTransformation,
+        ownSizeTransformation,
         worldPositionTransformation,
     ])
 }

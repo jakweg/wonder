@@ -33,6 +33,15 @@ const getAllAttributes = (gl: WebGL2RenderingContext, program: WebGLProgram) => 
     return DEBUG ? { ...mapped, names: allNames } : mapped
 }
 
+const printShaderSourceWithLines = (isError: boolean, gl: WebGL2RenderingContext, shader: WebGLShader) => {
+    const source = gl.getShaderSource(shader)
+        ?.split('\n')
+        ?.map((content, index) => (index + 1).toString().padStart(3, '0') + `:  ` + content)
+        ?.join('\n')
+
+    console[isError ? 'error' : 'warn'](source)
+}
+
 const isCompilationOk = (gl: WebGL2RenderingContext, program: WebGLProgram,
     vs: WebGLShader, fs: WebGLShader): boolean => {
     if (gl.getProgramParameter(program, gl.LINK_STATUS))
@@ -45,8 +54,8 @@ const isCompilationOk = (gl: WebGL2RenderingContext, program: WebGLProgram,
 
     console['groupCollapsed'](errorText)
 
-    console[vsStatus ? 'error' : 'warn'](gl.getShaderSource(vs))
-    console[fsStatus ? 'error' : 'warn'](gl.getShaderSource(fs))
+    printShaderSourceWithLines(!!vsStatus, gl, vs)
+    printShaderSourceWithLines(!!fsStatus, gl, fs)
 
     console['groupEnd']()
     return false
