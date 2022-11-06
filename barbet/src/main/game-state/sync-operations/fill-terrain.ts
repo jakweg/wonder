@@ -1,4 +1,4 @@
-import { GameState, MetadataField } from '../game-state'
+import { GameState, MetadataField } from '@game'
 import { BlockId } from '../world/block'
 
 interface Props {

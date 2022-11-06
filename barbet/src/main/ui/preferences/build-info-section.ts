@@ -1,5 +1,5 @@
-import { CODE_STATS_LINES_COUNT, COMMIT_HASH, DEBUG } from '../../util/build-info'
-import { sharedMemoryIsAvailable } from '../../util/shared-memory'
+import { CODE_STATS_LINES_COUNT, COMMIT_HASH, DEBUG } from '@build'
+import { sharedMemoryIsAvailable } from '@utils/shared-memory'
 import { createElement } from '../utils'
 
 export default (root: HTMLElement) => {

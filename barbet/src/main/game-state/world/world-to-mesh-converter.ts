@@ -1,4 +1,4 @@
-import { createNewBuffer } from '../../util/shared-memory'
+import { createNewBuffer } from '@utils/shared-memory'
 import { AIR_ID, allBlocks, BlockId } from './block'
 
 const NO_ELEMENT_INDEX_MARKER = 4294967295

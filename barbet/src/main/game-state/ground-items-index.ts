@@ -1,5 +1,5 @@
-import { decodeArray, encodeArray } from '../util/persistance/serializers'
-import { createNewBuffer } from '../util/shared-memory'
+import { decodeArray, encodeArray } from '@utils/persistance/serializers'
+import { createNewBuffer } from '@utils/shared-memory'
 import { ItemType } from './items'
 import { WorldSize } from './world/world'
 

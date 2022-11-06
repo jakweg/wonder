@@ -1,5 +1,5 @@
-import { Environment } from '../../entry-points/feature-environments/loader'
-import { STANDARD_GAME_TICK_RATE } from '../../game-state/state-updater'
+import { Environment } from '@entry/feature-environments/loader'
+import { STANDARD_GAME_TICK_RATE } from '@game/state-updater'
 import State from '../state'
 import { getFromLocalStorage, putInLocalStorage } from './serializable-settings'
 

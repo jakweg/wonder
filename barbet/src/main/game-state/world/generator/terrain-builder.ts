@@ -1,4 +1,4 @@
-import { makeNoise2D } from '../../../../../../seampan/noise/2d'
+import { makeNoise2D } from '@seampan/noise/2d'
 
 const getBlockTypeByNoiseValue = (v: number): BlockType => {
   if (v < 0.04) return BlockType.DeepWater

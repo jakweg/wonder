@@ -1,8 +1,8 @@
+import { map, observeField } from '@utils/state/subject'
+import { REQUESTED_MEASUREMENTS } from '@utils/worker/debug-stats/requsted-measurements'
+import { newStatsObject, StatField } from '@utils/worker/debug-stats/update'
+import { UpdatePhase } from '@utils/worker/debug-stats/update-phase'
 import { KeyValueText, TimesTable } from '.'
-import { map, observeField } from '../../util/state/subject'
-import { REQUESTED_MEASUREMENTS } from '../../util/worker/debug-stats/requsted-measurements'
-import { newStatsObject, StatField } from '../../util/worker/debug-stats/update'
-import { UpdatePhase } from '../../util/worker/debug-stats/update-phase'
 
 export default (root: HTMLElement) => {
   const stats = newStatsObject()

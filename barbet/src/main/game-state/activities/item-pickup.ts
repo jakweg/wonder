@@ -1,4 +1,5 @@
-import { Direction, getChangeInXByRotation, getChangeInZByRotation } from '../../util/direction'
+import { GameState } from '@game'
+import { Direction, getChangeInXByRotation, getChangeInZByRotation } from '@utils/direction'
 import {
   DataOffsetDrawables,
   DataOffsetItemHoldable,
@@ -8,7 +9,6 @@ import {
   EntityTraitIndicesRecord,
   requireTrait,
 } from '../entities/traits'
-import { GameState } from '../game-state'
 import { ItemType } from '../items'
 import { getGatheredItem } from '../surface-resources'
 import * as activityIdle from './idle'

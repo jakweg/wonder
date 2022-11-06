@@ -1,9 +1,10 @@
+import { GameState } from '@game'
 import {
   Direction,
   getChangeInXByRotation,
   getChangeInZByRotation,
   getRotationByChangeInCoords,
-} from '../../util/direction'
+} from '@utils/direction'
 import { getBuildingMask } from '../buildings'
 import { queryBuildingDataById } from '../entities/queries'
 import {
@@ -14,7 +15,6 @@ import {
   EntityTrait,
   EntityTraitIndicesRecord,
 } from '../entities/traits'
-import { GameState } from '../game-state'
 import { ItemType } from '../items'
 import * as activityBuilding from './building'
 import { ActivityId } from './index'

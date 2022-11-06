@@ -1,8 +1,8 @@
+import { isInWorker, waitAsyncCompat } from '@utils/game-mutex'
 import TickQueue from '../../network/tick-queue'
 import { TickQueueActionType, UpdaterAction } from '../../network/tick-queue-action'
-import { isInWorker, waitAsyncCompat } from '../../util/game-mutex'
 
-import { createNewBuffer } from '../../util/shared-memory'
+import { createNewBuffer } from '@utils/shared-memory'
 import { ScheduledAction } from '../scheduled-actions'
 import { BufferField, Status } from './'
 

@@ -1,6 +1,6 @@
-import { Direction } from '../../../util/direction'
+import { GameStateImplementation } from '@game'
+import { Direction } from '@utils/direction'
 import { DataOffsetDrawables, EntityTraitIndicesRecord } from '../../entities/traits'
-import { GameStateImplementation } from '../../game-state'
 
 export const setRotation = (game: GameStateImplementation, unit: EntityTraitIndicesRecord, newRotation: Direction) => {
   const drawables = game.entities.drawables.rawData

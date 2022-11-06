@@ -4,8 +4,8 @@ import {
   RenderTimeUniform,
   TerrainHeightMultiplierDeclaration,
   VersionHeader,
-} from '../../common-shader'
-import { MousePickableType } from '../../pipeline/mouse-picker'
+} from '@3d/common-shader'
+import { MousePickableType } from '@3d/pipeline/mouse-picker'
 
 interface ShaderOptions {
   ambientOcclusion: boolean

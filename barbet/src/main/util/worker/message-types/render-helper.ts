@@ -1,4 +1,4 @@
-import { Task, TaskResult } from '../../../3d-stuff/pipeline/work-scheduler'
+import { Task, TaskResult } from '@3d/pipeline/work-scheduler'
 import { WorkerInstance } from '../worker-instance'
 import { genericBind } from '../worker-listener'
 

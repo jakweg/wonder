@@ -1,5 +1,5 @@
-import { TerminateGameArguments } from '../../../entry-points/feature-environments/loader'
-import { ScheduledAction } from '../../../game-state/scheduled-actions'
+import { TerminateGameArguments } from '@entry/feature-environments/loader'
+import { ScheduledAction } from '@game/scheduled-actions'
 import { WorkerInstance } from '../worker-instance'
 import { genericBind } from '../worker-listener'
 

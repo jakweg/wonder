@@ -1,4 +1,4 @@
-import { DEBUG } from '../../util/build-info'
+import { DEBUG } from '@build'
 import GPUBuffer from '../gpu-resources/buffer'
 import GlProgram from '../gpu-resources/program'
 import VertexArray from '../gpu-resources/vao'

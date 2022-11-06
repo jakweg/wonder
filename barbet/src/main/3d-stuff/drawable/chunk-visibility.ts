@@ -1,4 +1,4 @@
-import { WORLD_CHUNK_SIZE } from '../../game-state/world/world'
+import { WORLD_CHUNK_SIZE } from '@game/world/world'
 
 enum Status {
   INVISIBLE = 0,

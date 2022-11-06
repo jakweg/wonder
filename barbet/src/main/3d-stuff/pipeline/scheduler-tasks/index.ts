@@ -1,4 +1,4 @@
-import { World } from '../../../game-state/world/world'
+import { World } from '@game/world/world'
 import { Task, TaskResult, TaskType } from '../work-scheduler'
 import createChunkMesh from './create-chunk-mesh'
 

@@ -1,15 +1,13 @@
-import { JS_ROOT } from '../build-info'
+import { JS_ROOT } from '@build'
 import { createReceiver, createSender, Receiver, Sender } from './message-types/rx-interfaces'
-import { SystemMessageTypeFromWorker, SystemMessageTypeToWorker } from './message-types/system'
+import { SystemMessageTypeFromWorker } from './message-types/system'
 
 const trustedTypesPolicy = { 'createScriptURL': (name: string) => `${JS_ROOT}/${name}.js` }
 const policy = /* @__PURE__ */ (self as any)['trustedTypes']
   ? (self as any)['trustedTypes']['createPolicy']('default', trustedTypesPolicy)
   : trustedTypesPolicy
 
-const startExchange = async <S extends SystemMessageTypeToWorker, R extends SystemMessageTypeFromWorker>(
-  worker: Worker,
-) => {
+const startExchange = async <S, R extends SystemMessageTypeFromWorker>(worker: Worker) => {
   const sender = createSender<S>(worker)
   const receiver = createReceiver<R>(worker)
 
@@ -35,7 +33,7 @@ export class WorkerInstance<SendTypes, ReceiveTypes> {
     })
 
     const { sender, receiver, delay } = await Promise['race']([
-      startExchange<S & SystemMessageTypeToWorker, R & SystemMessageTypeFromWorker>(worker),
+      startExchange<S, R & SystemMessageTypeFromWorker>(worker),
       loadErrorPromise as any,
     ])
 

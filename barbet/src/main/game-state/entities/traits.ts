@@ -1,4 +1,4 @@
-import { Direction } from '../../util/direction'
+import { Direction } from '@utils/direction'
 import { ActivityId } from '../activities'
 import { InterruptType } from '../activities/interrupt'
 import { BuildingId } from '../buildings'

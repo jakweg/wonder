@@ -1,6 +1,6 @@
-import { Direction } from '../../util/direction'
+import { GameState } from '@game'
+import { Direction } from '@utils/direction'
 import { DataOffsetDrawables, DataOffsetWithActivity, EntityTraitIndicesRecord } from '../entities/traits'
-import { GameState } from '../game-state'
 import { ActivityId } from './index'
 import * as itemPickup from './item-pickup'
 

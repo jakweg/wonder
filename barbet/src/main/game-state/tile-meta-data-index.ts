@@ -1,6 +1,6 @@
-import { WalkableTester } from '../util/path-finder'
-import { decodeArray, encodeArray } from '../util/persistance/serializers'
-import { createNewBuffer } from '../util/shared-memory'
+import { WalkableTester } from '@utils/path-finder'
+import { decodeArray, encodeArray } from '@utils/persistance/serializers'
+import { createNewBuffer } from '@utils/shared-memory'
 
 const enum TileFlag {
   NoFlags = 0,

@@ -1,19 +1,19 @@
 import { can, MemberPermissions } from '@seampan/room-snapshot'
 import { sleep } from '@seampan/util'
+import { initFrontendVariableAndRegisterToWindow } from '@utils/frontend-variables-updaters'
+import { initKeyboardMappings } from '@utils/keyboard-mappings'
+import CONFIG, {
+  initSettingsFromLocalStorage,
+  observeSetting,
+  saveSettingsToLocalStorage,
+} from '@utils/persistance/observable-settings'
+import { addSaveCallback, registerSaveSettingsCallback } from '@utils/persistance/serializable-settings'
+import IndexedState from '@utils/state/indexed-state'
 import { GameSession } from '../game-session'
 import { createLocalSession } from '../game-session/local'
 import { createRemoteSession } from '../game-session/remote'
 import { defaults, NetworkStateField } from '../network/state'
 import { createUi } from '../ui/root'
-import { initFrontendVariableAndRegisterToWindow } from '../util/frontend-variables-updaters'
-import { initKeyboardMappings } from '../util/keyboard-mappings'
-import CONFIG, {
-  initSettingsFromLocalStorage,
-  observeSetting,
-  saveSettingsToLocalStorage,
-} from '../util/persistance/observable-settings'
-import { addSaveCallback, registerSaveSettingsCallback } from '../util/persistance/serializable-settings'
-import IndexedState from '../util/state/indexed-state'
 
 initSettingsFromLocalStorage()
 addSaveCallback(() => saveSettingsToLocalStorage())

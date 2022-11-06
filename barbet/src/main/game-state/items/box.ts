@@ -1,6 +1,6 @@
+import { MainRenderer } from '@3d/main-renderer'
 import lazy from '@seampan/lazy'
 import { MeshBuffer } from '.'
-import { MainRenderer } from '../../3d-stuff/main-renderer'
 
 const rootVertexes = [
   -0.5, -0.5, -0.5, 0b010001, 0.5, -0.5, -0.5, 0b010100, 0.5, -0.5, 0.5, 0b100101, -0.5, -0.5, 0.5, 0b010110,

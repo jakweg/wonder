@@ -1,4 +1,5 @@
-import { UnitShaderCreationOptions } from '../../3d-stuff/renderable/unit/shaders'
+import { UnitShaderCreationOptions } from '@3d/renderable/unit/shaders'
+import { GameState } from '@game'
 import { queryForAnyUnfinishedBuildingId } from '../entities/queries'
 import {
   DataOffsetInterruptible,
@@ -7,7 +8,6 @@ import {
   EntityTraitIndicesRecord,
   requireTrait,
 } from '../entities/traits'
-import { GameState } from '../game-state'
 import * as activityBuildingRoot from './buildingRoot'
 import { ActivityId } from './index'
 import { interruptBuild, InterruptType } from './interrupt'

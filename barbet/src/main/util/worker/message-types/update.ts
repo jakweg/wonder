@@ -1,5 +1,5 @@
-import { CreateGameArguments, TerminateGameArguments } from '../../../entry-points/feature-environments/loader'
-import { SaveGameArguments, SaveGameResult } from '../../../game-state/world/world-saver'
+import { CreateGameArguments, TerminateGameArguments } from '@entry/feature-environments/loader'
+import { SaveGameArguments, SaveGameResult } from '@game/world/world-saver'
 import { TickQueueAction, UpdaterAction } from '../../../network/tick-queue-action'
 import { WorkerInstance } from '../worker-instance'
 import { genericBind } from '../worker-listener'

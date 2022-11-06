@@ -1,5 +1,5 @@
 import { sleep } from '@seampan/util'
-import { frontedVariables, FrontendVariable } from '../../util/frontend-variables'
+import { frontedVariables, FrontendVariable } from '@utils/frontend-variables'
 
 const TEXTURE_PIXEL_MULTIPLIER = 1 / 4
 

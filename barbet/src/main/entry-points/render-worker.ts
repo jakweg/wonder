@@ -1,12 +1,12 @@
-import { Camera } from '../3d-stuff/camera'
-import { createRenderingSession } from '../3d-stuff/render-context'
-import { createGameStateForRenderer, GameState } from '../game-state/game-state'
-import { SendActionsQueue } from '../game-state/scheduled-actions/queue'
-import { createStateUpdaterControllerFromReceived } from '../game-state/state-updater'
-import { initFrontedVariablesFromReceived } from '../util/frontend-variables-updaters'
-import { gameMutexFrom } from '../util/game-mutex'
-import CONFIG from '../util/persistance/observable-settings'
-import { bind, FromWorker, ToWorker } from '../util/worker/message-types/render'
+import { Camera } from '@3d/camera'
+import { createRenderingSession } from '@3d/render-context'
+import { createGameStateForRenderer, GameState } from '@game'
+import { SendActionsQueue } from '@game/scheduled-actions/queue'
+import { createStateUpdaterControllerFromReceived } from '@game/state-updater'
+import { initFrontedVariablesFromReceived } from '@utils/frontend-variables-updaters'
+import { gameMutexFrom } from '@utils/game-mutex'
+import CONFIG from '@utils/persistance/observable-settings'
+import { bind, FromWorker, ToWorker } from '@utils/worker/message-types/render'
 
 const { sender, receiver } = await bind()
 const mutex = gameMutexFrom(await receiver.await(ToWorker.GameMutex))

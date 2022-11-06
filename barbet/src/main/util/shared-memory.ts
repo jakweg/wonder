@@ -1,4 +1,4 @@
-import { FORCE_ENV_ZERO } from './build-info'
+import { FORCE_ENV_ZERO } from '@build'
 
 export const sharedMemoryIsAvailable =
   !FORCE_ENV_ZERO && (!!location.reload ? !!window.SharedArrayBuffer : !!self.SharedArrayBuffer)

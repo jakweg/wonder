@@ -1,23 +1,23 @@
-import { createStateUpdaterControllerFromReceived, StateUpdater } from '../../game-state/state-updater'
-import { SaveGameArguments, SaveGameResult } from '../../game-state/world/world-saver'
-import { TickQueueAction } from '../../network/tick-queue-action'
-import { frontedVariablesBuffer } from '../../util/frontend-variables'
-import { initFrontedVariablesFromReceived } from '../../util/frontend-variables-updaters'
-import { createNewGameMutex } from '../../util/game-mutex'
-import CONFIG from '../../util/persistance/observable-settings'
-import { getCameraBuffer, setCameraBuffer } from '../../util/persistance/serializable-settings'
-import { newStatsObject as newRenderStatsObject } from '../../util/worker/debug-stats/render'
-import { newStatsObject as newUpdateStatsObject, StatField } from '../../util/worker/debug-stats/update'
+import { createStateUpdaterControllerFromReceived, StateUpdater } from '@game/state-updater'
+import { SaveGameArguments, SaveGameResult } from '@game/world/world-saver'
+import { frontedVariablesBuffer } from '@utils/frontend-variables'
+import { initFrontedVariablesFromReceived } from '@utils/frontend-variables-updaters'
+import { createNewGameMutex } from '@utils/game-mutex'
+import CONFIG from '@utils/persistance/observable-settings'
+import { getCameraBuffer, setCameraBuffer } from '@utils/persistance/serializable-settings'
+import { newStatsObject as newRenderStatsObject } from '@utils/worker/debug-stats/render'
+import { newStatsObject as newUpdateStatsObject, StatField } from '@utils/worker/debug-stats/update'
 import {
   FromWorker as FromRender,
   spawnNew as spawnNewRenderWorker,
   ToWorker as ToRender,
-} from '../../util/worker/message-types/render'
+} from '@utils/worker/message-types/render'
 import {
   FromWorker as FromUpdate,
   spawnNew as spawnNewUpdateWorker,
   ToWorker as ToUpdate,
-} from '../../util/worker/message-types/update'
+} from '@utils/worker/message-types/update'
+import { TickQueueAction } from '../../network/tick-queue-action'
 import {
   ConnectArguments,
   EnvironmentConnection,

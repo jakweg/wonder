@@ -1,5 +1,5 @@
 import { createReceiver, createSender, Receiver, Sender } from './message-types/rx-interfaces'
-import { SystemMessageTypeFromWorker, SystemMessageTypeToWorker } from './message-types/system'
+import { SystemMessageTypeFromWorker } from './message-types/system'
 
 const sendPing = (sender: Sender<SystemMessageTypeFromWorker>) => {
   const now = performance['now']()
@@ -14,7 +14,7 @@ export const genericBind = async <S, R>(): Promise<{ sender: Sender<S>; receiver
 
 export const delayedBind = async <S, R>(): Promise<{ sender: Sender<S>; receiver: Receiver<R>; start: () => void }> => {
   const sender = createSender<S & SystemMessageTypeFromWorker>(self)
-  const receiver = createReceiver<R & SystemMessageTypeToWorker>(self)
+  const receiver = createReceiver<R>(self)
 
   let started = false
   const start = () => {

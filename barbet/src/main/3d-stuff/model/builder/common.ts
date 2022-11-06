@@ -1,5 +1,5 @@
-import { Direction } from '../../../util/direction'
-import { GameTickUniform } from '../../common-shader'
+import { GameTickUniform } from '@3d/common-shader'
+import { Direction } from '@utils/direction'
 import { DynamicTransform, TransformType } from './transform'
 
 export const entityRotationCalculationBlock = (duration: string | number) => `

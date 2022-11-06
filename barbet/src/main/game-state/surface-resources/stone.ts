@@ -1,5 +1,5 @@
+import { calculateNormals } from '@3d/common-shader'
 import lazy from '@seampan/lazy'
-import { calculateNormals } from '../../3d-stuff/common-shader'
 import { ItemType } from '../items'
 
 const createVertexesAndElements = (size: number, scale: number) => {

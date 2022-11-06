@@ -1,5 +1,5 @@
+import { constant } from '@utils/state/subject'
 import { Header } from '.'
-import { constant } from '../../util/state/subject'
 import { createElement } from '../utils'
 import { BooleanSwitch } from './helper-components'
 

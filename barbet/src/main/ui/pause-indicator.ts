@@ -1,4 +1,4 @@
-import { Subject } from '../util/state/subject'
+import { Subject } from '@utils/state/subject'
 import AnimatedVisibility from './preferences/animated-visibility'
 import { createElement } from './utils'
 

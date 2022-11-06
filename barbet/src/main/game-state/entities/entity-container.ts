@@ -1,6 +1,6 @@
 import TypedArray, { TypedArrayConstructor } from '@seampan/typed-array'
-import { decodeArray, encodeArray } from '../../util/persistance/serializers'
-import { createNewBuffer } from '../../util/shared-memory'
+import { decodeArray, encodeArray } from '@utils/persistance/serializers'
+import { createNewBuffer } from '@utils/shared-memory'
 import { ArrayAllocator, DataStore } from './data-store'
 import {
   createEmptyTraitRecord,

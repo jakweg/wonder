@@ -1,7 +1,7 @@
-import { World } from '../../game-state/world/world'
-import { GameMutex } from '../../util/game-mutex'
-import { sharedMemoryIsAvailable } from '../../util/shared-memory'
-import { FromWorker, spawnNew, ToWorker } from '../../util/worker/message-types/render-helper'
+import { World } from '@game/world/world'
+import { GameMutex } from '@utils/game-mutex'
+import { sharedMemoryIsAvailable } from '@utils/shared-memory'
+import { FromWorker, spawnNew, ToWorker } from '@utils/worker/message-types/render-helper'
 import { dispatch, Environment } from './scheduler-tasks'
 
 export enum TaskType {

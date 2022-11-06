@@ -1,13 +1,14 @@
-import { GameState, MetadataField } from '../../../game-state/game-state'
-import { WORLD_CHUNK_SIZE } from '../../../game-state/world/world'
-import CONFIG from '../../../util/persistance/observable-settings'
-import { pickViaMouseDefaultFragmentShader } from '../../common-shader'
-import { GlProgram, GPUBuffer, VertexArray } from '../../gpu-resources'
-import { AttrType } from '../../gpu-resources/program'
-import { GpuAllocator } from '../../pipeline/allocator'
-import { Drawable, LoadParams } from '../../pipeline/Drawable'
-import RenderHelperWorkScheduler, { TaskType } from '../../pipeline/work-scheduler'
-import { RenderContext, ShaderGlobals } from '../../render-context'
+import { pickViaMouseDefaultFragmentShader } from '@3d/common-shader'
+import { GlProgram, GPUBuffer, VertexArray } from '@3d/gpu-resources'
+import { AttrType } from '@3d/gpu-resources/program'
+import { GpuAllocator } from '@3d/pipeline/allocator'
+import { Drawable, LoadParams } from '@3d/pipeline/Drawable'
+import RenderHelperWorkScheduler, { TaskType } from '@3d/pipeline/work-scheduler'
+import { RenderContext, ShaderGlobals } from '@3d/render-context'
+import { GameState, MetadataField } from '@game'
+import { WORLD_CHUNK_SIZE } from '@game/world/world'
+import CONFIG from '@utils/persistance/observable-settings'
+
 import {
   Attributes,
   fragmentShaderSource,

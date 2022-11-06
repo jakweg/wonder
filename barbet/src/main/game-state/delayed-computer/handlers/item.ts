@@ -1,4 +1,4 @@
-import { GameState } from '../../game-state'
+import { GameState } from '@game'
 import { ItemRequest, RequestType } from '../request'
 import { ItemResult } from '../result'
 

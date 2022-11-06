@@ -1,4 +1,4 @@
-import { Subject } from '../../util/state/subject'
+import { Subject } from '@utils/state/subject'
 import './animated-visibility.css'
 
 const ANIMATION_DURATION = 300

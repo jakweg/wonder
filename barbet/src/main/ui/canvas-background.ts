@@ -1,4 +1,4 @@
-import { bindFrontendVariablesToCanvas } from '../util/frontend-variables-updaters'
+import { bindFrontendVariablesToCanvas } from '@utils/frontend-variables-updaters'
 import { createElement } from './utils'
 
 export default (parent: HTMLElement) => {

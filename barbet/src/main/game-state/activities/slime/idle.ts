@@ -1,7 +1,7 @@
+import { Pose } from '@3d/model/entity/slime/pose'
+import { GameStateImplementation } from '@game'
 import { ActivityId } from '..'
-import { Pose } from '../../../3d-stuff/model/entity/slime/pose'
 import { DataOffsetDrawables, DataOffsetWithActivity, EntityTraitIndicesRecord } from '../../entities/traits'
-import { GameStateImplementation } from '../../game-state'
 import {
   IDLE_JOB_CHECK_INTERVAL_MAX,
   IDLE_JOB_CHECK_INTERVAL_MIN,

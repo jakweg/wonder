@@ -1,5 +1,5 @@
-import CONFIG from '../../util/persistance/observable-settings'
-import { map, observeField, Subject } from '../../util/state/subject'
+import CONFIG from '@utils/persistance/observable-settings'
+import { map, observeField, Subject } from '@utils/state/subject'
 import { Callback, createElement } from '../utils'
 
 export const BooleanSwitch = (

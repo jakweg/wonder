@@ -1,5 +1,5 @@
-import { findPathDirectionsToArea } from '../../../util/path-finder'
-import { GameState } from '../../game-state'
+import { GameState } from '@game'
+import { findPathDirectionsToArea } from '@utils/path-finder'
 import { PathRequest, RequestType } from '../request'
 import { PathResult } from '../result'
 

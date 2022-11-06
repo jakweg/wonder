@@ -1,4 +1,4 @@
-import { map, reduce, Subject } from '../util/state/subject'
+import { map, reduce, Subject } from '@utils/state/subject'
 import AnimatedVisibility from './preferences/animated-visibility'
 import { Callback, createElement } from './utils'
 

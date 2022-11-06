@@ -1,12 +1,8 @@
-import {
-  MousePickableType,
-  MousePickerResultAny,
-  MousePickerTerrainResult,
-} from '../../../3d-stuff/pipeline/mouse-picker'
-import { BuildingId } from '../../buildings'
-import { GameState, MetadataField } from '../../game-state'
-import placeBuilding from '../../sync-operations/place-building'
-import { BlockId } from '../../world/block'
+import { MousePickableType, MousePickerResultAny, MousePickerTerrainResult } from '@3d/pipeline/mouse-picker'
+import { GameState, MetadataField } from '@game'
+import { BuildingId } from '@game/buildings'
+import { BlockId } from '@game/world/block'
+import placeBuilding from '@sync-operations/place-building'
 import { ScheduledActionId } from '../index'
 
 export type Action = {

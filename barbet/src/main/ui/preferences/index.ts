@@ -1,5 +1,5 @@
-import KeyboardController from '../../util/keyboard-controller'
-import { constant, Subject } from '../../util/state/subject'
+import KeyboardController from '@utils/keyboard-controller'
+import { constant, Subject } from '@utils/state/subject'
 import { Callback, createElement } from '../utils'
 import AnimatedVisibility from './animated-visibility'
 import BuildInfoSection from './build-info-section'

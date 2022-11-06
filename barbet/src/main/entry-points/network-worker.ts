@@ -1,9 +1,9 @@
 import { ClientToServer, ServerToClient } from '@seampan/packet-types'
 import { abortAfterTimeout } from '@seampan/util'
 import { attachPingHandling, WrappedWebsocket, wrapWebsocket } from '@seampan/ws-communication'
+import IndexedState from '@utils/state/indexed-state'
+import { bind, FromWorker, ToWorker } from '@utils/worker/message-types/network'
 import { ConnectionStatus, defaults, NetworkStateField } from '../network/state'
-import IndexedState from '../util/state/indexed-state'
-import { bind, FromWorker, ToWorker } from '../util/worker/message-types/network'
 
 const { sender, receiver } = await bind()
 

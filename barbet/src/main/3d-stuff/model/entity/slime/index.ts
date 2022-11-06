@@ -1,10 +1,10 @@
-import { JUMP_DURATION, SLOW_ROTATE_DURATION } from '../../../../game-state/activities/slime/constants'
-import { GameTickUniform, RenderTimeUniform } from '../../../common-shader'
-import { defineModel, ModelDefinition } from '../../builder'
-import { genericEntityRotation } from '../../builder/common'
-import { newCubeModel } from '../../builder/cube'
-import { DynamicTransform, TransformType } from '../../builder/transform'
-import { ModelPrototype } from '../../model-id'
+import { GameTickUniform, RenderTimeUniform } from '@3d/common-shader'
+import { defineModel, ModelDefinition } from '@3d/model/builder'
+import { genericEntityRotation } from '@3d/model/builder/common'
+import { newCubeModel } from '@3d/model/builder/cube'
+import { DynamicTransform, TransformType } from '@3d/model/builder/transform'
+import { ModelPrototype } from '@3d/model/model-id'
+import { JUMP_DURATION, SLOW_ROTATE_DURATION } from '@game/activities/slime/constants'
 import { Pose } from './pose'
 
 const lookingAroundTransformation: DynamicTransform = {

@@ -1,7 +1,7 @@
-import { dispatch, Environment } from '../3d-stuff/pipeline/scheduler-tasks'
-import { World } from '../game-state/world/world'
-import { gameMutexFrom } from '../util/game-mutex'
-import { bind, FromWorker, ToWorker } from '../util/worker/message-types/render-helper'
+import { dispatch, Environment } from '@3d/pipeline/scheduler-tasks'
+import { World } from '@game/world/world'
+import { gameMutexFrom } from '@utils/game-mutex'
+import { bind, FromWorker, ToWorker } from '@utils/worker/message-types/render-helper'
 
 const { sender, receiver } = await bind()
 

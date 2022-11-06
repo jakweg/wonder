@@ -1,12 +1,13 @@
-import { COMMIT_HASH } from '../../util/build-info'
-import CONFIG from '../../util/persistance/observable-settings'
-import { constant, observeField, Subject } from '../../util/state/subject'
+import { COMMIT_HASH } from '@build'
+import CONFIG from '@utils/persistance/observable-settings'
+import { constant, observeField, Subject } from '@utils/state/subject'
 import animatedVisibility from '../preferences/animated-visibility'
 import { createElement } from '../utils'
 import Render from './render'
 import Update from './update'
 
-import { HeaderFields } from '../../util/worker/debug-stats/time-meter'
+import { MeasurementType } from '@utils/worker/debug-stats/requsted-measurements'
+import { HeaderFields } from '@utils/worker/debug-stats/time-meter'
 import './style.css'
 
 export default (parent: HTMLElement) => {
@@ -37,11 +38,6 @@ export const KeyValueText = (div: HTMLElement, keyText: string, value: Subject<s
   const valueSpan = createElement('span', p)
   keySpan['textContent'] = keyText
   value.on(value => (valueSpan['textContent'] = value))
-}
-
-export interface MeasurementType {
-  intervalMilliseconds: number
-  isSum: boolean
 }
 
 export const TimesTable = <T>(

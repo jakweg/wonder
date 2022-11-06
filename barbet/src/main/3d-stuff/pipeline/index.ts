@@ -1,4 +1,4 @@
-import { GameState } from '../../game-state/game-state'
+import { GameState } from '@game'
 import ChunkVisibilityIndex from '../drawable/chunk-visibility'
 import { RenderContext } from '../render-context'
 import { GpuAllocator, newGpuAllocator } from './allocator'

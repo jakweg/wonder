@@ -1,4 +1,4 @@
-import { frontedVariables, FrontendVariable, PressedKey } from '../util/frontend-variables'
+import { frontedVariables, FrontendVariable, PressedKey } from '@utils/frontend-variables'
 import { Camera } from './camera'
 
 export const moveCameraByKeys = (camera: Camera, dt: number) => {

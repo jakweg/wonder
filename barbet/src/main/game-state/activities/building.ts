@@ -1,6 +1,6 @@
+import { GameState, MetadataField } from '@game'
 import { queryBuildingDataById, queryBuildingProgress, updateBuildingProgress } from '../entities/queries'
 import { DataOffsetItemHoldable, DataOffsetWithActivity, EntityTraitIndicesRecord } from '../entities/traits'
-import { GameState, MetadataField } from '../game-state'
 import { ItemType } from '../items'
 import { ActivityId } from './index'
 

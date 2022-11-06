@@ -1,9 +1,9 @@
-import { Pose } from '../../3d-stuff/model/entity/slime/pose'
-import ModelId from '../../3d-stuff/model/model-id'
-import { Direction } from '../../util/direction'
+import { Pose } from '@3d/model/entity/slime/pose'
+import ModelId from '@3d/model/model-id'
+import { GameStateImplementation } from '@game'
+import { Direction } from '@utils/direction'
 import * as slime_idle from '../activities/slime/idle'
 import { DataOffsetDrawables, DataOffsetPositions, EntityTrait } from '../entities/traits'
-import { GameStateImplementation } from '../game-state'
 
 interface Props {
   game: GameStateImplementation

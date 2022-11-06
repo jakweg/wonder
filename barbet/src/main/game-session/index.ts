@@ -1,4 +1,4 @@
-import { CreateGameArguments, CreateGameResult } from '../entry-points/feature-environments/loader'
+import { CreateGameArguments, CreateGameResult } from '@entry/feature-environments/loader'
 
 export type Operation = { type: 'start'; tps: number } | { type: 'pause' }
 

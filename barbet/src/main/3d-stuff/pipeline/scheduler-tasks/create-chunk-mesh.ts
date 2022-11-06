@@ -1,6 +1,6 @@
+import { WORLD_CHUNK_SIZE } from '@game/world/world'
+import { buildChunkMesh } from '@game/world/world-to-mesh-converter'
 import { Environment } from '.'
-import { WORLD_CHUNK_SIZE } from '../../../game-state/world/world'
-import { buildChunkMesh } from '../../../game-state/world/world-to-mesh-converter'
 import { Task, TaskResult, TaskType } from '../work-scheduler'
 
 export default async (env: Environment, task: Task): Promise<TaskResult> => {

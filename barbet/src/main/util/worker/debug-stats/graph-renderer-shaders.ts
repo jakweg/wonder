@@ -1,4 +1,4 @@
-import { PrecisionHeader, VersionHeader } from '../../../3d-stuff/common-shader'
+import { PrecisionHeader, VersionHeader } from '@3d/common-shader'
 
 interface Options {
   left: boolean

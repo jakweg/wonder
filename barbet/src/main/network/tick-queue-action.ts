@@ -1,4 +1,4 @@
-import { ScheduledAction } from '../game-state/scheduled-actions'
+import { ScheduledAction } from '@game/scheduled-actions'
 
 export type UpdaterAction = { type: 'resume'; tickRate: number } | { type: 'pause' }
 

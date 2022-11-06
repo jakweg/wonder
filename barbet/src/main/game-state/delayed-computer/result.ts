@@ -1,4 +1,4 @@
-import { Direction } from '../../util/direction'
+import { Direction } from '@utils/direction'
 import { RequestType } from './request'
 
 export interface PathResult {

@@ -1,5 +1,6 @@
-import { UnitShaderCreationOptions } from '../../3d-stuff/renderable/unit/shaders'
-import { Direction, getChangeInXByRotation, getChangeInZByRotation } from '../../util/direction'
+import { UnitShaderCreationOptions } from '@3d/renderable/unit/shaders'
+import { GameState } from '@game'
+import { Direction, getChangeInXByRotation, getChangeInZByRotation } from '@utils/direction'
 import {
   DataOffsetDrawables,
   DataOffsetPositions,
@@ -8,7 +9,6 @@ import {
   EntityTraitIndicesRecord,
   hasTrait,
 } from '../entities/traits'
-import { GameState } from '../game-state'
 import { ActivityId } from './index'
 import * as activityWalkingByPathRoot from './walking-by-path-root'
 

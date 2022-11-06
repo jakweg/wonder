@@ -1,4 +1,4 @@
-import { GameState } from '../game-state'
+import { GameState } from '@game'
 import * as DebugCreateBuildingPrototype from './executors/debug-commands/create-building-prototype'
 import * as MouseClick from './executors/mouse-click'
 

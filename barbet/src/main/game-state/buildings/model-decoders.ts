@@ -1,4 +1,4 @@
-import { ArrayEncodingType, setArrayEncodingType } from '../../util/persistance/serializers'
+import { ArrayEncodingType, setArrayEncodingType } from '@utils/persistance/serializers'
 import { AIR_ID } from '../world/block'
 import { World } from '../world/world'
 import { buildChunkMesh, Mesh, moveChunkMesh } from '../world/world-to-mesh-converter'

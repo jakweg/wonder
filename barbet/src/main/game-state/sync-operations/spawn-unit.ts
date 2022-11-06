@@ -1,7 +1,7 @@
-import { Direction } from '../../util/direction'
+import { GameState } from '@game'
+import { Direction } from '@utils/direction'
 import * as idle from '../activities/idle'
 import { DataOffsetDrawables, DataOffsetPositions, EntityTrait } from '../entities/traits'
-import { GameState } from '../game-state'
 
 interface Props {
   game: GameState

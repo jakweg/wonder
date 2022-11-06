@@ -3,8 +3,8 @@ import {
   CreateGameResult,
   createNewEnvironment,
   GameListeners,
-} from '../entry-points/feature-environments/loader'
-import { Status } from '../game-state/state-updater'
+} from '@entry/feature-environments/loader'
+import { Status } from '@game/state-updater'
 import ActionsBroadcastHelper from '../network/actions-broadcast-helper'
 import { TickQueueAction, TickQueueActionType } from '../network/tick-queue-action'
 

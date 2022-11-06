@@ -1,30 +1,26 @@
-import { Camera } from '../../3d-stuff/camera'
-import { createRenderingSession } from '../../3d-stuff/render-context'
-import { GameStateImplementation } from '../../game-state/game-state'
-import { ActionsQueue, SendActionsQueue } from '../../game-state/scheduled-actions/queue'
-import {
-  createNewStateUpdater,
-  createStateUpdaterControllerFromReceived,
-  StateUpdater,
-} from '../../game-state/state-updater'
-import { loadGameFromArgs } from '../../game-state/world/world-loader'
-import { performGameSave, SaveGameArguments, SaveGameResult } from '../../game-state/world/world-saver'
-import TickQueue from '../../network/tick-queue'
-import { TickQueueAction } from '../../network/tick-queue-action'
-import { initFrontedVariablesFromReceived } from '../../util/frontend-variables-updaters'
-import { createNewGameMutex } from '../../util/game-mutex'
-import CONFIG from '../../util/persistance/observable-settings'
-import { getCameraBuffer, setCameraBuffer } from '../../util/persistance/serializable-settings'
-import { observeField, reduce } from '../../util/state/subject'
-import { FramesMeter } from '../../util/worker/debug-stats/frames-meter'
-import { newStatsObject as newRenderStatsObject } from '../../util/worker/debug-stats/render'
-import TimeMeter from '../../util/worker/debug-stats/time-meter'
+import { Camera } from '@3d/camera'
+import { createRenderingSession } from '@3d/render-context'
+import { GameStateImplementation } from '@game'
+import { ActionsQueue, SendActionsQueue } from '@game/scheduled-actions/queue'
+import { createNewStateUpdater, createStateUpdaterControllerFromReceived, StateUpdater } from '@game/state-updater'
+import { loadGameFromArgs } from '@game/world/world-loader'
+import { performGameSave, SaveGameArguments, SaveGameResult } from '@game/world/world-saver'
+import { initFrontedVariablesFromReceived } from '@utils/frontend-variables-updaters'
+import { createNewGameMutex } from '@utils/game-mutex'
+import CONFIG from '@utils/persistance/observable-settings'
+import { getCameraBuffer, setCameraBuffer } from '@utils/persistance/serializable-settings'
+import { observeField, reduce } from '@utils/state/subject'
+import { FramesMeter } from '@utils/worker/debug-stats/frames-meter'
+import { newStatsObject as newRenderStatsObject } from '@utils/worker/debug-stats/render'
+import TimeMeter from '@utils/worker/debug-stats/time-meter'
 import {
   newStatsObject as newUpdateStatsObject,
   StatField,
   UpdateDebugDataCollector,
-} from '../../util/worker/debug-stats/update'
-import { UpdatePhase } from '../../util/worker/debug-stats/update-phase'
+} from '@utils/worker/debug-stats/update'
+import { UpdatePhase } from '@utils/worker/debug-stats/update-phase'
+import TickQueue from '../../network/tick-queue'
+import { TickQueueAction } from '../../network/tick-queue-action'
 import {
   ConnectArguments,
   CreateGameArguments,

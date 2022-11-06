@@ -1,4 +1,4 @@
-import GPUBuffer from '../../3d-stuff/gpu-resources/buffer'
+import GPUBuffer from '@3d/gpu-resources/buffer'
 import * as box from './box'
 
 export type MeshBuffer = { array: GPUBuffer; indices: GPUBuffer; trianglesToRender: number }

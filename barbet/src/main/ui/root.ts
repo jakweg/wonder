@@ -1,4 +1,4 @@
-import { intervalProducer, newSubject } from '../util/state/subject'
+import { intervalProducer, newSubject } from '@utils/state/subject'
 import CanvasBackground from './canvas-background'
 import DebugInfo from './debug-info'
 import FloatingPreferences from './floating-preferences'

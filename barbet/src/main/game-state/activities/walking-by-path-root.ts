@@ -1,4 +1,5 @@
-import { Direction } from '../../util/direction'
+import { GameState, GameStateImplementation } from '@game'
+import { Direction } from '@utils/direction'
 import { RequestType } from '../delayed-computer/request'
 import { PathResult } from '../delayed-computer/result'
 import {
@@ -10,7 +11,6 @@ import {
   EntityTraitIndicesRecord,
   requireTrait,
 } from '../entities/traits'
-import { GameState, GameStateImplementation } from '../game-state'
 import { ActivityId } from './index'
 import { InterruptType } from './interrupt'
 import * as activityWalking from './walking'

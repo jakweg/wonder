@@ -1,6 +1,6 @@
+import { GameState } from '@game'
+import { ArrayEncodingType, setArrayEncodingType } from '@utils/persistance/serializers'
 import { ScheduledActionId } from '../../'
-import { ArrayEncodingType, setArrayEncodingType } from '../../../../util/persistance/serializers'
-import { GameState } from '../../../game-state'
 import { computeWorldBoundingBox } from '../../../world/bounding-box'
 import { World } from '../../../world/world'
 
