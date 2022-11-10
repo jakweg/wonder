@@ -1,17 +1,24 @@
+import { getGlslNameByType, ModelAttributeType } from '@3d/model/builder/model-attribute-type'
 import {
   GlobalUniformBlockDeclaration,
   PrecisionHeader,
   TerrainHeightMultiplierDeclaration,
-  VersionHeader,
+  VersionHeader
 } from '../../common-shader'
 
 interface ShaderOptions {
   modelTransformationsSource: string
+  attributes: { [key: string]: ModelAttributeType }
 }
 
 export const vertexShaderSource = (options: ShaderOptions): string => {
   const parts: string[] = []
   parts.push(VersionHeader(), PrecisionHeader(), TerrainHeightMultiplierDeclaration(), GlobalUniformBlockDeclaration())
+
+  for (const [name, type] of Object.entries(options.attributes)) {
+    let typeName = getGlslNameByType(type)
+    parts.push(`in `, typeName, ` a_entity`, name, `;\n`)
+  }
 
   parts.push(`
 
@@ -20,16 +27,12 @@ in uint a_modelNormal;
 in vec3 a_modelSideColor;
 in uint a_modelFlags;
 
-in uvec3 a_entityPosition;
-in uint a_entityId;
-in vec3 a_entityColor;
-in uint a_entitySize;
-in uint a_entityRotation;
-in uint a_entityRotationChangeTick;
-
 flat out vec3 v_color;
 
 void main() {
+  uint a_entityId = 1U;
+  uint a_entitySize = 1U;
+  vec3 a_entityColor = vec3(0.5,0.8,0.7);
 	vec3 normal = vec3(uvec3((a_modelNormal >> 4U) & 3U, (a_modelNormal >> 2U) & 3U, (a_modelNormal >> 0U) & 3U)) - vec3(1.0, 1.0, 1.0);
 
 	uint modelPart = a_modelFlags >> 4U;

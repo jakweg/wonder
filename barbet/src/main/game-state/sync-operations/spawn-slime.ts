@@ -3,7 +3,8 @@ import ModelId from '@3d/model/model-id'
 import { GameStateImplementation } from '@game'
 import { Direction } from '@utils/direction'
 import * as slime_idle from '../activities/slime/idle'
-import { DataOffsetDrawables, DataOffsetPositions, EntityTrait } from '../entities/traits'
+import { DataOffsetDrawables, DataOffsetPositions } from "../entities/data-offsets"
+import { EntityTrait } from '../entities/traits'
 
 interface Props {
   game: GameStateImplementation
@@ -47,7 +48,7 @@ export default (props: Props): Result => {
 
   entities.drawables.rawData[unit.drawable + DataOffsetDrawables.ModelId] = ModelId.Slime
   entities.drawables.rawData[unit.drawable + DataOffsetDrawables.PoseId] = Pose.Idle
-  entities.drawables.rawData[unit.drawable + DataOffsetDrawables.Rotation] = props.facing ?? Direction.NegativeX
+  entities.drawables.rawData[unit.drawable + 0] = props.facing ?? Direction.NegativeX
 
   slime_idle.setup(props.game, unit)
 

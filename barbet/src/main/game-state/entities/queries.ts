@@ -1,18 +1,20 @@
 import { BuildingId } from '../buildings'
 import { ItemType } from '../items'
-import EntityContainer, { ACTIVITY_MEMORY_SIZE } from './entity-container'
 import {
-  createEmptyTraitRecord,
   DataOffsetBuildingData,
   DataOffsetDrawables,
   DataOffsetIds,
   DataOffsetInterruptible,
   DataOffsetItemHoldable,
   DataOffsetPositions,
-  DataOffsetWithActivity,
+  DataOffsetWithActivity
+} from "./data-offsets"
+import EntityContainer, { ACTIVITY_MEMORY_SIZE } from './entity-container'
+import {
+  createEmptyTraitRecord,
   EntityTrait,
   EntityTraitIndicesRecord,
-  hasTrait,
+  hasTrait
 } from './traits'
 
 export const iterateOverEntitiesWithActivity = function* (

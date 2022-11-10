@@ -1,7 +1,8 @@
 import { GameTickUniform, RenderTimeUniform } from '@3d/common-shader'
-import { defineModel, ModelDefinition } from '@3d/model/builder'
+import { DefinedModelWithAttributes, defineModel, ModelDefinition } from '@3d/model/builder'
 import { genericEntityRotation } from '@3d/model/builder/common'
 import { newCubeModel } from '@3d/model/builder/cube'
+import { ModelAttributeType } from '@3d/model/builder/model-attribute-type'
 import { DynamicTransform, TransformType } from '@3d/model/builder/transform'
 import { ModelPrototype } from '@3d/model/model-id'
 import { JUMP_DURATION, SLOW_ROTATE_DURATION } from '@game/activities/slime/constants'
@@ -49,7 +50,7 @@ const jumpTransformation: DynamicTransform = {
   by: [null, `jump * 6.0 * terrainHeightMultiplier + (model.y + 0.5) * scale * 100.0`, null],
 }
 
-const constructGeneric = (transformations: DynamicTransform[]) => {
+const constructGeneric = (transformations: DynamicTransform[]): DefinedModelWithAttributes<Uint8Array> => {
   const enum ModelPart {
     Eye = 0b0001,
     Mouth = 0b0010,
@@ -92,7 +93,17 @@ const constructGeneric = (transformations: DynamicTransform[]) => {
     dynamicTransform: [...transformations],
   })
 
-  return defined
+  return {
+    ...defined,
+    copyBytesPerInstanceCount: 2,
+    attributes: {
+      'Position': ModelAttributeType.UVec3,
+      // 'Color': ModelAttributeType.Vec3,
+      // 'Size': ModelAttributeType.Uint,
+      'Rotation': ModelAttributeType.Uint,
+      'RotationChangeTick': ModelAttributeType.Uint,
+    }
+  }
 }
 
 const constructIdle = () => {

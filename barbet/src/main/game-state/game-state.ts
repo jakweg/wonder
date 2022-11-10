@@ -6,9 +6,9 @@ import { UpdateDebugDataCollector } from '@utils/worker/debug-stats/update'
 import { UpdatePhase } from '@utils/worker/debug-stats/update-phase'
 import { ActivityId, getActivityPerformFunction } from './activities'
 import { DelayedComputer, deserializeDelayedComputer } from './delayed-computer'
+import { DataOffsetWithActivity } from "./entities/data-offsets"
 import EntityContainer from './entities/entity-container'
 import { iterateOverEntitiesWithActivity } from './entities/queries'
-import { DataOffsetWithActivity } from './entities/traits'
 import { GroundItemsIndex } from './ground-items-index'
 import { execute, ScheduledAction } from './scheduled-actions'
 import { ReceiveActionsQueue } from './scheduled-actions/queue'
@@ -65,7 +65,7 @@ export class GameStateImplementation implements GameState {
     public readonly seededRandom: SeededRandom,
     private readonly mutex: GameMutex,
     private readonly stateBroadcastCallback: () => void,
-  ) {}
+  ) { }
 
   public get currentTick(): number {
     return this.metaData[MetadataField.CurrentTick]!

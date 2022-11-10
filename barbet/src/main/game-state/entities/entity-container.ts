@@ -1,21 +1,23 @@
 import TypedArray, { TypedArrayConstructor } from '@seampan/typed-array'
 import { decodeArray, encodeArray } from '@utils/persistance/serializers'
 import { createNewBuffer } from '@utils/shared-memory'
-import { ArrayAllocator, DataStore } from './data-store'
 import {
-  createEmptyTraitRecord,
   DataOffsetBuildingData,
   DataOffsetDrawables,
   DataOffsetIds,
   DataOffsetInterruptible,
   DataOffsetItemHoldable,
   DataOffsetPositions,
-  DataOffsetWithActivity,
+  DataOffsetWithActivity
+} from "./data-offsets"
+import { ArrayAllocator, DataStore } from './data-store'
+import {
+  createEmptyTraitRecord,
   EntityTrait,
   EntityTraitIndicesRecord,
   hasTrait,
   initializeTraitsOfNewEntity,
-  NO_INDEX,
+  NO_INDEX
 } from './traits'
 
 export const ACTIVITY_MEMORY_SIZE = 20

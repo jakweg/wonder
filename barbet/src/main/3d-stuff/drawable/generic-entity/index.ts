@@ -1,12 +1,13 @@
 import { GlProgram, GPUBuffer, VertexArray } from '@3d/gpu-resources'
 import { AttrType } from '@3d/gpu-resources/program'
+import { getBytesCountByType } from '@3d/model/builder/model-attribute-type'
 import ModelId, { getModelPrototype } from '@3d/model/model-id'
 import { GpuAllocator } from '@3d/pipeline/allocator'
 import { Drawable, LoadParams } from '@3d/pipeline/Drawable'
 import { RenderContext, ShaderGlobals } from '@3d/render-context'
+import { DataOffsetDrawables, DataOffsetPositions } from "@game/entities/data-offsets"
 import EntityContainer from '@game/entities/entity-container'
 import { iterateOverDrawableEntities } from '@game/entities/queries'
-import { DataOffsetDrawables, DataOffsetPositions } from '@game/entities/traits'
 import TypedArray from '@seampan/typed-array'
 import ChunkVisibilityIndex from '../chunk-visibility'
 import { Attributes, fragmentShaderSource, Uniforms, vertexShaderSource } from './shaders'
@@ -19,6 +20,7 @@ interface ModelPose {
   entitiesCount: number
   entityDataArray: TypedArray
   entityDataBuffer: GPUBuffer
+  copyBytesCount: number
 }
 
 interface ModelPrototype {
@@ -34,7 +36,7 @@ interface WorldData {
   visibility: ChunkVisibilityIndex
 }
 
-interface BoundData {}
+interface BoundData { }
 
 const drawable: () => Drawable<ShaderGlobals, ShaderCache, WorldData, BoundData> = () => ({
   onConfigModified(previous: ShaderCache | null) {
@@ -54,6 +56,7 @@ const drawable: () => Drawable<ShaderGlobals, ShaderCache, WorldData, BoundData>
 
             const options: Parameters<typeof vertexShaderSource>[0] = {
               modelTransformationsSource: pose.modelTransformationShader,
+              attributes: pose.attributes,
             }
             const promise = allocator
               .newProgram<Attributes, Uniforms>({
@@ -83,13 +86,11 @@ const drawable: () => Drawable<ShaderGlobals, ShaderCache, WorldData, BoundData>
             })
 
             entityDataBuffer.bind()
+
             program.useAttributes({
-              'entityId': { count: 1, type: AttrType.UShort, divisor: 1 },
-              'entityPosition': { count: 3, type: AttrType.UShort, divisor: 1 },
-              'entityColor': { count: 3, type: AttrType.UShort, normalize: true, divisor: 1 },
-              'entitySize': { count: 1, type: AttrType.UShort, divisor: 1 },
-              'entityRotation': { count: 1, type: AttrType.UShort, divisor: 1 },
-              'entityRotationChangeTick': { count: 1, type: AttrType.UShort, divisor: 1 },
+              ...Object.fromEntries(Object
+                .entries(pose.attributes)
+                .map(([key, type]) => ['entity' + key, { count: getBytesCountByType(type), type: AttrType.UByte, divisor: 1 }]))
             })
 
             modelBuffer.setContent(pose.vertexPoints)
@@ -105,6 +106,7 @@ const drawable: () => Drawable<ShaderGlobals, ShaderCache, WorldData, BoundData>
               entityDataArray: new Uint8Array(0),
               entityDataNumbersArray: [],
               triangles: pose.indices.length,
+              copyBytesCount: pose.copyBytesPerInstanceCount,
             } as ModelPose
           }),
         )
@@ -144,47 +146,41 @@ const drawable: () => Drawable<ShaderGlobals, ShaderCache, WorldData, BoundData>
     const drawables = container.drawables.rawData
 
     for (const record of iterateOverDrawableEntities(container)) {
-      const unitX = positions[record.position + DataOffsetPositions.PositionX]!
-      const unitZ = positions[record.position + DataOffsetPositions.PositionZ]!
+      const positionStart = record.position
+      const unitX = positions[positionStart + DataOffsetPositions.PositionX]!
+      const unitZ = positions[positionStart + DataOffsetPositions.PositionZ]!
       if (!visibility.isPointInViewport(unitX, unitZ)) continue
-      const unitY = positions[record.position + DataOffsetPositions.PositionY]!
+      const unitY = positions[positionStart + DataOffsetPositions.PositionY]!
 
-      const modelId = drawables[record.drawable + DataOffsetDrawables.ModelId]!
+      const drawableStart = record.drawable
+      const modelId = drawables[drawableStart + DataOffsetDrawables.ModelId]!
       const model = shader.models[modelId]
-      if (model === undefined) {
-        console.error({ modelId, drawables, copyLength: drawables.length, ...record })
+      if (model === undefined) throw new Error()
 
-        throw new Error()
-      }
-
-      const poseId = drawables[record.drawable + DataOffsetDrawables.PoseId]!
+      const poseId = drawables[drawableStart + DataOffsetDrawables.PoseId]!
       const pose = model.poses[poseId]
       if (pose === undefined) throw new Error()
 
-      const rotation = drawables[record.drawable + DataOffsetDrawables.Rotation]!
-      const rotationChangeTick = drawables[record.drawable + DataOffsetDrawables.RotationChangeTick]!
-
       pose.entityDataNumbersArray.push(
-        record.thisId,
         unitX,
         unitY,
-        unitZ,
-        0xffff,
-        0xffff,
-        0xffff, // color
-        2, // size
-        rotation,
-        rotationChangeTick,
+        unitZ
       )
+
+      for (let i = 0, l = pose.copyBytesCount; i < l; ++i) {
+        const data = drawables[drawableStart + i]!
+
+        pose.entityDataNumbersArray.push(data)
+      }
       pose.entitiesCount++
     }
   },
-  prepareRender(shader: ShaderCache, world: WorldData, bound: BoundData): void {},
+  prepareRender(shader: ShaderCache, world: WorldData, bound: BoundData): void { },
   uploadToGpu(shader: ShaderCache, data: WorldData, bound: BoundData): void {
     for (const model of shader.models) {
       for (const pose of model.poses) {
         if (pose.entitiesCount !== 0) {
-          pose.entityDataArray = new Uint16Array(pose.entityDataNumbersArray)
+          pose.entityDataArray = new Uint8Array(pose.entityDataNumbersArray)
           pose.entityDataBuffer.setContent(pose.entityDataArray)
         }
       }
@@ -208,7 +204,7 @@ const drawable: () => Drawable<ShaderGlobals, ShaderCache, WorldData, BoundData>
     }
     stats.incrementDrawCalls(drawCalls)
   },
-  drawForMousePicker(ctx: RenderContext, shader: ShaderCache, world: WorldData, bound: BoundData): void {},
+  drawForMousePicker(ctx: RenderContext, shader: ShaderCache, world: WorldData, bound: BoundData): void { },
 })
 
 export default drawable

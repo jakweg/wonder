@@ -2,28 +2,29 @@ import * as mat4 from '@matrix/mat4'
 import TypedArray from '@seampan/typed-array'
 import { RotationXMatrix, RotationYMatrix, RotationZMatrix } from '../../common-shader'
 import { mergeModels, Model, transformPointsByMatrix } from './model'
+import { ModelAttributeType } from './model-attribute-type'
 import { DynamicTransform, StaticTransform, TransformType } from './transform'
 
 export type ModelDefinition<T extends TypedArray> = (
   | {
-      mesh: Model<T>
-      children?: undefined
-    }
+    mesh: Model<T>
+    children?: undefined
+  }
   | {
-      mesh?: undefined
-      children: ModelDefinition<T>[]
-    }
+    mesh?: undefined
+    children: ModelDefinition<T>[]
+  }
 ) & {
   staticTransform: ReadonlyArray<StaticTransform>
 } & (
     | {
-        dynamicTransformCondition: string
-        dynamicTransform: ReadonlyArray<DynamicTransform>
-      }
+      dynamicTransformCondition: string
+      dynamicTransform: ReadonlyArray<DynamicTransform>
+    }
     | {
-        dynamicTransformCondition?: undefined
-        dynamicTransform?: undefined
-      }
+      dynamicTransformCondition?: undefined
+      dynamicTransform?: undefined
+    }
   )
 
 const matrixFromStaticTransform = (operations: ReadonlyArray<StaticTransform>) => {
@@ -150,6 +151,12 @@ export type DefinedModel<T> = {
   indices: Uint16Array
   vertexDataArray: T
   modelTransformationShader: string
+}
+
+
+export type DefinedModelWithAttributes<T> = DefinedModel<T> & {
+  copyBytesPerInstanceCount: number
+  attributes: { [key: string]: ModelAttributeType }
 }
 
 export const defineModel = <T extends TypedArray>(description: ModelDefinition<T>): DefinedModel<T> => {

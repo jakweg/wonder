@@ -1,5 +1,6 @@
+import { DataOffsetInterruptible } from "../entities/data-offsets"
 import EntityContainer from '../entities/entity-container'
-import { DataOffsetInterruptible, EntityTrait, EntityTraitIndicesRecord, requireTrait } from '../entities/traits'
+import { EntityTrait, EntityTraitIndicesRecord, requireTrait } from '../entities/traits'
 
 export const enum InterruptType {
   /**

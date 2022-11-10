@@ -1,7 +1,8 @@
 import { Pose } from '@3d/model/entity/slime/pose'
 import { GameStateImplementation } from '@game'
 import { ActivityId } from '..'
-import { DataOffsetDrawables, DataOffsetWithActivity, EntityTraitIndicesRecord } from '../../entities/traits'
+import { DataOffsetDrawables, DataOffsetWithActivity } from "../../entities/data-offsets"
+import { EntityTraitIndicesRecord } from '../../entities/traits'
 import { SLOW_ROTATE_DURATION } from './constants'
 import * as slime_idle from './idle'
 import { lockRotation, setRotation } from './rotate-utils'

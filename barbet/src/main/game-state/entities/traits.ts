@@ -1,8 +1,8 @@
-import { Direction } from '@utils/direction'
 import { ActivityId } from '../activities'
 import { InterruptType } from '../activities/interrupt'
 import { BuildingId } from '../buildings'
 import { ItemType } from '../items'
+import { DataOffsetBuildingData, DataOffsetDrawables, DataOffsetInterruptible, DataOffsetItemHoldable, DataOffsetPositions, DataOffsetWithActivity } from './data-offsets'
 import EntityContainer, { ACTIVITY_MEMORY_SIZE } from './entity-container'
 
 export const enum EntityTrait {
@@ -13,54 +13,6 @@ export const enum EntityTrait {
   WithActivity = Alive | (1 << 3),
   ItemHoldable = Alive | (1 << 4),
   BuildingData = Alive | (1 << 5),
-}
-
-export const enum DataOffsetIds {
-  ID,
-  Traits,
-  SIZE,
-}
-
-export const enum DataOffsetPositions {
-  PositionX,
-  PositionY,
-  PositionZ,
-  SIZE,
-}
-
-export const enum DataOffsetDrawables {
-  ModelId,
-  PoseId,
-  ColorPaletteId,
-  Rotation,
-  RotationChangeTick,
-  SIZE,
-}
-
-export const enum DataOffsetWithActivity {
-  CurrentId,
-  StartTick,
-  MemoryPointer,
-  SIZE,
-}
-
-export const enum DataOffsetItemHoldable {
-  ItemId,
-  SIZE,
-}
-
-export const enum DataOffsetInterruptible {
-  InterruptType,
-  ValueA,
-  ValueB,
-  ValueC,
-  SIZE,
-}
-
-export const enum DataOffsetBuildingData {
-  TypeId,
-  ProgressPointsToFull,
-  SIZE,
 }
 
 export interface EntityTraitIndicesRecord {
@@ -111,8 +63,6 @@ export const initializeTraitsOfNewEntity = (container: EntityContainer, record: 
     const data = container.drawables.rawData
     data[index + DataOffsetDrawables.ModelId] = -1
     data[index + DataOffsetDrawables.PoseId] = -1
-    data[index + DataOffsetDrawables.Rotation] = Direction.PositiveX
-    data[index + DataOffsetDrawables.ColorPaletteId] = 0 //UnitColorPaletteId.LightOrange
   }
 
   index = record.withActivity

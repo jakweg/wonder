@@ -1,11 +1,12 @@
 import { Pose } from '@3d/model/entity/slime/pose'
 import { GameStateImplementation } from '@game'
 import { ActivityId } from '..'
-import { DataOffsetDrawables, DataOffsetWithActivity, EntityTraitIndicesRecord } from '../../entities/traits'
+import { DataOffsetDrawables, DataOffsetWithActivity } from "../../entities/data-offsets"
+import { EntityTraitIndicesRecord } from '../../entities/traits'
 import {
   IDLE_JOB_CHECK_INTERVAL_MAX,
   IDLE_JOB_CHECK_INTERVAL_MIN,
-  JOB_CHANCE_TO_JUMP_INSTEAD_OF_JUST_ROTATE,
+  JOB_CHANCE_TO_JUMP_INSTEAD_OF_JUST_ROTATE
 } from './constants'
 
 import * as slime_jump from './jump'

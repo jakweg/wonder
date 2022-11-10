@@ -1,6 +1,7 @@
 import { GameState, MetadataField } from '@game'
 import { BuildingId, getBuildingMask, getBuildingProgressInfo } from '../buildings'
-import { DataOffsetBuildingData, DataOffsetPositions, EntityTrait } from '../entities/traits'
+import { DataOffsetBuildingData, DataOffsetPositions } from "../entities/data-offsets"
+import { EntityTrait } from '../entities/traits'
 import { AIR_ID, BlockId } from '../world/block'
 
 interface Props {

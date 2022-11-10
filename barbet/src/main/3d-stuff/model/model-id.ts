@@ -1,5 +1,5 @@
 import TypedArray from '@seampan/typed-array'
-import { DefinedModel } from './builder'
+import { DefinedModelWithAttributes } from './builder'
 import slime from './entity/slime'
 
 const enum ModelId {
@@ -9,7 +9,7 @@ const enum ModelId {
 
 export interface ModelPrototype<Pose extends number> {
   posesCount: Pose
-  buildPose: (which: Pose) => DefinedModel<TypedArray>
+  buildPose: (which: Pose) => DefinedModelWithAttributes<TypedArray>
 }
 
 export const getModelPrototype = (which: ModelId): ModelPrototype<number> => {
