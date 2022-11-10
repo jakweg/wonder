@@ -1,6 +1,6 @@
 import { GlProgram, GPUBuffer, VertexArray } from '@3d/gpu-resources'
 import { AttrType } from '@3d/gpu-resources/program'
-import { getBytesCountByType } from '@3d/model/builder/model-attribute-type'
+import { getAttrTypeByType, getCountByType, shouldNormalize } from '@3d/model/builder/model-attribute-type'
 import ModelId, { getModelPrototype } from '@3d/model/model-id'
 import { GpuAllocator } from '@3d/pipeline/allocator'
 import { Drawable, LoadParams } from '@3d/pipeline/Drawable'
@@ -87,11 +87,15 @@ const drawable: () => Drawable<ShaderGlobals, ShaderCache, WorldData, BoundData>
 
             entityDataBuffer.bind()
 
-            program.useAttributes({
-              ...Object.fromEntries(Object
-                .entries(pose.attributes)
-                .map(([key, type]) => ['entity' + key, { count: getBytesCountByType(type), type: AttrType.UByte, divisor: 1 }]))
-            })
+
+            program.useAttributes(Object.fromEntries(Object
+              .entries(pose.attributes)
+              .map(([key, type]) => ['entity' + key, {
+                count: getCountByType(type),
+                type: getAttrTypeByType(type),
+                normalize: shouldNormalize(type) || undefined,
+                divisor: 1
+              }])))
 
             modelBuffer.setContent(pose.vertexPoints)
             program.useAttributes({
@@ -147,28 +151,32 @@ const drawable: () => Drawable<ShaderGlobals, ShaderCache, WorldData, BoundData>
 
     for (const record of iterateOverDrawableEntities(container)) {
       const positionStart = record.position
-      const unitX = positions[positionStart + DataOffsetPositions.PositionX]!
-      const unitZ = positions[positionStart + DataOffsetPositions.PositionZ]!
+      const unitX = positions[positionStart + DataOffsetPositions.PositionX]! | 0
+      const unitZ = positions[positionStart + DataOffsetPositions.PositionZ]! | 0
       if (!visibility.isPointInViewport(unitX, unitZ)) continue
-      const unitY = positions[positionStart + DataOffsetPositions.PositionY]!
+      const unitY = positions[positionStart + DataOffsetPositions.PositionY]! | 0
 
       const drawableStart = record.drawable
-      const modelId = drawables[drawableStart + DataOffsetDrawables.ModelId]!
+      const modelId = drawables[drawableStart + DataOffsetDrawables.ModelId]! | 0
       const model = shader.models[modelId]
       if (model === undefined) throw new Error()
 
-      const poseId = drawables[drawableStart + DataOffsetDrawables.PoseId]!
+      const poseId = drawables[drawableStart + DataOffsetDrawables.PoseId]! | 0
       const pose = model.poses[poseId]
       if (pose === undefined) throw new Error()
 
       pose.entityDataNumbersArray.push(
-        unitX,
-        unitY,
-        unitZ
+        (unitX >> 0) & 0xFF,
+        (unitX >> 8) & 0xFF,
+        (unitY >> 0) & 0xFF,
+        (unitY >> 8) & 0xFF,
+        (unitZ >> 0) & 0xFF,
+        (unitZ >> 8) & 0xFF,
       )
 
+
       for (let i = 0, l = pose.copyBytesCount; i < l; ++i) {
-        const data = drawables[drawableStart + i]!
+        const data = drawables[drawableStart + i]! | 0
 
         pose.entityDataNumbersArray.push(data)
       }

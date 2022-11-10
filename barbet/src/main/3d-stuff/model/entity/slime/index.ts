@@ -5,7 +5,7 @@ import { newCubeModel } from '@3d/model/builder/cube'
 import { ModelAttributeType } from '@3d/model/builder/model-attribute-type'
 import { DynamicTransform, TransformType } from '@3d/model/builder/transform'
 import { ModelPrototype } from '@3d/model/model-id'
-import { JUMP_DURATION, SLOW_ROTATE_DURATION } from '@game/activities/slime/constants'
+import { DrawableFields, JUMP_DURATION, SLOW_ROTATE_DURATION } from '@game/activities/slime/constants'
 import { Pose } from './pose'
 
 const lookingAroundTransformation: DynamicTransform = {
@@ -95,13 +95,13 @@ const constructGeneric = (transformations: DynamicTransform[]): DefinedModelWith
 
   return {
     ...defined,
-    copyBytesPerInstanceCount: 2,
+    copyBytesPerInstanceCount: DrawableFields.SIZE,
     attributes: {
-      'Position': ModelAttributeType.UVec3,
-      // 'Color': ModelAttributeType.Vec3,
-      // 'Size': ModelAttributeType.Uint,
+      'Position': ModelAttributeType.UVec3_2,
       'Rotation': ModelAttributeType.Uint,
       'RotationChangeTick': ModelAttributeType.Uint,
+      'Color': ModelAttributeType.Vec3_N,
+      'Size': ModelAttributeType.Uint,
     }
   }
 }

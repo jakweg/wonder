@@ -1,6 +1,7 @@
 import { Pose } from '@3d/model/entity/slime/pose'
 import ModelId from '@3d/model/model-id'
 import { GameStateImplementation } from '@game'
+import { lockRotation, setColor, setRotation, setSize } from '@game/activities/slime/rotate-utils'
 import { Direction } from '@utils/direction'
 import * as slime_idle from '../activities/slime/idle'
 import { DataOffsetDrawables, DataOffsetPositions } from "../entities/data-offsets"
@@ -11,6 +12,8 @@ interface Props {
   x: number
   z: number
   facing?: Direction
+  size?: number
+  color?: number
 }
 
 const enum ErrorReason {
@@ -48,7 +51,10 @@ export default (props: Props): Result => {
 
   entities.drawables.rawData[unit.drawable + DataOffsetDrawables.ModelId] = ModelId.Slime
   entities.drawables.rawData[unit.drawable + DataOffsetDrawables.PoseId] = Pose.Idle
-  entities.drawables.rawData[unit.drawable + 0] = props.facing ?? Direction.NegativeX
+  setRotation(props.game, unit, props.facing ?? Direction.NegativeX)
+  lockRotation(props.game, unit)
+  setSize(props.game, unit, props.size ?? 1)
+  setColor(props.game, unit, props.color ?? 0x00FFFF)
 
   slime_idle.setup(props.game, unit)
 

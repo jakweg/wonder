@@ -67,7 +67,9 @@ const placeMoreRealTerrain = (game: GameStateImplementation) => {
       game,
       x: game.seededRandom.nextInt(game.world.size.sizeX),
       z: game.seededRandom.nextInt(game.world.size.sizeZ),
-      facing: Direction.PositiveXNegativeZ,
+      facing: game.seededRandom.nextInt(8),
+      size: game.seededRandom.nextInt(3) + 1,
+      color: game.seededRandom.nextInt(0xFFFFFF),
     })
   groundItems.setItem(67, 77, ItemType.Box)
 }

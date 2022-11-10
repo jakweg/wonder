@@ -31,12 +31,12 @@ flat out vec3 v_color;
 
 void main() {
   uint a_entityId = 1U;
-  uint a_entitySize = 1U;
-  vec3 a_entityColor = vec3(0.5,0.8,0.7);
+  // uint a_entitySize = 2U;
 	vec3 normal = vec3(uvec3((a_modelNormal >> 4U) & 3U, (a_modelNormal >> 2U) & 3U, (a_modelNormal >> 0U) & 3U)) - vec3(1.0, 1.0, 1.0);
 
 	uint modelPart = a_modelFlags >> 4U;
 	vec3 faceColor = modelPart > 0U ? a_modelSideColor : a_entityColor;
+	// vec3 faceColor = modelPart > 0U ? a_modelSideColor : vec3(0,0,0);
 	vec3 model = a_modelPosition;
 	${options.modelTransformationsSource}
 	float light = clamp(dot(normalize(normal), u_light.xyz), u_light.w, 1.0);

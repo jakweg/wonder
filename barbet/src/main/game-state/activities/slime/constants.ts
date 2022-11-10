@@ -9,4 +9,9 @@ export const JOB_CHANCE_TO_JUMP_INSTEAD_OF_JUST_ROTATE = 70 // 70 %, must be int
 export const enum DrawableFields {
     Rotation,
     RotationChangeTick,
+    ColorR,
+    ColorG,
+    ColorB,
+    SlimeSize,
+    SIZE,
 }
