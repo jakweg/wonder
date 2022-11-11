@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json-schema.org/draft-07/schema",
+  "title": "Enum description",
+  "properties": {
+    "$schema": true,
+    "name": {
+      "type": "string",
+      "minLength": 1
+    },
+    "output-file": {
+      "type": "string",
+      "minItems": 1
+    },
+    "add-size": {
+      "type": "boolean"
+    },
+    "values": {
+      "type": "object",
+      "patternProperties": {
+        "^.*$": {
+          "type": "object",
+          "patternProperties": {
+            "^@.*$": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "from": {
+                  "type": "string"
+                },
+                "property": {
+                  "type": ["string", "null"]
+                }
+              },
+              "required": ["from", "property"]
+            },
+            "^.*$": {
+              "type": ["string", "number", "boolean"]
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "getters": {
+      "type": "object",
+      "patternProperties": {
+        "^.*$": {
+          "properties": {
+            "field": {
+              "type": "string"
+            },
+            "if-invalid-enum": {
+              "enum": ["throw", "return-null", "return-undefined"]
+            }
+          },
+          "additionalProperties": false,
+          "required": ["field"]
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "required": ["values", "name"],
+  "additionalProperties": false
+}

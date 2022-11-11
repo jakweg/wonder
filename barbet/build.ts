@@ -49,6 +49,8 @@ if (args.size > 0) {
     // ignore, probably missing folder
   }
 
+  await import('./compile-enums.ts')
+
   const entryPoints = [
     'main',
     'feature-environments/zero',
@@ -56,12 +58,12 @@ if (args.size > 0) {
     ...(forceSingleThread
       ? []
       : [
-        'update-worker',
-        'render-worker',
-        'render-helper-worker',
-        'feature-environments/first',
-        'feature-environments/second',
-      ]),
+          'update-worker',
+          'render-worker',
+          'render-helper-worker',
+          'feature-environments/first',
+          'feature-environments/second',
+        ]),
   ]
   const config = {
     define: {
@@ -82,11 +84,11 @@ if (args.size > 0) {
     watch: buildForProduction
       ? false
       : {
-        onRebuild(error: any) {
-          const now = new Date().toLocaleTimeString()
-          console.log(`${now} Build ${error ? 'failed' : 'successful'}`)
+          onRebuild(error: any) {
+            const now = new Date().toLocaleTimeString()
+            console.log(`${now} Build ${error ? 'failed' : 'successful'}`)
+          },
         },
-      },
   }
   const { errors } = await esbuild.build(config as any)
   if (errors.length > 0) {
@@ -207,12 +209,12 @@ if (args.size > 0) {
       const generator = createNameGenerator()
       files.forEach(
         f =>
-        (f.content = transformNames(
-          f.content,
-          '_css_',
-          f.name.endsWith('.css') ? /[\):\.{ >,]/gi : /['"` ]/gi,
-          generator,
-        )),
+          (f.content = transformNames(
+            f.content,
+            '_css_',
+            f.name.endsWith('.css') ? /[\):\.{ >,]/gi : /['"` ]/gi,
+            generator,
+          )),
       )
       await Promise.all(files.map(({ name, content }) => Deno.writeTextFile(name, content)))
     }
