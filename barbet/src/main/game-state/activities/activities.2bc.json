@@ -1,0 +1,36 @@
+{
+  "$schema": "https://raw.githubusercontent.com/JakubekWeg/wonder/master/barbet/enum-schema.json",
+  "name": "ActivityId",
+  "output-file": "index",
+  "values": {
+    "None": {
+      "@perform": {
+        "from": "./none",
+        "property": "perform"
+      }
+    },
+    "Slime_Idle": {
+      "@perform": {
+        "from": "./slime/idle",
+        "property": "perform"
+      }
+    },
+    "Slime_SlowRotate": {
+      "@perform": {
+        "from": "./slime/slow-rotate",
+        "property": "perform"
+      }
+    },
+    "Slime_Jump": {
+      "@perform": {
+        "from": "./slime/jump",
+        "property": "perform"
+      }
+    }
+  },
+  "getters": {
+    "getActivityPerformFunction": {
+      "field": "@perform"
+    }
+  }
+}
