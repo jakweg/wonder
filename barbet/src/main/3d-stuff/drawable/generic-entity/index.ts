@@ -16,9 +16,10 @@ interface ModelPose {
   vao: VertexArray
   program: GlProgram<Attributes, never>
   triangles: number
-  entityDataNumbersArray: number[]
   entitiesCount: number
   entityDataArray: TypedArray
+  entityDataArrayUsedCount: number
+  entityDataArrayReservedCount: number
   entityDataBuffer: GPUBuffer
   copyBytesCount: number
 }
@@ -108,7 +109,8 @@ const drawable: () => Drawable<ShaderGlobals, ShaderCache, WorldData, BoundData>
               entityDataBuffer,
               entitiesCount: 0,
               entityDataArray: new Uint8Array(0),
-              entityDataNumbersArray: [],
+              entityDataArrayReservedCount: 0,
+              entityDataArrayUsedCount: 0,
               triangles: pose.indices.length,
               copyBytesCount: pose.copyBytesPerInstanceCount,
             } as ModelPose
@@ -140,7 +142,7 @@ const drawable: () => Drawable<ShaderGlobals, ShaderCache, WorldData, BoundData>
   updateWorld(shader: ShaderCache, data: WorldData, bound: BoundData): void {
     for (const model of shader.models) {
       for (const pose of model.poses) {
-        pose.entityDataNumbersArray.length = pose.entitiesCount = 0
+        pose.entityDataArrayUsedCount = pose.entitiesCount = 0
       }
     }
 
@@ -165,20 +167,26 @@ const drawable: () => Drawable<ShaderGlobals, ShaderCache, WorldData, BoundData>
       const pose = model.poses[poseId]
       if (pose === undefined) throw new Error()
 
-      pose.entityDataNumbersArray.push(
-        (unitX >> 0) & 0xFF,
-        (unitX >> 8) & 0xFF,
-        (unitY >> 0) & 0xFF,
-        (unitY >> 8) & 0xFF,
-        (unitZ >> 0) & 0xFF,
-        (unitZ >> 8) & 0xFF,
-      )
+      if (pose.entityDataArrayReservedCount === pose.entityDataArrayUsedCount) {
+        // the buffer needs resizing
+        const old = pose.entityDataArray
+        pose.entityDataArrayReservedCount = (pose.entityDataArrayReservedCount || 16) * 2
+        const newBuffer = pose.entityDataArray = new Uint8Array(pose.entityDataArrayReservedCount * (pose.copyBytesCount + 6)) // +6 for position
+        let i = 0
+        for (const v of old) newBuffer[i++] = v
+      }
+      let index = pose.entityDataArrayUsedCount++ * (pose.copyBytesCount + 6) //+6 for position
+      const array = pose.entityDataArray
+      array[index++] = (unitX >> 0) & 0xFF
+      array[index++] = (unitX >> 8) & 0xFF
+      array[index++] = (unitY >> 0) & 0xFF
+      array[index++] = (unitY >> 8) & 0xFF
+      array[index++] = (unitZ >> 0) & 0xFF
+      array[index++] = (unitZ >> 8) & 0xFF
 
 
       for (let i = 0, l = pose.copyBytesCount; i < l; ++i) {
-        const data = drawables[drawableStart + i]! | 0
-
-        pose.entityDataNumbersArray.push(data)
+        array[index++] = drawables[drawableStart + i]! | 0
       }
       pose.entitiesCount++
     }
@@ -188,8 +196,7 @@ const drawable: () => Drawable<ShaderGlobals, ShaderCache, WorldData, BoundData>
     for (const model of shader.models) {
       for (const pose of model.poses) {
         if (pose.entitiesCount !== 0) {
-          pose.entityDataArray = new Uint8Array(pose.entityDataNumbersArray)
-          pose.entityDataBuffer.setContent(pose.entityDataArray)
+          pose.entityDataBuffer.setPartialContent(pose.entityDataArray, 0, pose.entityDataArrayUsedCount * (pose.copyBytesCount + 6)) //+6 for position
         }
       }
     }
