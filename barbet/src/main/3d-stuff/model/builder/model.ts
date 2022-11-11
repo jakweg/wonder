@@ -1,12 +1,16 @@
 import * as vec4 from '@matrix/vec4'
 import TypedArray, { TypedArrayConstructor } from '@seampan/typed-array'
+import ModelAttributeType from './model-attribute-type'
 
 const sharedTemporaryVector: [number, number, number, number] = [0, 0, 0, 0]
 
-export interface Model<VertexData extends TypedArray> {
+type ModelAttributes = { [key: string]: ModelAttributeType }
+
+export interface ModelPart<VertexData extends TypedArray, A extends ModelAttributes> {
   readonly vertexPoints: Float32Array
   readonly indices: Uint16Array
   readonly vertexDataArray: VertexData
+  readonly modelAttributes: A
 }
 
 const getConstructor = <T extends TypedArray>(array: T): TypedArrayConstructor<T> => {
@@ -16,7 +20,9 @@ const getConstructor = <T extends TypedArray>(array: T): TypedArrayConstructor<T
   throw new Error()
 }
 
-export const mergeModels = <T extends TypedArray>(models: Model<T>[]): Model<T> => {
+export const mergeModels = <T extends TypedArray, A extends ModelAttributes>(
+  models: ModelPart<T, A>[],
+): ModelPart<T, A> => {
   if (models.length === 0) throw new Error()
 
   let totalIndices = 0
@@ -53,6 +59,7 @@ export const mergeModels = <T extends TypedArray>(models: Model<T>[]): Model<T> 
     vertexPoints: mergedPoints,
     indices: mergedIndices,
     vertexDataArray: mergedDataValues,
+    modelAttributes: models[0]!.modelAttributes,
   }
 }
 

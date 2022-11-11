@@ -1,0 +1,56 @@
+{
+  "$schema": "https://raw.githubusercontent.com/JakubekWeg/wonder/master/barbet/enum-schema.json",
+  "name": "ModelAttributeType",
+  "values": {
+    "Uint": {
+      "glslType": "uint",
+      "count": 1,
+      "normalize": false,
+      "@attr": {
+        "from": "@3d/gpu-resources/program",
+        "property": "AttrType.UByte"
+      }
+    },
+    "Vec3_N": {
+      "glslType": "vec3",
+      "count": 3,
+      "normalize": true,
+      "@attr": {
+        "from": "@3d/gpu-resources/program",
+        "property": "AttrType.UByte"
+      }
+    },
+    "Vec3F": {
+      "glslType": "vec3",
+      "count": 3,
+      "normalize": false,
+      "@attr": {
+        "from": "@3d/gpu-resources/program",
+        "property": "AttrType.Float"
+      }
+    },
+    "UVec3_2": {
+      "glslType": "uvec3",
+      "count": 3,
+      "normalize": false,
+      "@attr": {
+        "from": "@3d/gpu-resources/program",
+        "property": "AttrType.UShort"
+      }
+    }
+  },
+  "getters": {
+    "getGlslNameByType": {
+      "field": "glslType"
+    },
+    "getCountByType": {
+      "field": "count"
+    },
+    "shouldNormalize": {
+      "field": "normalize"
+    },
+    "getAttrTypeByType": {
+      "field": "@attr"
+    }
+  }
+}

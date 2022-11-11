@@ -1,0 +1,19 @@
+{
+  "$schema": "https://raw.githubusercontent.com/JakubekWeg/wonder/master/barbet/enum-schema.json",
+  "name": "ModelId",
+  "output-file": "model-id",
+  "add-size": true,
+  "values": {
+    "Slime": {
+      "@prototype": {
+        "from": "./entity/slime",
+        "property": null
+      }
+    }
+  },
+  "getters": {
+    "getModelPrototype": {
+      "field": "@prototype"
+    }
+  }
+}

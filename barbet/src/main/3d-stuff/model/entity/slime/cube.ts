@@ -1,4 +1,5 @@
-import { Model } from './model'
+import { ModelPart } from '../../builder/model'
+import { modelAttributes } from './model-attributes'
 
 export const enum CubePart {
   VertexTop = 0b0001,
@@ -6,24 +7,18 @@ export const enum CubePart {
   MaskVertexPositionVertical = 0b0001,
 }
 
-export const newCubeModel = (partId: number, color: number): Model<Uint8Array> => {
+export const newCubeModel = (partId: number, color: number): ModelPart<Uint8Array, typeof modelAttributes> => {
   return newCubeModel2(partId, [color, color, color, color, color, color])
 }
 
 export const newCubeModel2 = (
   partId: number,
   colors: [number, number, number, number, number, number],
-): Model<Uint8Array> => {
+): ModelPart<Uint8Array, typeof modelAttributes> => {
   const vertexCoordinates: Array<number> = [
     -0.5, -0.5, -0.5, 0.5, -0.5, -0.5, 0.5, -0.5, 0.5, -0.5, -0.5, 0.5, -0.5, 0.5, -0.5, 0.5, 0.5, -0.5, 0.5, 0.5, 0.5,
     -0.5, 0.5, 0.5,
   ]
-
-  // const calculateNormals = (index: number) => {
-  //     return (vertexCoordinates[index * 3 + 0]! < 0 ? 0b000000 : 0b110000)
-  //         | (vertexCoordinates[index * 3 + 1]! < 0 ? 0b000000 : 0b001100)
-  //         | (vertexCoordinates[index * 3 + 2]! < 0 ? 0b000000 : 0b000011)
-  // }
 
   partId = (partId & 0b1111) << 4
   const vertexData = [
@@ -61,5 +56,6 @@ export const newCubeModel2 = (
     vertexPoints: new Float32Array(vertexCoordinates),
     indices: new Uint16Array(indices),
     vertexDataArray: new Uint8Array(vertexData as number[]),
+    modelAttributes: modelAttributes,
   }
 }

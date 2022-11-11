@@ -1,32 +1,56 @@
-import { getGlslNameByType, ModelAttributeType } from '@3d/model/builder/model-attribute-type'
+import {
+  getAttrTypeByType,
+  getCountByType,
+  getGlslNameByType,
+  ModelAttributeType,
+  shouldNormalize,
+} from '@3d/model/builder/model-attribute-type'
 import {
   GlobalUniformBlockDeclaration,
   PrecisionHeader,
   TerrainHeightMultiplierDeclaration,
-  VersionHeader
+  VersionHeader,
 } from '../../common-shader'
 
 interface ShaderOptions {
   modelTransformationsSource: string
-  attributes: { [key: string]: ModelAttributeType }
+  entityAttributes: { [key: string]: ModelAttributeType }
+  modelAttributes: { [key: string]: ModelAttributeType }
+}
+
+const ENTITY_ATTRIBUTE_PREFIX = 'entity'
+const MODEL_ATTRIBUTE_PREFIX = 'model'
+
+export const buildAttributeBundle = (isModel: boolean, attributes: { [key: string]: ModelAttributeType }) => {
+  const divisor = isModel ? 0 : 1
+  return Object.fromEntries(
+    Object.entries(attributes).map(([key, type]) => [
+      (isModel ? MODEL_ATTRIBUTE_PREFIX : ENTITY_ATTRIBUTE_PREFIX) + key,
+      {
+        count: getCountByType(type),
+        type: getAttrTypeByType(type),
+        normalize: shouldNormalize(type) || undefined,
+        divisor,
+      },
+    ]),
+  )
 }
 
 export const vertexShaderSource = (options: ShaderOptions): string => {
   const parts: string[] = []
   parts.push(VersionHeader(), PrecisionHeader(), TerrainHeightMultiplierDeclaration(), GlobalUniformBlockDeclaration())
 
-  for (const [name, type] of Object.entries(options.attributes)) {
+  for (const [name, type] of Object.entries(options.entityAttributes)) {
     let typeName = getGlslNameByType(type)
-    parts.push(`in `, typeName, ` a_entity`, name, `;\n`)
+    parts.push(`in `, typeName, ` a_`, ENTITY_ATTRIBUTE_PREFIX, name, `;\n`)
+  }
+  for (const [name, type] of Object.entries(options.modelAttributes)) {
+    let typeName = getGlslNameByType(type)
+    parts.push(`in `, typeName, ` a_`, MODEL_ATTRIBUTE_PREFIX, name, `;\n`)
   }
 
   parts.push(`
-
 in vec3 a_modelPosition;
-in uint a_modelNormal;
-in vec3 a_modelSideColor;
-in uint a_modelFlags;
-
 flat out vec3 v_color;
 
 void main() {

@@ -1,11 +1,12 @@
 import { GameTickUniform, RenderTimeUniform } from '@3d/common-shader'
-import { DefinedModelWithAttributes, defineModel, ModelDefinition } from '@3d/model/builder'
+import { DefinedModelWithAttributes, defineModel, ModelDescription } from '@3d/model/builder'
 import { genericEntityRotation } from '@3d/model/builder/common'
-import { newCubeModel } from '@3d/model/builder/cube'
 import { ModelAttributeType } from '@3d/model/builder/model-attribute-type'
 import { DynamicTransform, TransformType } from '@3d/model/builder/transform'
-import { ModelPrototype } from '@3d/model/model-id'
+import { newCubeModel } from '@3d/model/entity/slime/cube'
+import { GenericEntityModel } from '@3d/model/generic-entity-model'
 import { DrawableFields, JUMP_DURATION, SLOW_ROTATE_DURATION } from '@game/activities/slime/constants'
+import { modelAttributes } from './model-attributes'
 import { Pose } from './pose'
 
 const lookingAroundTransformation: DynamicTransform = {
@@ -50,13 +51,17 @@ const jumpTransformation: DynamicTransform = {
   by: [null, `jump * 6.0 * terrainHeightMultiplier + (model.y + 0.5) * scale * 100.0`, null],
 }
 
-const constructGeneric = (transformations: DynamicTransform[]): DefinedModelWithAttributes<Uint8Array> => {
+type ModelPartDescription = ModelDescription<Uint8Array, typeof modelAttributes>
+
+const constructGeneric = (
+  transformations: DynamicTransform[],
+): DefinedModelWithAttributes<Uint8Array, typeof modelAttributes> => {
   const enum ModelPart {
     Eye = 0b0001,
     Mouth = 0b0010,
   }
 
-  const makeEye = (left: boolean): ModelDefinition<Uint8Array> => ({
+  const makeEye = (left: boolean): ModelPartDescription => ({
     mesh: newCubeModel(ModelPart.Eye, 0x111111),
     staticTransform: [
       { type: TransformType.Translate, by: [0, 0.25, 0.23 * (left ? -1 : 1)] },
@@ -65,7 +70,7 @@ const constructGeneric = (transformations: DynamicTransform[]): DefinedModelWith
     ],
   })
 
-  const makeMouth = (): ModelDefinition<Uint8Array> => ({
+  const makeMouth = (): ModelPartDescription => ({
     mesh: newCubeModel(ModelPart.Mouth, 0x111111),
     staticTransform: [
       { type: TransformType.Translate, by: [0, -0.15, 0.03] },
@@ -81,7 +86,7 @@ const constructGeneric = (transformations: DynamicTransform[]): DefinedModelWith
     ],
   })
 
-  const makeBody = (): ModelDefinition<Uint8Array> => ({
+  const makeBody = (): ModelPartDescription => ({
     mesh: newCubeModel(0, 0x00ffff),
     staticTransform: [],
   })
@@ -96,13 +101,13 @@ const constructGeneric = (transformations: DynamicTransform[]): DefinedModelWith
   return {
     ...defined,
     copyBytesPerInstanceCount: DrawableFields.SIZE,
-    attributes: {
+    entityAttributes: {
       'Position': ModelAttributeType.UVec3_2,
       'Rotation': ModelAttributeType.Uint,
       'RotationChangeTick': ModelAttributeType.Uint,
       'Color': ModelAttributeType.Vec3_N,
       'Size': ModelAttributeType.Uint,
-    }
+    },
   }
 }
 
@@ -137,7 +142,7 @@ const constructJumping = () => {
   ])
 }
 
-const proto: ModelPrototype<Pose> = {
+const proto: GenericEntityModel<Pose> = {
   posesCount: Pose.SIZE,
   buildPose(which: Pose) {
     switch (which) {

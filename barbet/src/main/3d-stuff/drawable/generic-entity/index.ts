@@ -1,16 +1,15 @@
 import { GlProgram, GPUBuffer, VertexArray } from '@3d/gpu-resources'
 import { AttrType } from '@3d/gpu-resources/program'
-import { getAttrTypeByType, getCountByType, shouldNormalize } from '@3d/model/builder/model-attribute-type'
 import ModelId, { getModelPrototype } from '@3d/model/model-id'
 import { GpuAllocator } from '@3d/pipeline/allocator'
 import { Drawable, LoadParams } from '@3d/pipeline/Drawable'
 import { RenderContext, ShaderGlobals } from '@3d/render-context'
-import { DataOffsetDrawables, DataOffsetPositions } from "@game/entities/data-offsets"
+import { DataOffsetDrawables, DataOffsetPositions } from '@game/entities/data-offsets'
 import EntityContainer from '@game/entities/entity-container'
 import { iterateOverDrawableEntities } from '@game/entities/queries'
 import TypedArray from '@seampan/typed-array'
 import ChunkVisibilityIndex from '../chunk-visibility'
-import { Attributes, fragmentShaderSource, Uniforms, vertexShaderSource } from './shaders'
+import { Attributes, buildAttributeBundle, fragmentShaderSource, Uniforms, vertexShaderSource } from './shaders'
 
 interface ModelPose {
   vao: VertexArray
@@ -37,7 +36,7 @@ interface WorldData {
   visibility: ChunkVisibilityIndex
 }
 
-interface BoundData { }
+interface BoundData {}
 
 const drawable: () => Drawable<ShaderGlobals, ShaderCache, WorldData, BoundData> = () => ({
   onConfigModified(previous: ShaderCache | null) {
@@ -57,7 +56,8 @@ const drawable: () => Drawable<ShaderGlobals, ShaderCache, WorldData, BoundData>
 
             const options: Parameters<typeof vertexShaderSource>[0] = {
               modelTransformationsSource: pose.modelTransformationShader,
-              attributes: pose.attributes,
+              entityAttributes: pose.entityAttributes,
+              modelAttributes: pose.modelAttributes,
             }
             const promise = allocator
               .newProgram<Attributes, Uniforms>({
@@ -80,23 +80,10 @@ const drawable: () => Drawable<ShaderGlobals, ShaderCache, WorldData, BoundData>
             indicesBuffer.setContent(pose.indices)
 
             modelDataBuffer.setContent(pose.vertexDataArray)
-            program.useAttributes({
-              'modelSideColor': { count: 3, type: AttrType.UByte, normalize: true, divisor: 0 },
-              'modelNormal': { count: 1, type: AttrType.UByte, divisor: 0 },
-              'modelFlags': { count: 1, type: AttrType.UByte, divisor: 0 },
-            })
+            program.useAttributes(buildAttributeBundle(true, pose.modelAttributes))
 
             entityDataBuffer.bind()
-
-
-            program.useAttributes(Object.fromEntries(Object
-              .entries(pose.attributes)
-              .map(([key, type]) => ['entity' + key, {
-                count: getCountByType(type),
-                type: getAttrTypeByType(type),
-                normalize: shouldNormalize(type) || undefined,
-                divisor: 1
-              }])))
+            program.useAttributes(buildAttributeBundle(false, pose.entityAttributes))
 
             modelBuffer.setContent(pose.vertexPoints)
             program.useAttributes({
@@ -171,19 +158,20 @@ const drawable: () => Drawable<ShaderGlobals, ShaderCache, WorldData, BoundData>
         // the buffer needs resizing
         const old = pose.entityDataArray
         pose.entityDataArrayReservedCount = (pose.entityDataArrayReservedCount || 16) * 2
-        const newBuffer = pose.entityDataArray = new Uint8Array(pose.entityDataArrayReservedCount * (pose.copyBytesCount + 6)) // +6 for position
+        const newBuffer = (pose.entityDataArray = new Uint8Array(
+          pose.entityDataArrayReservedCount * (pose.copyBytesCount + 6),
+        )) // +6 for position
         let i = 0
         for (const v of old) newBuffer[i++] = v
       }
       let index = pose.entityDataArrayUsedCount++ * (pose.copyBytesCount + 6) //+6 for position
       const array = pose.entityDataArray
-      array[index++] = (unitX >> 0) & 0xFF
-      array[index++] = (unitX >> 8) & 0xFF
-      array[index++] = (unitY >> 0) & 0xFF
-      array[index++] = (unitY >> 8) & 0xFF
-      array[index++] = (unitZ >> 0) & 0xFF
-      array[index++] = (unitZ >> 8) & 0xFF
-
+      array[index++] = (unitX >> 0) & 0xff
+      array[index++] = (unitX >> 8) & 0xff
+      array[index++] = (unitY >> 0) & 0xff
+      array[index++] = (unitY >> 8) & 0xff
+      array[index++] = (unitZ >> 0) & 0xff
+      array[index++] = (unitZ >> 8) & 0xff
 
       for (let i = 0, l = pose.copyBytesCount; i < l; ++i) {
         array[index++] = drawables[drawableStart + i]! | 0
@@ -191,12 +179,16 @@ const drawable: () => Drawable<ShaderGlobals, ShaderCache, WorldData, BoundData>
       pose.entitiesCount++
     }
   },
-  prepareRender(shader: ShaderCache, world: WorldData, bound: BoundData): void { },
+  prepareRender(shader: ShaderCache, world: WorldData, bound: BoundData): void {},
   uploadToGpu(shader: ShaderCache, data: WorldData, bound: BoundData): void {
     for (const model of shader.models) {
       for (const pose of model.poses) {
         if (pose.entitiesCount !== 0) {
-          pose.entityDataBuffer.setPartialContent(pose.entityDataArray, 0, pose.entityDataArrayUsedCount * (pose.copyBytesCount + 6)) //+6 for position
+          pose.entityDataBuffer.setPartialContent(
+            pose.entityDataArray,
+            0,
+            pose.entityDataArrayUsedCount * (pose.copyBytesCount + 6),
+          ) //+6 for position
         }
       }
     }
@@ -219,7 +211,7 @@ const drawable: () => Drawable<ShaderGlobals, ShaderCache, WorldData, BoundData>
     }
     stats.incrementDrawCalls(drawCalls)
   },
-  drawForMousePicker(ctx: RenderContext, shader: ShaderCache, world: WorldData, bound: BoundData): void { },
+  drawForMousePicker(ctx: RenderContext, shader: ShaderCache, world: WorldData, bound: BoundData): void {},
 })
 
 export default drawable

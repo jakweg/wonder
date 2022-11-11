@@ -55,7 +55,9 @@ for (const fileName of candidates) {
     compiledContent.push(',')
   }
   if (description['add-size'] === true) compiledContent.push('SIZE,')
-  compiledContent.push('};')
+  compiledContent.push('};export default ')
+  compiledContent.push(description.name)
+  compiledContent.push(';')
 
   for (const [getterName, getter] of Object.entries(description.getters ?? {})) {
     compiledContent.push(`export const `)
