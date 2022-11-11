@@ -1,12 +1,11 @@
 ._css_animated-visibility {
   --_css_duration: 300ms;
   transition: opacity var(--_css_duration), transform var(--_css_duration);
-  pointer-events: none;
   opacity: var(--_css_opacity, 1);
 }
 
-._css_animated-visibility._css_fully-visible {
-  pointer-events: all;
+._css_animated-visibility:not(._css_fully-visible) {
+  pointer-events: none;
 }
 
 ._css_animated-visibility._css_invisible._css_opacity {

@@ -3,6 +3,7 @@
   align-self: flex-start;
   justify-self: start;
   padding: 4px;
+  pointer-events: none;
 }
 ._css_debug-info._css_debug-info-gone {
   display: none;
