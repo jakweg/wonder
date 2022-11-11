@@ -1,4 +1,4 @@
-import ModelAttributeType from "@3d/model/builder/model-attribute-type";
+import { ModelAttributeType } from "@3d/model/builder/model-attribute-type";
 
 export const modelAttributes = {
 //   'Position': ModelAttributeType.Vec3,

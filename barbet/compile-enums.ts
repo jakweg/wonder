@@ -33,8 +33,7 @@ const newCompiledContent = () => ({
   },
 })
 
-const candidates = await findFiles('src', name => name.endsWith('.2bc.json'))
-for (const fileName of candidates) {
+const transformFile = async (fileName: string) => {
   const compiledContent = newCompiledContent()
 
   const description = JSON.parse(await Deno.readTextFile(fileName))
@@ -55,9 +54,7 @@ for (const fileName of candidates) {
     compiledContent.push(',')
   }
   if (description['add-size'] === true) compiledContent.push('SIZE,')
-  compiledContent.push('};export default ')
-  compiledContent.push(description.name)
-  compiledContent.push(';')
+  compiledContent.push('};')
 
   for (const [getterName, getter] of Object.entries(description.getters ?? {})) {
     compiledContent.push(`export const `)
@@ -116,3 +113,6 @@ for (const fileName of candidates) {
     // ignore, probably npx or prettier not found
   }
 }
+
+const candidates = await findFiles('src', name => name.endsWith('.2bc.json'))
+await Promise.all(candidates.map(name => transformFile(name)))

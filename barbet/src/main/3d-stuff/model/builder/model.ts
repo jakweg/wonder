@@ -1,6 +1,6 @@
 import * as vec4 from '@matrix/vec4'
 import TypedArray, { TypedArrayConstructor } from '@seampan/typed-array'
-import ModelAttributeType from './model-attribute-type'
+import { ModelAttributeType } from './model-attribute-type'
 
 const sharedTemporaryVector: [number, number, number, number] = [0, 0, 0, 0]
 

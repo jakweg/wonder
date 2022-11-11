@@ -1,6 +1,6 @@
 import { GlProgram, GPUBuffer, VertexArray } from '@3d/gpu-resources'
 import { AttrType } from '@3d/gpu-resources/program'
-import ModelId, { getModelPrototype } from '@3d/model/model-id'
+import { getBuildPosesCallback, ModelId } from '@3d/model/model-id'
 import { GpuAllocator } from '@3d/pipeline/allocator'
 import { Drawable, LoadParams } from '@3d/pipeline/Drawable'
 import { RenderContext, ShaderGlobals } from '@3d/render-context'
@@ -49,11 +49,9 @@ const drawable: () => Drawable<ShaderGlobals, ShaderCache, WorldData, BoundData>
   ): Promise<ShaderCache> {
     const prototypes = await Promise['all'](
       [...new Array(ModelId.SIZE)].map(async (_, modelIndex) => {
-        const proto = getModelPrototype(modelIndex)
+        const buildFunction = getBuildPosesCallback(modelIndex)
         const poses = await Promise['all'](
-          [...new Array(proto.posesCount)].map(async (_, poseIndex) => {
-            const pose = proto.buildPose(poseIndex)
-
+          buildFunction().map(async pose => {
             const options: Parameters<typeof vertexShaderSource>[0] = {
               modelTransformationsSource: pose.modelTransformationShader,
               entityAttributes: pose.entityAttributes,

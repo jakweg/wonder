@@ -4,10 +4,8 @@ import { genericEntityRotation } from '@3d/model/builder/common'
 import { ModelAttributeType } from '@3d/model/builder/model-attribute-type'
 import { DynamicTransform, TransformType } from '@3d/model/builder/transform'
 import { newCubeModel } from '@3d/model/entity/slime/cube'
-import { GenericEntityModel } from '@3d/model/generic-entity-model'
 import { DrawableFields, JUMP_DURATION, SLOW_ROTATE_DURATION } from '@game/activities/slime/constants'
 import { modelAttributes } from './model-attributes'
-import { Pose } from './pose'
 
 const lookingAroundTransformation: DynamicTransform = {
   type: TransformType.RotateY,
@@ -35,7 +33,7 @@ const worldPositionTransformation: DynamicTransform = {
   ],
 }
 
-const jumpTransformation: DynamicTransform = {
+const jumpTransformation = (): DynamicTransform => ({
   type: TransformType.Translate,
   beforeBlock: `
     float currentTick = mod(${GameTickUniform}, ${(0xff + 1).toFixed(1)});
@@ -49,18 +47,18 @@ const jumpTransformation: DynamicTransform = {
     float scale = -x*x*(x-1.0)*(x-1.0)*(x-0.3)*(x-0.7)*sin(${Math.PI.toFixed(8)}*x);
     `,
   by: [null, `jump * 6.0 * terrainHeightMultiplier + (model.y + 0.5) * scale * 100.0`, null],
-}
+})
 
 type ModelPartDescription = ModelDescription<Uint8Array, typeof modelAttributes>
+
+const enum ModelPart {
+  Eye = 0b0001,
+  Mouth = 0b0010,
+}
 
 const constructGeneric = (
   transformations: DynamicTransform[],
 ): DefinedModelWithAttributes<Uint8Array, typeof modelAttributes> => {
-  const enum ModelPart {
-    Eye = 0b0001,
-    Mouth = 0b0010,
-  }
-
   const makeEye = (left: boolean): ModelPartDescription => ({
     mesh: newCubeModel(ModelPart.Eye, 0x111111),
     staticTransform: [
@@ -136,26 +134,10 @@ const constructJumping = () => {
     genericEntityRotation(JUMP_DURATION),
     idleBreathingTransformation,
     lookingAroundTransformation,
-    jumpTransformation,
+    jumpTransformation(),
     ownSizeTransformation,
     worldPositionTransformation,
   ])
 }
 
-const proto: GenericEntityModel<Pose> = {
-  posesCount: Pose.SIZE,
-  buildPose(which: Pose) {
-    switch (which) {
-      case Pose.Idle:
-        return constructIdle()
-      case Pose.SlowlyRotating:
-        return constructSlowlyRotating()
-      case Pose.Jumping:
-        return constructJumping()
-
-      default:
-        throw new Error()
-    }
-  },
-}
-export default proto
+export const buildPoses = () => [constructIdle(), constructSlowlyRotating(), constructJumping()]

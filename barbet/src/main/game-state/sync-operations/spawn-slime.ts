@@ -1,10 +1,10 @@
 import { Pose } from '@3d/model/entity/slime/pose'
-import ModelId from '@3d/model/model-id'
+import { ModelId } from '@3d/model/model-id'
 import { GameStateImplementation } from '@game'
 import { lockRotation, setColor, setRotation, setSize } from '@game/activities/slime/rotate-utils'
 import { Direction } from '@utils/direction'
 import * as slime_idle from '../activities/slime/idle'
-import { DataOffsetDrawables, DataOffsetPositions } from "../entities/data-offsets"
+import { DataOffsetDrawables, DataOffsetPositions } from '../entities/data-offsets'
 import { EntityTrait } from '../entities/traits'
 
 interface Props {
@@ -54,7 +54,7 @@ export default (props: Props): Result => {
   setRotation(props.game, unit, props.facing ?? Direction.NegativeX)
   lockRotation(props.game, unit)
   setSize(props.game, unit, props.size ?? 1)
-  setColor(props.game, unit, props.color ?? 0x00FFFF)
+  setColor(props.game, unit, props.color ?? 0x00ffff)
 
   slime_idle.setup(props.game, unit)
 

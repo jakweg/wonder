@@ -5,15 +5,15 @@
   "add-size": true,
   "values": {
     "Slime": {
-      "@prototype": {
+      "@build": {
         "from": "./entity/slime",
-        "property": null
+        "property": "buildPoses"
       }
     }
   },
   "getters": {
-    "getModelPrototype": {
-      "field": "@prototype"
+    "getBuildPosesCallback": {
+      "field": "@build"
     }
   }
 }
