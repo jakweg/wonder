@@ -110,7 +110,7 @@ if (args.size > 0) {
         mangleCache: {
           ...Object.fromEntries(mangleExcludedPropNames.map(e => [e, false])),
         },
-      } as any)
+      })
       if (produceMappings) await Deno.writeTextFile('./mappings.txt', JSON.stringify(results.mangleCache, undefined, 3))
 
       await esbuild.build({
@@ -181,7 +181,7 @@ if (args.size > 0) {
         return outputCode.join('')
       }
 
-      async function getNames(currentPath: string) {
+      const getNames = async (currentPath: string) => {
         const names: string[] = []
 
         for await (const dirEntry of Deno.readDir(currentPath)) {
