@@ -108,5 +108,9 @@ for (const fileName of candidates) {
     fileName.substring(fileName.lastIndexOf('/') + 1, fileName.indexOf('.', fileName.lastIndexOf('/') + 1))
   const finalPath = fileName.substring(0, fileName.lastIndexOf('/')) + '/' + finalName + '.ts'
   await Deno.writeTextFile(finalPath, compiledContent.finalize())
-  await Deno.run({ cmd: ['npx', 'prettier', '--write', finalPath], stdout: 'null' }).status()
+  try {
+    await Deno.run({ cmd: ['npx', 'prettier', '--write', finalPath], stdout: 'null' }).status()
+  } catch (e) {
+    // ignore, probably npx or prettier not found
+  }
 }
