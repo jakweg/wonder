@@ -8,20 +8,6 @@ const BRANCH = 'master'
 const GIT_URL = 'https://github.com/JakubekWeg/wonder'
 const SITE_ID = 'next-wonder'
 
-const hostedFiles = [
-	'index.html',
-	'404.html',
-	'dist/main.css',
-	'dist/main.js',
-	'dist/render-worker.js',
-	'dist/update-worker.js',
-	'dist/network-worker.js',
-	'dist/render-helper-worker.js',
-	'dist/feature-environments/zero.js',
-	'dist/feature-environments/first.js',
-	'dist/feature-environments/second.js',
-]
-
 async function cleanTmpFolder() {
 	try {
 		await Deno.remove(`${TMP_FOLDER_ROOT}`, { recursive: true })
@@ -164,24 +150,35 @@ async function shaFiles(files: string[]): Promise<string[]> {
 		.map(line => line.substring(line.lastIndexOf(' ') + 1))
 }
 
-async function shaDestFolder() {
-	const sums = await shaFiles(hostedFiles.map(name => `${TMP_FOLDER_ROOT}/${FINAL_FILES_FOLDER_NAME}/${name}.gz`))
+async function getHostedFilesList() {
+	const { files } = JSON.parse(await Deno.readTextFile(`${TMP_FOLDER_ROOT}/${FOLDER_TO_CLONE}/barbet/hosted-files.json`))
+	const folders = [...new Set(files.filter(e => e.includes('/')).map(e => e.substring(0, e.lastIndexOf('/'))))] as string[]
+	return { files, folders }
+}
+
+async function shaDestFolder(files: string[]) {
+	const sums = await shaFiles(files.map(name => `${TMP_FOLDER_ROOT}/${FINAL_FILES_FOLDER_NAME}/${name}.gz`))
 	return {
 		file2hash: Object.fromEntries(
-			sums.map((sum, i) => [`/${hostedFiles[i]}`, sum]),
+			sums.map((sum, i) => [`/${files[i]}`, sum]),
 		),
 		hash2file: Object.fromEntries(
-			sums.map((sum, i) => [sum, `${TMP_FOLDER_ROOT}/${FINAL_FILES_FOLDER_NAME}/${hostedFiles[i]}.gz`]),
+			sums.map((sum, i) => [sum, `${TMP_FOLDER_ROOT}/${FINAL_FILES_FOLDER_NAME}/${files[i]}.gz`]),
 		),
 	}
 }
 
-async function prepareDestFolder(): Promise<void> {
-	await Deno.mkdir(`${TMP_FOLDER_ROOT}/${FINAL_FILES_FOLDER_NAME}`)
-	await Deno.mkdir(`${TMP_FOLDER_ROOT}/${FINAL_FILES_FOLDER_NAME}/dist`)
-	await Deno.mkdir(`${TMP_FOLDER_ROOT}/${FINAL_FILES_FOLDER_NAME}/dist/feature-environments`)
-	await Promise.all(hostedFiles.map(name => Deno.copyFile(`${TMP_FOLDER_ROOT}/${FOLDER_TO_CLONE}/barbet/${name}`, `${TMP_FOLDER_ROOT}/${FINAL_FILES_FOLDER_NAME}/${name}`)))
-	await compressFiles(hostedFiles.map(name => `${TMP_FOLDER_ROOT}/${FINAL_FILES_FOLDER_NAME}/${name}`))
+async function prepareDestFolder(files: string[], folders: string[]): Promise<void> {
+	await Deno.mkdir(`${TMP_FOLDER_ROOT}/${FINAL_FILES_FOLDER_NAME}`, { recursive: true })
+	for (const name of folders) {
+		try {
+			await Deno.mkdir(`${TMP_FOLDER_ROOT}/${FINAL_FILES_FOLDER_NAME}/${name}`, { recursive: true })
+		} catch (e) {
+			// ignore already exists
+		}
+	}
+	await Promise.all(files.map(name => Deno.copyFile(`${TMP_FOLDER_ROOT}/${FOLDER_TO_CLONE}/barbet/${name}`, `${TMP_FOLDER_ROOT}/${FINAL_FILES_FOLDER_NAME}/${name}`)))
+	await compressFiles(files.map(name => `${TMP_FOLDER_ROOT}/${FINAL_FILES_FOLDER_NAME}/${name}`))
 }
 
 async function prepareFileForUploadAndGetHashes() {
@@ -189,8 +186,9 @@ async function prepareFileForUploadAndGetHashes() {
 	await createTmpFolder()
 	await cloneRepo()
 	await buildFrontend()
-	await prepareDestFolder()
-	return await shaDestFolder()
+	const data = await getHostedFilesList()
+	await prepareDestFolder(data.files, data.folders)
+	return await shaDestFolder(data.files)
 }
 
 async function prepareAccountAndCreateNewSite() {
