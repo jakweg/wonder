@@ -152,7 +152,7 @@ async function shaFiles(files: string[]): Promise<string[]> {
 
 async function getHostedFilesList() {
 	const { files } = JSON.parse(await Deno.readTextFile(`${TMP_FOLDER_ROOT}/${FOLDER_TO_CLONE}/barbet/hosted-files.json`))
-	const folders = [...new Set(files.filter(e => e.includes('/')).map(e => e.substring(0, e.lastIndexOf('/'))))] as string[]
+	const folders = [...new Set(files.filter((e: string) => e.includes('/')).map((e: string) => e.substring(0, e.lastIndexOf('/'))))] as string[]
 	return { files, folders }
 }
 
