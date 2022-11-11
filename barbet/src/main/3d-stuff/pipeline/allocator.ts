@@ -8,7 +8,7 @@ const getAllUniforms = (gl: WebGL2RenderingContext, program: WebGLProgram) => {
   const count: number = gl.getProgramParameter(program, gl.ACTIVE_UNIFORMS)
   for (let i = 0; i < count; i++) {
     const name = gl.getActiveUniform(program, i)!['name']
-    if (name.startsWith('gl_')) continue
+    if (name.startsWith('gl_') || name.startsWith('webgl_gl_')) continue
     if (!name.startsWith('u_')) throw new Error(`Uniform name '${name}' doesn't start with proper prefix`)
     allNames.push(name)
   }
