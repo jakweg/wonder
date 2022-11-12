@@ -1,4 +1,4 @@
-import { GameTickUniform, RenderTimeUniform } from '@3d/common-shader'
+import { GameTickUniform, RenderTimeUniform, TerrainHeightMultiplierUniform } from '@3d/common-shader'
 import { DefinedModelWithAttributes, defineModel, ModelDescription } from '@3d/model/builder'
 import { genericEntityRotation } from '@3d/model/builder/common'
 import { ModelAttributeType } from '@3d/model/builder/model-attribute-type'
@@ -28,7 +28,7 @@ const worldPositionTransformation: DynamicTransform = {
   type: TransformType.Translate,
   by: [
     `float(a_entityPosition.x) + 0.5`,
-    `float(a_entityPosition.y) * terrainHeightMultiplier + 0.5`,
+    `float(a_entityPosition.y) * ${TerrainHeightMultiplierUniform} + 0.5`,
     `float(a_entityPosition.z) + 0.5`,
   ],
 }
@@ -46,7 +46,7 @@ const jumpTransformation = (): DynamicTransform => ({
     x = progress;
     float scale = -x*x*(x-1.0)*(x-1.0)*(x-0.3)*(x-0.7)*sin(${Math.PI.toFixed(8)}*x);
     `,
-  by: [null, `jump * 6.0 * terrainHeightMultiplier + (model.y + 0.5) * scale * 100.0`, null],
+  by: [null, `jump * 6.0 * ${TerrainHeightMultiplierUniform} + (model.y + 0.5) * scale * 100.0`, null],
 })
 
 type ModelPartDescription = ModelDescription<Uint8Array, typeof modelAttributes>

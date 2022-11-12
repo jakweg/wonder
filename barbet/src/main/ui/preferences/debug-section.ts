@@ -1,7 +1,8 @@
-import { constant } from '@utils/state/subject'
+import CONFIG from '@utils/persistance/observable-settings'
+import { constant, map, observeField } from '@utils/state/subject'
 import { Header } from '.'
 import { createElement } from '../utils'
-import { BooleanSwitch } from './helper-components'
+import { BooleanSwitch, Range } from './helper-components'
 
 export default (root: HTMLElement) => {
   Header(root, constant('Developer'), true)
@@ -11,4 +12,14 @@ export default (root: HTMLElement) => {
   BooleanSwitch(main, 'debug/disable-culling', v => `Culling: ${v ? 'OFF' : 'ON'}`)
   BooleanSwitch(main, 'debug/show-info', v => `Floating info: ${v ? 'ON' : 'OFF'}`)
   BooleanSwitch(main, 'debug/show-graphs', v => `Graphs: ${v ? 'ON' : 'OFF'}`)
+  TerrainMultiplierSetting(main)
+}
+
+const TerrainMultiplierSetting = (main: HTMLElement) => {
+  const value = observeField(CONFIG, 'rendering/terrain-height')
+  const mapTitle = (v: number) => `Terrain height: ${v.toFixed(2)}`
+  const mapValue = (v: number) => (v * 100) | 0
+  Range(main, map(value, mapTitle), [0, 200], 1, map(value, mapValue), value =>
+    CONFIG.set('rendering/terrain-height', value / 100),
+  )
 }

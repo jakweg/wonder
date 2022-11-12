@@ -44,7 +44,7 @@ const makeShaderGlobals = (allocator: GpuAllocator) => {
   const BUFFER = new Float32Array(
     0 +
       16 + // camera matrix
-      4 + // times (last field is ignored)
+      4 + // times + terrainHeightMultiplier
       4, // light direction + ambient
   )
 
@@ -64,13 +64,20 @@ const makeShaderGlobals = (allocator: GpuAllocator) => {
 
       return program
     },
-    update(camera: Camera, secondsSinceFirstRender: number, gameTime: number, gameTickEstimation: number) {
+    update(
+      camera: Camera,
+      secondsSinceFirstRender: number,
+      gameTime: number,
+      gameTickEstimation: number,
+      terrainHeightMultiplier: number,
+    ) {
       const combinedMatrix = camera.combinedMatrix
       for (let i = 0; i < 16; ++i) BUFFER[i] = combinedMatrix[i]
 
       BUFFER[16 + 0] = secondsSinceFirstRender
       BUFFER[16 + 1] = gameTime
       BUFFER[16 + 2] = gameTickEstimation
+      BUFFER[16 + 3] = terrainHeightMultiplier
       BUFFER[16 + 4] = light[0]!
       BUFFER[16 + 5] = light[1]!
       BUFFER[16 + 6] = light[2]!
@@ -127,6 +134,9 @@ export const createRenderingSession = async (actionsQueue: ActionsQueue, mutex: 
         false,
       ).on(v => timeMeter.setEnabled(!!v))
 
+      let terrainHeight = 0.6
+      observeField(CONFIG, 'rendering/terrain-height').on(v => (terrainHeight = v))
+
       const performRender = async (elapsedSeconds: number, secondsSinceFirstRender: number) => {
         stats.frames.frameStarted()
         timeMeter.beginSession(DrawPhase.HandleInputs)
@@ -161,6 +171,7 @@ export const createRenderingSession = async (actionsQueue: ActionsQueue, mutex: 
             secondsSinceFirstRender,
             (secondsSinceFirstRender * gameTickRate()) / STANDARD_GAME_TICK_RATE,
             gameTickValue,
+            terrainHeight,
           )
 
         pipeline.doGpuUploads()

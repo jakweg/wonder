@@ -282,19 +282,3 @@ export const moveChunkMesh = (mesh: Mesh, offsetX: number, offsetY: number, offs
     vertexes[i * FLOATS_PER_VERTEX + 2] += offsetZ
   }
 }
-
-export const combineMeshes = (meshes: Mesh[]): Mesh => {
-  const vertexes = []
-  const indices = []
-  for (const mesh of meshes) {
-    const vertexesBeforeCount = (vertexes.length / FLOATS_PER_VERTEX) | 0
-    for (const v of mesh.vertexes) vertexes.push(v)
-
-    for (const v of mesh.indices) indices.push(v + vertexesBeforeCount)
-  }
-
-  return {
-    vertexes: new Float32Array(vertexes),
-    indices: new Uint32Array(indices),
-  }
-}

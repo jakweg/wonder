@@ -2,7 +2,7 @@ import {
   GlobalUniformBlockDeclaration,
   PrecisionHeader,
   RenderTimeUniform,
-  TerrainHeightMultiplierDeclaration,
+  TerrainHeightMultiplierUniform,
   VersionHeader,
 } from '@3d/common-shader'
 import { MousePickableType } from '@3d/pipeline/mouse-picker'
@@ -17,7 +17,7 @@ const ambientOcclusionDarknessLevels = [0, 6, 10, 12, 14, 15, 15, 15]
 
 export const vertexShaderSource = (options: ShaderOptions): string => {
   const parts: string[] = []
-  parts.push(VersionHeader(), PrecisionHeader(), TerrainHeightMultiplierDeclaration(), GlobalUniformBlockDeclaration())
+  parts.push(VersionHeader(), PrecisionHeader(), GlobalUniformBlockDeclaration())
   parts.push(`
 	in vec3 a_position;
 	in vec3 a_color;
@@ -77,7 +77,7 @@ v_vertexPosition = a_position + vec3(u_chunkPosition.x, 0.0, u_chunkPosition.y);
 		}
 		pos.x += u_chunkPosition.x;
 		pos.z += u_chunkPosition.y;
-		pos.y *= terrainHeightMultiplier;
+		pos.y *= ${TerrainHeightMultiplierUniform};
 		gl_Position = u_combinedMatrix * vec4(pos, 1);
 		gl_PointSize = 10.0;
 	}

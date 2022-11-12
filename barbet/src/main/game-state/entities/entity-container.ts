@@ -11,14 +11,7 @@ import {
   DataOffsetWithActivity,
 } from './data-offsets'
 import { ArrayAllocator, DataStore } from './data-store'
-import {
-  createEmptyTraitRecord,
-  EntityTrait,
-  EntityTraitIndicesRecord,
-  hasTrait,
-  initializeTraitsOfNewEntity,
-  NO_INDEX,
-} from './traits'
+import { EntityTrait, EntityTraitIndicesRecord, hasTrait, initializeTraitsOfNewEntity, NO_INDEX } from './traits'
 
 export const ACTIVITY_MEMORY_SIZE = 20
 type ArraysChangedNotifyCallback = () => void
@@ -187,9 +180,7 @@ class EntityContainer {
       drawable: hasTrait(traits, EntityTrait.Drawable) ? this.drawables.pushBack() : NO_INDEX,
       withActivity: hasTrait(traits, EntityTrait.WithActivity) ? this.withActivities.pushBack() : NO_INDEX,
       activityMemory: hasTrait(traits, EntityTrait.WithActivity) ? this.activitiesMemory.pushBack() : NO_INDEX,
-      itemHoldable: hasTrait(traits, EntityTrait.ItemHoldable) ? this.itemHoldables.pushBack() : NO_INDEX,
       interruptible: hasTrait(traits, EntityTrait.Interruptible) ? this.interruptibles.pushBack() : NO_INDEX,
-      buildingData: hasTrait(traits, EntityTrait.BuildingData) ? this.buildingData.pushBack() : NO_INDEX,
     }
 
     let index = record.idIndex
@@ -202,33 +193,6 @@ class EntityContainer {
     initializeTraitsOfNewEntity(this, record)
 
     return record
-  }
-
-  public *iterate(requiredTraits: EntityTrait): Generator<Readonly<EntityTraitIndicesRecord>> {
-    const record = createEmptyTraitRecord()
-
-    const rawData = this.ids.rawData
-    for (let i = 0, l = this.ids.size; i < l; i++) {
-      const idIndex = i * DataOffsetIds.SIZE
-      const traits = rawData[idIndex + DataOffsetIds.Traits]!
-
-      if ((traits & requiredTraits) === requiredTraits) {
-        record.thisId = rawData[idIndex + DataOffsetIds.ID]!
-        record.thisTraits = rawData[idIndex + DataOffsetIds.Traits]!
-
-        yield record
-      }
-
-      if (hasTrait(traits, EntityTrait.Position)) record.position += DataOffsetPositions.SIZE
-      if (hasTrait(traits, EntityTrait.Drawable)) record.drawable += DataOffsetDrawables.SIZE
-      if (hasTrait(traits, EntityTrait.WithActivity)) {
-        record.withActivity += DataOffsetWithActivity.SIZE
-        record.activityMemory += ACTIVITY_MEMORY_SIZE
-      }
-      if (hasTrait(traits, EntityTrait.ItemHoldable)) record.itemHoldable += DataOffsetItemHoldable.SIZE
-      if (hasTrait(traits, EntityTrait.Interruptible)) record.interruptible += DataOffsetInterruptible.SIZE
-      if (hasTrait(traits, EntityTrait.BuildingData)) record.buildingData += DataOffsetBuildingData.SIZE
-    }
   }
 }
 

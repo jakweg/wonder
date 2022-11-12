@@ -16,14 +16,12 @@ export const RotationXMatrix = (angleVariableName: string) =>
 export const RotationZMatrix = (angleVariableName: string) =>
   `mat3(cos(${angleVariableName}), sin(${angleVariableName}), 0, -sin(${angleVariableName}), cos(${angleVariableName}), 0, 0, 0, 1)`
 
-export const terrainHeightMultiplierValue = 0.4
-export const TerrainHeightMultiplierDeclaration = (variableName: string = 'terrainHeightMultiplier') =>
-  `const float ${variableName} = ${terrainHeightMultiplierValue.toFixed(5)};\n`
-
+export const TerrainHeightMultiplierUniform = 'u_terrainHeight'
 export const GlobalUniformBlockDeclaration = () => `
 layout(std140) uniform Globals {
 	mat4 u_combinedMatrix;
 	vec3 u_gameTimes;
+  float ${TerrainHeightMultiplierUniform};
 	vec4 u_light;
 };\n`
 export const RenderTimeUniform = 'u_gameTimes.x'

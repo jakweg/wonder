@@ -5,12 +5,7 @@ import {
   ModelAttributeType,
   shouldNormalize,
 } from '@3d/model/builder/model-attribute-type'
-import {
-  GlobalUniformBlockDeclaration,
-  PrecisionHeader,
-  TerrainHeightMultiplierDeclaration,
-  VersionHeader,
-} from '../../common-shader'
+import { GlobalUniformBlockDeclaration, PrecisionHeader, VersionHeader } from '../../common-shader'
 
 interface ShaderOptions {
   modelTransformationsSource: string
@@ -38,7 +33,7 @@ export const buildAttributeBundle = (isModel: boolean, attributes: { [key: strin
 
 export const vertexShaderSource = (options: ShaderOptions): string => {
   const parts: string[] = []
-  parts.push(VersionHeader(), PrecisionHeader(), TerrainHeightMultiplierDeclaration(), GlobalUniformBlockDeclaration())
+  parts.push(VersionHeader(), PrecisionHeader(), GlobalUniformBlockDeclaration())
 
   for (const [name, type] of Object.entries(options.entityAttributes)) {
     let typeName = getGlslNameByType(type)

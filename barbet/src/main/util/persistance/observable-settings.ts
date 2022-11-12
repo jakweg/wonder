@@ -11,6 +11,7 @@ const settingsToDefaults = {
   'rendering/antialias': (globalThis['devicePixelRatio'] ?? 2) < 1.5, // disable antialias by default on high density displays such as phones
   'rendering/show-tile-borders': false,
   'rendering/ambient-occlusion': true,
+  'rendering/terrain-height': 0.6,
   'rendering/power-preference': 'default' as WebGLPowerPreference,
   'other/preferred-environment': 'second' as Environment,
   'debug/debug-world': false,
