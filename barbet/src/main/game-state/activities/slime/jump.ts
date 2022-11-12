@@ -2,7 +2,7 @@ import { Pose } from '@3d/model/entity/slime/pose'
 import { GameStateImplementation } from '@game'
 import { Direction } from '@utils/direction'
 import { ActivityId } from '..'
-import { DataOffsetDrawables, DataOffsetWithActivity } from "../../entities/data-offsets"
+import { DataOffsetDrawables, DataOffsetWithActivity } from '../../entities/data-offsets'
 import { EntityTraitIndicesRecord } from '../../entities/traits'
 import { JUMP_DURATION } from './constants'
 import * as slime_idle from './idle'
@@ -20,12 +20,13 @@ export const setup = (game: GameStateImplementation, unit: EntityTraitIndicesRec
   const withActivitiesMemory = game.entities.withActivities.rawData
   const memory = game.entities.activitiesMemory.rawData
 
-  withActivitiesMemory[unit.withActivity + DataOffsetWithActivity.CurrentId] = ActivityId.Slime_Jump
-  withActivitiesMemory[unit.withActivity + DataOffsetWithActivity.StartTick] = now
+  withActivitiesMemory[unit.withActivity + DataOffsetWithActivity.CurrentActivityId] = ActivityId.Slime_Jump
   const pointer =
     (withActivitiesMemory[unit.withActivity + DataOffsetWithActivity.MemoryPointer] += MemoryField.SIZE) +
     unit.activityMemory
-  memory[pointer - MemoryField.FinishTick] = now + JUMP_DURATION
+  withActivitiesMemory[unit.withActivity + DataOffsetWithActivity.SuspendUntilTick] = memory[
+    pointer - MemoryField.FinishTick
+  ] = now + JUMP_DURATION
 
   const newRotation = game.seededRandom.nextInt(8) & Direction.MaskCurrentRotation
   setRotation(game, unit, newRotation)

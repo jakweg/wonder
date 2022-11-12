@@ -3,6 +3,7 @@ import * as esbuild from 'https://deno.land/x/esbuild@v0.15.13/mod.js'
 const args = new Set<string>(Deno.args as string[])
 
 const buildForProduction = args.delete('--prod')
+const doNotCompileEnums = args.delete('--no-enums')
 const serve = args.delete('--serve')
 const forceSingleThread = args.delete('--env-zero')
 const produceMappings = args.delete('--mappings')
@@ -49,7 +50,7 @@ if (args.size > 0) {
     // ignore, probably missing folder
   }
 
-  await import('./compile-enums.ts')
+  if (!doNotCompileEnums) await import('./compile-enums.ts')
 
   const entryPoints = [
     'main',

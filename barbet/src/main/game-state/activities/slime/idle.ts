@@ -1,12 +1,12 @@
 import { Pose } from '@3d/model/entity/slime/pose'
 import { GameStateImplementation } from '@game'
 import { ActivityId } from '..'
-import { DataOffsetDrawables, DataOffsetWithActivity } from "../../entities/data-offsets"
+import { DataOffsetDrawables, DataOffsetWithActivity } from '../../entities/data-offsets'
 import { EntityTraitIndicesRecord } from '../../entities/traits'
 import {
   IDLE_JOB_CHECK_INTERVAL_MAX,
   IDLE_JOB_CHECK_INTERVAL_MIN,
-  JOB_CHANCE_TO_JUMP_INSTEAD_OF_JUST_ROTATE
+  JOB_CHANCE_TO_JUMP_INSTEAD_OF_JUST_ROTATE,
 } from './constants'
 
 import * as slime_jump from './jump'
@@ -22,15 +22,16 @@ export const setup = (game: GameStateImplementation, unit: EntityTraitIndicesRec
   const drawables = game.entities.drawables.rawData
   const now = game.currentTick
 
-  withActivitiesMemory[unit.withActivity + DataOffsetWithActivity.CurrentId] = ActivityId.Slime_Idle
-  withActivitiesMemory[unit.withActivity + DataOffsetWithActivity.StartTick] = now
+  withActivitiesMemory[unit.withActivity + DataOffsetWithActivity.CurrentActivityId] = ActivityId.Slime_Idle
   withActivitiesMemory[unit.withActivity + DataOffsetWithActivity.MemoryPointer] = MemoryField.SIZE
 
   const pointer = withActivitiesMemory[unit.withActivity + DataOffsetWithActivity.MemoryPointer]! + unit.activityMemory
   const memory = game.entities.activitiesMemory.rawData
 
   const nextJobInterval = game.seededRandom.nextIntRange(IDLE_JOB_CHECK_INTERVAL_MIN, IDLE_JOB_CHECK_INTERVAL_MAX)
-  memory[pointer - MemoryField.NextJobAttemptTick] = now + nextJobInterval
+  withActivitiesMemory[unit.withActivity + DataOffsetWithActivity.SuspendUntilTick] = memory[
+    pointer - MemoryField.NextJobAttemptTick
+  ] = now + nextJobInterval
 
   drawables[unit.drawable + DataOffsetDrawables.PoseId] = Pose.Idle
 }

@@ -62,14 +62,14 @@ const placeDebugFeatures = (game: GameStateImplementation) => {
 const placeMoreRealTerrain = (game: GameStateImplementation) => {
   const groundItems = game.groundItems
   generateRandomTerrain(game.world)
-  for (let i = 0; i < 10000; i++)
+  for (let i = 0; i < 100_000; i++)
     spawnSlime({
       game,
       x: game.seededRandom.nextInt(game.world.size.sizeX),
       z: game.seededRandom.nextInt(game.world.size.sizeZ),
       facing: game.seededRandom.nextInt(8),
       size: game.seededRandom.nextInt(3) + 1,
-      color: game.seededRandom.nextInt(0xFFFFFF),
+      color: game.seededRandom.nextInt(0xffffff),
     })
   groundItems.setItem(67, 77, ItemType.Box)
 }

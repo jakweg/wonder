@@ -8,8 +8,8 @@ import {
   DataOffsetInterruptible,
   DataOffsetItemHoldable,
   DataOffsetPositions,
-  DataOffsetWithActivity
-} from "./data-offsets"
+  DataOffsetWithActivity,
+} from './data-offsets'
 import { ArrayAllocator, DataStore } from './data-store'
 import {
   createEmptyTraitRecord,
@@ -17,7 +17,7 @@ import {
   EntityTraitIndicesRecord,
   hasTrait,
   initializeTraitsOfNewEntity,
-  NO_INDEX
+  NO_INDEX,
 } from './traits'
 
 export const ACTIVITY_MEMORY_SIZE = 20
@@ -98,7 +98,7 @@ class EntityContainer {
     }
 
     this.ids = newDataStore(DataOffsetIds.SIZE, Int32Array)
-    this.positions = newDataStore(DataOffsetPositions.SIZE, Int32Array)
+    this.positions = newDataStore(DataOffsetPositions.SIZE, Uint16Array)
     this.drawables = newDataStore(DataOffsetDrawables.SIZE, Uint8Array)
     this.withActivities = newDataStore(DataOffsetWithActivity.SIZE, Int32Array)
     this.activitiesMemory = newDataStore(ACTIVITY_MEMORY_SIZE, Int32Array)

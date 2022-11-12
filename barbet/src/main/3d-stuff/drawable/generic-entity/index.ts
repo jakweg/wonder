@@ -6,7 +6,7 @@ import { Drawable, LoadParams } from '@3d/pipeline/Drawable'
 import { RenderContext, ShaderGlobals } from '@3d/render-context'
 import { DataOffsetDrawables, DataOffsetPositions } from '@game/entities/data-offsets'
 import EntityContainer from '@game/entities/entity-container'
-import { iterateOverDrawableEntities } from '@game/entities/queries'
+import { findAllDrawableEntities } from '@game/entities/queries/drawable'
 import TypedArray from '@seampan/typed-array'
 import ChunkVisibilityIndex from '../chunk-visibility'
 import { Attributes, buildAttributeBundle, fragmentShaderSource, Uniforms, vertexShaderSource } from './shaders'
@@ -136,11 +136,11 @@ const drawable: () => Drawable<ShaderGlobals, ShaderCache, WorldData, BoundData>
     const positions = container.positions.rawData
     const drawables = container.drawables.rawData
 
-    for (const record of iterateOverDrawableEntities(container)) {
+    findAllDrawableEntities(container, record => {
       const positionStart = record.position
       const unitX = positions[positionStart + DataOffsetPositions.PositionX]! | 0
       const unitZ = positions[positionStart + DataOffsetPositions.PositionZ]! | 0
-      if (!visibility.isPointInViewport(unitX, unitZ)) continue
+      if (!visibility.isPointInViewport(unitX, unitZ)) return
       const unitY = positions[positionStart + DataOffsetPositions.PositionY]! | 0
 
       const drawableStart = record.drawable
@@ -175,7 +175,7 @@ const drawable: () => Drawable<ShaderGlobals, ShaderCache, WorldData, BoundData>
         array[index++] = drawables[drawableStart + i]! | 0
       }
       pose.entitiesCount++
-    }
+    })
   },
   prepareRender(shader: ShaderCache, world: WorldData, bound: BoundData): void {},
   uploadToGpu(shader: ShaderCache, data: WorldData, bound: BoundData): void {

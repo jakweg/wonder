@@ -1,7 +1,7 @@
 import { Pose } from '@3d/model/entity/slime/pose'
 import { GameStateImplementation } from '@game'
 import { ActivityId } from '..'
-import { DataOffsetDrawables, DataOffsetWithActivity } from "../../entities/data-offsets"
+import { DataOffsetDrawables, DataOffsetWithActivity } from '../../entities/data-offsets'
 import { EntityTraitIndicesRecord } from '../../entities/traits'
 import { SLOW_ROTATE_DURATION } from './constants'
 import * as slime_idle from './idle'
@@ -19,12 +19,13 @@ export const setup = (game: GameStateImplementation, unit: EntityTraitIndicesRec
   const withActivitiesMemory = game.entities.withActivities.rawData
   const memory = game.entities.activitiesMemory.rawData
 
-  withActivitiesMemory[unit.withActivity + DataOffsetWithActivity.CurrentId] = ActivityId.Slime_SlowRotate
-  withActivitiesMemory[unit.withActivity + DataOffsetWithActivity.StartTick] = now
+  withActivitiesMemory[unit.withActivity + DataOffsetWithActivity.CurrentActivityId] = ActivityId.Slime_SlowRotate
   const pointer =
     (withActivitiesMemory[unit.withActivity + DataOffsetWithActivity.MemoryPointer] += MemoryField.SIZE) +
     unit.activityMemory
-  memory[pointer - MemoryField.FinishTick] = now + SLOW_ROTATE_DURATION
+  withActivitiesMemory[unit.withActivity + DataOffsetWithActivity.SuspendUntilTick] = memory[
+    pointer - MemoryField.FinishTick
+  ] = now + SLOW_ROTATE_DURATION
 
   setRotation(game, unit, game.seededRandom.nextInt(8))
   drawables[unit.drawable + DataOffsetDrawables.PoseId] = Pose.SlowlyRotating

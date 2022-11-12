@@ -6,9 +6,9 @@ import { UpdateDebugDataCollector } from '@utils/worker/debug-stats/update'
 import { UpdatePhase } from '@utils/worker/debug-stats/update-phase'
 import { ActivityId, getActivityPerformFunction } from './activities'
 import { DelayedComputer, deserializeDelayedComputer } from './delayed-computer'
-import { DataOffsetWithActivity } from "./entities/data-offsets"
+import { DataOffsetWithActivity } from './entities/data-offsets'
 import EntityContainer from './entities/entity-container'
-import { iterateOverEntitiesWithActivity } from './entities/queries'
+import { findAllNotSuspendedEntitiesWithActivity } from './entities/queries/with-activity'
 import { GroundItemsIndex } from './ground-items-index'
 import { execute, ScheduledAction } from './scheduled-actions'
 import { ReceiveActionsQueue } from './scheduled-actions/queue'
@@ -65,7 +65,7 @@ export class GameStateImplementation implements GameState {
     public readonly seededRandom: SeededRandom,
     private readonly mutex: GameMutex,
     private readonly stateBroadcastCallback: () => void,
-  ) { }
+  ) {}
 
   public get currentTick(): number {
     return this.metaData[MetadataField.CurrentTick]!
@@ -151,7 +151,7 @@ export class GameStateImplementation implements GameState {
     if (isInWorker) this.mutex.enterForUpdate()
     else await this.mutex.enterForUpdateAsync()
 
-    this.metaData[MetadataField.CurrentTick]++
+    const currentTick = ++this.metaData[MetadataField.CurrentTick] | 0
 
     stats.timeMeter.nowStart(UpdatePhase.ScheduledActions)
     for (const action of additionalActions) {
@@ -160,14 +160,17 @@ export class GameStateImplementation implements GameState {
 
     stats.timeMeter.nowStart(UpdatePhase.EntityActivities)
     const container = this.entities
-    for (const entity of iterateOverEntitiesWithActivity(container)) {
-      const currentActivity = container.withActivities.rawData[
-        entity.withActivity + DataOffsetWithActivity.CurrentId
-      ]! as ActivityId
+    const rawData = container.withActivities.rawData
+    findAllNotSuspendedEntitiesWithActivity(
+      this.entities,
+      entity => {
+        const currentActivity = rawData[entity.withActivity + DataOffsetWithActivity.CurrentActivityId]! as ActivityId
 
-      const perform = getActivityPerformFunction(currentActivity)
-      perform?.(this, entity)
-    }
+        const perform = getActivityPerformFunction(currentActivity)
+        perform(this, entity)
+      },
+      currentTick,
+    )
 
     stats.timeMeter.nowStart(UpdatePhase.ActionsQueue)
     this.actionsQueue.executeAllUntilEmpty(this)

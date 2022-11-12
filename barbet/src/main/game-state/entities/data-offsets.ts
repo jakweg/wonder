@@ -1,46 +1,44 @@
-
 export const enum DataOffsetIds {
-    ID,
-    Traits,
-    SIZE
+  ID,
+  Traits,
+  SIZE,
 }
 
 export const enum DataOffsetPositions {
-    PositionX,
-    PositionY,
-    PositionZ,
-    SIZE
+  PositionX,
+  PositionY,
+  PositionZ,
+  SIZE,
 }
 
-
 export const enum DataOffsetDrawables {
-    SIZE = 10,
-    ModelId = SIZE - 1,
-    PoseId = SIZE - 2,
+  SIZE = 10,
+  ModelId = SIZE - 1,
+  PoseId = SIZE - 2,
 }
 
 export const enum DataOffsetWithActivity {
-    CurrentId,
-    StartTick,
-    MemoryPointer,
-    SIZE
+  CurrentActivityId,
+  SuspendUntilTick,
+  MemoryPointer,
+  SIZE,
 }
 
 export const enum DataOffsetItemHoldable {
-    ItemId,
-    SIZE
+  ItemId,
+  SIZE,
 }
 
 export const enum DataOffsetInterruptible {
-    InterruptType,
-    ValueA,
-    ValueB,
-    ValueC,
-    SIZE
+  InterruptType,
+  ValueA,
+  ValueB,
+  ValueC,
+  SIZE,
 }
 
 export const enum DataOffsetBuildingData {
-    TypeId,
-    ProgressPointsToFull,
-    SIZE
+  TypeId,
+  ProgressPointsToFull,
+  SIZE,
 }
