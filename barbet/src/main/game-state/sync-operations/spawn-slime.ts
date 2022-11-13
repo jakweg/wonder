@@ -1,4 +1,3 @@
-import { Pose } from '@3d/model/entity/slime/pose'
 import { ModelId } from '@3d/model/model-id'
 import { GameStateImplementation } from '@game'
 import { lockRotation, setColor, setRotation, setSize } from '@game/activities/slime/rotate-utils'
@@ -49,8 +48,7 @@ export default (props: Props): Result => {
   entities.positions.rawData[unit.position + DataOffsetPositions.PositionY] = y + 1
   entities.positions.rawData[unit.position + DataOffsetPositions.PositionZ] = z
 
-  entities.drawables.rawData[unit.drawable + DataOffsetDrawables.ModelId] = ModelId.Slime
-  entities.drawables.rawData[unit.drawable + DataOffsetDrawables.PoseId] = Pose.Idle
+  entities.drawables.rawData[unit.drawable + DataOffsetDrawables.ModelId] = ModelId.Slime_Idle
   setRotation(props.game, unit, props.facing ?? Direction.NegativeX)
   lockRotation(props.game, unit)
   setSize(props.game, unit, props.size ?? 1)

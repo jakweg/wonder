@@ -57,7 +57,6 @@ export const initializeTraitsOfNewEntity = (container: EntityContainer, record: 
   if (index !== NO_INDEX) {
     const data = container.drawables.rawData
     data[index + DataOffsetDrawables.ModelId] = -1
-    data[index + DataOffsetDrawables.PoseId] = -1
   }
 
   index = record.withActivity

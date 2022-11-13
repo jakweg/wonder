@@ -1,6 +1,6 @@
 import { GlProgram, GPUBuffer, VertexArray } from '@3d/gpu-resources'
 import { AttrType } from '@3d/gpu-resources/program'
-import { getBuildPosesCallback, ModelId } from '@3d/model/model-id'
+import { getBuildModelCallback, ModelId } from '@3d/model/model-id'
 import { GpuAllocator } from '@3d/pipeline/allocator'
 import { Drawable, LoadParams } from '@3d/pipeline/Drawable'
 import { RenderContext, ShaderGlobals } from '@3d/render-context'
@@ -10,6 +10,9 @@ import { findAllDrawableEntities } from '@game/entities/queries/drawable'
 import TypedArray from '@seampan/typed-array'
 import ChunkVisibilityIndex from '../chunk-visibility'
 import { Attributes, buildAttributeBundle, fragmentShaderSource, Uniforms, vertexShaderSource } from './shaders'
+
+const POSITIONS_BYTES = 3 * 2
+const INITIAL_RESERVE_INSTANCES_COUNT = 8
 
 interface ModelPose {
   vao: VertexArray
@@ -23,12 +26,8 @@ interface ModelPose {
   copyBytesCount: number
 }
 
-interface ModelPrototype {
-  poses: ModelPose[]
-}
-
 interface ShaderCache {
-  models: ModelPrototype[]
+  models: ModelPose[]
 }
 
 interface WorldData {
@@ -49,62 +48,54 @@ const drawable: () => Drawable<ShaderGlobals, ShaderCache, WorldData, BoundData>
   ): Promise<ShaderCache> {
     const prototypes = await Promise['all'](
       [...new Array(ModelId.SIZE)].map(async (_, modelIndex) => {
-        const buildFunction = getBuildPosesCallback(modelIndex)
-        const poses = await Promise['all'](
-          buildFunction().map(async pose => {
-            const options: Parameters<typeof vertexShaderSource>[0] = {
-              modelTransformationsSource: pose.modelTransformationShader,
-              entityAttributes: pose.entityAttributes,
-              modelAttributes: pose.modelAttributes,
-            }
-            const promise = allocator
-              .newProgram<Attributes, Uniforms>({
-                vertexSource: vertexShaderSource(options),
-                fragmentSource: fragmentShaderSource(options),
-              })
-              .then(globals.bindProgram)
+        const pose = getBuildModelCallback(modelIndex)()
+        const options: Parameters<typeof vertexShaderSource>[0] = {
+          modelTransformationsSource: pose.modelTransformationShader,
+          entityAttributes: pose.entityAttributes,
+          modelAttributes: pose.modelAttributes,
+        }
+        const promise = allocator
+          .newProgram<Attributes, Uniforms>({
+            vertexSource: vertexShaderSource(options),
+            fragmentSource: fragmentShaderSource(options),
+          })
+          .then(globals.bindProgram)
 
-            const vao = allocator.newVao()
-            const entityDataBuffer = allocator.newBuffer({ dynamic: true, forArray: true })
-            const modelBuffer = allocator.newBuffer({ dynamic: false, forArray: true })
-            const modelDataBuffer = allocator.newBuffer({ dynamic: false, forArray: true })
-            const indicesBuffer = allocator.newBuffer({ dynamic: false, forArray: false })
+        const vao = allocator.newVao()
+        const entityDataBuffer = allocator.newBuffer({ dynamic: true, forArray: true })
+        const modelBuffer = allocator.newBuffer({ dynamic: false, forArray: true })
+        const modelDataBuffer = allocator.newBuffer({ dynamic: false, forArray: true })
+        const indicesBuffer = allocator.newBuffer({ dynamic: false, forArray: false })
 
-            const program = await promise
+        const program = await promise
 
-            program.use()
-            vao.bind()
+        program.use()
+        vao.bind()
 
-            indicesBuffer.setContent(pose.indices)
+        indicesBuffer.setContent(pose.indices)
 
-            modelDataBuffer.setContent(pose.vertexDataArray)
-            program.useAttributes(buildAttributeBundle(true, pose.modelAttributes))
+        modelDataBuffer.setContent(pose.vertexDataArray)
+        program.useAttributes(buildAttributeBundle(true, pose.modelAttributes))
 
-            entityDataBuffer.bind()
-            program.useAttributes(buildAttributeBundle(false, pose.entityAttributes))
+        entityDataBuffer.bind()
+        program.useAttributes(buildAttributeBundle(false, pose.entityAttributes))
 
-            modelBuffer.setContent(pose.vertexPoints)
-            program.useAttributes({
-              'modelPosition': { count: 3, type: AttrType.Float, divisor: 0 },
-            })
-
-            return {
-              vao,
-              program,
-              entityDataBuffer,
-              entitiesCount: 0,
-              entityDataArray: new Uint8Array(0),
-              entityDataArrayReservedCount: 0,
-              entityDataArrayUsedCount: 0,
-              triangles: pose.indices.length,
-              copyBytesCount: pose.copyBytesPerInstanceCount,
-            } as ModelPose
-          }),
-        )
+        modelBuffer.setContent(pose.vertexPoints)
+        program.useAttributes({
+          'modelPosition': { count: 3, type: AttrType.Float, divisor: 0 },
+        })
 
         return {
-          poses,
-        }
+          vao,
+          program,
+          entityDataBuffer,
+          entitiesCount: 0,
+          entityDataArray: new Uint8Array(0),
+          entityDataArrayReservedCount: 0,
+          entityDataArrayUsedCount: 0,
+          triangles: pose.indices.length,
+          copyBytesCount: pose.copyBytesPerInstanceCount,
+        } as ModelPose
       }),
     )
 
@@ -126,9 +117,7 @@ const drawable: () => Drawable<ShaderGlobals, ShaderCache, WorldData, BoundData>
   },
   updateWorld(shader: ShaderCache, data: WorldData, bound: BoundData): void {
     for (const model of shader.models) {
-      for (const pose of model.poses) {
-        pose.entityDataArrayUsedCount = pose.entitiesCount = 0
-      }
+      model.entityDataArrayUsedCount = model.entitiesCount = 0
     }
 
     const visibility = data.visibility
@@ -148,22 +137,18 @@ const drawable: () => Drawable<ShaderGlobals, ShaderCache, WorldData, BoundData>
       const model = shader.models[modelId]
       if (model === undefined) throw new Error()
 
-      const poseId = drawables[drawableStart + DataOffsetDrawables.PoseId]! | 0
-      const pose = model.poses[poseId]
-      if (pose === undefined) throw new Error()
-
-      if (pose.entityDataArrayReservedCount === pose.entityDataArrayUsedCount) {
+      if (model.entityDataArrayReservedCount === model.entityDataArrayUsedCount) {
         // the buffer needs resizing
-        const old = pose.entityDataArray
-        pose.entityDataArrayReservedCount = (pose.entityDataArrayReservedCount || 16) * 2
-        const newBuffer = (pose.entityDataArray = new Uint8Array(
-          pose.entityDataArrayReservedCount * (pose.copyBytesCount + 6),
-        )) // +6 for position
+        const old = model.entityDataArray
+        model.entityDataArrayReservedCount = (model.entityDataArrayReservedCount || INITIAL_RESERVE_INSTANCES_COUNT) * 2
+        const newBuffer = (model.entityDataArray = new Uint8Array(
+          model.entityDataArrayReservedCount * (model.copyBytesCount + POSITIONS_BYTES),
+        ))
         let i = 0
         for (const v of old) newBuffer[i++] = v
       }
-      let index = pose.entityDataArrayUsedCount++ * (pose.copyBytesCount + 6) //+6 for position
-      const array = pose.entityDataArray
+      let index = model.entityDataArrayUsedCount++ * (model.copyBytesCount + POSITIONS_BYTES)
+      const array = model.entityDataArray
       array[index++] = (unitX >> 0) & 0xff
       array[index++] = (unitX >> 8) & 0xff
       array[index++] = (unitY >> 0) & 0xff
@@ -171,23 +156,21 @@ const drawable: () => Drawable<ShaderGlobals, ShaderCache, WorldData, BoundData>
       array[index++] = (unitZ >> 0) & 0xff
       array[index++] = (unitZ >> 8) & 0xff
 
-      for (let i = 0, l = pose.copyBytesCount; i < l; ++i) {
+      for (let i = 0, l = model.copyBytesCount; i < l; ++i) {
         array[index++] = drawables[drawableStart + i]! | 0
       }
-      pose.entitiesCount++
+      model.entitiesCount++
     })
   },
   prepareRender(shader: ShaderCache, world: WorldData, bound: BoundData): void {},
   uploadToGpu(shader: ShaderCache, data: WorldData, bound: BoundData): void {
     for (const model of shader.models) {
-      for (const pose of model.poses) {
-        if (pose.entitiesCount !== 0) {
-          pose.entityDataBuffer.setPartialContent(
-            pose.entityDataArray,
-            0,
-            pose.entityDataArrayUsedCount * (pose.copyBytesCount + 6),
-          ) //+6 for position
-        }
+      if (model.entitiesCount !== 0) {
+        model.entityDataBuffer.setPartialContent(
+          model.entityDataArray,
+          0,
+          model.entityDataArrayUsedCount * (model.copyBytesCount + POSITIONS_BYTES),
+        )
       }
     }
   },
@@ -197,15 +180,13 @@ const drawable: () => Drawable<ShaderGlobals, ShaderCache, WorldData, BoundData>
 
     let drawCalls = 0
     for (const model of models) {
-      for (const pose of model.poses) {
-        if (pose.entitiesCount === 0) continue
+      if (model.entitiesCount === 0) continue
 
-        pose.vao.bind()
-        pose.program.use()
+      model.vao.bind()
+      model.program.use()
 
-        gl.drawElementsInstanced(gl.TRIANGLES, pose.triangles, gl.UNSIGNED_SHORT, 0, pose.entitiesCount)
-        drawCalls++
-      }
+      gl.drawElementsInstanced(gl.TRIANGLES, model.triangles, gl.UNSIGNED_SHORT, 0, model.entitiesCount)
+      drawCalls++
     }
     stats.incrementDrawCalls(drawCalls)
   },

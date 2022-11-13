@@ -109,7 +109,7 @@ const constructGeneric = (
   }
 }
 
-const constructIdle = () => {
+export const constructIdle = () => {
   return constructGeneric([
     genericEntityRotation(5),
     idleBreathingTransformation,
@@ -119,7 +119,7 @@ const constructIdle = () => {
   ])
 }
 
-const constructSlowlyRotating = () => {
+export const constructSlowlyRotating = () => {
   return constructGeneric([
     genericEntityRotation(`${SLOW_ROTATE_DURATION.toFixed(1)} - model.y * 5.0`),
     idleBreathingTransformation,
@@ -129,7 +129,7 @@ const constructSlowlyRotating = () => {
   ])
 }
 
-const constructJumping = () => {
+export const constructJumping = () => {
   return constructGeneric([
     genericEntityRotation(JUMP_DURATION),
     idleBreathingTransformation,
@@ -139,5 +139,3 @@ const constructJumping = () => {
     worldPositionTransformation,
   ])
 }
-
-export const buildPoses = () => [constructIdle(), constructSlowlyRotating(), constructJumping()]

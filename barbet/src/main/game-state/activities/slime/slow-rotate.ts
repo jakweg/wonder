@@ -1,4 +1,4 @@
-import { Pose } from '@3d/model/entity/slime/pose'
+import { ModelId } from '@3d/model/model-id'
 import { GameStateImplementation } from '@game'
 import { ActivityId } from '..'
 import { DataOffsetDrawables, DataOffsetWithActivity } from '../../entities/data-offsets'
@@ -28,7 +28,7 @@ export const setup = (game: GameStateImplementation, unit: EntityTraitIndicesRec
   ] = now + SLOW_ROTATE_DURATION
 
   setRotation(game, unit, game.seededRandom.nextInt(8))
-  drawables[unit.drawable + DataOffsetDrawables.PoseId] = Pose.SlowlyRotating
+  drawables[unit.drawable + DataOffsetDrawables.ModelId] = ModelId.Slime_SlowlyRotating
 }
 
 export const perform = (game: GameStateImplementation, unit: EntityTraitIndicesRecord): void => {

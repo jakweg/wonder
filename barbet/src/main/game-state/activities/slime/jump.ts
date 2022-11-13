@@ -1,4 +1,4 @@
-import { Pose } from '@3d/model/entity/slime/pose'
+import { ModelId } from '@3d/model/model-id'
 import { GameStateImplementation } from '@game'
 import { Direction } from '@utils/direction'
 import { ActivityId } from '..'
@@ -30,7 +30,7 @@ export const setup = (game: GameStateImplementation, unit: EntityTraitIndicesRec
 
   const newRotation = game.seededRandom.nextInt(8) & Direction.MaskCurrentRotation
   setRotation(game, unit, newRotation)
-  drawables[unit.drawable + DataOffsetDrawables.PoseId] = Pose.Jumping
+  drawables[unit.drawable + DataOffsetDrawables.ModelId] = ModelId.Slime_Jump
 }
 
 export const perform = (game: GameStateImplementation, unit: EntityTraitIndicesRecord): void => {

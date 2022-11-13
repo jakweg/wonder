@@ -4,15 +4,32 @@
   "output-file": "model-id",
   "add-size": true,
   "values": {
-    "Slime": {
-      "@build": {
-        "from": "./entity/slime",
-        "property": "buildPoses"
+    "#Slime": {
+      "import-prefix": "./entity/slime",
+      "values": {
+        "Idle": {
+          "@build": {
+            "from": "",
+            "property": "constructIdle"
+          }
+        },
+        "Jump": {
+          "@build": {
+            "from": "",
+            "property": "constructJumping"
+          }
+        },
+        "SlowlyRotating": {
+          "@build": {
+            "from": "",
+            "property": "constructSlowlyRotating"
+          }
+        }
       }
     }
   },
   "getters": {
-    "getBuildPosesCallback": {
+    "getBuildModelCallback": {
       "field": "@build"
     }
   }

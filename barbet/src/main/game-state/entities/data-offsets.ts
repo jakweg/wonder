@@ -14,7 +14,6 @@ export const enum DataOffsetPositions {
 export const enum DataOffsetDrawables {
   SIZE = 10,
   ModelId = SIZE - 1,
-  PoseId = SIZE - 2,
 }
 
 export const enum DataOffsetWithActivity {
