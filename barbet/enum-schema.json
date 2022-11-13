@@ -17,6 +17,34 @@
     "values": {
       "type": "object",
       "patternProperties": {
+        "^#.*$": {
+          "type": "object",
+          "patternProperties": {
+            "^import-prefix$": {
+              "type": "string"
+            },
+            "^values$": {
+              "type": "object",
+              "^@.*$": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "from": {
+                    "type": "string"
+                  },
+                  "property": {
+                    "type": ["string", "null"]
+                  }
+                },
+                "required": ["from", "property"]
+              },
+              "^.*$": {
+                "type": ["string", "number", "boolean"]
+              }
+            }
+          },
+          "required": ["import-prefix", "values"]
+        },
         "^.*$": {
           "type": "object",
           "patternProperties": {
