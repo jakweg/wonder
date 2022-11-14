@@ -7,7 +7,7 @@ export const enum ToWorker {
   Connect,
   JoinRoom,
   SetPreventJoins,
-  SetLatencyTicks,
+  SetLatencyMilliseconds,
   BroadcastGameState,
   BroadcastMyActions,
   BroadcastOperation,
@@ -17,7 +17,7 @@ type ToTypes = {
   [ToWorker.Connect]: { address: string }
   [ToWorker.JoinRoom]: { roomId: string }
   [ToWorker.SetPreventJoins]: { prevent: boolean }
-  [ToWorker.SetLatencyTicks]: { count: number }
+  [ToWorker.SetLatencyMilliseconds]: { ms: number }
   [ToWorker.BroadcastGameState]: { serializedState: string }
   [ToWorker.BroadcastMyActions]: { tick: number; actions: TickQueueAction[] }
   [ToWorker.BroadcastOperation]: Operation

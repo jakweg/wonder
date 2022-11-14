@@ -13,6 +13,7 @@ export default (root: HTMLElement) => {
   BooleanSwitch(main, 'debug/show-info', v => `Floating info: ${v ? 'ON' : 'OFF'}`)
   BooleanSwitch(main, 'debug/show-graphs', v => `Graphs: ${v ? 'ON' : 'OFF'}`)
   TerrainMultiplierSetting(main)
+  MultiplayerLatency(main)
 }
 
 const TerrainMultiplierSetting = (main: HTMLElement) => {
@@ -21,5 +22,18 @@ const TerrainMultiplierSetting = (main: HTMLElement) => {
   const mapValue = (v: number) => (v * 100) | 0
   Range(main, map(value, mapTitle), [0, 200], 1, map(value, mapValue), value =>
     CONFIG.set('rendering/terrain-height', value / 100),
+  )
+}
+
+const MultiplayerLatency = (main: HTMLElement) => {
+  const value = observeField(CONFIG, 'multiplayer/latency')
+  const mapTitle = (v: number) => `Expected latency: ${v}ms.`
+  Range(
+    main,
+    map(value, mapTitle),
+    [20, 800],
+    10,
+    map(value, (v: number) => v | 0),
+    value => CONFIG.set('multiplayer/latency', value),
   )
 }

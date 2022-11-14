@@ -89,7 +89,7 @@ import { ConnectionStatus, defaults, NetworkStateField } from '../network/state'
         state
           .edit()
           .set(NetworkStateField.RoomIsLocked, snapshot['preventJoining'])
-          .set(NetworkStateField.LatencyTicks, snapshot['latencyTicks'])
+          .set(NetworkStateField.LatencyMilliseconds, snapshot['latencyMs'])
           .set(NetworkStateField.PlayersInRoom, snapshot['players'])
           .commit()
       }
@@ -130,8 +130,8 @@ import { ConnectionStatus, defaults, NetworkStateField } from '../network/state'
     wsSocket?.send.send('update-room', { 'preventJoining': prevent })
   })
 
-  receiver.on(ToWorker.SetLatencyTicks, ({ count }) => {
-    wsSocket?.send.send('update-room', { 'latencyTicks': count })
+  receiver.on(ToWorker.SetLatencyMilliseconds, ({ ms: count }) => {
+    wsSocket?.send.send('update-room', { 'latencyMs': count })
   })
 
   receiver.on(ToWorker.BroadcastGameState, ({ serializedState }) => {

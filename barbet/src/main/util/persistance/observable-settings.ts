@@ -18,6 +18,7 @@ const settingsToDefaults = {
   'debug/show-info': false,
   'debug/show-graphs': false,
   'debug/disable-culling': false,
+  'multiplayer/latency': 100,
 }
 
 type SettingName = keyof typeof settingsToDefaults

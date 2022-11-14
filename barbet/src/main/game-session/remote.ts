@@ -44,7 +44,7 @@ export const createRemoteSession = async (props: Props) => {
   holder.ws = ws
   holder.generic = generic
 
-  state.observe(NetworkStateField.LatencyTicks, ticks => generic.setLatencyTicks(ticks))
+  state.observe(NetworkStateField.LatencyMilliseconds, ticks => generic.setLatencyMilliseconds(ticks))
 
   const broadcastOperation = (operation: Operation): void => {
     ws.send.send(ToWorker.BroadcastOperation, operation)
@@ -97,8 +97,8 @@ export const createRemoteSession = async (props: Props) => {
 
       return previousStatus === Status.Running
     },
-    setLatencyTicks(count: number) {
-      ws.send.send(ToWorker.SetLatencyTicks, { count })
+    setRoomLatencyMilliseconds(ticks: number) {
+      ws.send.send(ToWorker.SetLatencyMilliseconds, { ms: ticks })
     },
     async listenForOperations() {
       while (state.get(NetworkStateField.ConnectionStatus) === ConnectionStatus.Connected) {

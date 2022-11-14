@@ -71,6 +71,8 @@ const startRemote = async () => {
 
   await remote.joinRoom('default')
 
+  CONFIG.observe('multiplayer/latency', v => remote.setRoomLatencyMilliseconds(v))
+
   await waitForOtherPlayers(remote.getState(), 1)
 
   const myRole = (remote.getState().get(NetworkStateField.PlayersInRoom) ?? {})[

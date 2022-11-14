@@ -14,7 +14,7 @@ export const createLocalSession = async (props: Props) => {
     canvasProvider: props.canvasProvider,
     sendActionsCallback: (tick, actions) => generic.forwardPlayerActions(tick, LOCAL_PLAYER_ID, actions),
   })
-  generic.setLatencyTicks(3)
+  generic.setLatencyMilliseconds(0)
 
   return {
     async createNewGame(args) {

@@ -31,6 +31,20 @@ export const createGenericSession = async (props: Props) => {
     },
   }
 
+  let latencyMilliseconds = 0
+  let tpsForLatency = 0
+  const calculateAndSetLatencyTicks = () => {
+    const ms = Math.max(10, Math.min(2000, latencyMilliseconds)) | 0
+    const tps = Math.max(1, tpsForLatency) | 0
+
+    const msPerTick = 1000 / tps
+    const ticks = Math.max(1, Math.ceil(ms / msPerTick) | 0) + 1
+
+    console.log(ticks)
+
+    actionsHelper.setLatencyTicksCount(ticks)
+  }
+
   return {
     isMultiplayer: () => {
       throw new Error()
@@ -48,8 +62,9 @@ export const createGenericSession = async (props: Props) => {
       this.resetRendering()
       return result
     },
-    setLatencyTicks(count: number) {
-      actionsHelper.setLatencyTicksCount(count)
+    setLatencyMilliseconds(ms: number) {
+      latencyMilliseconds = ms
+      calculateAndSetLatencyTicks()
     },
     start(playerIds: string[], tps: number): void {
       if (!currentGame) throw new Error('no game')
@@ -60,6 +75,9 @@ export const createGenericSession = async (props: Props) => {
       actionsHelper.tickDone(ticksCount)
 
       currentGame.updater.start(tps)
+
+      tpsForLatency = tps
+      calculateAndSetLatencyTicks()
     },
     resetRendering() {
       const canvas = props.canvasProvider()

@@ -14,7 +14,7 @@ export const enum NetworkStateField {
   RoomId,
   PlayersInRoom,
   RoomIsLocked,
-  LatencyTicks,
+  LatencyMilliseconds,
 }
 
 export const defaults = {
@@ -24,5 +24,5 @@ export const defaults = {
   [NetworkStateField.RoomId]: null as null | string,
   [NetworkStateField.PlayersInRoom]: null as null | { [key: string]: PlayerInRoom },
   [NetworkStateField.RoomIsLocked]: null as null | boolean,
-  [NetworkStateField.LatencyTicks]: 10 as number,
+  [NetworkStateField.LatencyMilliseconds]: 100 as number,
 }
