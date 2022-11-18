@@ -45,6 +45,11 @@ const drawable: () => Drawable<never, ShaderCache, WorldData, BoundData> = () =>
     allocator.unsafeRawContext().uniform1f(programs[0].uniforms['heightScale'], 64.0)
     allocator.unsafeRawContext().uniform1f(programs[0].uniforms['targetMs'], 16.0)
 
+    for (const p of programs) {
+      p.use()
+      p.rawGl()['vertexAttrib1f'](p.attributes['dummyZero'], 0)
+    }
+
     return {
       programFps: programs[0],
       programUps: programs[1],
@@ -75,6 +80,8 @@ const drawable: () => Drawable<never, ShaderCache, WorldData, BoundData> = () =>
     } = ctx
     if (shader === null || !shader.enabled) return
 
+    gl.bindBuffer(gl.ARRAY_BUFFER, null)
+    gl.bindVertexArray(null)
     gl['disable'](gl.DEPTH_TEST)
     gl['enable'](gl.BLEND)
     gl['blendFunc'](gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)

@@ -30,6 +30,7 @@ export const vertexShaderSource = (options: Options): string => {
   parts.push(`${VersionHeader()}
 ${PrecisionHeader()}
 
+in float a_dummyZero;
 out vec2 v_position;
 uniform float u_values[${options.samplesCount + 1}];
 uniform float u_heightScale;
@@ -38,14 +39,13 @@ ${options.left ? createPositions(-1, -0.2) : createPositions(0.2, 1)}
 
 void main() {
     vec2 screenPosition = positions[gl_VertexID];
-    float shift = u_values[0] / ${options.samplesCount.toFixed(1)};
+    float shift = u_values[0] / ${options.samplesCount.toFixed(1)} + a_dummyZero;
     float x = (screenPosition.x - left) * width;
     v_position = vec2(
         x + shift,
         (screenPosition.y / 2.0 + 0.5) * u_heightScale);
 
     gl_Position = vec4(screenPosition.xy, 0.0, 1.0);
-    gl_PointSize = 10.0;
 }
 	`)
   return parts.join('')
@@ -63,7 +63,7 @@ uniform float u_heightScale;
 
 void main() {
 int index = int(v_position.x * ${options.samplesCount.toFixed(1)});
-float myValue = u_values[1 + index + (index > ${options.samplesCount} ? -${options.samplesCount} : 0)];
+float myValue = u_values[1 + index + (index >= ${options.samplesCount} ? -${options.samplesCount} : 0)];
 
 if (abs(v_position.y - u_targetMs) < 0.003 * u_heightScale)
     finalColor = vec4(1.0, 0.0, 0.0, 1.0);
@@ -82,4 +82,4 @@ else
 }
 
 export type Uniforms = 'values[0]' | 'heightScale' | 'targetMs'
-export type Attributes = never
+export type Attributes = 'dummyZero'

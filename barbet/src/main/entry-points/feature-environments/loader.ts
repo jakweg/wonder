@@ -1,7 +1,7 @@
 import { DEBUG, FORCE_ENV_ZERO, JS_ROOT } from '@build'
 import { ScheduledAction } from '@game/scheduled-actions'
 import { StateUpdater } from '@game/state-updater'
-import { SaveGameArguments, SaveGameResult } from '@game/world/world-saver'
+import { SaveGameArguments, SaveGameResult, SaveMethod } from '@game/world/world-saver'
 import { frontedVariablesBuffer } from '@utils/frontend-variables'
 import CONFIG from '@utils/persistance/observable-settings'
 import { getCameraBuffer } from '@utils/persistance/serializable-settings'
@@ -65,7 +65,7 @@ export interface EnvironmentConnection {
 
   startRender(args: StartRenderArguments): void
 
-  saveGame(args: SaveGameArguments): Promise<SaveGameResult>
+  saveGame<T extends SaveMethod>(args: SaveGameArguments<T>): Promise<SaveGameResult<T>>
 
   terminate(args: TerminateGameArguments): void
 }
