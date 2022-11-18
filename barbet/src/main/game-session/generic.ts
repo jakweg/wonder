@@ -40,8 +40,6 @@ export const createGenericSession = async (props: Props) => {
     const msPerTick = 1000 / tps
     const ticks = Math.max(1, Math.ceil(ms / msPerTick) | 0) + 1
 
-    console.log(ticks)
-
     actionsHelper.setLatencyTicksCount(ticks)
   }
 

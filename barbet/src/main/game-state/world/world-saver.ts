@@ -9,7 +9,7 @@ export const enum SaveMethod {
   ToString2,
 }
 
-export type SaveGameArguments =
+export type SaveGameArguments<T extends SaveMethod = SaveMethod> = { method: T } & (
   | {
       method: SaveMethod.ToDataUrl | SaveMethod.ToIndexedDatabase
       saveName: string
@@ -20,11 +20,13 @@ export type SaveGameArguments =
       sendPaused: boolean
     }
   | { method: SaveMethod.ToString2 }
+)
 
-export type SaveGameResult =
+export type SaveGameResult<T extends SaveMethod = SaveMethod> = { method: T } & (
   | { method: SaveMethod.ToDataUrl; url: string }
   | { method: SaveMethod.ToIndexedDatabase }
   | { method: SaveMethod.ToString2; serializedState: string }
+)
 
 const saveToIndexedDb = async (saveName: string, game: GameState) => {
   setArrayEncodingType(ArrayEncodingType.Array)
