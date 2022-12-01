@@ -1,5 +1,5 @@
-import { sleep } from '@seampan/util'
 import { frontedVariables, FrontendVariable } from '@utils/frontend-variables'
+import { waitForAllGPUOperationsToFinish } from './wrappers'
 
 const TEXTURE_PIXEL_MULTIPLIER = 1 / 4
 
@@ -149,32 +149,15 @@ export const newMousePicker = (gl: WebGL2RenderingContext) => {
 
       gl.bindFramebuffer(gl.FRAMEBUFFER, null)
 
-      const sync = gl.fenceSync(gl.SYNC_GPU_COMMANDS_COMPLETE, 0)!
-      gl['flush']()
+      return waitForAllGPUOperationsToFinish(gl)
+        .then(async () => {
+          gl.bindBuffer(gl.PIXEL_PACK_BUFFER, asyncGpuBufferToRead)
+          gl.getBufferSubData(gl.PIXEL_PACK_BUFFER, 0, readPixelsBuffer, 0, 8)
+          gl.bindBuffer(gl.PIXEL_PACK_BUFFER, null)
 
-      return Promise.resolve().then(async () => {
-        try {
-          while (true) {
-            await sleep(4)
-            const waitResult = gl.clientWaitSync(sync, 0, 0)
-
-            if (waitResult === gl.WAIT_FAILED) return { pickedType: MousePickableType.Nothing }
-
-            if (waitResult === gl.TIMEOUT_EXPIRED) continue // still processing
-
-            break // status is other - processing finished
-          }
-        } finally {
-          isWaitingForRead = false
-          gl.deleteSync(sync)
-        }
-
-        gl.bindBuffer(gl.PIXEL_PACK_BUFFER, asyncGpuBufferToRead)
-        gl.getBufferSubData(gl.PIXEL_PACK_BUFFER, 0, readPixelsBuffer, 0, 8)
-        gl.bindBuffer(gl.PIXEL_PACK_BUFFER, null)
-
-        return createResultFromBuffer(readPixelsBuffer)
-      })
+          return createResultFromBuffer(readPixelsBuffer)
+        })
+        .finally(() => (isWaitingForRead = false))
     },
   }
 }

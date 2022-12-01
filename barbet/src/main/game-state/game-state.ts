@@ -187,6 +187,6 @@ export class GameStateImplementation implements GameState {
     this.delayedComputer.tick(this)
 
     stats.timeMeter.endSessionAndGetRawResults()
-    stats.frames.frameEnded()
+    stats.frames.frameEnded(0)
   }
 }

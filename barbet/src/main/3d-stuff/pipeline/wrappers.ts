@@ -1,5 +1,6 @@
 import { ScheduledActionId } from '@game/scheduled-actions'
 import { ActionsQueue } from '@game/scheduled-actions/queue'
+import { sleep } from '@seampan/util'
 import { AdditionalFrontedFlags, frontedVariables, FrontendVariable } from '@utils/frontend-variables'
 import CONFIG, { observeSetting } from '@utils/persistance/observable-settings'
 import { Camera } from '../camera'
@@ -90,6 +91,26 @@ export const newFramesLimiter = () => {
       unsub1()
       unsub2()
     },
+  }
+}
+
+export const waitForAllGPUOperationsToFinish = async (gl: WebGL2RenderingContext) => {
+  const sync = gl.fenceSync(gl.SYNC_GPU_COMMANDS_COMPLETE, 0)!
+  gl['flush']()
+
+  try {
+    while (true) {
+      await sleep(4)
+      const waitResult = gl.clientWaitSync(sync, 0, 0)
+
+      if (waitResult === gl.WAIT_FAILED) return
+
+      if (waitResult === gl.TIMEOUT_EXPIRED) continue // still processing
+
+      break // status is other - processing finished
+    }
+  } finally {
+    gl.deleteSync(sync)
   }
 }
 

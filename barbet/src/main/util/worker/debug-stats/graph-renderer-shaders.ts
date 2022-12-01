@@ -32,7 +32,7 @@ ${PrecisionHeader()}
 
 in float a_dummyZero;
 out vec2 v_position;
-uniform float u_values[${options.samplesCount + 1}];
+uniform float u_values[${options.samplesCount * 2 + 1}];
 uniform float u_heightScale;
 
 ${options.left ? createPositions(-1, -0.2) : createPositions(0.2, 1)}
@@ -57,19 +57,24 @@ export const fragmentShaderSource = (options: Options) => {
 	${PrecisionHeader()}
 out vec4 finalColor;
 in vec2 v_position;
-uniform float u_values[${options.samplesCount + 1}];
+uniform float u_values[${options.samplesCount * 2 + 1}];
 uniform float u_targetMs;
 uniform float u_heightScale;
 
 void main() {
 int index = int(v_position.x * ${options.samplesCount.toFixed(1)});
-float myValue = u_values[1 + index + (index >= ${options.samplesCount} ? -${options.samplesCount} : 0)];
+int trueIndex = 1 + index * 2 + (index >= ${options.samplesCount} ? -${options.samplesCount * 2} : 0);
+float myValue = u_values[trueIndex];
+float elapsedTime = u_values[trueIndex + 1];
 
 if (abs(v_position.y - u_targetMs) < 0.003 * u_heightScale)
     finalColor = vec4(1.0, 0.0, 0.0, 1.0);
-else if (v_position.y > myValue) 
+else if (v_position.y > myValue) {
+  if (v_position.y > elapsedTime) 
     discard;
-else if (myValue > u_targetMs) 
+  else
+    finalColor = vec4(0.4, 1.0, 0.8, 0.3);
+} else if (myValue > u_targetMs * 0.95) 
     finalColor = vec4(1.0, 0.3, 0.4, 0.9);
 else if (myValue > u_targetMs * 0.5) 
     finalColor = vec4(0.9, 0.6, 0.3, 0.9);

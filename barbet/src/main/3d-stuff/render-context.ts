@@ -200,8 +200,7 @@ export const createRenderingSession = async (actionsQueue: ActionsQueue, mutex: 
           }
         }
         stats.updateWithTimeMeasurements(timeMeter.endSessionAndGetRawResults())
-        // stats.frames.frameEnded(elapsedSeconds * 1000)
-        stats.frames.frameEnded()
+        stats.frames.frameEnded(elapsedSeconds * 1000)
       }
 
       const limiter = newFramesLimiter()

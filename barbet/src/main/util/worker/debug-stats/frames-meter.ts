@@ -6,15 +6,16 @@ export class FramesMeter {
   private frameStart: number = 0
 
   public constructor(private readonly frameSamplesCount: number) {
-    this.frameSamples = new Float32Array(createNewBuffer((frameSamplesCount + 1) * Float32Array.BYTES_PER_ELEMENT))
+    this.frameSamples = new Float32Array(createNewBuffer((frameSamplesCount * 2 + 1) * Float32Array.BYTES_PER_ELEMENT))
   }
 
   public frameStarted(): void {
     this.frameStart = performance['now']()
   }
-  public frameEnded(trueTime?: number): void {
-    const duration = trueTime ?? performance['now']() - this.frameStart
-    this.frameSamples[this.currentFrameSample + 1] = duration
+  public frameEnded(trueSleepTime: number): void {
+    const duration = performance['now']() - this.frameStart
+    this.frameSamples[this.currentFrameSample * 2 + 1] = duration
+    this.frameSamples[this.currentFrameSample * 2 + 1 + 1] = trueSleepTime
     if (++this.currentFrameSample === this.frameSamplesCount) this.currentFrameSample = 0
     this.frameSamples[0] = this.currentFrameSample
   }
