@@ -3,6 +3,7 @@ const list = Object.freeze([
   'getUint8',
   'setUint16',
   'slice',
+  'finally',
   'ACTIVE_ATTRIBUTES',
   'ACTIVE_UNIFORMS',
   'ARRAY_BUFFER',
