@@ -1,4 +1,8 @@
 const list = Object.freeze([
+  'setUint8',
+  'getUint8',
+  'setUint16',
+  'slice',
   'ACTIVE_ATTRIBUTES',
   'ACTIVE_UNIFORMS',
   'ARRAY_BUFFER',

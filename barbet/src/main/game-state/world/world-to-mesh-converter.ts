@@ -3,9 +3,25 @@ import { AIR_ID, allBlocks, BlockId } from './block'
 
 const NO_ELEMENT_INDEX_MARKER = 4294967295
 const NO_COLOR_VALUE = 2
-const NO_FLAGS_VALUE = 0
 
 const FLOATS_PER_VERTEX = 6
+
+const enum FieldOffset {
+  X,
+  Y,
+  Z,
+  Offsets,
+  R,
+  G,
+  B,
+  Normal,
+  AmbientOcclusion1,
+  AmbientOcclusion2,
+  SIZE,
+}
+
+const PREALLOCATE_VERTEX_COUNT = 20_000
+const PREALLOCATE_INDICES_COUNT = 80_000
 
 export interface Mesh {
   vertexes: Uint8Array
@@ -21,19 +37,17 @@ export const buildChunkMesh = (world: WorldLike, chunkX: number, chunkZ: number,
   const { sizeX, sizeY, sizeZ } = world.size
   const worldData = world.rawBlockData
 
+  const vertexDataBuffer = createNewBuffer(PREALLOCATE_VERTEX_COUNT * FieldOffset.SIZE)
+  const vertexView = new DataView(vertexDataBuffer)
+  let lastVertexIndex = 0
+
   const vertexIndexes = new Uint32Array((chunkSize + 1) * (sizeY + 1) * (chunkSize + 1))
   vertexIndexes.fill(NO_ELEMENT_INDEX_MARKER)
   console.assert(vertexIndexes[0] === NO_ELEMENT_INDEX_MARKER)
 
-  const vertexPositions: number[] = []
-  const vertexColors: number[] = []
-  const vertexOffsets: number[] = []
-  const vertexNormals: number[] = []
   const vertexComputedAO: number[] = []
-  const vertexAOFlags: number[] = []
-  const indices: number[] = []
-
-  let addedVertexesCounter = 0
+  const indices = new Uint16Array(createNewBuffer(PREALLOCATE_INDICES_COUNT * Uint16Array.BYTES_PER_ELEMENT))
+  let lastIndicesIndex = 0
 
   const vertexesPerY = (chunkSize + 1) * (chunkSize + 1)
 
@@ -65,14 +79,15 @@ export const buildChunkMesh = (world: WorldLike, chunkX: number, chunkZ: number,
   const startX = chunkX * chunkSize
   const startZ = chunkZ * chunkSize
   const forceAddVertex = (positionIndex: number, x: number, y: number, z: number): number => {
-    vertexPositions.push(x, y, z)
-    vertexColors.push(NO_COLOR_VALUE)
-    vertexOffsets.push(NO_FLAGS_VALUE)
-    vertexNormals.push(NO_FLAGS_VALUE)
-    vertexAOFlags.push(NO_FLAGS_VALUE)
+    vertexView.setUint8(lastVertexIndex * FieldOffset.SIZE + FieldOffset.X, x - startX)
+    vertexView.setUint8(lastVertexIndex * FieldOffset.SIZE + FieldOffset.Y, y)
+    vertexView.setUint8(lastVertexIndex * FieldOffset.SIZE + FieldOffset.Z, z - startZ)
+
+    vertexView.setUint8(lastVertexIndex * FieldOffset.SIZE + FieldOffset.R, NO_COLOR_VALUE)
+
     vertexComputedAO.push(computeAmbientOcclusion(x, y, z))
-    vertexIndexes[positionIndex] = addedVertexesCounter
-    return addedVertexesCounter++
+    vertexIndexes[positionIndex] = lastVertexIndex
+    return lastVertexIndex++
   }
 
   const addVertexIfNotExists = (x: number, y: number, z: number): number => {
@@ -92,23 +107,29 @@ export const buildChunkMesh = (world: WorldLike, chunkX: number, chunkZ: number,
     forY: number,
     forZ: number,
   ): number => {
-    const wasNeverUsed = vertexColors[vertexIndex]! === NO_COLOR_VALUE
+    const wasNeverUsed = vertexView.getUint8(vertexIndex * FieldOffset.SIZE + FieldOffset.R) === NO_COLOR_VALUE
 
-    const x = vertexPositions[vertexIndex * 3 + 0]!
-    const y = vertexPositions[vertexIndex * 3 + 1]!
-    const z = vertexPositions[vertexIndex * 3 + 2]!
+    const x = vertexView.getUint8(vertexIndex * FieldOffset.SIZE + FieldOffset.X)
+    const y = vertexView.getUint8(vertexIndex * FieldOffset.SIZE + FieldOffset.Y)
+    const z = vertexView.getUint8(vertexIndex * FieldOffset.SIZE + FieldOffset.Z)
     if (!wasNeverUsed) {
-      const positionIndex = y * vertexesPerY + (x - startX) * vertexesPerX + (z - startZ)
-      vertexIndex = forceAddVertex(positionIndex, x, y, z)
+      const positionIndex = y * vertexesPerY + x * vertexesPerX + z
+      vertexIndex = forceAddVertex(positionIndex, x + startX, y, z + startZ)
     }
-    vertexColors[vertexIndex] = colorValue
+    vertexView.setUint8(vertexIndex * FieldOffset.SIZE + FieldOffset.R, (colorValue >> 16) & 0xff)
+    vertexView.setUint8(vertexIndex * FieldOffset.SIZE + FieldOffset.G, (colorValue >> 8) & 0xff)
+    vertexView.setUint8(vertexIndex * FieldOffset.SIZE + FieldOffset.B, (colorValue >> 0) & 0xff)
 
-    const ox = x - forX
+    const ox = x - (forX - startX)
     const oy = y - forY
-    const oz = z - forZ
-    if (ox < 0 || oy < 0 || oz < 0 || ox > 1 || oy > 1 || oz > 1) throw new Error(`Invalid offset ${ox} ${oy} ${oz}`)
-    vertexNormals[vertexIndex] = encodedNormal
-    vertexOffsets[vertexIndex] = ((ox << 4) | (oy << 2) | oz) & 255
+    const oz = z - (forZ - startZ)
+    if (ox < 0 || oy < 0 || oz < 0 || ox > 1 || oy > 1 || oz > 1) {
+      console.log({ ox, oy, oz, forX, forY, forZ, startX, startZ, x, y, z, wasNeverUsed })
+
+      throw new Error(`Invalid offset ${ox} ${oy} ${oz}`)
+    }
+    vertexView.setUint8(vertexIndex * FieldOffset.SIZE + FieldOffset.Offsets, ((ox << 4) | (oy << 2) | oz) & 255)
+    vertexView.setUint8(vertexIndex * FieldOffset.SIZE + FieldOffset.Normal, encodedNormal)
     return vertexIndex
   }
 
@@ -159,7 +180,12 @@ export const buildChunkMesh = (world: WorldLike, chunkX: number, chunkZ: number,
 
         if (needsTop) {
           e1 = setVertexData(e1, color, 0b011001, x, y, z)
-          indices.push(e2, e3, e1, e3, e4, e1)
+          indices[lastIndicesIndex++] = e2
+          indices[lastIndicesIndex++] = e3
+          indices[lastIndicesIndex++] = e1
+          indices[lastIndicesIndex++] = e3
+          indices[lastIndicesIndex++] = e4
+          indices[lastIndicesIndex++] = e1
         }
 
         // if (needsBottom) {
@@ -173,30 +199,54 @@ export const buildChunkMesh = (world: WorldLike, chunkX: number, chunkZ: number,
         const sideColor = color
         if (needsPositiveX) {
           e7 = setVertexData(e7, sideColor, 0b100101, x, y, z)
-          indices.push(e4, e3, e7, e8, e4, e7)
+          indices[lastIndicesIndex++] = e4
+          indices[lastIndicesIndex++] = e3
+          indices[lastIndicesIndex++] = e7
+          indices[lastIndicesIndex++] = e8
+          indices[lastIndicesIndex++] = e4
+          indices[lastIndicesIndex++] = e7
         }
 
         if (needsNegativeX) {
           e2 = setVertexData(e2, sideColor, 0b000101, x, y, z)
-          indices.push(e1, e5, e2, e5, e6, e2)
+          indices[lastIndicesIndex++] = e1
+          indices[lastIndicesIndex++] = e5
+          indices[lastIndicesIndex++] = e2
+          indices[lastIndicesIndex++] = e5
+          indices[lastIndicesIndex++] = e6
+          indices[lastIndicesIndex++] = e2
         }
 
         if (needsPositiveZ) {
           e3 = setVertexData(e3, sideColor, 0b010110, x, y, z)
-          indices.push(e2, e6, e3, e6, e7, e3)
+          indices[lastIndicesIndex++] = e2
+          indices[lastIndicesIndex++] = e6
+          indices[lastIndicesIndex++] = e3
+          indices[lastIndicesIndex++] = e6
+          indices[lastIndicesIndex++] = e7
+          indices[lastIndicesIndex++] = e3
         }
 
         if (needsNegativeZ) {
           e8 = setVertexData(e8, sideColor, 0b010100, x, y, z)
-          indices.push(e1, e4, e8, e5, e1, e8)
+          indices[lastIndicesIndex++] = e1
+          indices[lastIndicesIndex++] = e4
+          indices[lastIndicesIndex++] = e8
+          indices[lastIndicesIndex++] = e5
+          indices[lastIndicesIndex++] = e1
+          indices[lastIndicesIndex++] = e8
         }
       }
     }
   }
 
   const extractAOFromVertex = (index: number) => vertexComputedAO[index]! & 0b1111
+
   const putFlatAOFromVertex = (index: number, a: number, b: number, c: number, d: number) =>
-    (vertexAOFlags[index] = ((a & 0b1111) << 0) | ((b & 0b1111) << 4) | ((c & 0b1111) << 8) | ((d & 0b1111) << 12))
+    vertexView.setUint16(
+      index * FieldOffset.SIZE + FieldOffset.AmbientOcclusion1,
+      ((a & 0b1111) << 8) | ((b & 0b1111) << 12) | ((c & 0b1111) << 0) | ((d & 0b1111) << 4),
+    )
 
   const squaresCount = (indices.length / 6) | 0
   for (let i = 0; i < squaresCount; ++i) {
@@ -240,32 +290,21 @@ export const buildChunkMesh = (world: WorldLike, chunkX: number, chunkZ: number,
     }
   }
 
-  const vertexesCount = addedVertexesCounter
-  // xyz offsets rgb normals + 2ao
-  const bytesPerVertex = 3 + 1 + 3 + 1 + 2
-  const finalVertexes = new Uint8Array(createNewBuffer(vertexesCount * bytesPerVertex * Uint8Array.BYTES_PER_ELEMENT))
-  for (let i = 0; i < vertexesCount; ++i) {
-    finalVertexes[i * bytesPerVertex + 0] = vertexPositions[i * 3 + 0]! - startX
-    finalVertexes[i * bytesPerVertex + 1] = vertexPositions[i * 3 + 1]!
-    finalVertexes[i * bytesPerVertex + 2] = vertexPositions[i * 3 + 2]! - startZ
+  const usedVertexesPercentage = lastVertexIndex / PREALLOCATE_VERTEX_COUNT
+  const usedIndicesPercentage = lastIndicesIndex / PREALLOCATE_INDICES_COUNT
 
-    finalVertexes[i * bytesPerVertex + 3] = vertexOffsets[i]! & 0xff
+  if (lastVertexIndex > PREALLOCATE_VERTEX_COUNT) throw new Error(`${lastVertexIndex}`)
+  if (lastIndicesIndex > PREALLOCATE_INDICES_COUNT) throw new Error(`${lastIndicesIndex}`)
 
-    const color = vertexColors[i]!
-    finalVertexes[i * bytesPerVertex + 4] = (color >> 0) & 0xff
-    finalVertexes[i * bytesPerVertex + 5] = (color >> 8) & 0xff
-    finalVertexes[i * bytesPerVertex + 6] = (color >> 16) & 0xff
+  const finalVertexes =
+    usedVertexesPercentage < 0.5
+      ? new Uint8Array(vertexDataBuffer.slice(0, lastVertexIndex * FieldOffset.SIZE))
+      : new Uint8Array(vertexDataBuffer, 0, lastVertexIndex * FieldOffset.SIZE)
 
-    finalVertexes[i * bytesPerVertex + 7] = vertexNormals[i]! & 0xff
-
-    const aoFlags = vertexAOFlags[i]!
-    finalVertexes[i * bytesPerVertex + 8] = (aoFlags >> 0) & 0xff
-    finalVertexes[i * bytesPerVertex + 9] = (aoFlags >> 8) & 0xff
-  }
-
-  const finalIndices = new Uint16Array(createNewBuffer(indices.length * Uint16Array.BYTES_PER_ELEMENT))
-  let i = 0
-  for (const value of indices) finalIndices[i++] = value
+  const finalIndices =
+    usedIndicesPercentage < 0.5
+      ? new Uint16Array(indices['buffer'].slice(0, lastIndicesIndex * Uint16Array.BYTES_PER_ELEMENT))
+      : new Uint16Array(indices['buffer'], 0, lastIndicesIndex)
 
   return {
     vertexes: finalVertexes,

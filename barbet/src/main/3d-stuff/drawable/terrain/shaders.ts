@@ -65,8 +65,7 @@ export const vertexShaderSource = (options: ShaderOptions): string => {
     parts.push(`
 vec3 normal = v_normal = vec3(ivec3(((flags >> 4) & ${0b11}) - 1, ((flags >> 2) & ${0b11}) - 1, (flags & ${0b11}) - 1));
 float directionalLight = clamp(dot(normal, u_light.xyz), u_light.w, 1.0);
-v_color = a_color.zyx;
-v_color = mix(v_color, v_color * directionalLight, 0.8);
+v_color = mix(a_color, a_color * directionalLight, 0.8);
 v_vertexPosition = a_position + vec3(u_chunkPosition.x, 0.0, u_chunkPosition.y);
 `)
 
