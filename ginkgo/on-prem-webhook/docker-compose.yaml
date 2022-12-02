@@ -1,0 +1,9 @@
+version: '3'
+
+services:
+  webhook:
+    privileged: true
+    build: .
+    restart: always
+    ports:
+      - ${PORT:?Port to listen}:3000
