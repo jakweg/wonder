@@ -81,8 +81,8 @@ createServer((req, res) => {
         index += buffer.byteLength;
       }
 
-      const githubSignature = req.headers["X-Hub-Signature-256"];
-      const event = req.headers["X-GitHub-Event"];
+      const githubSignature = req.headers["x-hub-signature-256"];
+      const event = req.headers["x-github-event"];
       await handle(
         res,
         Array.isArray(githubSignature) ? githubSignature[0] : githubSignature,
