@@ -1,4 +1,4 @@
-import { DEBUG, FORCE_ENV_ZERO, JS_ROOT } from '@build'
+import { DEBUG, JS_ROOT } from '@build'
 import { ScheduledAction } from '@game/scheduled-actions'
 import { StateUpdater } from '@game/state-updater'
 import { SaveGameArguments, SaveGameResult, SaveMethod } from '@game/world/world-saver'
@@ -72,7 +72,6 @@ export interface EnvironmentConnection {
 
 export const getSuggestedEnvironmentName = (preferredEnvironment: Environment) => {
   let usedEnvironment: Environment = 'zero'
-  if (FORCE_ENV_ZERO) return 'zero'
 
   if (sharedMemoryIsAvailable && preferredEnvironment !== 'zero') {
     const offscreenCanvasIsAvailable = !!(window as any).OffscreenCanvas
@@ -85,10 +84,6 @@ export const getSuggestedEnvironmentName = (preferredEnvironment: Environment) =
 }
 
 export const loadEnvironment = async (name: Environment): Promise<Readonly<EnvironmentConnection>> => {
-  if (FORCE_ENV_ZERO && name !== 'zero') {
-    if (!DEBUG) console.error(`Forced environment change ${name} -> ${'zero' as Environment}`)
-    name = 'zero'
-  }
   const connect = (await import(`${JS_ROOT}/feature-environments/${name}.js`))['bind']
   const args: ConnectArguments = {
     frontendVariables: frontedVariablesBuffer,

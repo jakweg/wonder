@@ -30,7 +30,6 @@ const entryPoints = [
 const defines = {
   _C_DEBUG: JSON.stringify(!isProduction),
   _C_JS_ROOT: JSON.stringify(``),
-  _C_FORCE_ENV_ZERO: JSON.stringify(false),
   _C_COMMIT_HASH: JSON.stringify(commitHash),
   _C_CODE_STATS_LINES_COUNT: JSON.stringify(linesCount),
 } as const
