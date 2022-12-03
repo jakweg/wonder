@@ -2,6 +2,7 @@ version: '3'
 
 volumes:
   dist:
+  webhook_var:
 
 
 services:
@@ -13,6 +14,7 @@ services:
       dockerfile: webhook.Dockerfile
     volumes:
       - ${DIST:-dist}:/output:rw
+      - webhook_var:/var:rw
     ports:
       - ${WEBHOOK_PORT:-0}:3000
   server:
