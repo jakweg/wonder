@@ -25,6 +25,7 @@ services:
       dockerfile: webhook.Dockerfile
     environment:
       - DO_RUN=${WEBHOOK_PORT-}
+      - GITHUB_SECRET=${GITHUB_SECRET-}
     volumes:
       - ${DIST:-dist}:/output:rw
       - webhook_var:/var:rw

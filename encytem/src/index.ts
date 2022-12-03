@@ -5,15 +5,9 @@ import { createServer, ServerResponse } from "http";
 
 await new Promise((resolve) => setTimeout(resolve, 500));
 
-const envFile = Object.fromEntries(
-  (await fs.readFile(".env", { encoding: "utf-8" }))
-    .split("\n")
-    .map((e) => e.split("=", 2).map((e) => e.trim()))
-);
-
-const MASTER_BRANCH_NAME = envFile.MASTER || "master";
-const GITHUB_SECRET = envFile.GITHUB_SECRET || "";
-const REPO_URL = envFile.REPO_URL || "https://github.com/JakubekWeg/wonder";
+const MASTER_BRANCH_NAME = "master";
+const GITHUB_SECRET = process.env.GITHUB_SECRET || "";
+const REPO_URL = "https://github.com/JakubekWeg/wonder";
 
 if (!GITHUB_SECRET) console.error("Missing github secret!");
 
