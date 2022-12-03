@@ -12,7 +12,7 @@ services:
       - DEV=${DEV-false}
     build:
       context: ../barbet
-      dockerfile: ../barbet/compiler.Dockerfile
+      dockerfile: compiler.Dockerfile
     volumes:
       - ../seampan:/app/seampan:ro
       - ../barbet/src:/app/barbet/src:rw
