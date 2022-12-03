@@ -17,7 +17,9 @@ const runProcess = (command: string[], cwd?: string): Promise<void> => {
   const process = spawn(cmd, args, { cwd, stdio });
   return new Promise((resolve, reject) => {
     process.once("exit", (code) =>
-      code === 0 ? resolve() : reject("Process " + command.join() + " failed")
+      code === 0
+        ? resolve()
+        : reject("Process " + command.join(" ") + " failed")
     );
   });
 };
@@ -30,7 +32,7 @@ const getProcessOutput = (command: string[], cwd?: string): Promise<string> => {
     process.once("exit", (code) =>
       code === 0
         ? resolve(process.stdout.read()?.trim?.())
-        : reject("Process " + command.join() + " failed")
+        : reject("Process " + command.join(" ") + " failed")
     );
   });
 };
@@ -40,18 +42,19 @@ const countLines = async (directory: string): Promise<number> => {
   const counts = entries.map(async (e) => {
     if (e.isDirectory()) {
       return await countLines(`${directory}/${e.name}`);
-    } else if (e.isFile()) {
+    } else if (
+      e.isFile() &&
+      (e.name.endsWith(".ts") || e.name.endsWith(".css"))
+    ) {
       const content = await fs.readFile(`${directory}/${e.name}`, {
         encoding: "utf-8",
       });
-      return content.split("\n").length;
+      return content.split("\n").filter((e) => e.trim().length > 0).length;
     }
     return 0;
   });
   return (await Promise.all(counts)).reduce((a, c) => a + c, 0);
 };
-
-runProcess(["dockerd"]).catch(() => console.error("Failed to launch docker"));
 
 let working = false;
 const causeUpdate = async () => {
@@ -80,7 +83,12 @@ const causeUpdate = async () => {
       "wonder"
     );
 
-    const linesCount = await countLines("wonder");
+    const linesCount = (
+      await Promise.all([
+        countLines("wonder/barbet"),
+        countLines("wonder/seampan"),
+      ])
+    ).reduce((a, c) => a + c, 0);
 
     console.log(new Date().toISOString(), "Building commit", commitHash);
 
@@ -156,6 +164,8 @@ const handle = (
   return res.writeHead(202).end();
 };
 
+runProcess(["rm", "-rf", "/var/run/docker.sock"]).catch(() => void 0);
+runProcess(["dockerd"]).catch(() => console.error("Failed to launch docker"));
 createServer((req, res) => {
   let postData: Buffer[] = [];
   req.on("data", (chunk) => {
