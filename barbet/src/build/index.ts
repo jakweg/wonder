@@ -1,6 +1,8 @@
 import * as esbuild from 'esbuild'
 import * as fs from 'fs/promises'
 
+await new Promise(resolve => setTimeout(resolve, 500))
+
 const env = globalThis.process.env
 
 const outputFolder = '/output'
@@ -58,7 +60,7 @@ const { errors } = result
 if (errors.length > 0) {
   console.error(errors)
 } else {
-  console.info('Looks fine to me')
+  console.info('Build finished successfully')
 }
 
 if (isProduction) {

@@ -7,4 +7,4 @@ RUN npm ci
 COPY src/build src/build
 COPY tsconfig.json ./
 RUN esbuild src/build/index.ts --outdir=. --platform=node --out-extension:.js=.mjs
-CMD node ./index.mjs
+CMD test $DONT_RUN && echo "Developer compiler is inactive" || node ./index.mjs ; true

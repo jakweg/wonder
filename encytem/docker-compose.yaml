@@ -6,12 +6,25 @@ volumes:
 
 
 services:
+  dev-compiler:
+    environment:
+      - DONT_RUN=${WEBHOOK_PORT-}
+      - DEV=${DEV-false}
+    build:
+      context: ../barbet
+      dockerfile: ../barbet/compiler.Dockerfile
+    volumes:
+      - ../seampan:/app/seampan:ro
+      - ../barbet/src:/app/barbet/src:rw
+      - ${DIST:-dist}:/output:rw
   webhook:
     privileged: true
-    restart: always
+    restart: on-failure
     build:
       context: .
       dockerfile: webhook.Dockerfile
+    environment:
+      - DO_RUN=${WEBHOOK_PORT-}
     volumes:
       - ${DIST:-dist}:/output:rw
       - webhook_var:/var:rw
@@ -24,6 +37,6 @@ services:
       context: .
       dockerfile: server.Dockerfile
     ports:
-      - ${SERVE:-3000}:80
+      - ${SERVE:-0}:80
     volumes:
       - ${DIST:-dist}:/app:ro

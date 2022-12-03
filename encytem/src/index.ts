@@ -3,6 +3,8 @@ import { createHmac } from "crypto";
 import * as fs from "fs/promises";
 import { createServer, ServerResponse } from "http";
 
+await new Promise((resolve) => setTimeout(resolve, 500));
+
 const envFile = Object.fromEntries(
   (await fs.readFile(".env", { encoding: "utf-8" }))
     .split("\n")
@@ -16,8 +18,7 @@ const REPO_URL = envFile.REPO_URL || "https://github.com/JakubekWeg/wonder";
 if (!GITHUB_SECRET) console.error("Missing github secret!");
 
 const runProcess = (command: string[], cwd?: string): Promise<void> => {
-  const stdio =
-    command[0] === "dockerd" ? "ignore" : ("ignore" as "inherit" | "ignore");
+  const stdio = "ignore" as "inherit" | "ignore";
   const [cmd, ...args] = command;
   const process = spawn(cmd, args, { cwd, stdio });
   return new Promise((resolve, reject) => {
