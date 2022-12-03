@@ -20,6 +20,17 @@ const runProcess = (command: string[], cwd?: string): Promise<void> => {
   });
 };
 
+const getProcessOutput = (command: string[], cwd?: string): Promise<string> => {
+  const [cmd, ...args] = command;
+  const process = spawn(cmd, args, { cwd, stdio: "pipe" });
+  process.stdout.setEncoding("utf8");
+  return new Promise<string>((resolve, reject) => {
+    process.once("exit", (code) =>
+      code === 0 ? resolve(process.stdout.read()) : reject()
+    );
+  });
+};
+
 await fs.rm("/var/run/docker.pid").catch((e) => void e);
 runProcess(["dockerd"]).catch((e) => void e);
 
@@ -33,21 +44,19 @@ const causeUpdate = async () => {
     working = true;
     console.log("Starting update!");
     await runProcess(["rm", "-rf", "wonder"]).catch((e) => void e);
-    await runProcess([
-      "git",
-      "clone",
-      REPO_URL,
-      "--depth",
-      "1",
-      "--branch",
-      MASTER_BRANCH_NAME,
-      "wonder",
-    ]);
 
     await runProcess(
       ["docker", "build", "-t", "foo", ".", "-f", "compiler.Dockerfile"],
       "wonder/barbet"
     );
+
+    const commitHash = await getProcessOutput([
+      "git",
+      "rev-parse",
+      "--short",
+      "HEAD",
+    ]);
+
     await runProcess(
       [
         "docker",
@@ -63,6 +72,8 @@ const causeUpdate = async () => {
         "none",
         "-e",
         "DEV=false",
+        "-e",
+        `COMMIT_HASH=${commitHash}`,
         "foo",
       ],
       "wonder/barbet"

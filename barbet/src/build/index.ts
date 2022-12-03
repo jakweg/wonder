@@ -3,11 +3,10 @@ import * as fs from 'fs/promises'
 
 await new Promise(resolve => setTimeout(resolve, 500))
 
-const env = globalThis.process.env
-
 const outputFolder = '/output'
 
-const isProduction = env['DEV'] === 'false'
+const isProduction = process.env['DEV'] === 'false'
+const commitHash = process.env['COMMIT_HASH'] || 'unknown'
 console.info('Building for', isProduction ? 'production' : 'debug')
 
 await Promise.all(
@@ -31,7 +30,7 @@ const defines = {
   _C_DEBUG: JSON.stringify(!isProduction),
   _C_JS_ROOT: JSON.stringify(``),
   _C_FORCE_ENV_ZERO: JSON.stringify(false),
-  _C_COMMIT_HASH: JSON.stringify('unknown'),
+  _C_COMMIT_HASH: JSON.stringify(commitHash),
   _C_CODE_STATS_LINES_COUNT: JSON.stringify(0),
 } as const
 
