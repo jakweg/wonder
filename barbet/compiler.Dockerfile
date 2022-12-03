@@ -1,6 +1,6 @@
 FROM alpine:3.17.0
 WORKDIR /app/barbet
-RUN apk update && apk add nodejs npm git
+RUN apk update && apk add nodejs npm
 RUN npm i esbuild --location=global
 COPY package*.json ./
 RUN npm ci

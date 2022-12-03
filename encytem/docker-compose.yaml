@@ -5,18 +5,16 @@ volumes:
 
 
 services:
-  compiler:
-    environment:
-      - DEV=${DEV-false}
+  webhook:
+    privileged: true
+    restart: always
     build:
       context: .
-      dockerfile: compiler.Dockerfile
-    networks:
-      - no-internet
+      dockerfile: webhook.Dockerfile
     volumes:
-      - ../seampan:/app/seampan:ro
-      - ./src:/app/barbet/src:rw
       - ${DIST:-dist}:/output:rw
+    ports:
+      - ${WEBHOOK_PORT:-0}:3000
   server:
     environment:
       - SERVE=${SERVE-}
@@ -27,8 +25,3 @@ services:
       - ${SERVE:-3000}:80
     volumes:
       - ${DIST:-dist}:/app:ro
-
-networks:
-  no-internet:
-    driver: bridge
-    internal: true
