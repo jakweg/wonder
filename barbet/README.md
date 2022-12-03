@@ -1,16 +1,18 @@
 ### Root for main web page
 
-#### Compile using:
+#### Run containers using:
 
-`deno run -A build.ts`
+`docker-compose up --build`
 
-#### Compile and serve:
+| Option | Example value |                           Meaning                            |
+| :----: | :-----------: | :----------------------------------------------------------: |
+|  DEV   |   anything    | Enables debug mode, disables minification, watches files etc |
+| SERVE  |     8080      |             Enables HTTP server on a given port              |
+|  DIST  |    ./dist     |            Outputs compiled files into directory             |
 
-`deno run -A build.ts --serve`
+#### Example debug server command:
 
-#### Build for production:
-
-`deno run -A build.ts --prod`
+`DEV= SERVE=3000 DIST=./dist docker-compose up --build`
 
 ###### Uses matrix math library [gl-matrix](https://github.com/toji/gl-matrix)
 
