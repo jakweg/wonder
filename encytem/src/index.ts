@@ -20,6 +20,7 @@ const runProcess = (command: string[], cwd?: string): Promise<void> => {
   });
 };
 
+await fs.rm("/var/run/docker.pid").catch((e) => void e);
 runProcess(["dockerd"]).catch((e) => void e);
 
 let working = false;
