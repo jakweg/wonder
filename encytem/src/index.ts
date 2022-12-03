@@ -26,13 +26,13 @@ const getProcessOutput = (command: string[], cwd?: string): Promise<string> => {
   process.stdout.setEncoding("utf8");
   return new Promise<string>((resolve, reject) => {
     process.once("exit", (code) =>
-      code === 0 ? resolve(process.stdout.read()) : reject()
+      code === 0 ? resolve(process.stdout.read()?.trim?.()) : reject()
     );
   });
 };
 
-await fs.rm("/var/run/docker.pid").catch((e) => void e);
-runProcess(["dockerd"]).catch((e) => void e);
+await fs.rm("/var/run/docker.pid", { force: true }).catch((e) => void e);
+runProcess(["dockerd"]).catch(() => console.error("Failed to launch docker"));
 
 let working = false;
 const causeUpdate = async () => {
@@ -42,20 +42,31 @@ const causeUpdate = async () => {
   }
   try {
     working = true;
-    console.log("Starting update!");
+    console.log(new Date().toISOString(), "Starting update");
+
     await runProcess(["rm", "-rf", "wonder"]).catch((e) => void e);
+    await runProcess([
+      "git",
+      "clone",
+      REPO_URL,
+      "--depth",
+      "1",
+      "--branch",
+      MASTER_BRANCH_NAME,
+      "wonder",
+    ]);
+
+    const commitHash = await getProcessOutput(
+      ["git", "rev-parse", "--short", "HEAD"],
+      "wonder"
+    );
+
+    console.log(new Date().toISOString(), "Building commit", commitHash);
 
     await runProcess(
       ["docker", "build", "-t", "foo", ".", "-f", "compiler.Dockerfile"],
       "wonder/barbet"
     );
-
-    const commitHash = await getProcessOutput([
-      "git",
-      "rev-parse",
-      "--short",
-      "HEAD",
-    ]);
 
     await runProcess(
       [
@@ -85,7 +96,7 @@ const causeUpdate = async () => {
         force: true,
       });
     }
-    console.log("Update finished successfully");
+    console.log(new Date().toISOString(), "Update finished successfully");
   } finally {
     working = false;
   }
@@ -121,10 +132,6 @@ const handle = (
 
   return res.writeHead(202).end();
 };
-
-runProcess(["dockerd"]).catch(() =>
-  console.error("Failed to launch docker, probably already running")
-);
 
 createServer((req, res) => {
   let postData: Buffer[] = [];
@@ -168,5 +175,7 @@ createServer((req, res) => {
   });
 }).listen(process.env.PORT || 3000, undefined, () => {
   console.log("Webhook is ready, requesting initial build");
-  causeUpdate();
+  setTimeout(() => {
+    causeUpdate();
+  }, 1000);
 });

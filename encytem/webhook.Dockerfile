@@ -4,4 +4,4 @@ RUN apk update && apk add nodejs npm git docker
 RUN npm i esbuild --location=global
 COPY src src
 RUN esbuild src/index.ts --outdir=. --platform=node --out-extension:.js=.mjs
-CMD test $DO_RUN && node ./index.mjs || echo "Webhook is inactive" ; true
+CMD ! test $DO_RUN && echo "Webhook is inactive" || node ./index.mjs
