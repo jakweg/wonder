@@ -16,7 +16,9 @@ const runProcess = (command: string[], cwd?: string): Promise<void> => {
   const [cmd, ...args] = command;
   const process = spawn(cmd, args, { cwd, stdio });
   return new Promise((resolve, reject) => {
-    process.once("exit", (code) => (code === 0 ? resolve() : reject()));
+    process.once("exit", (code) =>
+      code === 0 ? resolve() : reject("Process " + command.join() + " failed")
+    );
   });
 };
 
@@ -26,12 +28,29 @@ const getProcessOutput = (command: string[], cwd?: string): Promise<string> => {
   process.stdout.setEncoding("utf8");
   return new Promise<string>((resolve, reject) => {
     process.once("exit", (code) =>
-      code === 0 ? resolve(process.stdout.read()?.trim?.()) : reject()
+      code === 0
+        ? resolve(process.stdout.read()?.trim?.())
+        : reject("Process " + command.join() + " failed")
     );
   });
 };
 
-await fs.rm("/var/run/docker.pid", { force: true }).catch((e) => void e);
+const countLines = async (directory: string): Promise<number> => {
+  const entries = await fs.readdir(directory, { withFileTypes: true });
+  const counts = entries.map(async (e) => {
+    if (e.isDirectory()) {
+      return await countLines(`${directory}/${e.name}`);
+    } else if (e.isFile()) {
+      const content = await fs.readFile(`${directory}/${e.name}`, {
+        encoding: "utf-8",
+      });
+      return content.split("\n").length;
+    }
+    return 0;
+  });
+  return (await Promise.all(counts)).reduce((a, c) => a + c, 0);
+};
+
 runProcess(["dockerd"]).catch(() => console.error("Failed to launch docker"));
 
 let working = false;
@@ -61,6 +80,8 @@ const causeUpdate = async () => {
       "wonder"
     );
 
+    const linesCount = await countLines("wonder");
+
     console.log(new Date().toISOString(), "Building commit", commitHash);
 
     await runProcess(
@@ -85,6 +106,8 @@ const causeUpdate = async () => {
         "DEV=false",
         "-e",
         `COMMIT_HASH=${commitHash}`,
+        "-e",
+        `LINES_COUNT=${linesCount}`,
         "foo",
       ],
       "wonder/barbet"

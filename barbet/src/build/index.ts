@@ -7,6 +7,7 @@ const outputFolder = '/output'
 
 const isProduction = process.env['DEV'] === 'false'
 const commitHash = process.env['COMMIT_HASH'] || 'unknown'
+const linesCount = parseInt(process.env['LINES_COUNT'] || '', 10) || 0
 console.info('Building for', isProduction ? 'production' : 'debug')
 
 await Promise.all(
@@ -31,7 +32,7 @@ const defines = {
   _C_JS_ROOT: JSON.stringify(``),
   _C_FORCE_ENV_ZERO: JSON.stringify(false),
   _C_COMMIT_HASH: JSON.stringify(commitHash),
-  _C_CODE_STATS_LINES_COUNT: JSON.stringify(0),
+  _C_CODE_STATS_LINES_COUNT: JSON.stringify(linesCount),
 } as const
 
 const result = await esbuild.build({
