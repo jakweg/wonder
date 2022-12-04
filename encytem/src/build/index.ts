@@ -1,5 +1,6 @@
 import * as esbuild from "esbuild";
 import * as fs from "fs/promises";
+import * as minifier from "html-minifier";
 
 await new Promise((resolve) => setTimeout(resolve, 500));
 
@@ -217,11 +218,37 @@ if (isProduction) {
 
 await Promise.all(
   (
-    await fs.readdir("src/public")
-  ).map((file) =>
-    fs.cp(`src/public/${file}`, `${outputFolder}/${file}`, {
-      recursive: true,
-      preserveTimestamps: false,
-    })
-  )
+    await fs.readdir("src/public", { withFileTypes: true })
+  ).map(async (entry) => {
+    if (entry.name.endsWith(".html") && entry.isFile()) {
+      const content = await fs.readFile(`src/public/${entry.name}`, {
+        encoding: "utf-8",
+      });
+      const newContent = minifier.minify(content, {
+        collapseBooleanAttributes: true,
+        collapseInlineTagWhitespace: true,
+        collapseWhitespace: true,
+        minifyURLs: true,
+        minifyCSS: true,
+        minifyJS: true,
+        removeAttributeQuotes: true,
+        removeEmptyAttributes: true,
+        removeComments: true,
+        removeOptionalTags: true,
+        removeRedundantAttributes: true,
+        sortAttributes: true,
+        sortClassName: true,
+        trimCustomFragments: true,
+        useShortDoctype: true,
+      });
+      await fs.writeFile(`${outputFolder}/${entry.name}`, newContent, {
+        encoding: "utf-8",
+      });
+    } else {
+      await fs.cp(`src/public/${entry.name}`, `${outputFolder}/${entry.name}`, {
+        recursive: true,
+        preserveTimestamps: false,
+      });
+    }
+  })
 );

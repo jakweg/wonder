@@ -13,7 +13,7 @@ if (!GITHUB_SECRET)
   console.error("Missing github secret, all requests will be honored!");
 
 const runProcess = (command: string[], cwd?: string): Promise<void> => {
-  const stdio = "inherit" as "inherit" | "ignore";
+  const stdio = "ignore" as "inherit" | "ignore";
   const [cmd, ...args] = command;
   const process = spawn(cmd, args, { cwd, stdio });
   return new Promise((resolve, reject) => {
@@ -169,7 +169,7 @@ const handle = (
   return res.writeHead(202).end();
 };
 
-runProcess(["rm", "-rf", "/var/run/docker.sock"]).catch(() => void 0);
+runProcess(["rm", "-rf", "/var/run/docker.sock*"]).catch(() => void 0);
 runProcess(["dockerd"]).catch(() => console.error("Failed to launch docker"));
 createServer((req, res) => {
   let postData: Buffer[] = [];
