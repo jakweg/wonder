@@ -11,11 +11,12 @@ services:
       - DONT_RUN=${WEBHOOK_PORT-}
       - DEV=${DEV-false}
     build:
-      context: ../barbet
+      context: .
       dockerfile: compiler.Dockerfile
+
     volumes:
       - ../seampan:/app/seampan:ro
-      - ../barbet/src:/app/barbet/src:rw
+      - ../barbet:/app/barbet:rw
       - ${DIST:-dist}:/output:rw
   webhook:
     privileged: true

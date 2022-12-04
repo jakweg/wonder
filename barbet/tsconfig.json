@@ -11,43 +11,18 @@
     "noUncheckedIndexedAccess": true,
     "moduleResolution": "Node",
     "baseUrl": ".",
-    "lib": [
-      "ES2022",
-      "dom",
-      "webworker"
-    ],
+    "lib": ["ES2022", "dom", "webworker"],
     "paths": {
-      "@matrix/*": [
-        "../seampan/matrix/*"
-      ],
-      "@seampan/*": [
-        "../seampan/*"
-      ],
-      "@3d/*": [
-        "./src/main/3d-stuff/*"
-      ],
-      "@game": [
-        "./src/main/game-state/game-state"
-      ],
-      "@entry/*": [
-        "./src/main/entry-points/*"
-      ],
-      "@game/*": [
-        "./src/main/game-state/*"
-      ],
-      "@sync-operations/*": [
-        "./src/main/game-state/sync-operations/*"
-      ],
-      "@build": [
-        "./src/main/util/build-info"
-      ],
-      "@utils/*": [
-        "./src/main/util/*"
-      ],
+      "@matrix/*": ["../seampan/matrix/*"],
+      "@seampan/*": ["../seampan/*"],
+      "@3d/*": ["./src/main/3d-stuff/*"],
+      "@game": ["./src/main/game-state/game-state"],
+      "@entry/*": ["./src/main/entry-points/*"],
+      "@game/*": ["./src/main/game-state/*"],
+      "@sync-operations/*": ["./src/main/game-state/sync-operations/*"],
+      "@build": ["./src/main/util/build-info"],
+      "@utils/*": ["./src/main/util/*"]
     }
   },
-  "exclude": [
-    "build-js",
-    "dist"
-  ]
+  "exclude": ["dist"]
 }
