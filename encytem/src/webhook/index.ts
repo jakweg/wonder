@@ -12,7 +12,7 @@ const REPO_URL = "https://github.com/JakubekWeg/wonder";
 if (!GITHUB_SECRET) console.error("Missing github secret!");
 
 const runProcess = (command: string[], cwd?: string): Promise<void> => {
-  const stdio = "inherit" as "inherit" | "ignore";
+  const stdio = "ignore" as "inherit" | "ignore";
   const [cmd, ...args] = command;
   const process = spawn(cmd, args, { cwd, stdio });
   return new Promise((resolve, reject) => {
