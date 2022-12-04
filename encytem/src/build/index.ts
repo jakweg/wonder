@@ -94,7 +94,7 @@ if (isProduction) {
   }
 
   await fs.writeFile(
-    "./mappings.txt",
+    `${outputFolder}/.mappings.txt`,
     JSON.stringify(result.mangleCache, undefined, 3)
   );
 

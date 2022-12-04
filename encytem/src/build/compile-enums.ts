@@ -191,9 +191,5 @@ export const doEnumCompilation = async () => {
   const candidates = await findFiles("src", (name) =>
     name.endsWith(".2bc.json")
   );
-  console.log(candidates);
-
   await Promise.all(candidates.map((name) => transformFile(name)));
-
-  console.log("done");
 };
