@@ -13,5 +13,6 @@ You can save and load worlds from file and IndexedDB.
 Project uses SharedArrayBuffers and two Workers: one for rendering with OffscreenCanvas and another one for state
 updates. All animations are performed in shaders written in GLSL.
 
-Project is publicly available and uses Continuous Deployment on GCP.
+### Building and running yourself
 
+##### See [encytem](encytem/README.md)
