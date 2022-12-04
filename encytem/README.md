@@ -2,18 +2,22 @@
 
 Everything is run inside docker containers, you need to have docker-compose installed
 
-##### Run containers using:
+#### Steps to run:
 
-`docker-compose up --build`
+1. Clone this repository
 
-|    Option     | Example value |                                          Meaning                                           |
-| :-----------: | :-----------: | :----------------------------------------------------------------------------------------: |
-|      DEV      |   anything    | Enables debug mode, disables minification, watches files... incompatible with WEBHOOK_PORT |
-|     SERVE     |     8080      |                            Enables HTTP server on a given port                             |
-|     DIST      |    ./dist     |                           Outputs compiled files into directory                            |
-| WEBHOOK_PORT  |     8081      |               Enables github webhook on port, takes precedence over DEV flag               |
-| GITHUB_SECRET |     abcd      |                            Verifies requests coming from GitHub                            |
+   ```bash
+   git clone https://github.com/JakubekWeg/wonder --depth 1
+   ```
 
-#### Example debug server command:
+2. Copy example configuration
 
-`DEV= SERVE=3000 DIST=./dist docker-compose up --build`
+   ```bash
+   cp ./example.env .env
+   ```
+
+3. Now, please review configuration inside `.env` and make your changes
+4. Once you're ready run use to start the project
+   ```bash
+   docker-compose --env-file .env up --build
+   ```
