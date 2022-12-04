@@ -181,7 +181,7 @@ const transformFile = async (fileName: string) => {
     encoding: "utf8",
   });
   try {
-    await runProcess(["npx", "prettier", "--write", finalPath]);
+    await runProcess(["npx", "--no-install", "prettier", "--write", finalPath]);
   } catch (e) {
     // ignore, probably npx or prettier not found
   }

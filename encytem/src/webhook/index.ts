@@ -9,7 +9,8 @@ const MASTER_BRANCH_NAME = "master";
 const GITHUB_SECRET = process.env.GITHUB_SECRET || "";
 const REPO_URL = "https://github.com/JakubekWeg/wonder";
 
-if (!GITHUB_SECRET) console.error("Missing github secret!");
+if (!GITHUB_SECRET)
+  console.error("Missing github secret, all requests will be honored!");
 
 const runProcess = (command: string[], cwd?: string): Promise<void> => {
   const stdio = "ignore" as "inherit" | "ignore";
@@ -143,21 +144,25 @@ const handle = (
   githubAction: string | undefined,
   body: Buffer
 ) => {
-  if (!githubAction) return res.writeHead(400).end();
-  if (!githubSignature) return res.writeHead(401).end();
+  if (GITHUB_SECRET) {
+    if (!githubAction) return res.writeHead(400).end();
+    if (!githubSignature) return res.writeHead(401).end();
 
-  const computedHash = computeHash(body);
+    const computedHash = computeHash(body);
 
-  if (githubSignature.substring("sha256=".length) !== computedHash)
-    return res.writeHead(403).end();
+    if (githubSignature.substring("sha256=".length) !== computedHash)
+      return res.writeHead(403).end();
 
-  if (githubAction === "ping") return res.writeHead(200).end();
-  if (githubAction !== "push") return res.writeHead(405).end();
+    if (githubAction === "ping") return res.writeHead(200).end();
+    if (githubAction !== "push") return res.writeHead(405).end();
 
-  const bodyParsed = JSON.parse(new TextDecoder().decode(body));
-  const expectedRef = `refs/heads/${MASTER_BRANCH_NAME}`;
-  if (bodyParsed.ref !== expectedRef)
-    return res.writeHead(200).end("Ignoring this ref");
+    const bodyParsed = JSON.parse(new TextDecoder().decode(body));
+    const expectedRef = `refs/heads/${MASTER_BRANCH_NAME}`;
+    if (bodyParsed.ref !== expectedRef)
+      return res.writeHead(200).end("Ignoring this ref");
+  } else {
+    console.warn("Skipping signature check");
+  }
 
   causeUpdate();
 
