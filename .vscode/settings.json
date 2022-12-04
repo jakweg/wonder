@@ -1,17 +1,11 @@
 {
-  "deno.enable": true,
-  "deno.unstable": true,
   "files.exclude": {
-    "**/build-js/**": true
+    "**/dist/**": true
   },
   "search.exclude": {
-    "**/build-js/**": true
+    "**/dist/**": true
   },
-  "javascript.preferences.autoImportFileExcludePatterns": [
-    "**/build-js/**"
-  ],
-  "typescript.preferences.autoImportFileExcludePatterns": [
-    "**/build-js/**"
-  ],
+  "javascript.preferences.autoImportFileExcludePatterns": ["**/dist/**"],
+  "typescript.preferences.autoImportFileExcludePatterns": ["**/dist/**"],
   "git.ignoreLimitWarning": true
 }
