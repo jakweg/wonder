@@ -4,7 +4,7 @@ import { SystemMessageTypeFromWorker } from './message-types/system'
 
 const trustedTypesPolicy = { 'createScriptURL': (name: string) => `${JS_ROOT}/${name}.js` }
 const policy = /* @__PURE__ */ (self as any)['trustedTypes']
-  ? (self as any)['trustedTypes']['createPolicy']('default', trustedTypesPolicy)
+  ? (self as any)['trustedTypes']['createPolicy']('other', trustedTypesPolicy)
   : trustedTypesPolicy
 
 const startExchange = async <S, R extends SystemMessageTypeFromWorker>(worker: Worker) => {
@@ -23,7 +23,7 @@ export class WorkerInstance<SendTypes, ReceiveTypes> {
     public readonly startDelay: number,
     public readonly send: Sender<SendTypes>,
     public readonly receive: Receiver<ReceiveTypes>,
-  ) {}
+  ) { }
 
   public static async spawnNew<S, R>(scriptName: string, name: string): Promise<WorkerInstance<S, R>> {
     const worker = new Worker(policy['createScriptURL'](scriptName), { 'name': name, 'type': 'module' })

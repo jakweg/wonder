@@ -14,7 +14,7 @@
       "serverReadyAction": {
         "action": "startDebugging",
         "name": "See frontend",
-        "pattern": "encytem-server-1 | Serving at port 8000"
+        "pattern": "Serving at port"
       }
     },
     {
