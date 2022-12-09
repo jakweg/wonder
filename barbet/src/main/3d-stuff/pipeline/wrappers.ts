@@ -144,7 +144,9 @@ export const newAnimationFrameCaller = (
       nextFrameRequest = requestAnimationFrame(internalRenderFunction)
     },
     stop() {
-      cancelAnimationFrame(nextFrameRequest)
+      // safari doesn't support - check before call
+      if (!!globalThis.cancelAnimationFrame)
+        cancelAnimationFrame(nextFrameRequest)
       nextFrameRequest = 0
     },
   }

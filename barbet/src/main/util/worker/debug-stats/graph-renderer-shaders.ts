@@ -70,10 +70,10 @@ float elapsedTime = u_values[trueIndex + 1];
 if (abs(v_position.y - u_targetMs) < 0.003 * u_heightScale)
     finalColor = vec4(1.0, 0.0, 0.0, 1.0);
 else if (v_position.y > myValue) {
-  if (v_position.y > elapsedTime) 
+  if (abs(v_position.y - elapsedTime) > 0.002 * u_heightScale) 
     discard;
   else
-    finalColor = vec4(0.4, 1.0, 0.8, 0.3);
+    finalColor = vec4(1.0, 1.0, 1.0, 0.6);
 } else if (myValue > u_targetMs * 0.95) 
     finalColor = vec4(1.0, 0.3, 0.4, 0.9);
 else if (myValue > u_targetMs * 0.5) 
