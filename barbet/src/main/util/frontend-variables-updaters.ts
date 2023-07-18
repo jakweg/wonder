@@ -41,8 +41,8 @@ function observeCanvasSizes(canvas: HTMLCanvasElement) {
     lastSizes.lastResizeTime = performance.now()
     if (width === 0 || height === 0) return
 
-    Atomics.store(frontedVariables, FrontendVariable.CanvasDrawingWidth, (width * pixelRatio) | 0)
-    Atomics.store(frontedVariables, FrontendVariable.CanvasDrawingHeight, (height * pixelRatio) | 0)
+    Atomics.store(frontedVariables, FrontendVariable.CanvasDrawingWidth, Math.round(width * pixelRatio))
+    Atomics.store(frontedVariables, FrontendVariable.CanvasDrawingHeight, Math.round(height * pixelRatio))
     if (frameId !== -1) frameId = requestAnimationFrame(checkSizesCallback)
   }
   checkSizesCallback()
