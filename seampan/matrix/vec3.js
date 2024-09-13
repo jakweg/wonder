@@ -467,26 +467,6 @@ export function bezier(out, a, b, c, d, t) {
 }
 
 /**
- * Generates a random vector with the given scale
- *
- * @param {vec3} out the receiving vector
- * @param {Number} [scale] Length of the resulting vector. If omitted, a unit vector will be returned
- * @returns {vec3} out
- */
-export function random(out, scale) {
-  scale = scale === undefined ? 1.0 : scale;
-
-  let r = glMatrix.RANDOM() * 2.0 * Math.PI;
-  let z = glMatrix.RANDOM() * 2.0 - 1.0;
-  let zScale = Math.sqrt(1.0 - z * z) * scale;
-
-  out[0] = Math.cos(r) * zScale;
-  out[1] = Math.sin(r) * zScale;
-  out[2] = z * scale;
-  return out;
-}
-
-/**
  * Transforms the vec3 with a mat4.
  * 4th vector component is implicitly '1'
  *

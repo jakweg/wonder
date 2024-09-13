@@ -6,7 +6,7 @@ await new Promise((resolve) => setTimeout(resolve, 500));
 
 const outputFolder = "/output";
 
-const isProduction = process.env["DEV"] === "false";
+const isProduction = !process.env["DEV"];
 const commitHash = process.env["COMMIT_HASH"] || "unknown";
 const linesCount = parseInt(process.env["LINES_COUNT"] || "", 10) || 0;
 console.info("Building for", isProduction ? "production" : "debug");
@@ -38,7 +38,17 @@ const defines = {
   _C_CODE_STATS_LINES_COUNT: JSON.stringify(linesCount),
 } as const;
 
-const result = await esbuild.build({
+const onEndPlugin = {
+  name: "on-end",
+  setup(build: esbuild.PluginBuild) {
+    build.onEnd((result: esbuild.BuildResult) => {
+      console.log(`Build ended with ${result.errors.length} errors`);
+    });
+  },
+};
+
+const context = await esbuild.context({
+  plugins: [onEndPlugin],
   define: defines,
   allowOverwrite: true,
   entryPoints: [
@@ -51,17 +61,9 @@ const result = await esbuild.build({
   target: "es2022",
   splitting: false,
   format: "esm",
-  watch: isProduction
-    ? false
-    : {
-        onRebuild(error: any) {
-          const now = new Date().toLocaleTimeString();
-          console.log(`${now} Build ${error ? "failed" : "successful"}`);
-        },
-      },
 });
 
-const { errors } = result;
+const { errors } = await context.rebuild();
 if (errors.length > 0) {
   console.error(errors);
 } else {
@@ -252,3 +254,8 @@ await Promise.all(
     }
   })
 );
+
+if (!isProduction) {
+  console.log("Entering watch mode...");
+  await context.watch({});
+}

@@ -9,7 +9,7 @@ services:
   dev-compiler:
     environment:
       - DONT_RUN=${WEBHOOK_PORT-}
-      - DEV=${DEV-false}
+      - DEV=${DEV-}
     build:
       context: .
       dockerfile: compiler.Dockerfile
@@ -34,6 +34,7 @@ services:
       - ${WEBHOOK_PORT:-0}:3000
   server:
     environment:
+      - DEV=${DEV-}
       - SERVE=${SERVE-}
     build:
       context: .
