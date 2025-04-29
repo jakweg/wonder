@@ -15,12 +15,15 @@ import { ReceiveActionsQueue } from './scheduled-actions/queue'
 import { SurfaceResourcesIndex } from './surface-resources/surface-resources-index'
 import { TileMetaDataIndex } from './tile-meta-data-index'
 import { World } from './world/world'
+import { EntityContainer as EntityContainer2 } from './entities2/container'
 
 export interface GameState {
   readonly metaData: Int32Array
   readonly world: World
   readonly groundItems: GroundItemsIndex
+  /** @deprecated  */
   readonly entities: EntityContainer
+  readonly entities2: EntityContainer2
   readonly tileMetaDataIndex: TileMetaDataIndex
   readonly surfaceResources: SurfaceResourcesIndex
 
@@ -42,6 +45,7 @@ export const createGameStateForRenderer = (object: any): GameState => {
     entities: EntityContainer.fromReceived(object.entities),
     tileMetaDataIndex: TileMetaDataIndex.fromReceived(object.tileMetaDataIndex),
     surfaceResources: SurfaceResourcesIndex.fromReceived(object.surfaceResources),
+    entities2: EntityContainer2.fromReceived(object.entities2),
 
     get currentTick(): number {
       return this.metaData[MetadataField.CurrentTick]!
@@ -58,7 +62,9 @@ export class GameStateImplementation implements GameState {
     public readonly metaData: Int32Array,
     public readonly world: World,
     public readonly groundItems: GroundItemsIndex,
+    /** @deprecated */
     public readonly entities: EntityContainer,
+    public readonly entities2: EntityContainer2,
     public readonly tileMetaDataIndex: TileMetaDataIndex,
     public readonly delayedComputer: DelayedComputer,
     public readonly surfaceResources: SurfaceResourcesIndex,
@@ -87,6 +93,7 @@ export class GameStateImplementation implements GameState {
       world,
       groundItems,
       entities,
+      EntityContainer2.createNew(),
       tileMetaDataIndex,
       delayedComputer,
       surfaceResources,
@@ -108,6 +115,7 @@ export class GameStateImplementation implements GameState {
       world,
       GroundItemsIndex.deserialize(object['groundItems']),
       EntityContainer.deserialize(object['entities']),
+      EntityContainer2.deserialize(object['entities2']),
       tileMetaDataIndex,
       deserializeDelayedComputer(object['delayedComputer']),
       SurfaceResourcesIndex.deserialize(object['surfaceResources']),
@@ -123,6 +131,7 @@ export class GameStateImplementation implements GameState {
       world: this.world.pass(),
       groundItems: this.groundItems.pass(),
       entities: this.entities.pass(),
+      entities2: this.entities2.pass(),
       surfaceResources: this.surfaceResources.pass(),
       tileMetaDataIndex: this.tileMetaDataIndex.pass(),
     }
@@ -135,6 +144,7 @@ export class GameStateImplementation implements GameState {
       'world': this.world.serialize(),
       'groundItems': this.groundItems.serialize(),
       'entities': this.entities.serialize(),
+      'entities2': this.entities2.serialize(),
       'surfaceResources': this.surfaceResources.serialize(),
       'tileMetaDataIndex': this.tileMetaDataIndex.serialize(),
       'delayedComputer': this.delayedComputer.serialize(),
@@ -151,7 +161,7 @@ export class GameStateImplementation implements GameState {
     if (isInWorker) this.mutex.enterForUpdate()
     else await this.mutex.enterForUpdateAsync()
 
-    const currentTick = ++this.metaData[MetadataField.CurrentTick] | 0
+    const currentTick = ++this.metaData[MetadataField.CurrentTick]! | 0
 
     stats.timeMeter.nowStart(UpdatePhase.ScheduledActions)
     for (const action of additionalActions) {
