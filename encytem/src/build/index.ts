@@ -38,7 +38,7 @@ const defines = {
   _C_CODE_STATS_LINES_COUNT: JSON.stringify(linesCount),
 } as const;
 
-const result = await esbuild.build({
+const ctx = await esbuild.context({
   define: defines,
   allowOverwrite: true,
   entryPoints: [
@@ -51,17 +51,14 @@ const result = await esbuild.build({
   target: "es2022",
   splitting: false,
   format: "esm",
-  watch: isProduction
-    ? false
-    : {
-        onRebuild(error: any) {
-          const now = new Date().toLocaleTimeString();
-          console.log(`${now} Build ${error ? "failed" : "successful"}`);
-        },
-      },
 });
 
-const { errors } = result;
+if (isProduction) {
+  await ctx.watch({})
+}
+
+
+const { errors } = await ctx.rebuild();
 if (errors.length > 0) {
   console.error(errors);
 } else {

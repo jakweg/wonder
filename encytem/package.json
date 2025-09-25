@@ -1,8 +1,8 @@
 {
   "dependencies": {
-    "@types/node": "18.11.10",
-    "html-minifier": "4.0.0",
+    "@types/node": "^24.5.2",
+    "html-minifier": "^4.0.0",
     "@types/html-minifier": "4.0.0",
-    "esbuild": "0.15.17"
+    "esbuild": "^0.25.10"
   }
 }
