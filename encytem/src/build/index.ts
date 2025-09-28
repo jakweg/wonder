@@ -248,3 +248,6 @@ await Promise.all(
     }
   })
 );
+if (isProduction) {
+  process.exit(0);
+}
