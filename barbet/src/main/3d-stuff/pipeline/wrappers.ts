@@ -2,7 +2,7 @@ import { ScheduledActionId } from '@game/scheduled-actions'
 import { ActionsQueue } from '@game/scheduled-actions/queue'
 import { sleep } from '@seampan/util'
 import { AdditionalFrontedFlags, frontedVariables, FrontendVariable } from '@utils/frontend-variables'
-import CONFIG, { observeSetting } from '@utils/persistance/observable-settings'
+import CONFIG, { observeSetting } from '@utils/persistence/observable-settings'
 import { Camera } from '../camera'
 import { moveCameraByKeys } from '../camera-keyboard-updater'
 import { MousePickerResultAny } from './mouse-picker'
@@ -145,8 +145,7 @@ export const newAnimationFrameCaller = (
     },
     stop() {
       // safari doesn't support - check before call
-      if (!!globalThis.cancelAnimationFrame)
-        cancelAnimationFrame(nextFrameRequest)
+      if (!!globalThis.cancelAnimationFrame) cancelAnimationFrame(nextFrameRequest)
       nextFrameRequest = 0
     },
   }

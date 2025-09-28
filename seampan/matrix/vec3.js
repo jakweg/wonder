@@ -1,4 +1,4 @@
-import * as glMatrix from './common.js';
+import * as glMatrix from "./common.js";
 
 /**
  * 3 Dimensional Vector
@@ -467,26 +467,6 @@ export function bezier(out, a, b, c, d, t) {
 }
 
 /**
- * Generates a random vector with the given scale
- *
- * @param {vec3} out the receiving vector
- * @param {Number} [scale] Length of the resulting vector. If omitted, a unit vector will be returned
- * @returns {vec3} out
- */
-export function random(out, scale) {
-  scale = scale === undefined ? 1.0 : scale;
-
-  let r = glMatrix.RANDOM() * 2.0 * Math.PI;
-  let z = glMatrix.RANDOM() * 2.0 - 1.0;
-  let zScale = Math.sqrt(1.0 - z * z) * scale;
-
-  out[0] = Math.cos(r) * zScale;
-  out[1] = Math.sin(r) * zScale;
-  out[2] = z * scale;
-  return out;
-}
-
-/**
  * Transforms the vec3 with a mat4.
  * 4th vector component is implicitly '1'
  *
@@ -668,7 +648,9 @@ export function angle(a, b) {
     bx = b[0],
     by = b[1],
     bz = b[2],
-    mag = Math.sqrt((ax * ax + ay * ay + az * az) * (bx * bx + by * by + bz * bz)),
+    mag = Math.sqrt(
+      (ax * ax + ay * ay + az * az) * (bx * bx + by * by + bz * bz)
+    ),
     cosine = mag && dot(a, b) / mag;
   return Math.acos(Math.min(Math.max(cosine, -1), 1));
 }
@@ -693,7 +675,7 @@ export function zero(out) {
  * @returns {String} string representation of the vector
  */
 export function str(a) {
-  return 'vec3(' + a[0] + ', ' + a[1] + ', ' + a[2] + ')';
+  return "vec3(" + a[0] + ", " + a[1] + ", " + a[2] + ")";
 }
 
 /**
@@ -723,11 +705,11 @@ export function equals(a, b) {
     b2 = b[2];
   return (
     Math.abs(a0 - b0) <=
-    glMatrix.EPSILON * Math.max(1.0, Math.abs(a0), Math.abs(b0)) &&
+      glMatrix.EPSILON * Math.max(1.0, Math.abs(a0), Math.abs(b0)) &&
     Math.abs(a1 - b1) <=
-    glMatrix.EPSILON * Math.max(1.0, Math.abs(a1), Math.abs(b1)) &&
+      glMatrix.EPSILON * Math.max(1.0, Math.abs(a1), Math.abs(b1)) &&
     Math.abs(a2 - b2) <=
-    glMatrix.EPSILON * Math.max(1.0, Math.abs(a2), Math.abs(b2))
+      glMatrix.EPSILON * Math.max(1.0, Math.abs(a2), Math.abs(b2))
   );
 }
 

@@ -6,8 +6,8 @@ import CONFIG, {
   initSettingsFromLocalStorage,
   observeSetting,
   saveSettingsToLocalStorage,
-} from '@utils/persistance/observable-settings'
-import { addSaveCallback, registerSaveSettingsCallback } from '@utils/persistance/serializable-settings'
+} from '@utils/persistence/observable-settings'
+import { addSaveCallback, registerSaveSettingsCallback } from '@utils/persistence/serializable-settings'
 import IndexedState from '@utils/state/indexed-state'
 import { GameSession } from '../game-session'
 import { createLocalSession } from '../game-session/local'

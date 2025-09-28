@@ -5,7 +5,7 @@ import { SendActionsQueue } from '@game/scheduled-actions/queue'
 import { createStateUpdaterControllerFromReceived } from '@game/state-updater'
 import { initFrontedVariablesFromReceived } from '@utils/frontend-variables-updaters'
 import { gameMutexFrom } from '@utils/game-mutex'
-import CONFIG from '@utils/persistance/observable-settings'
+import CONFIG from '@utils/persistence/observable-settings'
 import { bind, FromWorker, ToWorker } from '@utils/worker/message-types/render'
 ;(async () => {
   const { sender, receiver } = await bind()

@@ -53,10 +53,9 @@ const ctx = await esbuild.context({
   format: "esm",
 });
 
-if (isProduction) {
-  await ctx.watch({})
+if (!isProduction) {
+  await ctx.watch({});
 }
-
 
 const { errors } = await ctx.rebuild();
 if (errors.length > 0) {

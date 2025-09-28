@@ -1,5 +1,5 @@
 import TypedArray, { TypedArrayConstructor } from '@seampan/typed-array'
-import { decodeArray, encodeArray } from '@utils/persistance/serializers'
+import { decodeArray, encodeArray } from '@utils/persistence/serializers'
 import { createNewBuffer } from '@utils/shared-memory'
 import {
   DataOffsetBuildingData,

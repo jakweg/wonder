@@ -1,5 +1,5 @@
 import { STANDARD_GAME_TICK_RATE } from '@game/state-updater'
-import CONFIG from '@utils/persistance/observable-settings'
+import CONFIG from '@utils/persistence/observable-settings'
 import { observeField, Subject } from '@utils/state/subject'
 import { RestartIcon, SettingsIcon, TpsIcon } from '../icons'
 import { Callback, createElement } from '../utils'

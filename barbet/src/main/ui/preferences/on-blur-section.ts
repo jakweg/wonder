@@ -1,4 +1,4 @@
-import CONFIG from '@utils/persistance/observable-settings'
+import CONFIG from '@utils/persistence/observable-settings'
 import { constant, map, observeField } from '@utils/state/subject'
 import { createElement } from '../utils'
 import { BooleanSwitch, Range } from './helper-components'

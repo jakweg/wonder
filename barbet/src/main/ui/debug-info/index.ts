@@ -1,5 +1,5 @@
 import { COMMIT_HASH } from '@build'
-import CONFIG from '@utils/persistance/observable-settings'
+import CONFIG from '@utils/persistence/observable-settings'
 import { constant, observeField, Subject } from '@utils/state/subject'
 import animatedVisibility from '../preferences/animated-visibility'
 import { createElement } from '../utils'

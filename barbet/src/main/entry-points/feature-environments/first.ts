@@ -6,8 +6,8 @@ import { createStateUpdaterControllerFromReceived, StateUpdater } from '@game/st
 import { SaveGameArguments, SaveGameResult } from '@game/world/world-saver'
 import { initFrontedVariablesFromReceived } from '@utils/frontend-variables-updaters'
 import { createNewGameMutex } from '@utils/game-mutex'
-import CONFIG from '@utils/persistance/observable-settings'
-import { getCameraBuffer, setCameraBuffer } from '@utils/persistance/serializable-settings'
+import CONFIG from '@utils/persistence/observable-settings'
+import { getCameraBuffer, setCameraBuffer } from '@utils/persistence/serializable-settings'
 import { newStatsObject as newRenderStatsObject } from '@utils/worker/debug-stats/render'
 import { newStatsObject as newUpdateStatsObject, StatField } from '@utils/worker/debug-stats/update'
 import {

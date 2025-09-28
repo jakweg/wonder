@@ -1,5 +1,5 @@
 import { GameState } from '@game'
-import { decodeArray, encodeArray } from '@utils/persistance/serializers'
+import { decodeArray, encodeArray } from '@utils/persistence/serializers'
 import handleItemRequest from './handlers/item'
 import handlePathRequest from './handlers/path'
 import { decode as decodeRequest, encode as encodeRequest, Request, RequestType } from './request'

@@ -1,5 +1,5 @@
 import { GameState } from '@game'
-import { ArrayEncodingType, setArrayEncodingType } from '@utils/persistance/serializers'
+import { ArrayEncodingType, setArrayEncodingType } from '@utils/persistence/serializers'
 import { ScheduledActionId } from '../../'
 import { computeWorldBoundingBox } from '../../../world/bounding-box'
 import { World } from '../../../world/world'

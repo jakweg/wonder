@@ -1,4 +1,4 @@
-import CONFIG from '@utils/persistance/observable-settings'
+import CONFIG from '@utils/persistence/observable-settings'
 import { map, observeField, Subject } from '@utils/state/subject'
 import { Callback, createElement } from '../utils'
 

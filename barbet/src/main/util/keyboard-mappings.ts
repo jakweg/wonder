@@ -1,7 +1,7 @@
 import KeyboardController from './keyboard-controller'
-import CONFIG from './persistance/observable-settings'
+import CONFIG from './persistence/observable-settings'
 
-const toggleSetting = (key: Parameters<typeof CONFIG['set']>[0]) => CONFIG.set(key, !CONFIG.get(key))
+const toggleSetting = (key: Parameters<(typeof CONFIG)['set']>[0]) => CONFIG.set(key, !CONFIG.get(key))
 
 export const initKeyboardMappings = () => {
   KeyboardController.INSTANCE?.setKeyReleasedListener('F2', () => {

@@ -1,6 +1,6 @@
 import SeededRandom from '@seampan/seeded-random'
 import { GameMutex, isInWorker } from '@utils/game-mutex'
-import { decodeArray, encodeArray } from '@utils/persistance/serializers'
+import { decodeArray, encodeArray } from '@utils/persistence/serializers'
 import { createNewBuffer } from '@utils/shared-memory'
 import { UpdateDebugDataCollector } from '@utils/worker/debug-stats/update'
 import { UpdatePhase } from '@utils/worker/debug-stats/update-phase'

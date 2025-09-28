@@ -2,7 +2,7 @@ import GlProgram from '@3d/gpu-resources/program'
 import { GpuAllocator } from '@3d/pipeline/allocator'
 import { Drawable, LoadParams } from '@3d/pipeline/Drawable'
 import { RenderContext } from '@3d/render-context'
-import CONFIG from '../../persistance/observable-settings'
+import CONFIG from '../../persistence/observable-settings'
 import { Attributes, fragmentShaderSource, Uniforms, vertexShaderSource } from './graph-renderer-shaders'
 
 export const FRAMES_COUNT_RENDERING = 240

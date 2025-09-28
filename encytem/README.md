@@ -19,5 +19,5 @@ Everything is run inside docker containers, you need to have docker-compose inst
 3. Now, please review configuration inside `.env` and make your changes
 4. Once you're ready run use to start the project
    ```bash
-   docker-compose --env-file .env up --build
+   docker-compose up --build
    ```

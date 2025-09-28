@@ -1,5 +1,5 @@
 import { Environment } from '@entry/feature-environments/loader'
-import CONFIG from '@utils/persistance/observable-settings'
+import CONFIG from '@utils/persistence/observable-settings'
 import { constant, map, observeField } from '@utils/state/subject'
 import { createElement } from '../utils'
 import { Header } from './'

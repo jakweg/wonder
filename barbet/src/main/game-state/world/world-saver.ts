@@ -1,6 +1,6 @@
 import { GameState, GameStateImplementation } from '@game'
-import { putSaveData } from '@utils/persistance/saves-database'
-import { ArrayEncodingType, setArrayEncodingType } from '@utils/persistance/serializers'
+import { putSaveData } from '@utils/persistence/saves-database'
+import { ArrayEncodingType, setArrayEncodingType } from '@utils/persistence/serializers'
 
 export const enum SaveMethod {
   ToIndexedDatabase,

@@ -7,7 +7,7 @@ import RenderHelperWorkScheduler, { TaskType } from '@3d/pipeline/work-scheduler
 import { RenderContext, ShaderGlobals } from '@3d/render-context'
 import { GameState, MetadataField } from '@game'
 import { WORLD_CHUNK_SIZE } from '@game/world/world'
-import CONFIG from '@utils/persistance/observable-settings'
+import CONFIG from '@utils/persistence/observable-settings'
 
 import {
   Attributes,
