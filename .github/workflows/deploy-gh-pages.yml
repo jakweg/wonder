@@ -23,19 +23,24 @@ jobs:
     steps:
       - name: Setup Node.js
         uses: actions/setup-node@v3.5.1
-      - name: Checkout
-        uses: actions/checkout@v4
+      - name: Set up Docker Compose
+        uses: docker/setup-compose-action@v1
+        with:
+          version: latest
       - name: Setup Pages
         uses: actions/configure-pages@v4
+      - name: Checkout
+        uses: actions/checkout@v4
       - name: Build
-        run: docker-compose up --build
+        run: docker compose up --build
         env:
-          DIST: ./dist
+          DIST: /tmp/wonder-dist
           DEV: false
           SERVE:
+        working-directory: "encytem"
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: "dist"
+          path: /tmp/wonder-dist
       - name: Deploy to GitHub Pages
         uses: actions/deploy-pages@v4
