@@ -36,9 +36,9 @@ const worldPositionTransformation: DynamicTransform = {
 const jumpTransformation = (): DynamicTransform => ({
   type: TransformType.Translate,
   beforeBlock: `
-    float currentTick = mod(${GameTickUniform}, ${(0xff + 1).toFixed(1)});
+    float currentTick = mod(${GameTickUniform}, 256.0);
     float rotationTick = float(a_entityRotationChangeTick);
-    float diff = currentTick - rotationTick + (currentTick < rotationTick ? ${(0xff + 1).toFixed(1)} : 0.0);
+    float diff = currentTick - rotationTick + (currentTick < rotationTick ? 256.0 : 0.0);
     float progress = clamp(0.0, 1.0, diff / ${JUMP_DURATION.toFixed(1)});
     float x = progress;
     x = clamp((x - 0.5) * 1.6 + 0.5, 0.0, 1.0);
