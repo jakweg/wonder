@@ -28,9 +28,13 @@ jobs:
           DEV: false
           SERVE:
         working-directory: "encytem"
+      - name: Prepare and clean for public deployment
+        run: cp -r /tmp/wonder-dist /tmp/for-public && rm /tmp/for-public/.*
+      - name: Copy Cloudflare configuration
+        run: cp ./encytem/cloudflare_headers.txt /tmp/for-public/_headers
       - name: Deploy to Cloudflare Pages
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy /tmp/wonder-dist --project-name=${{ secrets.PROJECT_NAME }}
+          command: pages deploy /tmp/for-public --project-name=${{ secrets.PROJECT_NAME }}
