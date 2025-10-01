@@ -1,8 +1,8 @@
 /*
-    Cache-Control "public, max-age=86400, s-max-age=300";
-    Cross-Origin-Opener-Policy   "same-origin";
-    Cross-Origin-Embedder-Policy "require-corp";
-    Content-Security-Policy      "require-trusted-types-for 'script';upgrade-insecure-requests; default-src 'self';";
+  Cache-Control                 : public, max-age=86400, s-max-age=300
+  Cross-Origin-Opener-Policy    : same-origin
+  Cross-Origin-Embedder-Policy  : require-corp
+  Content-Security-Policy       : require-trusted-types-for 'script';upgrade-insecure-requests; default-src 'self'
 
 /network-worker.js
-    Content-Security-Policy  "require-trusted-types-for 'script';upgrade-insecure-requests;";
+    Content-Security-Policy     : require-trusted-types-for 'script';upgrade-insecure-requests
