@@ -2,13 +2,10 @@ on:
   push:
     branches: ["master"]
 
-  # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
 concurrency:
   group: "pages"
@@ -16,19 +13,12 @@ concurrency:
 
 jobs:
   build-and-deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     steps:
       - name: Setup Node.js
         uses: actions/setup-node@v3.5.1
       - name: Set up Docker Compose
         uses: docker/setup-compose-action@v1
-        with:
-          version: latest
-      - name: Setup Pages
-        uses: actions/configure-pages@v4
       - name: Checkout
         uses: actions/checkout@v4
       - name: Build
@@ -38,9 +28,9 @@ jobs:
           DEV: false
           SERVE:
         working-directory: "encytem"
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
+      - name: Deploy to Cloudflare Pages
+        uses: cloudflare/wrangler-action@v3
         with:
-          path: /tmp/wonder-dist
-      - name: Deploy to GitHub Pages
-        uses: actions/deploy-pages@v4
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy /tmp/wonder-dist --project-name=${{ secrets.PROJECT_NAME }}
