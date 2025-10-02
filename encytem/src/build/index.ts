@@ -31,6 +31,10 @@ const entryPoints = [
   "feature-environments/second",
 ] as const;
 
+const cssFiles = (await fs.readdir("./src/main", { recursive: true }))
+  .filter((name) => name.endsWith(".css"))
+  .map((name) => "./src/main/" + name);
+
 const defines = {
   _C_DEBUG: JSON.stringify(!isProduction),
   _C_JS_ROOT: JSON.stringify(``),
@@ -53,6 +57,19 @@ const ctx = await esbuild.context({
   format: "esm",
 });
 
+await esbuild.build({
+  bundle: true,
+  stdin: {
+    contents: (
+      await Promise.all(
+        cssFiles.map((name) => fs.readFile(name, { encoding: "utf-8" }))
+      )
+    ).join("\n\n"),
+    loader: "css",
+  },
+  outfile: `${outputFolder}/main.css`,
+  minify: isProduction,
+});
 if (!isProduction) {
   await ctx.watch({});
 }

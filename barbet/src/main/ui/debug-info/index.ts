@@ -8,7 +8,6 @@ import Update from './update'
 
 import { MeasurementType } from '@utils/worker/debug-stats/requsted-measurements'
 import { HeaderFields } from '@utils/worker/debug-stats/time-meter'
-import './style.css'
 
 export default (parent: HTMLElement) => {
   const visible = observeField(CONFIG, 'debug/show-info')

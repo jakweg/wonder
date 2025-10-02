@@ -3,7 +3,6 @@ import CONFIG from '@utils/persistence/observable-settings'
 import { observeField, Subject } from '@utils/state/subject'
 import { RestartIcon, SettingsIcon, TpsIcon } from '../icons'
 import { Callback, createElement } from '../utils'
-import './style.css'
 
 export default (
   parent: HTMLElement,
