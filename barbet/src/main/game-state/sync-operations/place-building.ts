@@ -1,6 +1,6 @@
 import { GameState, MetadataField } from '@game'
 import { BuildingId, getBuildingMask, getBuildingProgressInfo } from '../buildings'
-import { DataOffsetBuildingData, DataOffsetPositions } from "../entities/data-offsets"
+import { DataOffsetBuildingData, DataOffsetPositions } from '../entities/data-offsets'
 import { EntityTrait } from '../entities/traits'
 import { AIR_ID, BlockId } from '../world/block'
 
@@ -14,7 +14,6 @@ interface Props {
 export const enum ErrorReason {
   InvalidType,
   OccupiedTile,
-  MissingTerrain,
   NotPlainTerrain,
 }
 
@@ -37,7 +36,6 @@ export default ({ type, game, centerX, centerZ }: Props): Result => {
       if (!canPlaceBuilding) return { success: false, reason: ErrorReason.OccupiedTile }
 
       const y = game.world.getHighestBlockHeightSafe(areaStartX + x, areaStartZ + z)
-      if (y < 0) return { success: false, reason: ErrorReason.MissingTerrain }
 
       if (previousY !== -1 && previousY !== y) return { success: false, reason: ErrorReason.NotPlainTerrain }
 
@@ -49,9 +47,7 @@ export default ({ type, game, centerX, centerZ }: Props): Result => {
     for (let z = 0; z < mask.sizeZ; z++) {
       const computedX = areaStartX + x
       const computedZ = areaStartZ + z
-      for (let y = previousY + 1, l = game.world.size.sizeY; y < l; y++)
-        game.world.setBlock(computedX, y, computedZ, AIR_ID)
-      for (let y = 0; y <= previousY; y++) game.world.setBlock(computedX, y, computedZ, BlockId.Stone)
+      game.world.setBlock(computedX, computedZ, BlockId.Stone)
 
       game.tileMetaDataIndex.setBuildingPlacedAt(computedX, computedZ)
     }
@@ -67,8 +63,8 @@ export default ({ type, game, centerX, centerZ }: Props): Result => {
   entities.buildingData.rawData[entity.buildingData + DataOffsetBuildingData.ProgressPointsToFull] =
     progressInfo.pointsToFullyBuild
 
-  game.metaData[MetadataField.LastWorldChange]++
-  game.metaData[MetadataField.LastBuildingsChange]++
+  game.metaData[MetadataField.LastWorldChange]!++
+  game.metaData[MetadataField.LastBuildingsChange]!++
 
   return { success: true, entityId: entity.thisId }
 }

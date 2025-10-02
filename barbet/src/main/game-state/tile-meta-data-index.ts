@@ -1,52 +1,50 @@
+import { GENERIC_CHUNK_SIZE, WorldSizeLevel } from '@game/world/size'
 import { WalkableTester } from '@utils/path-finder'
 import { decodeArray, encodeArray } from '@utils/persistence/serializers'
 import { createNewBuffer } from '@utils/shared-memory'
 
 const enum TileFlag {
   NoFlags = 0,
-  HasBuilding,
+  HasBuilding = 0b0000_0001,
 }
 
 export class TileMetaDataIndex {
   private constructor(
     private readonly isNonUpdatable: boolean,
-    private readonly sizeX: number,
-    private readonly sizeZ: number,
+    private readonly blocksPerAxis: number,
     private readonly heightIndex: Uint8ClampedArray,
     private readonly tileFlags: Uint8Array,
   ) {}
 
-  public static createNew(sizeX: number, sizeZ: number, rawHeightData: Uint8ClampedArray): TileMetaDataIndex {
-    const tileFlags = new Uint8Array(createNewBuffer(sizeX * sizeZ * Uint8Array.BYTES_PER_ELEMENT))
-    return new TileMetaDataIndex(false, sizeX, sizeZ, rawHeightData, tileFlags)
+  public static createNew(size: WorldSizeLevel, rawHeightData: Uint8ClampedArray): TileMetaDataIndex {
+    const blocksPerAxis = size * GENERIC_CHUNK_SIZE
+    const tileFlags = new Uint8Array(createNewBuffer(blocksPerAxis * blocksPerAxis * Uint8Array.BYTES_PER_ELEMENT))
+    return new TileMetaDataIndex(false, blocksPerAxis, rawHeightData, tileFlags)
   }
 
   public static deserialize(data: any, rawHeightData: Uint8ClampedArray): TileMetaDataIndex {
     return new TileMetaDataIndex(
       false,
-      data['sizeX'],
-      data['sizeZ'],
+      data['blocksPerAxis'],
       rawHeightData,
       decodeArray(data['tileFlags'], true, Uint8Array),
     )
   }
 
   public static fromReceived(object: any): TileMetaDataIndex {
-    return new TileMetaDataIndex(true, object.sizeX, object.sizeZ, object.heightIndex, object.tileFlags)
+    return new TileMetaDataIndex(true, object.blocksPerAxis, object.heightIndex, object.tileFlags)
   }
 
   public serialize(): unknown {
     return {
-      'sizeX': this.sizeX,
-      'sizeZ': this.sizeZ,
+      'blocksPerAxis': this.blocksPerAxis,
       'tileFlags': encodeArray(this.tileFlags),
     }
   }
 
   public pass(): unknown {
     return {
-      sizeX: this.sizeX,
-      sizeZ: this.sizeZ,
+      blocksPerAxis: this.blocksPerAxis,
       heightIndex: this.heightIndex,
       tileFlags: this.tileFlags,
     }
@@ -56,7 +54,7 @@ export class TileMetaDataIndex {
     return (x, z) => {
       if (!this.areCoordsValid(x, z)) return false
 
-      const index = x + z * this.sizeX
+      const index = x + z * this.blocksPerAxis
       const height = this.heightIndex[index]
       if (height !== expectedHeight) return false
 
@@ -68,7 +66,7 @@ export class TileMetaDataIndex {
 
   public canPlaceBuilding(x: number, z: number): boolean {
     if (!this.areCoordsValid(x, z)) return false
-    return this.tileFlags[x + z * this.sizeX]! === TileFlag.NoFlags
+    return this.tileFlags[x + z * this.blocksPerAxis]! === TileFlag.NoFlags
   }
 
   public setBuildingPlacedAt(x: number, z: number): void {
@@ -79,7 +77,7 @@ export class TileMetaDataIndex {
     if (this.isNonUpdatable) throw new Error('updates are locked')
 
     this.validateCoords(x, z)
-    this.tileFlags[x + z * this.sizeX] |= flag
+    this.tileFlags[x + z * this.blocksPerAxis]! |= flag
   }
 
   private validateCoords(x: number, z: number): void {
@@ -87,6 +85,6 @@ export class TileMetaDataIndex {
   }
 
   private areCoordsValid(x: number, z: number) {
-    return !(x < 0 || x >= this.sizeX || (x | 0) !== x || z < 0 || z >= this.sizeZ || (z | 0) !== z)
+    return !(x < 0 || x >= this.blocksPerAxis || (x | 0) !== x || z < 0 || z >= this.blocksPerAxis || (z | 0) !== z)
   }
 }

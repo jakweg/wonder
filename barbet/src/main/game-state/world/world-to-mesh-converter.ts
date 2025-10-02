@@ -1,5 +1,6 @@
 import { createNewBuffer } from '@utils/shared-memory'
 import { AIR_ID, allBlocks, BlockId } from './block'
+import { GENERIC_CHUNK_SIZE, MAX_WORLD_HEIGHT, WorldSizeLevel } from '@game/world/size'
 
 const NO_ELEMENT_INDEX_MARKER = 4294967295
 const NO_COLOR_VALUE = 2
@@ -29,12 +30,18 @@ export interface Mesh {
 }
 
 interface WorldLike {
-  size: { sizeX: number; sizeY: number; sizeZ: number }
+  sizeLevel: WorldSizeLevel
   rawBlockData: Uint8Array
 }
 
 export const buildChunkMesh = (world: WorldLike, chunkX: number, chunkZ: number, chunkSize: number): Mesh => {
-  const { sizeX, sizeY, sizeZ } = world.size
+  return {
+    indices: new Uint16Array(),
+    vertexes: new Uint8Array(),
+  }
+  const sizeX = world.sizeLevel * GENERIC_CHUNK_SIZE
+  const sizeZ = world.sizeLevel * GENERIC_CHUNK_SIZE
+  const sizeY = MAX_WORLD_HEIGHT
   const worldData = world.rawBlockData
 
   const vertexDataBuffer = createNewBuffer(PREALLOCATE_VERTEX_COUNT * FieldOffset.SIZE)
@@ -316,8 +323,8 @@ export const moveChunkMesh = (mesh: Mesh, offsetX: number, offsetY: number, offs
   const vertexes = mesh.vertexes
   const size = (vertexes.length / FLOATS_PER_VERTEX) | 0
   for (let i = 0; i < size; i++) {
-    vertexes[i * FLOATS_PER_VERTEX] += offsetX
-    vertexes[i * FLOATS_PER_VERTEX + 1] += offsetY
-    vertexes[i * FLOATS_PER_VERTEX + 2] += offsetZ
+    vertexes[i * FLOATS_PER_VERTEX]! += offsetX
+    vertexes[i * FLOATS_PER_VERTEX + 1]! += offsetY
+    vertexes[i * FLOATS_PER_VERTEX + 2]! += offsetZ
   }
 }

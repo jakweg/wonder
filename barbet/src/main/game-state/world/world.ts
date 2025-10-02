@@ -1,15 +1,19 @@
 import { decodeArray, encodeArray } from '@utils/persistence/serializers'
 import { createNewBuffer } from '@utils/shared-memory'
 import { AIR_ID, BlockId } from './block'
+import { GENERIC_CHUNK_SIZE, WorldSizeLevel } from './size'
 
+/** @deprecated use GENERIC_CHUNK_SIZE instead */
 export const WORLD_CHUNK_SIZE = 64
 
+/** @deprecated  */
 export interface WorldSize {
   readonly sizeX: number
   readonly sizeY: number
   readonly sizeZ: number
 }
 
+/** @deprecated  */
 export interface ComputedWorldSize extends WorldSize {
   readonly totalBlocks: number
   readonly blocksPerY: number
@@ -19,91 +23,45 @@ export interface ComputedWorldSize extends WorldSize {
 
 export class World {
   private constructor(
-    public readonly size: ComputedWorldSize,
+    public readonly sizeLevel: WorldSizeLevel,
     public readonly rawBlockData: Uint8Array,
     public readonly rawHeightData: Uint8ClampedArray,
     public readonly chunkModificationIds: Uint16Array,
-    public readonly buffers: SharedArrayBuffer[],
     public readonly isNonUpdatable: boolean,
   ) {}
 
-  public static createEmpty(sizeX: number, sizeY: number, sizeZ: number, fillWith: BlockId = AIR_ID): World {
-    const blocksPerY = sizeX * sizeZ
-    const totalBlocks = sizeY * blocksPerY
-    const chunksSizeX = Math.ceil(sizeX / WORLD_CHUNK_SIZE)
-    const chunksSizeZ = Math.ceil(sizeZ / WORLD_CHUNK_SIZE)
+  public static createEmpty(sizeLevel: WorldSizeLevel): World {
+    const numberOfChunks = sizeLevel * sizeLevel
+    const numerOfBlocksPerChunk = GENERIC_CHUNK_SIZE * GENERIC_CHUNK_SIZE
+    const numberOfBlocksTotal = numberOfChunks * numerOfBlocksPerChunk
 
-    const size = { sizeX, sizeY, sizeZ, totalBlocks, blocksPerY, chunksSizeX, chunksSizeZ }
-    const buffers = [
-      createNewBuffer(totalBlocks * Uint8Array.BYTES_PER_ELEMENT),
-      createNewBuffer(blocksPerY * Uint8ClampedArray.BYTES_PER_ELEMENT),
-      createNewBuffer(chunksSizeX * chunksSizeZ * Uint16Array.BYTES_PER_ELEMENT),
-    ]
+    const blockData = new Uint8Array(createNewBuffer(numberOfBlocksTotal * Uint8Array.BYTES_PER_ELEMENT))
+    const heightData = new Uint8ClampedArray(createNewBuffer(numberOfBlocksTotal * Uint8Array.BYTES_PER_ELEMENT))
+    const chunkModificationIds = new Uint16Array(createNewBuffer(numberOfChunks * Uint16Array.BYTES_PER_ELEMENT))
 
-    const blockData = new Uint8Array(buffers[0]!)
-    const heightData = new Uint8ClampedArray(buffers[1]!)
-
-    // by default all content is 0 so no need to reset that
-    if (fillWith !== 0) {
-      blockData.fill(fillWith)
-      heightData.fill(sizeY - 1)
-    }
-
-    const chunkModificationIds = new Uint16Array(buffers[2]!)
-
-    return new World(size, blockData, heightData, chunkModificationIds, buffers, false)
+    return new World(sizeLevel, blockData, heightData, chunkModificationIds, false)
   }
 
   public static fromReceived(object: any): World {
-    const sizes = object.sizes
-    const sizeX = sizes[0]
-    const sizeY = sizes[1]
-    const sizeZ = sizes[2]
-    const blocksPerY = sizeX * sizeZ
-    const totalBlocks = sizeY * blocksPerY
-    const chunksSizeX = Math.ceil(sizeX / WORLD_CHUNK_SIZE)
-    const chunksSizeZ = Math.ceil(sizeZ / WORLD_CHUNK_SIZE)
+    const size = object.size
 
-    const size: ComputedWorldSize = { sizeX, sizeY, sizeZ, totalBlocks, blocksPerY, chunksSizeX, chunksSizeZ }
-    const buffers = object.buffers as SharedArrayBuffer[]
+    const blockData = new Uint8Array(object.blocks)
+    const heightData = new Uint8ClampedArray(object.height)
+    const chunkModificationIds = new Uint16Array(object.chunkModificationIds)
 
-    const blockData = new Uint8Array(buffers[0]!)
-    const heightData = new Uint8ClampedArray(buffers[1]!)
-    const chunkModificationIds = new Uint16Array(buffers[2]!)
-
-    return new World(size, blockData, heightData, chunkModificationIds, buffers, true)
+    return new World(size, blockData, heightData, chunkModificationIds, true)
   }
 
   public static deserialize(object: any): World {
-    const sizes = object['sizes']
-    const sizeX = sizes[0]
-    const sizeY = sizes[1]
-    const sizeZ = sizes[2]
-    const blocks = object['blocks']
+    const sizeLevel = object['size']
 
-    const blocksPerY = sizeX * sizeZ
-    const totalBlocks = sizeY * blocksPerY
-    const chunksSizeX = Math.ceil(sizeX / WORLD_CHUNK_SIZE)
-    const chunksSizeZ = Math.ceil(sizeZ / WORLD_CHUNK_SIZE)
-    const size: ComputedWorldSize = { sizeX, sizeY, sizeZ, blocksPerY, totalBlocks, chunksSizeX, chunksSizeZ }
+    const numberOfChunks = sizeLevel * sizeLevel
 
-    const rawBlockData = decodeArray(blocks, true, Uint8Array)
+    const blockData = decodeArray(object['blocks'], true, Uint8Array)
+    const heightData = decodeArray(object['heights'], true, Uint8ClampedArray)
+    const chunkModificationIds = new Uint16Array(createNewBuffer(numberOfChunks * Uint16Array.BYTES_PER_ELEMENT))
 
-    const buffers = [
-      rawBlockData['buffer'] as SharedArrayBuffer,
-      createNewBuffer(blocksPerY * Uint8ClampedArray.BYTES_PER_ELEMENT),
-      createNewBuffer(chunksSizeX * chunksSizeZ * Uint16Array.BYTES_PER_ELEMENT),
-    ]
-
-    const world = new World(
-      size,
-      rawBlockData,
-      new Uint8ClampedArray(buffers[1]!),
-      new Uint16Array(buffers[2]!),
-      buffers,
-      false,
-    )
-    world.recalculateHeightIndex()
+    const world = new World(sizeLevel, blockData, heightData, chunkModificationIds, false)
     return world
   }
 
@@ -111,177 +69,152 @@ export class World {
     from: World,
     to: World,
     fromX: number,
-    fromY: number,
     fromZ: number,
     toX: number,
-    toY: number,
     toZ: number,
     sizeX: number,
-    sizeY: number,
     sizeZ: number,
   ): void {
     if (from === to) throw new Error('Cannot copy to self')
 
     if (to.isNonUpdatable) throw new Error('Destination is readonly')
 
-    const toSizeX = to.size.sizeX
-    const fromSizeX = from.size.sizeX
-    const toSizeZ = to.size.sizeZ
-    const fromSizeZ = from.size.sizeZ
+    const toSize = to.sizeLevel * GENERIC_CHUNK_SIZE
+    const fromSize = from.sizeLevel * GENERIC_CHUNK_SIZE
     const toRawData = to.rawBlockData
     const fromRawData = from.rawBlockData
-    const fromBlocksY = from.size.blocksPerY
-    const toBlocksY = to.size.blocksPerY
     const fromRawHeightData = from.rawHeightData
     const toRawHeightData = to.rawHeightData
-    const heightDelta = toY - fromY
 
     if (
       fromX !== (fromX | 0) ||
       fromX < 0 ||
-      fromX >= fromSizeX ||
-      fromY !== (fromY | 0) ||
-      fromY < 0 ||
-      fromY >= from.size.sizeY ||
+      fromX >= fromSize ||
       fromZ !== (fromZ | 0) ||
       fromZ < 0 ||
-      fromZ >= fromSizeZ ||
+      fromZ >= fromSize ||
       toX !== (toX | 0) ||
       toX < 0 ||
-      toX + sizeX > toSizeX ||
-      toY !== (toY | 0) ||
-      toY < 0 ||
-      toY + sizeY > to.size.sizeY ||
+      toX + sizeX > toSize ||
       toZ !== (toZ | 0) ||
       toZ < 0 ||
-      toZ + sizeZ > toSizeZ ||
+      toZ + sizeZ > toSize ||
       sizeX !== (sizeX | 0) ||
       sizeX < 0 ||
-      sizeY !== (sizeY | 0) ||
-      sizeY < 0 ||
       sizeZ !== (sizeZ | 0) ||
       sizeZ < 0
     )
       throw new Error('Invalid arguments')
 
-    for (let y = 0; y < sizeY; y++)
-      for (let x = 0; x < sizeX; x++)
-        for (let z = 0; z < sizeZ; z++)
-          toRawData[(toY + y) * toBlocksY + (toX + x) * toSizeZ + (toZ + z)] =
-            fromRawData[(fromY + y) * fromBlocksY + (fromX + x) * fromSizeZ + (fromZ + z)]!
-
     for (let x = 0; x < sizeX; x++)
-      for (let z = 0; z < sizeZ; z++)
-        toRawHeightData[(toZ + z) * toSizeX + (toX + x)] =
-          fromRawHeightData[(fromZ + z) * fromSizeX + (fromX + x)]! + heightDelta
+      for (let z = 0; z < sizeZ; z++) {
+        toRawData[(toX + x) * toSize + (toZ + z)] = fromRawData[(fromX + x) * fromSize + (fromZ + z)]!
+        toRawHeightData[(toZ + z) * toSize + (toX + x)] = fromRawHeightData[(fromZ + z) * fromSize + (fromX + x)]!
+      }
 
     const chunkModificationIds = to.chunkModificationIds
-    for (let i = 0, l = chunkModificationIds.length; i < l; i++) chunkModificationIds[i]++
+    for (let i = 0, l = chunkModificationIds.length; i < l; i++) chunkModificationIds[i]!++
   }
 
   public pass(): unknown {
     return {
-      sizes: [this.size.sizeX, this.size.sizeY, this.size.sizeZ],
-      buffers: this.buffers,
+      size: this.sizeLevel,
+      blocks: this.rawBlockData['buffer'],
+      height: this.rawHeightData['buffer'],
+      chunkModificationIds: this.chunkModificationIds['buffer'],
     }
   }
 
   public serialize(): any {
     return {
-      'sizes': [this.size.sizeX, this.size.sizeY, this.size.sizeZ],
+      'size': this.sizeLevel,
       'blocks': encodeArray(this.rawBlockData),
+      'heights': encodeArray(this.rawHeightData),
     }
   }
 
-  public getBlock(x: number, y: number, z: number): BlockId {
-    this.validateCoords(x, y, z)
-    const sizeX = this.size.sizeX
-    const blocksPerY = this.size.blocksPerY
-    return this.rawBlockData[y * blocksPerY + x * sizeX + z] as BlockId
+  public getBlock(x: number, z: number): BlockId {
+    this.validateCoords(x, z)
+    const sizeX = this.sizeLevel * GENERIC_CHUNK_SIZE
+    return this.rawBlockData[x * sizeX + z] as BlockId
   }
 
-  public setBlock(x: number, y: number, z: number, blockId: BlockId) {
+  /**
+   * Caller needs to update `MetadataField.LastWorldChange`
+   */
+  public setBlock(x: number, z: number, block: BlockId) {
+    if (this.isNonUpdatable) throw new Error('world is readonly')
+    this.validateCoords(x, z)
+
+    const size = this.sizeLevel * GENERIC_CHUNK_SIZE
+    this.rawBlockData[x * size + z] = block
+
+    // notify chunk and nearby chunks as well
+    this.chunkModificationIds[
+      (((x - 1) / GENERIC_CHUNK_SIZE) | 0) * this.sizeLevel + (((z + 1) / GENERIC_CHUNK_SIZE) | 0)
+    ]!++
+    this.chunkModificationIds[
+      (((x - 1) / GENERIC_CHUNK_SIZE) | 0) * this.sizeLevel + (((z - 1) / GENERIC_CHUNK_SIZE) | 0)
+    ]!++
+    this.chunkModificationIds[
+      (((x + 1) / GENERIC_CHUNK_SIZE) | 0) * this.sizeLevel + (((z + 1) / GENERIC_CHUNK_SIZE) | 0)
+    ]!++
+    this.chunkModificationIds[
+      (((x + 1) / GENERIC_CHUNK_SIZE) | 0) * this.sizeLevel + (((z - 1) / GENERIC_CHUNK_SIZE) | 0)
+    ]!++
+  }
+
+  /**
+   * Caller needs to update `MetadataField.LastWorldChange`
+   */
+  public setHeight(x: number, z: number, height: number) {
+    if (this.isNonUpdatable) throw new Error('world is readonly')
+    this.validateCoords(x, z)
+
+    const size = this.sizeLevel * GENERIC_CHUNK_SIZE
+    this.rawHeightData[x * size + z] = height
+
+    // notify chunk and nearby chunks as well
+    this.chunkModificationIds[
+      (((x - 1) / GENERIC_CHUNK_SIZE) | 0) * this.sizeLevel + (((z + 1) / GENERIC_CHUNK_SIZE) | 0)
+    ]!++
+    this.chunkModificationIds[
+      (((x - 1) / GENERIC_CHUNK_SIZE) | 0) * this.sizeLevel + (((z - 1) / GENERIC_CHUNK_SIZE) | 0)
+    ]!++
+    this.chunkModificationIds[
+      (((x + 1) / GENERIC_CHUNK_SIZE) | 0) * this.sizeLevel + (((z + 1) / GENERIC_CHUNK_SIZE) | 0)
+    ]!++
+    this.chunkModificationIds[
+      (((x + 1) / GENERIC_CHUNK_SIZE) | 0) * this.sizeLevel + (((z - 1) / GENERIC_CHUNK_SIZE) | 0)
+    ]!++
+  }
+
+  /**
+   * Caller needs to update `MetadataField.LastWorldChange`
+   */
+  public replaceBlock2d(x: number, z: number, withBlock: BlockId, ifBlock: BlockId) {
     if (this.isNonUpdatable) throw new Error('world is readonly')
 
-    this.validateCoords(x, y, z)
-    const sizeX = this.size.sizeX
-    const blocksPerY = this.size.blocksPerY
-    this.rawBlockData[y * blocksPerY + x * sizeX + z] = blockId
-    const previousTop = this.rawHeightData[z * sizeX + x]!
-    if (y >= previousTop)
-      if (blockId !== BlockId.Air) this.rawHeightData[z * sizeX + x]! = y
-      else {
-        let top = y
-        for (; top >= previousTop; top--) {
-          if (this.rawBlockData[top * blocksPerY + x * sizeX + z] !== AIR_ID) break
-        }
-        this.rawHeightData[z * sizeX + x]! = top
-      }
-
-    // this.chunkModificationIds[((x / WORLD_CHUNK_SIZE) | 0) * this.size.chunksSizeX + (z / WORLD_CHUNK_SIZE | 0)]++
-    // notify nearby chunks if affected
-    this.chunkModificationIds[
-      (((x - 1) / WORLD_CHUNK_SIZE) | 0) * this.size.chunksSizeZ + (((z + 1) / WORLD_CHUNK_SIZE) | 0)
-    ]++
-    this.chunkModificationIds[
-      (((x + 1) / WORLD_CHUNK_SIZE) | 0) * this.size.chunksSizeZ + (((z - 1) / WORLD_CHUNK_SIZE) | 0)
-    ]++
-    this.chunkModificationIds[
-      (((x - 1) / WORLD_CHUNK_SIZE) | 0) * this.size.chunksSizeZ + (((z - 1) / WORLD_CHUNK_SIZE) | 0)
-    ]++
-    this.chunkModificationIds[
-      (((x + 1) / WORLD_CHUNK_SIZE) | 0) * this.size.chunksSizeZ + (((z + 1) / WORLD_CHUNK_SIZE) | 0)
-    ]++
-  }
-
-  public replaceBlock(x: number, y: number, z: number, withBlock: BlockId, ifBlock: BlockId) {
-    if (this.isNonUpdatable) throw new Error('world is readonly')
-
-    this.validateCoords(x, y, z)
-    const sizeX = this.size.sizeX
-    const blocksPerY = this.size.blocksPerY
-    const currentBlock = this.rawBlockData[y * blocksPerY + x * sizeX + z]! as BlockId
-    if (currentBlock === ifBlock) this.setBlock(x, y, z, withBlock)
-  }
-
-  public recalculateHeightIndex(): void {
-    const blocksPerY = this.size.blocksPerY
-    const sizeX = this.size.sizeX
-    for (let x = 0; x < sizeX; x++) {
-      for (let z = 0; z < this.size.sizeZ; z++) {
-        let y = this.size.sizeY - 1
-        for (; y >= 0; y--) if (this.rawBlockData[y * blocksPerY + x * sizeX + z] !== AIR_ID) break
-
-        this.rawHeightData[z * sizeX + x]! = y
-      }
-    }
+    this.validateCoords(x, z)
+    const currentBlock = this.getBlock(x, z)
+    if (currentBlock === ifBlock) this.setBlock(x, z, withBlock)
   }
 
   public getHighestBlockHeight(x: number, z: number): number {
-    this.validateCoords(x, 0, z)
-    const sizeX = this.size.sizeX
-    return this.rawHeightData[z * sizeX + x]!
+    this.validateCoords(x, z)
+    const size = this.sizeLevel * GENERIC_CHUNK_SIZE
+    return this.rawHeightData[z * size + x]!
   }
 
   public getHighestBlockHeightSafe(x: number, z: number): number {
-    const sizeX = this.size.sizeX
-    const sizeZ = this.size.sizeZ
-    if (x < 0 || x >= sizeX || (x | 0) !== x || z < 0 || z >= sizeZ || (z | 0) !== z) return -1
-    return this.rawHeightData[z * sizeX + x]!
+    const size = this.sizeLevel * GENERIC_CHUNK_SIZE
+    if (x < 0 || x >= size || (x | 0) !== x || z < 0 || z >= size || (z | 0) !== z) return -1
+    return this.rawHeightData[z * size + x]!
   }
 
-  private validateCoords(x: number, y: number, z: number) {
-    if (
-      x < 0 ||
-      x >= this.size.sizeX ||
-      (x | 0) !== x ||
-      y < 0 ||
-      y >= this.size.sizeY ||
-      (y | 0) !== y ||
-      z < 0 ||
-      z >= this.size.sizeZ ||
-      (z | 0) !== z
-    )
-      throw new Error(`Invalid coords ${x} ${y} ${z}`)
+  private validateCoords(x: number, z: number) {
+    const size = this.sizeLevel * GENERIC_CHUNK_SIZE
+    if (x < 0 || x >= size || (x | 0) !== x || z < 0 || z >= size || (z | 0) !== z)
+      throw new Error(`Invalid coords ${x} ${z}`)
   }
 }

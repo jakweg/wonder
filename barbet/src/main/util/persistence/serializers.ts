@@ -1,6 +1,6 @@
 import { createNewBuffer } from '../shared-memory'
 
-type ArrayToEncode = Uint8Array | Int8Array | Uint16Array | Int16Array | Uint32Array | Int32Array
+type ArrayToEncode = Uint8Array | Int8Array | Uint16Array | Int16Array | Uint32Array | Int32Array | Uint8ClampedArray
 
 export const enum ArrayEncodingType {
   None,

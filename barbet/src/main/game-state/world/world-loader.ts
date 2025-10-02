@@ -14,22 +14,17 @@ import { TileMetaDataIndex } from '../tile-meta-data-index'
 import { BlockId } from './block'
 import { fillEmptyWorldWithDefaultData } from './generator/example-world-creator'
 import { World } from './world'
+import { WorldSizeLevel } from './size'
 
 export const createEmptyGame = (mutex: GameMutex, stateBroadcastCallback: () => void): GameState => {
-  let sizeX = 1000
-  let sizeY = 50
-  let sizeZ = 1000
-  if (CONFIG.get('debug/debug-world')) {
-    sizeX = 20
-    sizeY = 10
-    sizeZ = 20
-  }
-  const world = World.createEmpty(sizeX, sizeY, sizeZ, BlockId.Air)
-  const itemsOnGround = GroundItemsIndex.createNew(world.size)
-  const tileMetaDataIndex = TileMetaDataIndex.createNew(world.size.sizeX, world.size.sizeZ, world.rawHeightData)
+  const sizeLevel: WorldSizeLevel = CONFIG.get('debug/debug-world') ? WorldSizeLevel.SuperTiny : WorldSizeLevel.Medium
+
+  const world = World.createEmpty(sizeLevel)
+  const itemsOnGround = GroundItemsIndex.createNew(world.sizeLevel)
+  const tileMetaDataIndex = TileMetaDataIndex.createNew(world.sizeLevel, world.rawHeightData)
   const delayedComputer = createNewDelayedComputer()
   const entityContainer = EntityContainer.createEmptyContainer()
-  const resources = SurfaceResourcesIndex.createNew(world.size)
+  const resources = SurfaceResourcesIndex.createNew(world.sizeLevel)
   const random = SeededRandom.fromSeed(1)
   const gameState = GameStateImplementation.createNew(
     world,

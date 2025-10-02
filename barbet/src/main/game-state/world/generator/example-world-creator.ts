@@ -8,19 +8,20 @@ import { allBiomes } from '../biome'
 import { BlockId } from '../block'
 import { World } from '../world'
 import { generateBiomeMap, generateHeightMap } from './generator'
+import { GENERIC_CHUNK_SIZE } from '@game/world/size'
 
 const placeDebugFeatures = (game: GameStateImplementation) => {
   const { world, groundItems } = game
+
+  const blocksPerAxis = world.sizeLevel * GENERIC_CHUNK_SIZE
 
   fillTerrain({
     game,
     fillWith: BlockId.Grass,
     x: 3,
-    sx: world.size.sizeX - 6,
-    y: 1,
-    sy: 1,
+    sx: blocksPerAxis - 6,
     z: 3,
-    sz: world.size.sizeZ - 6,
+    sz: blocksPerAxis - 6,
   })
 
   fillTerrain({
@@ -28,22 +29,18 @@ const placeDebugFeatures = (game: GameStateImplementation) => {
     fillWith: BlockId.Sand,
     replace: BlockId.Air,
     x: 2,
-    sx: world.size.sizeX - 4,
-    y: 1,
-    sy: 1,
+    sx: blocksPerAxis - 4,
     z: 2,
-    sz: world.size.sizeZ - 4,
+    sz: blocksPerAxis - 4,
   })
 
   fillTerrain({
     game,
     fillWith: BlockId.Water,
     x: 0,
-    sx: world.size.sizeX,
-    y: 0,
-    sy: 1,
+    sx: blocksPerAxis,
     z: 0,
-    sz: world.size.sizeZ,
+    sz: blocksPerAxis,
   })
 
   // spawnUnit({ game, x: 7, z: 8, color: 0/* UnitColorPaletteId.GreenOrange */, facing: Direction.PositiveXNegativeZ })
@@ -61,12 +58,13 @@ const placeDebugFeatures = (game: GameStateImplementation) => {
 
 const placeMoreRealTerrain = (game: GameStateImplementation) => {
   const groundItems = game.groundItems
+  const blocksPerAxis = game.world.sizeLevel * GENERIC_CHUNK_SIZE
   generateRandomTerrain(game.world)
   for (let i = 0; i < 10_000; i++)
     spawnSlime({
       game,
-      x: game.seededRandom.nextInt(game.world.size.sizeX),
-      z: game.seededRandom.nextInt(game.world.size.sizeZ),
+      x: game.seededRandom.nextInt(blocksPerAxis),
+      z: game.seededRandom.nextInt(blocksPerAxis),
       facing: game.seededRandom.nextInt(8),
       size: game.seededRandom.nextInt(3) + 1,
       color: game.seededRandom.nextInt(0xffffff),
@@ -80,23 +78,23 @@ export function fillEmptyWorldWithDefaultData(game: GameStateImplementation) {
 }
 
 const generateRandomTerrain = (world: World) => {
-  const settings = { ...world.size, biomeSeed: 12345, heightSeed: 1234 }
+  const blocksPerAxis = world.sizeLevel * GENERIC_CHUNK_SIZE
+  const settings = { blocksPerAxis, biomeSeed: 12345, heightSeed: 1234 }
   const biomeMap = generateBiomeMap(settings)
   const heightMap = generateHeightMap(settings)
 
   let index = 0
-  for (let z = 0; z < settings.sizeZ; z++) {
-    for (let x = 0; x < settings.sizeX; x++) {
+  for (let z = 0; z < blocksPerAxis; z++) {
+    for (let x = 0; x < blocksPerAxis; x++) {
       const biomeValue = allBiomes[biomeMap[index]!]!
       let yHere = heightMap[index]!
-      world.setBlock(x, yHere, z, biomeValue.surfaceMaterialId)
-      const underSurfaceMaterialId = biomeValue.underSurfaceMaterialId
-      for (let y = 0; y < yHere; ++y) world.setBlock(x, y, z, underSurfaceMaterialId)
+      world.setBlock(x, z, biomeValue.surfaceMaterialId)
+      world.setHeight(x, z, yHere)
 
       if (yHere < 4) {
         const waterSurfaceMaterialId = biomeValue.waterSurfaceMaterialId
-        const upperWaterLimit = 3 + (waterSurfaceMaterialId === BlockId.Water ? 0 : 1)
-        for (let y = 0; y <= upperWaterLimit; ++y) world.setBlock(x, y, z, waterSurfaceMaterialId)
+        world.setBlock(x, z, waterSurfaceMaterialId)
+        if (waterSurfaceMaterialId !== BlockId.Water) world.setHeight(x, z, yHere + 1)
       }
       index++
     }

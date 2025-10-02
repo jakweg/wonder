@@ -2,7 +2,7 @@ import { pickViaMouseDefaultFragmentShader } from '@3d/common-shader'
 import { GlProgram, GPUBuffer, VertexArray } from '@3d/gpu-resources'
 import { AttrType } from '@3d/gpu-resources/program'
 import { GpuAllocator } from '@3d/pipeline/allocator'
-import { Drawable, LoadParams } from '@3d/pipeline/Drawable'
+import { Drawable, LoadParams } from '@3d/pipeline/drawable'
 import RenderHelperWorkScheduler, { TaskType } from '@3d/pipeline/work-scheduler'
 import { RenderContext, ShaderGlobals } from '@3d/render-context'
 import { GameState, MetadataField } from '@game'
@@ -17,6 +17,7 @@ import {
   Uniforms,
   vertexShaderSource,
 } from './shaders'
+import { GENERIC_CHUNK_SIZE } from '@game/world/size'
 
 interface ShaderCache {
   hasAmbient: boolean
@@ -106,8 +107,8 @@ const drawable: () => Drawable<ShaderGlobals, ShaderCache, WorldData, BoundData>
   createWorld(params: LoadParams, previous: WorldData | null): WorldData {
     const { game, scheduler } = params
     const world = game.world
-    const chunksX = world.size.chunksSizeX
-    const chunksZ = world.size.chunksSizeZ
+    const chunksX = world.sizeLevel
+    const chunksZ = world.sizeLevel
 
     const chunks: ChunkDataGame[] = []
     for (let i = 0; i < chunksX; ++i)
@@ -118,8 +119,8 @@ const drawable: () => Drawable<ShaderGlobals, ShaderCache, WorldData, BoundData>
           scheduledToRebuild: false,
           triangles: 0,
           lastRecreationId: -1,
-          positionX: i * WORLD_CHUNK_SIZE,
-          positionZ: j * WORLD_CHUNK_SIZE,
+          positionX: i * GENERIC_CHUNK_SIZE,
+          positionZ: j * GENERIC_CHUNK_SIZE,
         })
 
     const lastMeshModificationIds: Uint16Array = new Uint16Array(chunksX * chunksZ)
@@ -188,8 +189,8 @@ const drawable: () => Drawable<ShaderGlobals, ShaderCache, WorldData, BoundData>
     const shaderChunks = shader.chunks!
     const modificationIds = data.game.world.chunkModificationIds
 
-    const chunksZ = data.game.world.size.chunksSizeZ
-    const chunksX = data.game.world.size.chunksSizeX
+    const chunksZ = data.game.world.sizeLevel
+    const chunksX = data.game.world.sizeLevel
     let chunkIndex = 0
 
     for (let i = 0; i < chunksX; i++) {
@@ -229,8 +230,8 @@ const drawable: () => Drawable<ShaderGlobals, ShaderCache, WorldData, BoundData>
     const dataChunks = data.chunks!
     const shaderChunks = shader.chunks!
 
-    const chunksZ = data.game.world.size.chunksSizeZ
-    const chunksX = data.game.world.size.chunksSizeX
+    const chunksZ = data.game.world.sizeLevel
+    const chunksX = data.game.world.sizeLevel
     let chunkIndex = 0
     for (let i = 0; i < chunksX; i++) {
       for (let j = 0; j < chunksZ; j++) {

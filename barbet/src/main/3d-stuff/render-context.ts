@@ -225,7 +225,7 @@ export const createRenderingSession = async (actionsQueue: ActionsQueue, mutex: 
       hadGame = true
       gameTickRate = _gameTickRate
       gameTickEstimation = _gameTickEstimation
-      visibility = ChunkVisibilityIndex.create(game.world.size.chunksSizeX, game.world.size.chunksSizeZ)
+      visibility = ChunkVisibilityIndex.create(game.world.sizeLevel)
       visibility.setCullingDisabled(CONFIG.get('debug/disable-culling'))
       scheduler.setWorld(game.world.pass())
       pipeline.useGame(game, scheduler, visibility)

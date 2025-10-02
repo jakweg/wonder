@@ -5,6 +5,7 @@ import { Direction } from '@utils/direction'
 import * as slime_idle from '../activities/slime/idle'
 import { DataOffsetDrawables, DataOffsetPositions } from '../entities/data-offsets'
 import { EntityTrait } from '../entities/traits'
+import { GENERIC_CHUNK_SIZE } from '@game/world/size'
 
 interface Props {
   game: GameStateImplementation
@@ -28,14 +29,9 @@ export default (props: Props): Result => {
   const x = props.x
   const z = props.z
 
-  if (
-    x < 0 ||
-    x >= props.game.world.size.sizeX ||
-    x !== (x | 0) ||
-    z < 0 ||
-    z >= props.game.world.size.sizeZ ||
-    z !== (z | 0)
-  )
+  const blocksPerAxis = props.game.world.sizeLevel * GENERIC_CHUNK_SIZE
+
+  if (x < 0 || x >= blocksPerAxis || x !== (x | 0) || z < 0 || z >= blocksPerAxis || z !== (z | 0))
     return { success: false, reason: ErrorReason.CoordinatesOutOfBounds }
 
   const y = props.game.world.getHighestBlockHeight(x, z)

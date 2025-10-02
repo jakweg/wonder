@@ -1,3 +1,4 @@
+import { GENERIC_CHUNK_SIZE } from '@game/world/size'
 import { WORLD_CHUNK_SIZE } from '@game/world/world'
 
 enum Status {
@@ -23,16 +24,12 @@ const check2dPointVisibility = (x: number, z: number, matrix: any, threshold: nu
 
 export default class ChunkVisibilityIndex {
   private cullingDisabled: boolean = false
-  private constructor(
-    private readonly sizeX: number,
-    private readonly sizeY: number,
-    private readonly visibility: Uint8Array,
-  ) {
+  private constructor(private readonly size: number, private readonly visibility: Uint8Array) {
     visibility.fill(Status.INVISIBLE)
   }
 
-  public static create(sizeX: number, sizeY: number): ChunkVisibilityIndex {
-    return new ChunkVisibilityIndex(sizeX, sizeY, new Uint8Array(sizeX * sizeY))
+  public static create(size: number): ChunkVisibilityIndex {
+    return new ChunkVisibilityIndex(size, new Uint8Array(size * size))
   }
 
   public setCullingDisabled(disabled: boolean, matrixToUpdate?: any): void {
@@ -52,9 +49,9 @@ export default class ChunkVisibilityIndex {
 
     let visibleCounter = 0
     let chunkIndex = 0
-    for (let i = 0, li = this.sizeX; i < li; i++) {
-      for (let j = 0, lj = this.sizeY; j < lj; j++) {
-        const visible = check2dPointVisibility(i * WORLD_CHUNK_SIZE, j * WORLD_CHUNK_SIZE, matrix, threshold)
+    for (let i = 0, li = this.size; i < li; i++) {
+      for (let j = 0, lj = this.size; j < lj; j++) {
+        const visible = check2dPointVisibility(i * GENERIC_CHUNK_SIZE, j * GENERIC_CHUNK_SIZE, matrix, threshold)
         if (visible) {
           visibleCounter++
           this.visibility[chunkIndex] = Status.VISIBLE
@@ -70,12 +67,12 @@ export default class ChunkVisibilityIndex {
   }
 
   public isPointInViewport(pointX: number, pointZ: number): boolean {
-    const chunkX = (pointX / WORLD_CHUNK_SIZE) | 0
-    const chunkZ = (pointZ / WORLD_CHUNK_SIZE) | 0
+    const chunkX = (pointX / GENERIC_CHUNK_SIZE) | 0
+    const chunkZ = (pointZ / GENERIC_CHUNK_SIZE) | 0
 
-    if (chunkX < 0 || chunkX >= this.sizeX || chunkZ < 0 || chunkZ >= this.sizeY) return false
+    if (chunkX < 0 || chunkX >= this.size || chunkZ < 0 || chunkZ >= this.size) return false
 
-    const chunkIndex = (chunkX * this.sizeY + chunkZ) | 0
+    const chunkIndex = (chunkX * this.size + chunkZ) | 0
     return this.isChunkIndexVisible(chunkIndex)
   }
 

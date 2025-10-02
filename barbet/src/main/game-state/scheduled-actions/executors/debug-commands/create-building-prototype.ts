@@ -3,6 +3,7 @@ import { ArrayEncodingType, setArrayEncodingType } from '@utils/persistence/seri
 import { ScheduledActionId } from '../../'
 import { computeWorldBoundingBox } from '../../../world/bounding-box'
 import { World } from '../../../world/world'
+import { GENERIC_CHUNK_SIZE, WorldSizeLevel } from '@game/world/size'
 
 export type Action = {
   type: ScheduledActionId.DebugCreateBuildingPrototype
@@ -12,20 +13,17 @@ export const execute = (_: Action, game: GameState) => {
   const world = game.world
   const box = computeWorldBoundingBox(world)
 
-  const newOne = World.createEmpty(box.maxX - box.minX + 1, box.maxY - box.minY, box.maxZ - box.minZ + 1)
+  const newOne = World.createEmpty(WorldSizeLevel.SuperTiny)
 
   World.copyFragment(
     world,
     newOne,
     box.minX,
-    box.minY,
     box.minZ,
     0,
     0,
-    0,
-    newOne.size.sizeX,
-    newOne.size.sizeY,
-    newOne.size.sizeZ,
+    newOne.sizeLevel * GENERIC_CHUNK_SIZE,
+    newOne.sizeLevel * GENERIC_CHUNK_SIZE,
   )
 
   setArrayEncodingType(ArrayEncodingType.String)
