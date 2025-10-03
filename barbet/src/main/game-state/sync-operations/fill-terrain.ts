@@ -19,7 +19,7 @@ export default (props: Props): void => {
 
   for (let x = props.x, tx = props.x + props.sx; x < tx; x++)
     for (let z = props.z, tz = props.z + props.sz; z < tz; z++)
-      if (replace !== undefined) world.replaceBlock2d(x, z, fillWith, replace)
+      if (replace !== undefined) world.replaceBlock(x, z, fillWith, replace)
       else world.setBlock(x, z, fillWith)
 
   props.game.metaData[MetadataField.LastWorldChange]!++

@@ -28,4 +28,6 @@ export const allBlocks: BlockType[] = [
   { numericId: BlockId.Gravel, color: 0x858180 },
 ]
 
+/* @__PURE__ */ allBlocks.sort((a, b) => a.numericId - b.numericId)
+
 export const AIR_ID: BlockId = BlockId.Air

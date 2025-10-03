@@ -1,4 +1,4 @@
-import TypedArray from "@seampan/typed-array"
+import TypedArray from '@seampan/typed-array'
 
 export default class GPUBuffer {
   constructor(
@@ -6,7 +6,7 @@ export default class GPUBuffer {
     private readonly id: WebGLBuffer,
     private readonly target: GLenum,
     private readonly usage: GLenum,
-  ) { }
+  ) {}
 
   public bind() {
     this.gl.bindBuffer(this.target, this.id)
@@ -15,7 +15,7 @@ export default class GPUBuffer {
     return this.id
   }
 
-  public setContent(data: TypedArray) {
+  public setContent(data: TypedArray | ArrayBuffer) {
     const gl = this.gl
     const target = this.target
     gl.bindBuffer(target, this.id)

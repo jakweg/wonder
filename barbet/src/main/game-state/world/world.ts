@@ -192,7 +192,7 @@ export class World {
   /**
    * Caller needs to update `MetadataField.LastWorldChange`
    */
-  public replaceBlock2d(x: number, z: number, withBlock: BlockId, ifBlock: BlockId) {
+  public replaceBlock(x: number, z: number, withBlock: BlockId, ifBlock: BlockId) {
     if (this.isNonUpdatable) throw new Error('world is readonly')
 
     this.validateCoords(x, z)

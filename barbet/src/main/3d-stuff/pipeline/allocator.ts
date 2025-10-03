@@ -2,6 +2,7 @@ import { DEBUG } from '@build'
 import GPUBuffer from '../gpu-resources/buffer'
 import GlProgram from '../gpu-resources/program'
 import VertexArray from '../gpu-resources/vao'
+import GPUTexture from '@3d/gpu-resources/texture'
 
 const getAllUniforms = (gl: WebGL2RenderingContext, program: WebGLProgram) => {
   const allNames: string[] = []
@@ -124,6 +125,16 @@ export const newGpuAllocator = (gl: WebGL2RenderingContext) => {
       const usage = options.dynamic ? gl.DYNAMIC_DRAW : gl.STATIC_DRAW
       const target = options.forArray ? gl.ARRAY_BUFFER : gl.ELEMENT_ARRAY_BUFFER
       return new GPUBuffer(gl, buffer, target, usage)
+    },
+
+    newTexture(options: { textureSlot: number }) {
+      const texture = gl.createTexture()
+      gl.activeTexture(gl.TEXTURE0 + options.textureSlot)
+      gl.bindTexture(gl.TEXTURE_2D, texture)
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST)
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST)
+
+      return new GPUTexture(gl, texture, options.textureSlot)
     },
 
     newUniformBuffer() {

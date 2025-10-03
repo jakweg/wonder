@@ -14,6 +14,7 @@ import { Camera } from './camera'
 import ChunkVisibilityIndex from './drawable/chunk-visibility'
 import genericEntity from './drawable/generic-entity'
 import terrain from './drawable/terrain'
+import terrain2d from './drawable/terrain-2d'
 import { GlProgram } from './gpu-resources'
 import { newPipeline } from './pipeline'
 import { GpuAllocator } from './pipeline/allocator'
@@ -25,6 +26,7 @@ import {
   newFramesLimiter,
   newInputHandler,
 } from './pipeline/wrappers'
+import { WorldSizeLevel } from '@game/world/size'
 
 export interface RenderContext {
   readonly gl: WebGL2RenderingContext
@@ -41,12 +43,21 @@ interface CanvasObjects {
 }
 
 const makeShaderGlobals = (allocator: GpuAllocator) => {
-  const BUFFER = new Float32Array(
-    0 +
+  const jsBufferForGlobals = new ArrayBuffer(
+    (0 +
       16 + // camera matrix
       4 + // times + terrainHeightMultiplier
-      4, // light direction + ambient
+      4 + // light direction + ambient
+      0) *
+      Float32Array.BYTES_PER_ELEMENT +
+      (0 +
+        1 + // World size in chunks
+        3 + // padding for future usage
+        0) *
+        Uint32Array.BYTES_PER_ELEMENT,
   )
+  const jsBufferFloat32 = new Float32Array(jsBufferForGlobals)
+  const jsBufferUint32 = new Uint32Array(jsBufferForGlobals)
 
   const { buffer, raw } = allocator.newUniformBuffer()
   const light = [0.55, 1, -0.6, 0.4]
@@ -70,20 +81,25 @@ const makeShaderGlobals = (allocator: GpuAllocator) => {
       gameTime: number,
       gameTickEstimation: number,
       terrainHeightMultiplier: number,
+      worldSizeInChunks: number,
     ) {
       const combinedMatrix = camera.combinedMatrix
-      for (let i = 0; i < 16; ++i) BUFFER[i] = combinedMatrix[i]
+      for (let i = 0; i < 16; ++i) {
+        jsBufferFloat32[i] = combinedMatrix[i]
+      }
 
-      BUFFER[16 + 0] = secondsSinceFirstRender
-      BUFFER[16 + 1] = gameTime
-      BUFFER[16 + 2] = gameTickEstimation
-      BUFFER[16 + 3] = terrainHeightMultiplier
-      BUFFER[16 + 4] = light[0]!
-      BUFFER[16 + 5] = light[1]!
-      BUFFER[16 + 6] = light[2]!
-      BUFFER[16 + 7] = light[3]!
+      jsBufferFloat32[16 + 0] = secondsSinceFirstRender
+      jsBufferFloat32[16 + 1] = gameTime
+      jsBufferFloat32[16 + 2] = gameTickEstimation
+      jsBufferFloat32[16 + 3] = terrainHeightMultiplier
+      jsBufferFloat32[16 + 4] = light[0]!
+      jsBufferFloat32[16 + 5] = light[1]!
+      jsBufferFloat32[16 + 6] = light[2]!
+      jsBufferFloat32[16 + 7] = light[3]!
 
-      buffer.setContent(BUFFER)
+      jsBufferUint32[16 + 8] = worldSizeInChunks
+
+      buffer.setContent(jsBufferForGlobals)
     },
   }
 }
@@ -92,7 +108,7 @@ export type ShaderGlobals = ReturnType<typeof makeShaderGlobals>
 
 export const createRenderingSession = async (actionsQueue: ActionsQueue, mutex: GameMutex) => {
   const stats = new RenderDebugDataCollector(new FramesMeter(FRAMES_COUNT_RENDERING))
-  const pipeline = newPipeline(makeShaderGlobals, [terrain(), genericEntity(), graphRenderer()])
+  const pipeline = newPipeline(makeShaderGlobals, [terrain2d(), genericEntity(), graphRenderer()])
 
   const scheduler = await newHelperScheduler(mutex)
 
@@ -102,7 +118,8 @@ export const createRenderingSession = async (actionsQueue: ActionsQueue, mutex: 
   let gameTickRate = () => 1
   let hadGame: boolean = false
   let camera = Camera.newPerspective()
-  let visibility = ChunkVisibilityIndex.create(0, 0)
+  let visibility = ChunkVisibilityIndex.create(0)
+  let worldLevel: WorldSizeLevel = -1 as WorldSizeLevel
 
   let lastCanvas: CanvasObjects | null = null
 
@@ -172,6 +189,7 @@ export const createRenderingSession = async (actionsQueue: ActionsQueue, mutex: 
             (secondsSinceFirstRender * gameTickRate()) / STANDARD_GAME_TICK_RATE,
             gameTickValue,
             terrainHeight,
+            worldLevel,
           )
 
         pipeline.doGpuUploads()
@@ -225,6 +243,7 @@ export const createRenderingSession = async (actionsQueue: ActionsQueue, mutex: 
       hadGame = true
       gameTickRate = _gameTickRate
       gameTickEstimation = _gameTickEstimation
+      worldLevel = game.world.sizeLevel
       visibility = ChunkVisibilityIndex.create(game.world.sizeLevel)
       visibility.setCullingDisabled(CONFIG.get('debug/disable-culling'))
       scheduler.setWorld(game.world.pass())
