@@ -16,9 +16,8 @@ export const vertexShaderSource = (options: ShaderOptions): string => {
   const parts: string[] = []
   parts.push(VersionHeader(), PrecisionHeader(), GlobalUniformBlockDeclaration())
   parts.push(`
-	uniform usampler2D u_terrainType;
-	uniform usampler2D u_heightMap;
 	flat out uint v_blockIdHere;
+	out vec3 v_worldPosition;
 
 	const vec3[6] offsets = vec3[6] (
 		vec3(0.0, 0.0, 0.0),
@@ -42,8 +41,10 @@ export const vertexShaderSource = (options: ShaderOptions): string => {
 
 		uint heightHere = texelFetch(u_heightMap, worldLocation, 0).r;
 
+		vec3 pos = vec3(worldLocation.x, float(heightHere), worldLocation.y) + offsets[partOfThisQuad];
+		v_worldPosition = pos;
 
-		vec3 pos = vec3(worldLocation.x, float(heightHere) * ${TerrainHeightMultiplierUniform}, worldLocation.y) + offsets[partOfThisQuad];
+		pos.y *= ${TerrainHeightMultiplierUniform};
 
 		gl_Position = u_combinedMatrix * vec4(pos, 1);
 		gl_PointSize = 10.0;
@@ -70,11 +71,17 @@ export const fragmentShaderSource = (options: ShaderOptions) => {
 	const vec3 colorsByBlockId[${allBlockColors.length}] = vec3[${allBlockColors.length}](${allBlockColors.join(',\n')});
 
 	flat in uint v_blockIdHere;
+	in vec3 v_worldPosition;
 	out vec3 finalColor;
 	
 	void main() {
+		vec3 positionWithinBlock = vec3(fract(v_worldPosition.x), fract(v_worldPosition.y), fract(v_worldPosition.z));
+		float distanceFromBorderX =  1.0 - abs(positionWithinBlock.x - 0.5) * 2.0;
+		float distanceFromBorderZ =  1.0 - abs(positionWithinBlock.z - 0.5) * 2.0;
+		float distanceFromBorder = smoothstep(0.05, 0.1, distanceFromBorderX) * smoothstep(0.05, 0.1, distanceFromBorderZ);
+
 		vec3 color = colorsByBlockId[v_blockIdHere];
-		finalColor = color;
+		finalColor = color * mix(0.5, 1.0, distanceFromBorder);
   	}
 	`,
   )
