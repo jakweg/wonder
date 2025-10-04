@@ -9,12 +9,13 @@ import { GameState, MetadataField } from '@game'
 import { WORLD_CHUNK_SIZE } from '@game/world/world'
 import CONFIG from '@utils/persistence/observable-settings'
 
-import { Attributes, fragmentShaderSource, Uniforms, vertexShaderSource } from './shaders'
+import { Attributes, fragmentShaderSource, spec, Uniforms, vertexShaderSource } from './shaders'
 import { GENERIC_CHUNK_SIZE } from '@game/world/size'
 import GPUTexture from '@3d/gpu-resources/texture'
 import { TextureSlot } from '@3d/texture-slot-counter'
 import { createArray } from '@utils/array-utils'
 import ChunkVisibilityIndex from '@3d/drawable/chunk-visibility'
+import { createFromSpec, Spec } from '@3d/gpu-resources/ultimate-gpu-pipeline'
 
 interface ShaderCache {
   vao: VertexArray
@@ -53,6 +54,11 @@ const drawable: () => Drawable<ShaderGlobals, ShaderCache, WorldData, BoundData>
     globals: ShaderGlobals,
     previous: ShaderCache | null,
   ): Promise<ShaderCache> {
+    const implementation = createFromSpec(allocator.unsafeRawContext(), spec)
+
+    // TODO improve:
+    globals.bindProgramRaw(allocator.unsafeRawContext(), implementation.programs.default.getPointer())
+
     const vao = allocator.newVao()
     const visibleChunksBuffer = allocator.newBuffer({ dynamic: true, forArray: true })
     const terrainTypeTexture = allocator.newTexture({ textureSlot: TextureSlot.TerrainType })

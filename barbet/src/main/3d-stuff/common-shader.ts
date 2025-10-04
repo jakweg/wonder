@@ -19,9 +19,6 @@ export const RotationZMatrix = (angleVariableName: string) =>
 export const TerrainHeightMultiplierUniform = 'u_terrainHeight'
 export const WorldSizeInChunksUniform = 'u_worldLevel'
 export const GlobalUniformBlockDeclaration = () => `
-uniform usampler2D u_terrainType;
-uniform usampler2D u_heightMap;
-
 layout(std140) uniform Globals {
 	mat4 u_combinedMatrix;
 	vec3 u_gameTimes;

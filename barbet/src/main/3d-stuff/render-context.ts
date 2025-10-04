@@ -65,15 +65,23 @@ const makeShaderGlobals = (allocator: GpuAllocator) => {
 
   return {
     bindProgram<A extends string, U extends string>(program: GlProgram<A, U>): GlProgram<A, U> {
-      const BINDING_POINT = 0
       const gl = program.rawGl()
       const programRaw = program.rawHandle()
+
+      const BINDING_POINT = 0
       const blockIndex = gl.getUniformBlockIndex(programRaw, 'Globals')
 
       gl.uniformBlockBinding(programRaw, blockIndex, BINDING_POINT)
       gl.bindBufferBase(gl.UNIFORM_BUFFER, BINDING_POINT, raw)
 
       return program
+    },
+    bindProgramRaw(gl: WebGL2RenderingContext, programRaw: WebGLProgram): void {
+      const BINDING_POINT = 0
+      const blockIndex = gl.getUniformBlockIndex(programRaw, 'Globals')
+
+      gl.uniformBlockBinding(programRaw, blockIndex, BINDING_POINT)
+      gl.bindBufferBase(gl.UNIFORM_BUFFER, BINDING_POINT, raw)
     },
     update(
       camera: Camera,
@@ -108,7 +116,11 @@ export type ShaderGlobals = ReturnType<typeof makeShaderGlobals>
 
 export const createRenderingSession = async (actionsQueue: ActionsQueue, mutex: GameMutex) => {
   const stats = new RenderDebugDataCollector(new FramesMeter(FRAMES_COUNT_RENDERING))
-  const pipeline = newPipeline(makeShaderGlobals, [terrain2d(), genericEntity(), graphRenderer()])
+  const pipeline = newPipeline(makeShaderGlobals, [
+    terrain2d(),
+    //genericEntity(),
+    //graphRenderer()
+  ])
 
   const scheduler = await newHelperScheduler(mutex)
 
