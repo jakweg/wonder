@@ -2,7 +2,7 @@ import { GlProgram, GPUBuffer, VertexArray } from '@3d/gpu-resources'
 import { AttrType } from '@3d/gpu-resources/program'
 import { getBuildModelCallback, ModelId } from '@3d/model/model-id'
 import { GpuAllocator } from '@3d/pipeline/allocator'
-import { Drawable, LoadParams } from '@3d/pipeline/Drawable'
+import { Drawable, LoadParams } from '@3d/pipeline/drawable'
 import { RenderContext, ShaderGlobals } from '@3d/render-context'
 import { DataOffsetDrawables, DataOffsetPositions } from '@game/entities/data-offsets'
 import EntityContainer from '@game/entities/entity-container'
@@ -73,17 +73,22 @@ const drawable: () => Drawable<ShaderGlobals, ShaderCache, WorldData, BoundData>
         vao.bind()
 
         indicesBuffer.setContent(pose.indices)
+        indicesBuffer.bind()
 
         modelDataBuffer.setContent(pose.vertexDataArray)
+        modelDataBuffer.bind()
         program.useAttributes(buildAttributeBundle(true, pose.modelAttributes))
 
         entityDataBuffer.bind()
         program.useAttributes(buildAttributeBundle(false, pose.entityAttributes))
 
         modelBuffer.setContent(pose.vertexPoints)
+        entityDataBuffer.bind()
         program.useAttributes({
           'modelPosition': { count: 3, type: AttrType.Float, divisor: 0 },
         })
+
+        vao.unbind()
 
         return {
           vao,
@@ -186,6 +191,7 @@ const drawable: () => Drawable<ShaderGlobals, ShaderCache, WorldData, BoundData>
       model.program.use()
 
       gl.drawElementsInstanced(gl.TRIANGLES, model.triangles, gl.UNSIGNED_SHORT, 0, model.entitiesCount)
+      model.vao.unbind()
       drawCalls++
     }
     stats.incrementDrawCalls(drawCalls)

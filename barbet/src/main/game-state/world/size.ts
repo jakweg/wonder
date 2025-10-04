@@ -8,6 +8,7 @@ export const enum WorldSizeLevel {
   Medium = 16,
   Large = 64,
   ExtraLarge = 128,
+  Default = Medium,
 }
 
 /* @__PURE__ */ console.assert(

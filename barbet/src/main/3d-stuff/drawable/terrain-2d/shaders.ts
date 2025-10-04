@@ -8,7 +8,7 @@ import {
 } from '@3d/common-shader'
 import { MousePickableType } from '@3d/pipeline/mouse-picker'
 import { allBlocks } from '@game/world/block'
-import { GENERIC_CHUNK_SIZE } from '@game/world/size'
+import { GENERIC_CHUNK_SIZE, WorldSizeLevel } from '@game/world/size'
 
 type ShaderOptions = {}
 
@@ -18,6 +18,7 @@ export const vertexShaderSource = (options: ShaderOptions): string => {
   parts.push(`
 	flat out uint v_blockIdHere;
 	out vec3 v_worldPosition;
+	in uint a_thisChunkId;
 
 	const vec3[6] offsets = vec3[6] (
 		vec3(0.0, 0.0, 0.0),
@@ -33,10 +34,21 @@ export const vertexShaderSource = (options: ShaderOptions): string => {
 		uint partOfThisQuad = uint(gl_VertexID % 6);
 		uint quadIndex = uint(gl_VertexID / 6);
 
-		uint quadX = quadIndex % (${WorldSizeInChunksUniform} * ${GENERIC_CHUNK_SIZE}U);
-		uint quadZ = quadIndex / (${WorldSizeInChunksUniform} * ${GENERIC_CHUNK_SIZE}U);
+		// uint quadX = quadIndex % (${WorldSizeInChunksUniform} * ${GENERIC_CHUNK_SIZE}U);
+		// uint quadZ = quadIndex / (${WorldSizeInChunksUniform} * ${GENERIC_CHUNK_SIZE}U);
 
-		ivec2 worldLocation = ivec2(quadX, quadZ);
+		uint chunkIndexUnmapped = quadIndex / (${GENERIC_CHUNK_SIZE * GENERIC_CHUNK_SIZE}U);
+		uint chunkIndexMapped = chunkIndexUnmapped + uint(a_thisChunkId);
+		uint chunkX = chunkIndexMapped / (${WorldSizeInChunksUniform});
+		uint chunkZ = chunkIndexMapped % (${WorldSizeInChunksUniform});
+		uint quadIndexWithinChunk = quadIndex % (${GENERIC_CHUNK_SIZE * GENERIC_CHUNK_SIZE}U);
+		uint quadXWithinChunk = quadIndexWithinChunk % ${GENERIC_CHUNK_SIZE}U;
+		uint quadZWithinChunk = quadIndexWithinChunk / ${GENERIC_CHUNK_SIZE}U;
+
+		ivec2 locationWithinChunk  = ivec2(quadXWithinChunk, quadZWithinChunk);
+		ivec2 chunkAbsoluteLocation = ivec2(chunkX, chunkZ) * ${GENERIC_CHUNK_SIZE};
+		
+		ivec2 worldLocation = chunkAbsoluteLocation + locationWithinChunk;
 		v_blockIdHere = texelFetch(u_terrainType, worldLocation, 0).r;
 
 		uint heightHere = texelFetch(u_heightMap, worldLocation, 0).r;
@@ -90,4 +102,4 @@ export const fragmentShaderSource = (options: ShaderOptions) => {
 }
 
 export type Uniforms = 'terrainType' | 'heightMap'
-export type Attributes = never
+export type Attributes = 'thisChunkId'

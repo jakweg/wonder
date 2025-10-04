@@ -17,7 +17,7 @@ import { World } from './world'
 import { WorldSizeLevel } from './size'
 
 export const createEmptyGame = (mutex: GameMutex, stateBroadcastCallback: () => void): GameState => {
-  const sizeLevel: WorldSizeLevel = CONFIG.get('debug/debug-world') ? WorldSizeLevel.SuperTiny : WorldSizeLevel.Medium
+  const sizeLevel: WorldSizeLevel = CONFIG.get('debug/debug-world') ? WorldSizeLevel.SuperTiny : WorldSizeLevel.Default
 
   const world = World.createEmpty(sizeLevel)
   const itemsOnGround = GroundItemsIndex.createNew(world.sizeLevel)

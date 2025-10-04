@@ -28,5 +28,6 @@ export default class GPUTexture {
       gl.UNSIGNED_BYTE,
       data,
     )
+    gl.bindTexture(gl.TEXTURE_2D, null)
   }
 }

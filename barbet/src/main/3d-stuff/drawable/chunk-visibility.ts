@@ -1,5 +1,4 @@
 import { GENERIC_CHUNK_SIZE } from '@game/world/size'
-import { WORLD_CHUNK_SIZE } from '@game/world/world'
 
 enum Status {
   INVISIBLE = 0,
@@ -15,15 +14,16 @@ const check2dPointVisibility = (x: number, z: number, matrix: any, threshold: nu
   const ry = (matrix[1] * x + matrix[9] * z + matrix[13]) / rw
   if (ry < -threshold || ry > threshold) return false
 
-  // const rz = (matrix[2] * x + matrix[10] * z + matrix[14]) / rw
-  // if (rz < -threshold || rz > threshold)
-  //     return false
+  const rz = (matrix[2] * x + matrix[10] * z + matrix[14]) / rw
+  if (rz < -threshold || rz > threshold) return false
 
   return true
 }
 
 export default class ChunkVisibilityIndex {
   private cullingDisabled: boolean = false
+  private readonly visibleChunkIds: number[] = []
+
   private constructor(private readonly size: number, private readonly visibility: Uint8Array) {
     visibility.fill(Status.INVISIBLE)
   }
@@ -32,12 +32,21 @@ export default class ChunkVisibilityIndex {
     return new ChunkVisibilityIndex(size, new Uint8Array(size * size))
   }
 
+  public getVisibleChunkIds(): Readonly<Array<number>> {
+    return this.visibleChunkIds
+  }
+
   public setCullingDisabled(disabled: boolean, matrixToUpdate?: any): void {
     if (this.cullingDisabled === disabled) return
     this.cullingDisabled = disabled
 
-    if (disabled) this.visibility.fill(Status.VISIBLE)
-    else if (matrixToUpdate) this.update(matrixToUpdate)
+    if (disabled) {
+      this.visibility.fill(Status.VISIBLE)
+      this.visibleChunkIds.length = 0
+      for (let i = 0; i < this.size * this.size; i++) {
+        this.visibleChunkIds.push(i)
+      }
+    } else if (matrixToUpdate) this.update(matrixToUpdate)
   }
 
   /** @returns number of visible chunks */
@@ -63,6 +72,14 @@ export default class ChunkVisibilityIndex {
         chunkIndex++
       }
     }
+
+    this.visibleChunkIds.length = 0
+    for (let i = 0; i < this.size * this.size; i++) {
+      if (this.isChunkIndexVisible(i)) {
+        this.visibleChunkIds.push(i)
+      }
+    }
+
     return visibleCounter
   }
 

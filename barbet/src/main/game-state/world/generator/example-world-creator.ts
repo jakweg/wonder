@@ -93,7 +93,8 @@ const generateRandomTerrain = (world: World) => {
       if (yHere < 4) {
         const waterSurfaceMaterialId = biomeValue.waterSurfaceMaterialId
         world.setBlock(x, z, waterSurfaceMaterialId)
-        if (waterSurfaceMaterialId !== BlockId.Water) world.setHeight(x, z, yHere + 1)
+        if (waterSurfaceMaterialId !== BlockId.Water) world.setHeight(x, z, 4)
+        else world.setHeight(x, z, 3)
       }
       index++
     }

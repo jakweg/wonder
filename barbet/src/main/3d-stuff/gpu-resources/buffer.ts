@@ -20,6 +20,7 @@ export default class GPUBuffer {
     const target = this.target
     gl.bindBuffer(target, this.id)
     gl.bufferData(target, data, this.usage)
+    gl.bindBuffer(target, null)
   }
 
   public setPartialContent(data: TypedArray, sourceOffset: number, length: number) {
@@ -27,5 +28,6 @@ export default class GPUBuffer {
     const target = this.target
     gl.bindBuffer(target, this.id)
     gl.bufferData(target, data, this.usage, sourceOffset, length)
+    gl.bindBuffer(target, null)
   }
 }
