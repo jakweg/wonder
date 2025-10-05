@@ -1,19 +1,18 @@
-import GlProgram from '@3d/gpu-resources/program'
 import { GpuAllocator } from '@3d/pipeline/allocator'
-import { Drawable, LoadParams } from '@3d/pipeline/Drawable'
+import { Drawable, LoadParams } from '@3d/pipeline/drawable'
 import { RenderContext } from '@3d/render-context'
 import CONFIG from '../../persistence/observable-settings'
-import { Attributes, fragmentShaderSource, Uniforms, vertexShaderSource } from './graph-renderer-shaders'
+import { spec, SpecImplementation } from './graph-renderer-shaders'
+import { createFromSpec } from '@3d/gpu-resources/ultimate-gpu-pipeline'
 
 export const FRAMES_COUNT_RENDERING = 240
 export const FRAMES_COUNT_UPDATE = 180
 
 type ShaderCache = null | {
+  impl: SpecImplementation
   enabled: boolean
   tps: number
   needsTpsUpdate: boolean
-  programFps: GlProgram<Attributes, Uniforms>
-  programUps: GlProgram<Attributes, Uniforms>
 }
 
 interface WorldData {}
@@ -30,29 +29,20 @@ const drawable: () => Drawable<never, ShaderCache, WorldData, BoundData> = () =>
 
     if (previous) return { ...previous, enabled: true, tps: CONFIG.get('other/tps'), needsTpsUpdate: true }
 
-    const makeShader = (samplesCount: number, left: boolean) =>
-      allocator.newProgram<Attributes, Uniforms>({
-        vertexSource: vertexShaderSource({ samplesCount, left }),
-        fragmentSource: fragmentShaderSource({ samplesCount, left }),
-      })
+    const impl = createFromSpec(allocator.unsafeRawContext(), spec)
 
-    const programs = await Promise['all']([
-      makeShader(FRAMES_COUNT_RENDERING, true),
-      makeShader(FRAMES_COUNT_UPDATE, false),
-    ])
+    impl.programs.fps.use()
+    allocator.unsafeRawContext().uniform1f(impl.programs.fps.unsafeUniformLocations.heightScale!, 64.0)
+    allocator.unsafeRawContext().uniform1f(impl.programs.fps.unsafeUniformLocations.targetMs!, 16.0)
+    allocator.unsafeRawContext().uniform1ui(impl.programs.fps.unsafeUniformLocations.samplesCount!, 240)
 
-    programs[0].use()
-    allocator.unsafeRawContext().uniform1f(programs[0].uniforms['heightScale'], 64.0)
-    allocator.unsafeRawContext().uniform1f(programs[0].uniforms['targetMs'], 16.0)
-
-    for (const p of programs) {
-      p.use()
-      p.rawGl()['vertexAttrib1f'](p.attributes['dummyZero'], 0)
-    }
+    impl.programs.tps.use()
+    allocator.unsafeRawContext().uniform1f(impl.programs.tps.unsafeUniformLocations.heightScale!, 64.0)
+    allocator.unsafeRawContext().uniform1f(impl.programs.tps.unsafeUniformLocations.targetMs!, 16.0)
+    allocator.unsafeRawContext().uniform1ui(impl.programs.tps.unsafeUniformLocations.samplesCount!, 180)
 
     return {
-      programFps: programs[0],
-      programUps: programs[1],
+      impl,
       enabled,
       tps: CONFIG.get('other/tps'),
       needsTpsUpdate: true,
@@ -75,41 +65,38 @@ const drawable: () => Drawable<never, ShaderCache, WorldData, BoundData> = () =>
   draw(ctx: RenderContext, shader: ShaderCache, world: WorldData, bound: BoundData): void {
     const {
       gl,
-      stats,
       stats: { frames, updateTimesBuffer },
     } = ctx
+
     if (shader === null || !shader.enabled) return
 
-    gl.bindBuffer(gl.ARRAY_BUFFER, null)
-    gl.bindVertexArray(null)
+    shader.impl.start()
     gl['disable'](gl.DEPTH_TEST)
     gl['enable'](gl.BLEND)
     gl['blendFunc'](gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
 
-    const { programFps, programUps } = shader
-    programFps.use()
-    gl.uniform1fv(programFps.uniforms['values[0]'], frames.getFrameTimeRaw())
-    gl.drawArrays(gl.TRIANGLES, 0, 6)
-    stats.incrementDrawCalls()
+    shader.impl.programs.fps.use()
+    const frameTime = frames.getFrameTimeRaw()
+    shader.impl.textures.fpsSamples.setContent2D(frameTime, frameTime.length, 1)
 
+    gl.drawArrays(gl.TRIANGLES, 0, 6)
+
+    shader.impl.programs.tps.use()
     if (updateTimesBuffer) {
-      programUps.use()
       if (shader.needsTpsUpdate) {
         const targetMilliseconds = 1000 / shader.tps
-        gl.uniform1f(programUps.uniforms['targetMs'], targetMilliseconds)
-        gl.uniform1f(programUps.uniforms['heightScale'], targetMilliseconds * 4)
-
+        gl.uniform1f(shader.impl.programs.tps.unsafeUniformLocations.targetMs, targetMilliseconds)
+        gl.uniform1f(shader.impl.programs.tps.unsafeUniformLocations.heightScale, targetMilliseconds * 4)
         shader.needsTpsUpdate = false
       }
-      gl.uniform1fv(programUps.uniforms['values[0]'], new Float32Array(updateTimesBuffer))
-      gl.drawArrays(gl.TRIANGLES, 0, 6)
-      stats.incrementDrawCalls()
+      const array = new Float32Array(updateTimesBuffer)
+      shader.impl.textures.tpsSamples.setContent2D(array, array.length, 1)
     }
+    gl.drawArrays(gl.TRIANGLES, 0, 6)
 
     gl['enable'](gl.DEPTH_TEST)
     gl['disable'](gl.BLEND)
-
-    gl.bindVertexArray(null)
+    shader.impl.stop()
   },
   drawForMousePicker(ctx: RenderContext, shader: ShaderCache, world: WorldData, bound: BoundData): void {},
 })

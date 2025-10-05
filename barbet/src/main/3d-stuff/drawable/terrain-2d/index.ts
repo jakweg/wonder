@@ -9,20 +9,16 @@ import { GameState, MetadataField } from '@game'
 import { WORLD_CHUNK_SIZE } from '@game/world/world'
 import CONFIG from '@utils/persistence/observable-settings'
 
-import { Attributes, fragmentShaderSource, spec, Uniforms, vertexShaderSource } from './shaders'
+import { Attributes, fragmentShaderSource, spec, SpecImplementation, Uniforms, vertexShaderSource } from './shaders'
 import { GENERIC_CHUNK_SIZE } from '@game/world/size'
 import GPUTexture from '@3d/gpu-resources/texture'
 import { TextureSlot } from '@3d/texture-slot-counter'
 import { createArray } from '@utils/array-utils'
 import ChunkVisibilityIndex from '@3d/drawable/chunk-visibility'
-import { createFromSpec, Spec } from '@3d/gpu-resources/ultimate-gpu-pipeline'
+import { createFromSpec } from '@3d/gpu-resources/ultimate-gpu-pipeline'
 
 interface ShaderCache {
-  vao: VertexArray
-  terrainTypeTexture: GPUTexture
-  heightMapTexture: GPUTexture
-  shader: GlProgram<Attributes, Uniforms>
-  visibleChunksBuffer: GPUBuffer
+  implementation: SpecImplementation
   lastWorldUploadChangeId: number
 }
 
@@ -59,34 +55,8 @@ const drawable: () => Drawable<ShaderGlobals, ShaderCache, WorldData, BoundData>
     // TODO improve:
     globals.bindProgramRaw(allocator.unsafeRawContext(), implementation.programs.default.getPointer())
 
-    const vao = allocator.newVao()
-    const visibleChunksBuffer = allocator.newBuffer({ dynamic: true, forArray: true })
-    const terrainTypeTexture = allocator.newTexture({ textureSlot: TextureSlot.TerrainType })
-    const heightMapTexture = allocator.newTexture({ textureSlot: TextureSlot.HeightMap })
-
-    vao.bind()
-    const shader = await allocator
-      .newProgram<Attributes, Uniforms>({
-        vertexSource: vertexShaderSource({}),
-        fragmentSource: fragmentShaderSource({}),
-      })
-      .then(globals.bindProgram)
-
-    shader.use()
-    allocator.unsafeRawContext().uniform1i(shader.uniforms['terrainType'], terrainTypeTexture.slot)
-    allocator.unsafeRawContext().uniform1i(shader.uniforms['heightMap'], heightMapTexture.slot)
-    visibleChunksBuffer.bind()
-    shader.useAttributes({
-      'thisChunkId': { count: 1, type: AttrType.UShort, divisor: 1 },
-    })
-    vao.unbind()
-
     return {
-      vao,
-      terrainTypeTexture,
-      heightMapTexture,
-      visibleChunksBuffer,
-      shader,
+      implementation,
       lastWorldUploadChangeId: -1,
     }
   },
@@ -150,25 +120,25 @@ const drawable: () => Drawable<ShaderGlobals, ShaderCache, WorldData, BoundData>
     const worldChangeId = world.metaData[MetadataField.LastWorldChange]!
     if (worldChangeId === shader.lastWorldUploadChangeId) return
     shader.lastWorldUploadChangeId = worldChangeId
-    shader.heightMapTexture.setContent(world.rawHeightData, world.blocksPerAxis)
-    shader.terrainTypeTexture.setContent(world.rawBlockData, world.blocksPerAxis)
+    shader.implementation.textures.heightMap.setContentSquare(world.rawHeightData, world.blocksPerAxis)
+    shader.implementation.textures.terrainType.setContentSquare(world.rawBlockData, world.blocksPerAxis)
   },
   draw(ctx: RenderContext, shader: ShaderCache, world: WorldData, bound: BoundData): void {
     const gl = ctx.gl
+    const impl = shader.implementation
+    impl.start()
 
     const visibleChunksList = ctx.visibility.getVisibleChunkIds()
     const visibleChunks = new Uint16Array(visibleChunksList)
-    shader.visibleChunksBuffer.setContent(visibleChunks)
+    impl.buffers.visibleChunks.setContent(visibleChunks)
 
-    shader.vao.bind()
-    shader.shader.use()
+    gl.useProgram(null)
+    impl.programs.default.use()
 
     const numberOfQuadsPerChunk = GENERIC_CHUNK_SIZE * GENERIC_CHUNK_SIZE
-    shader.heightMapTexture.setActive()
-    shader.terrainTypeTexture.setActive()
     gl.drawArraysInstanced(gl.TRIANGLES, 0, 6 * numberOfQuadsPerChunk, visibleChunksList.length)
 
-    shader.vao.unbind()
+    impl.stop()
   },
   drawForMousePicker(ctx: RenderContext, shader: ShaderCache, world: WorldData, bound: BoundData): void {},
 })

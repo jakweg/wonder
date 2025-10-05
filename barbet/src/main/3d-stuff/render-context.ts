@@ -119,7 +119,7 @@ export const createRenderingSession = async (actionsQueue: ActionsQueue, mutex: 
   const pipeline = newPipeline(makeShaderGlobals, [
     terrain2d(),
     //genericEntity(),
-    //graphRenderer()
+    graphRenderer(),
   ])
 
   const scheduler = await newHelperScheduler(mutex)

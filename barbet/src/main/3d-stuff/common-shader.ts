@@ -1,6 +1,7 @@
 export const VersionHeader = () => `#version 300 es\n`
 
-export const PrecisionHeader = () => `precision highp float;\nprecision highp usampler2D;\n`
+export const PrecisionHeader = () =>
+  `precision highp float;\nprecision highp int;\nprecision highp usampler2D;\nprecision mediump sampler2D;\n`
 
 export const PIConstantHeader = () => `const float PI = ${Math.PI};\nconst float PI_OVER1 = ${1 / Math.PI};`
 

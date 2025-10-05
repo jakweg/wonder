@@ -7,7 +7,7 @@ import {
   WorldSizeInChunksUniform,
 } from '@3d/common-shader'
 import { AttrType } from '@3d/gpu-resources/program'
-import { Spec } from '@3d/gpu-resources/ultimate-gpu-pipeline'
+import { createFromSpec, Spec } from '@3d/gpu-resources/ultimate-gpu-pipeline'
 import { MousePickableType } from '@3d/pipeline/mouse-picker'
 import { TextureSlot } from '@3d/texture-slot-counter'
 import { allBlocks } from '@game/world/block'
@@ -187,7 +187,7 @@ float distanceFromBorder = smoothstep(0.05, 0.1, distanceFromBorderX) * smoothst
 vec3 color = colorsByBlockId[${a.blockIdHere}];
 vec3 finalColor = color * mix(0.5, 1.0, distanceFromBorder);
 `,
-      fragmentFinalColor: 'finalColor',
+      fragmentFinalColor: 'vec4(finalColor.rgb, 1.0)',
 
       textureSamplers: {
         terrainType: {},
@@ -203,3 +203,4 @@ vec3 finalColor = color * mix(0.5, 1.0, distanceFromBorder);
     },
   },
 } as const satisfies Spec<any, any, any, 'terrainType' | 'heightMap'>
+export type SpecImplementation = ReturnType<typeof createFromSpec<typeof spec>>

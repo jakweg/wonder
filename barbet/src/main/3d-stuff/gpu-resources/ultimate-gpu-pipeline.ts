@@ -1,5 +1,6 @@
 import { VersionHeader, PrecisionHeader, GlobalUniformBlockDeclaration } from '@3d/common-shader'
 import { TextureSlot } from '@3d/texture-slot-counter'
+import { DEBUG } from '@build'
 import TypedArray from '@seampan/typed-array'
 
 export enum AttrType {
@@ -67,17 +68,26 @@ const getGlValue = (gl: WebGL2RenderingContext, type: AttrType) => {
 }
 
 type AttributeSpecification<B extends string | symbol | number> = {
-  disabled?: boolean
   count: number
   divisor?: number
-  bindTo: Record<B, true>
 } & (
   | { type: AttrType.Float } // float can't be normalized
   | { type: Exclude<AttrType, AttrType.Float>; normalize?: boolean }
-)
+) &
+  (
+    | {
+        disabled: true
+      }
+    | {
+        disabled?: false
+        bindTo: Record<B, true>
+      }
+  )
+
 type UniformSpecification = { type: string }
 type VaryingSpecification = { type: string; flat?: boolean }
 type TextureSamplerSpecification = {}
+type TextureSpecification = { textureSlot: TextureSlot; float32?: boolean }
 
 type IfAny<T, Y, N> = 0 extends 1 & T ? Y : N
 type NeverIfAny<T> = IfAny<T, never, T>
@@ -100,6 +110,8 @@ export interface Spec<
       vertexMain: (variables: Record<NeverIfAny<T> | NeverIfAny<U> | NeverIfAny<AM[P]> | string, string>) => string
       vertexFinalPosition: string
 
+      skipWorldTransform?: boolean
+
       fragmentMain: (variables: Record<NeverIfAny<T> | NeverIfAny<U> | NeverIfAny<AM[P]> | string, string>) => string
       fragmentFinalColor: string
 
@@ -108,10 +120,10 @@ export interface Spec<
       varyings?: Record<string, VaryingSpecification>
 
       uniforms?: Record<U, UniformSpecification>
-      textureSamplers?: Record<T, TextureSamplerSpecification>
+      textureSamplers?: Partial<Record<T, TextureSamplerSpecification>>
     }
   >
-  textures?: Record<T, { textureSlot: TextureSlot }>
+  textures?: Record<T, TextureSpecification>
 }
 
 type AnySpec<
@@ -119,22 +131,42 @@ type AnySpec<
 > = Spec<keyof S['buffers'], keyof S['programs'], keyof S['programs'][any]['uniforms'], keyof S['textures']>
 
 type Implementation<S extends AnySpec<S>> = {
-  use: () => void
+  start: () => void
   stop: () => void
   buffers: Record<keyof S['buffers'], { setContent: (value: TypedArray) => void }>
-  programs: Record<keyof S['programs'], { use: () => void; getPointer(): WebGLProgram }>
-  textures: Record<keyof S['textures'], { setContent: (value: TypedArray, sizeInOneDimension: number) => void }>
+  programs: {
+    [P in keyof S['programs']]: {
+      use: () => void
+      getPointer(): WebGLProgram
+      unsafeUniformLocations: Record<
+        S['programs'][P] extends { uniforms: infer U } ? keyof U : never,
+        WebGLUniformLocation
+      >
+    }
+  }
+  textures: Record<
+    keyof S['textures'],
+    {
+      setContentSquare: (value: TypedArray, sizeInOneDimension: number) => void
+      setContent2D: (value: TypedArray, width: number, height: number) => void
+    }
+  >
 }
 
 export const createFromSpec = <S extends AnySpec<S>>(gl: WebGL2RenderingContext, s: S): Implementation<S> => {
   const buffers = createBuffers(gl, s)
   const textures = createTextures(gl, s)
-  const programs = createPrograms(gl, s)
+  const programs = createPrograms(gl, s, textures)
 
   const vao = gl.createVertexArray()
+  gl.bindVertexArray(vao)
+
+  bindAttributesToBuffers(gl, buffers, programs)
+
+  gl.bindVertexArray(null)
 
   return {
-    use() {
+    start() {
       gl.bindVertexArray(vao)
     },
     stop() {
@@ -146,11 +178,91 @@ export const createFromSpec = <S extends AnySpec<S>>(gl: WebGL2RenderingContext,
   }
 }
 
+function bindAttributesToBuffers(gl: WebGL2RenderingContext, buffers: any, programs: any) {
+  for (const program of Object.values(programs)) {
+    const attributeLocations = (program as any).attributes as Record<any, number>
+    const attributes = ((program as any).spec.attributes ?? {}) as Record<any, AttributeSpecification<any>>
+    const entries = Object.entries(attributes) as [string, AttributeSpecification<any>][]
+
+    const totalSize = entries.map(([_, v]) => v.count * getBytesSize(v.type))['reduce']((a, b) => a + b, 0)
+
+    let offset = 0
+    for (const [key, attribute] of entries) {
+      const index = attributeLocations[key]
+      const type = attribute.type
+      if (index !== undefined) {
+        if (attribute.disabled === true) {
+          gl.disableVertexAttribArray(index)
+          continue
+        }
+
+        const [bufferName, ...rest] = Object.keys(attribute.bindTo)
+        // There must be only a single bindTo buffer
+        if (rest.length || !bufferName) throw new Error()
+
+        const foundBuffer = buffers[bufferName]
+        if (!foundBuffer?.unsafePointer || foundBuffer?.spec?.element) throw new Error()
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, foundBuffer.unsafePointer)
+
+        gl.enableVertexAttribArray(index)
+
+        if ((attribute as any).normalize === undefined ? isInt(type) : false)
+          gl.vertexAttribIPointer(index, attribute.count, getGlValue(gl, type), totalSize, offset)
+        else
+          gl.vertexAttribPointer(
+            index,
+            attribute.count,
+            getGlValue(gl, type),
+            (attribute as any).normalize ?? false,
+            totalSize,
+            offset,
+          )
+
+        if (attribute.divisor !== undefined) {
+          gl.vertexAttribDivisor(index, attribute.divisor)
+        }
+      }
+      offset += attribute.count * getBytesSize(type)
+    }
+  }
+
+  gl.bindBuffer(gl.ARRAY_BUFFER, null)
+}
+
+const getAllUniforms = (gl: WebGL2RenderingContext, program: WebGLProgram) => {
+  const allNames: string[] = []
+  const count: number = gl.getProgramParameter(program, gl.ACTIVE_UNIFORMS)
+  for (let i = 0; i < count; i++) {
+    const name = gl.getActiveUniform(program, i)!['name']
+    if (name.startsWith('gl_') || name.startsWith('webgl_gl_')) continue
+    if (!name.startsWith('u_')) throw new Error(`Uniform name '${name}' doesn't start with proper prefix`)
+    allNames.push(name)
+  }
+  const mapped = Object.fromEntries(allNames.map(name => [name.substring(2), gl.getUniformLocation(program, name)]))
+  return DEBUG ? { ...mapped, names: allNames } : mapped
+}
+
+const getAllAttributes = (gl: WebGL2RenderingContext, program: WebGLProgram) => {
+  const allNames: string[] = []
+  const count: number = gl.getProgramParameter(program, gl.ACTIVE_ATTRIBUTES)
+  for (let i = 0; i < count; i++) {
+    const name = gl.getActiveAttrib(program, i)!['name']
+    if (name.startsWith('gl_')) continue
+    if (!name.startsWith('a_')) throw new Error(`Attribute name '${name}' doesn't start with proper prefix`)
+    allNames.push(name)
+  }
+  const mapped = Object.fromEntries(allNames.map(name => [name.substring(2), gl.getAttribLocation(program, name)]))
+  return DEBUG ? { ...mapped, names: allNames } : mapped
+}
+
 function buildShaderSource(params: {
   isVertex: boolean
+  skipWorldTransform: boolean
+  textures: any
   uniforms: Record<string, UniformSpecification>
-  textureSamplers: Record<string, TextureSamplerSpecification>
-  attributes?: Record<string, AttributeSpecification>
+  textureSamplers: Partial<Record<string, TextureSamplerSpecification>>
+  attributes?: Record<string, AttributeSpecification<any>>
   varyings: Record<string, VaryingSpecification>
   mainSource: (variables: any) => string
   utilDeclarations: any
@@ -166,7 +278,7 @@ function buildShaderSource(params: {
   }
 
   for (const [n, u] of Object.entries(params.textureSamplers)) {
-    parts.push('uniform ', 'usampler2D', ' u_', n, ';\n')
+    parts.push('uniform ', params.textures[n].spec.float32 ? 'sampler2D' : 'usampler2D', ' u_', n, ';\n')
     availableVariables[n] = 'u_' + n
   }
 
@@ -193,7 +305,7 @@ function buildShaderSource(params: {
   const safeAvailableVariables = new Proxy(availableVariables, handler)
 
   if (!params.isVertex) {
-    parts.push('out vec3 finalFinalColor;')
+    parts.push('out vec4 finalFinalColor;')
   }
 
   if (typeof params.utilDeclarations === 'string') {
@@ -204,9 +316,13 @@ function buildShaderSource(params: {
 
   parts.push('void main() {\n', params.mainSource(safeAvailableVariables))
   if (params.isVertex) {
-    parts.push('gl_Position = u_combinedMatrix * vec4(', params.finalVariable, ', 1);\ngl_PointSize = 10.0;\n}\n')
+    if (params.skipWorldTransform) {
+      parts.push('gl_Position = vec4(', params.finalVariable, ', 1);\ngl_PointSize = 10.0;\n}\n')
+    } else {
+      parts.push('gl_Position = u_combinedMatrix * vec4(', params.finalVariable, ', 1);\ngl_PointSize = 10.0;\n}\n')
+    }
   } else {
-    parts.push('finalFinalColor = ', params.finalVariable, ';\n}\n')
+    parts.push('finalFinalColor = vec4(', params.finalVariable, ');\n}\n')
   }
 
   return parts.join('')
@@ -244,49 +360,19 @@ const isCompilationOk = (
   return false
 }
 
-// function useAttributes(
-//   attributes: Readonly<Partial<{ [key in A | ('_' | '__' | '___')]: AttributeSpecification }>>,
-// ): void {
-//   const gl = this.gl
-//   const entries = Object.entries(attributes) as [A, AttributeSpecification][]
-
-//   const totalSize = entries.map(([_, v]) => v.count * getBytesSize(v.type))['reduce']((a, b) => a + b, 0)
-
-//   let offset = 0
-//   for (const [key, attribute] of entries) {
-//     const index = this.attributes[key]
-//     const type = attribute.type
-//     if (index !== undefined) {
-//       gl.enableVertexAttribArray(index)
-//       if ((attribute as any).normalize === undefined ? isInt(type) : false)
-//         gl.vertexAttribIPointer(index, attribute.count, getGlValue(gl, type), totalSize, offset)
-//       else
-//         gl.vertexAttribPointer(
-//           index,
-//           attribute.count,
-//           getGlValue(gl, type),
-//           (attribute as any).normalize ?? false,
-//           totalSize,
-//           offset,
-//         )
-
-//       if (attribute.divisor !== undefined) gl.vertexAttribDivisor(index, attribute.divisor)
-//     }
-//     offset += attribute.count * getBytesSize(type)
-//   }
-// }
-
-function createPrograms<S extends AnySpec<S>>(gl: WebGL2RenderingContext, s: S) {
+function createPrograms<S extends AnySpec<S>>(gl: WebGL2RenderingContext, s: S, textures: any) {
   return Object.fromEntries(
     Object.entries(s.programs ?? {}).map(entry => {
       const description = entry[1]! as AnySpec<S>['programs'][keyof AnySpec<S>['programs']]
 
       const vertexSource = buildShaderSource({
         uniforms: description.uniforms ?? {},
+        textures: textures,
         textureSamplers: description.textureSamplers ?? {},
         attributes: description.attributes ?? {},
         varyings: description.varyings ?? {},
         isVertex: true,
+        skipWorldTransform: description.skipWorldTransform ?? false,
         finalVariable: description.vertexFinalPosition,
         utilDeclarations: description.utilDeclarations,
         mainSource: description.vertexMain,
@@ -294,9 +380,11 @@ function createPrograms<S extends AnySpec<S>>(gl: WebGL2RenderingContext, s: S) 
 
       const fragmentSource = buildShaderSource({
         uniforms: description.uniforms ?? {},
+        textures: textures,
         textureSamplers: description.textureSamplers ?? {},
         varyings: description.varyings ?? {},
         isVertex: false,
+        skipWorldTransform: description.skipWorldTransform ?? false,
         finalVariable: description.fragmentFinalColor,
         utilDeclarations: description.utilDeclarations,
         mainSource: description.fragmentMain,
@@ -319,16 +407,33 @@ function createPrograms<S extends AnySpec<S>>(gl: WebGL2RenderingContext, s: S) 
         throw new Error('Compilation failed')
       }
 
+      const attributes = getAllAttributes(gl, program)
+      const uniforms = getAllUniforms(gl, program)
+
+      gl.useProgram(program)
+      for (const name of Object.keys(description.textureSamplers ?? {})) {
+        const location = uniforms[name]
+        if (!location) throw new Error()
+        const bindingPoint = (textures[name]?.spec as TextureSpecification)?.textureSlot
+        if (bindingPoint == null) throw new Error()
+        gl.uniform1i(location, bindingPoint)
+      }
+      gl.useProgram(null)
+
       return [
         entry[0],
         {
+          attributes,
+          uniforms,
+          spec: description,
           use() {
-            throw new Error('TODO')
+            gl.useProgram(program)
           },
+          unsafeUniformLocations: uniforms,
           getPointer() {
             return program
           },
-        } satisfies Implementation<S>['programs'][any],
+        },
       ]
     }),
   ) as any satisfies Implementation<S>['programs']
@@ -346,6 +451,7 @@ function createBuffers<S extends AnySpec<S>>(gl: WebGL2RenderingContext, s: S) {
       return [
         entry[0],
         {
+          unsafePointer: glBuffer,
           spec: description,
           setContent: (value: TypedArray) => {
             gl.bindBuffer(target, glBuffer)
@@ -371,27 +477,30 @@ function createTextures<S extends AnySpec<S>>(gl: WebGL2RenderingContext, s: S) 
       gl.bindTexture(target, glTexture)
       gl.texParameteri(target, gl.TEXTURE_MIN_FILTER, gl.NEAREST)
       gl.texParameteri(target, gl.TEXTURE_MAG_FILTER, gl.NEAREST)
-      gl.bindTexture(target, null)
+
+      // creating texture or setting content leaves this texture bound to this slot
+      // this is intended behavior as we use only single texture per slot
+
+      const internalFormat = description.float32 ? gl.R32F : gl.R8UI
+      const format = description.float32 ? gl.RED : gl.RED_INTEGER
+      const type = description.float32 ? gl.FLOAT : gl.UNSIGNED_BYTE
 
       return [
         entry[0],
         {
-          setContent: (value: TypedArray, sizeInOneDimension: number) => {
+          unsafePointer: glTexture,
+          spec: description,
+          setContentSquare: (value: TypedArray, sizeInOneDimension: number) => {
+            gl.activeTexture(glSlot)
             gl.bindTexture(target, glTexture)
-            gl.texImage2D(
-              target,
-              0,
-              gl.R8UI,
-              sizeInOneDimension,
-              sizeInOneDimension,
-              0,
-              gl.RED_INTEGER,
-              gl.UNSIGNED_BYTE,
-              value,
-            )
-            gl.bindTexture(target, null)
+            gl.texImage2D(target, 0, internalFormat, sizeInOneDimension, sizeInOneDimension, 0, format, type, value)
           },
-        } satisfies Implementation<S>['textures'][any],
+          setContent2D: (value: TypedArray, width: number, height: number) => {
+            gl.activeTexture(glSlot)
+            gl.bindTexture(target, glTexture)
+            gl.texImage2D(target, 0, internalFormat, width, height, 0, format, type, value)
+          },
+        },
       ]
     }),
   ) as any satisfies Implementation<S>['textures']
