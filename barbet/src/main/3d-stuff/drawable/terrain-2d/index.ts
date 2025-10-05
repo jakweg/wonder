@@ -1,21 +1,13 @@
-import { pickViaMouseDefaultFragmentShader } from '@3d/common-shader'
-import { GlProgram, GPUBuffer, VertexArray } from '@3d/gpu-resources'
-import { AttrType } from '@3d/gpu-resources/program'
 import { GpuAllocator } from '@3d/pipeline/allocator'
 import { Drawable, LoadParams } from '@3d/pipeline/drawable'
-import RenderHelperWorkScheduler, { TaskType } from '@3d/pipeline/work-scheduler'
 import { RenderContext, ShaderGlobals } from '@3d/render-context'
-import { GameState, MetadataField } from '@game'
-import { WORLD_CHUNK_SIZE } from '@game/world/world'
-import CONFIG from '@utils/persistence/observable-settings'
+import { MetadataField } from '@game'
 
-import { Attributes, fragmentShaderSource, spec, SpecImplementation, Uniforms, vertexShaderSource } from './shaders'
-import { GENERIC_CHUNK_SIZE } from '@game/world/size'
-import GPUTexture from '@3d/gpu-resources/texture'
-import { TextureSlot } from '@3d/texture-slot-counter'
-import { createArray } from '@utils/array-utils'
 import ChunkVisibilityIndex from '@3d/drawable/chunk-visibility'
 import { createFromSpec } from '@3d/gpu-resources/ultimate-gpu-pipeline'
+import { GENERIC_CHUNK_SIZE } from '@game/world/size'
+import { createArray } from '@utils/array-utils'
+import { spec, SpecImplementation } from './shaders'
 
 interface ShaderCache {
   implementation: SpecImplementation

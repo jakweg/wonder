@@ -13,7 +13,7 @@ const settingsToDefaults = {
   'rendering/ambient-occlusion': true,
   'rendering/terrain-height': 0.6,
   'rendering/power-preference': 'default' as WebGLPowerPreference,
-  'other/preferred-environment': 'second' as Environment,
+  'other/preferred-environment': Environment.MultiThreaded as Environment,
   'debug/debug-world': false,
   'debug/show-info': false,
   'debug/show-graphs': false,
@@ -47,7 +47,7 @@ export const saveSettingsToLocalStorage = () => {
 
 export const observeSetting = <T extends SettingName>(
   key: T,
-  callback: (value: typeof settingsToDefaults[T]) => any,
+  callback: (value: (typeof settingsToDefaults)[T]) => any,
 ) => {
   return CONFIG.observe(key, callback, true)
 }

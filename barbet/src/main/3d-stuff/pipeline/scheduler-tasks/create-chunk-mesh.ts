@@ -1,4 +1,3 @@
-import { WORLD_CHUNK_SIZE } from '@game/world/world'
 import { buildChunkMesh } from '@game/world/world-to-mesh-converter'
 import { Environment } from '.'
 import { Task, TaskResult, TaskType } from '../work-scheduler'

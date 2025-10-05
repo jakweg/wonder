@@ -6,9 +6,9 @@ import { Drawable, LoadParams } from '@3d/pipeline/drawable'
 import RenderHelperWorkScheduler, { TaskType } from '@3d/pipeline/work-scheduler'
 import { RenderContext, ShaderGlobals } from '@3d/render-context'
 import { GameState, MetadataField } from '@game'
-import { WORLD_CHUNK_SIZE } from '@game/world/world'
 import CONFIG from '@utils/persistence/observable-settings'
 
+import { GENERIC_CHUNK_SIZE } from '@game/world/size'
 import {
   Attributes,
   fragmentShaderSource,
@@ -17,7 +17,6 @@ import {
   Uniforms,
   vertexShaderSource,
 } from './shaders'
-import { GENERIC_CHUNK_SIZE } from '@game/world/size'
 
 interface ShaderCache {
   hasAmbient: boolean

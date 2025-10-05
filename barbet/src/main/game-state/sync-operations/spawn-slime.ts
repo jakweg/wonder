@@ -1,11 +1,11 @@
 import { ModelId } from '@3d/model/model-id'
 import { GameStateImplementation } from '@game'
 import { lockRotation, setColor, setRotation, setSize } from '@game/activities/slime/rotate-utils'
+import { GENERIC_CHUNK_SIZE } from '@game/world/size'
 import { Direction } from '@utils/direction'
 import * as slime_idle from '../activities/slime/idle'
 import { DataOffsetDrawables, DataOffsetPositions } from '../entities/data-offsets'
 import { EntityTrait } from '../entities/traits'
-import { GENERIC_CHUNK_SIZE } from '@game/world/size'
 
 interface Props {
   game: GameStateImplementation
@@ -34,7 +34,7 @@ export default (props: Props): Result => {
   if (x < 0 || x >= blocksPerAxis || x !== (x | 0) || z < 0 || z >= blocksPerAxis || z !== (z | 0))
     return { success: false, reason: ErrorReason.CoordinatesOutOfBounds }
 
-  const y = props.game.world.getHighestBlockHeight(x, z)
+  const y = props.game.world.getHighestBlockHeight_unsafe(x, z)
   if (y <= 0) return { success: false, reason: ErrorReason.InvalidHeightOfCoordinates }
 
   const entities = props.game.entities

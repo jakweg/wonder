@@ -1,4 +1,3 @@
-import { GENERIC_CHUNK_SIZE } from '@game/world/size'
 import { BlockId } from './block'
 import { World } from './world'
 
@@ -54,21 +53,22 @@ function findMaxZ(rawBlockData: Uint8Array, sizeZ: number, boundingBox: Bounding
 }
 
 export const computeWorldBoundingBox = (of: World): BoundingBox => {
-  const sizeX = of.sizeLevel * GENERIC_CHUNK_SIZE
-  const sizeZ = of.sizeLevel * GENERIC_CHUNK_SIZE
-  let rawBlockData = of.rawBlockData
+  throw new Error('not supported since using rawBlockData')
+  // const sizeX = of.sizeLevel * GENERIC_CHUNK_SIZE
+  // const sizeZ = of.sizeLevel * GENERIC_CHUNK_SIZE
+  // let rawBlockData = of.rawBlockData
 
-  const boundingBox: BoundingBox = {
-    minX: 0,
-    maxX: sizeX,
-    minZ: 0,
-    maxZ: sizeZ,
-  }
+  // const boundingBox: BoundingBox = {
+  //   minX: 0,
+  //   maxX: sizeX,
+  //   minZ: 0,
+  //   maxZ: sizeZ,
+  // }
 
-  findMinX(rawBlockData, sizeZ, boundingBox)
-  findMaxX(rawBlockData, sizeZ, boundingBox)
-  findMinZ(rawBlockData, sizeZ, boundingBox)
-  findMaxZ(rawBlockData, sizeZ, boundingBox)
+  // findMinX(rawBlockData, sizeZ, boundingBox)
+  // findMaxX(rawBlockData, sizeZ, boundingBox)
+  // findMinZ(rawBlockData, sizeZ, boundingBox)
+  // findMaxZ(rawBlockData, sizeZ, boundingBox)
 
-  return boundingBox
+  // return boundingBox
 }

@@ -1,4 +1,5 @@
 import { GameStateImplementation } from '@game'
+import { GENERIC_CHUNK_SIZE } from '@game/world/size'
 import fillTerrain from '@sync-operations/fill-terrain'
 import spawnSlime from '@sync-operations/spawn-slime'
 import { Direction } from '@utils/direction'
@@ -8,7 +9,6 @@ import { allBiomes } from '../biome'
 import { BlockId } from '../block'
 import { World } from '../world'
 import { generateBiomeMap, generateHeightMap } from './generator'
-import { GENERIC_CHUNK_SIZE } from '@game/world/size'
 
 const placeDebugFeatures = (game: GameStateImplementation) => {
   const { world, groundItems } = game
@@ -87,14 +87,14 @@ const generateRandomTerrain = (world: World) => {
     for (let x = 0; x < blocksPerAxis; x++) {
       const biomeValue = allBiomes[biomeMap[index]!]!
       let yHere = heightMap[index]!
-      world.setBlock(x, z, biomeValue.surfaceMaterialId)
-      world.setHeight(x, z, yHere)
+      world.setBlock_unsafe(x, z, biomeValue.surfaceMaterialId)
+      world.setHeight_unsafe(x, z, yHere)
 
       if (yHere < 4) {
         const waterSurfaceMaterialId = biomeValue.waterSurfaceMaterialId
-        world.setBlock(x, z, waterSurfaceMaterialId)
-        if (waterSurfaceMaterialId !== BlockId.Water) world.setHeight(x, z, 4)
-        else world.setHeight(x, z, 3)
+        world.setBlock_unsafe(x, z, waterSurfaceMaterialId)
+        if (waterSurfaceMaterialId !== BlockId.Water) world.setHeight_unsafe(x, z, 4)
+        else world.setHeight_unsafe(x, z, 3)
       }
       index++
     }

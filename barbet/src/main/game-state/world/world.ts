@@ -1,25 +1,7 @@
 import { decodeArray, encodeArray } from '@utils/persistence/serializers'
 import { createNewBuffer } from '@utils/shared-memory'
-import { AIR_ID, BlockId } from './block'
+import { BlockId } from './block'
 import { GENERIC_CHUNK_SIZE, WorldSizeLevel } from './size'
-
-/** @deprecated use GENERIC_CHUNK_SIZE instead */
-export const WORLD_CHUNK_SIZE = 64
-
-/** @deprecated  */
-export interface WorldSize {
-  readonly sizeX: number
-  readonly sizeY: number
-  readonly sizeZ: number
-}
-
-/** @deprecated  */
-export interface ComputedWorldSize extends WorldSize {
-  readonly totalBlocks: number
-  readonly blocksPerY: number
-  readonly chunksSizeX: number
-  readonly chunksSizeZ: number
-}
 
 export class World {
   private constructor(
@@ -81,10 +63,6 @@ export class World {
 
     const toSize = to.sizeLevel * GENERIC_CHUNK_SIZE
     const fromSize = from.sizeLevel * GENERIC_CHUNK_SIZE
-    const toRawData = to.rawBlockData
-    const fromRawData = from.rawBlockData
-    const fromRawHeightData = from.rawHeightData
-    const toRawHeightData = to.rawHeightData
 
     if (
       fromX !== (fromX | 0) ||
@@ -108,8 +86,8 @@ export class World {
 
     for (let x = 0; x < sizeX; x++)
       for (let z = 0; z < sizeZ; z++) {
-        toRawData[(toX + x) * toSize + (toZ + z)] = fromRawData[(fromX + x) * fromSize + (fromZ + z)]!
-        toRawHeightData[(toZ + z) * toSize + (toX + x)] = fromRawHeightData[(fromZ + z) * fromSize + (fromX + x)]!
+        to.setBlock_safe(toX + x, toZ + z, from.getBlock_safe(fromX + x, fromZ + z))
+        to.setHeight_safe(toX + x, toZ + z, from.getHighestBlockHeight_safe(fromX + x, fromZ + z))
       }
 
     const chunkModificationIds = to.chunkModificationIds
@@ -133,21 +111,31 @@ export class World {
     }
   }
 
-  public getBlock(x: number, z: number): BlockId {
+  public getBlock_safe(x: number, z: number): BlockId {
     this.validateCoords(x, z)
-    const sizeX = this.sizeLevel * GENERIC_CHUNK_SIZE
-    return this.rawBlockData[x * sizeX + z] as BlockId
+    return this.getBlock_unsafe(x, z)
+  }
+
+  public getBlock_unsafe(x: number, z: number): BlockId {
+    const index = this.calculateIndexForPosition_unsafe(x, z)
+    return this.rawBlockData[index] as BlockId
   }
 
   /**
    * Caller needs to update `MetadataField.LastWorldChange`
    */
-  public setBlock(x: number, z: number, block: BlockId) {
+  public setBlock_safe(x: number, z: number, block: BlockId) {
     if (this.isNonUpdatable) throw new Error('world is readonly')
     this.validateCoords(x, z)
+    this.setBlock_unsafe(x, z, block)
+  }
 
-    const size = this.sizeLevel * GENERIC_CHUNK_SIZE
-    this.rawBlockData[x * size + z] = block
+  /**
+   * Caller needs to update `MetadataField.LastWorldChange`
+   */
+  public setBlock_unsafe(x: number, z: number, block: BlockId) {
+    const index = this.calculateIndexForPosition_unsafe(x, z)
+    this.rawBlockData[index] = block
 
     // notify chunk and nearby chunks as well
     this.chunkModificationIds[
@@ -167,12 +155,20 @@ export class World {
   /**
    * Caller needs to update `MetadataField.LastWorldChange`
    */
-  public setHeight(x: number, z: number, height: number) {
+  public setHeight_safe(x: number, z: number, height: number) {
     if (this.isNonUpdatable) throw new Error('world is readonly')
+    if (height !== (height | 0) || height < 0 || height > 0xff) throw new Error()
     this.validateCoords(x, z)
 
-    const size = this.sizeLevel * GENERIC_CHUNK_SIZE
-    this.rawHeightData[x * size + z] = height
+    this.setHeight_unsafe(x, z, height)
+  }
+
+  /**
+   * Caller needs to update `MetadataField.LastWorldChange`
+   */
+  public setHeight_unsafe(x: number, z: number, height: number) {
+    const index = this.calculateIndexForPosition_unsafe(x, z)
+    this.rawHeightData[index] = height
 
     // notify chunk and nearby chunks as well
     this.chunkModificationIds[
@@ -196,25 +192,44 @@ export class World {
     if (this.isNonUpdatable) throw new Error('world is readonly')
 
     this.validateCoords(x, z)
-    const currentBlock = this.getBlock(x, z)
-    if (currentBlock === ifBlock) this.setBlock(x, z, withBlock)
+    const currentBlock = this.getBlock_safe(x, z)
+    if (currentBlock === ifBlock) this.setBlock_safe(x, z, withBlock)
   }
 
-  public getHighestBlockHeight(x: number, z: number): number {
-    this.validateCoords(x, z)
-    const size = this.sizeLevel * GENERIC_CHUNK_SIZE
-    return this.rawHeightData[z * size + x]!
+  public getHighestBlockHeight_unsafe(x: number, z: number): number {
+    const index = this.calculateIndexForPosition_unsafe(x, z)
+    return this.rawHeightData[index]!
   }
 
-  public getHighestBlockHeightSafe(x: number, z: number): number {
+  public getHighestBlockHeight_safe(x: number, z: number): number {
+    if (!this.checkCoords(x, z)) throw new Error(`Invalid coords ${x} ${z}`)
+    return this.getHighestBlockHeight_unsafe(x, z)
+  }
+
+  private checkCoords(x: number, z: number) {
     const size = this.sizeLevel * GENERIC_CHUNK_SIZE
-    if (x < 0 || x >= size || (x | 0) !== x || z < 0 || z >= size || (z | 0) !== z) return -1
-    return this.rawHeightData[z * size + x]!
+    return !(x < 0 || x >= size || (x | 0) !== x || z < 0 || z >= size || (z | 0) !== z)
   }
 
   private validateCoords(x: number, z: number) {
-    const size = this.sizeLevel * GENERIC_CHUNK_SIZE
-    if (x < 0 || x >= size || (x | 0) !== x || z < 0 || z >= size || (z | 0) !== z)
-      throw new Error(`Invalid coords ${x} ${z}`)
+    if (!this.checkCoords(x, z)) throw new Error(`Invalid coords ${x} ${z}`)
+  }
+
+  private calculateIndexForPosition_unsafe(x: number, z: number) {
+    x |= 0
+    z |= 0
+
+    const chunkX = (x / GENERIC_CHUNK_SIZE) | 0
+    const chunkZ = (z / GENERIC_CHUNK_SIZE) | 0
+
+    const withinChunkX = x % GENERIC_CHUNK_SIZE | 0
+    const withinChunkZ = z % GENERIC_CHUNK_SIZE | 0
+
+    const chunkIndex = (((chunkZ * this.sizeLevel) | 0) + chunkX) | 0
+    const withinChunkIndex = (((withinChunkZ * GENERIC_CHUNK_SIZE) | 0) + withinChunkX) | 0
+
+    const absoluteIndex = chunkIndex * GENERIC_CHUNK_SIZE * GENERIC_CHUNK_SIZE + withinChunkIndex
+
+    return absoluteIndex
   }
 }

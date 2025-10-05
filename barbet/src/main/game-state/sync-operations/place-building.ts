@@ -2,7 +2,7 @@ import { GameState, MetadataField } from '@game'
 import { BuildingId, getBuildingMask, getBuildingProgressInfo } from '../buildings'
 import { DataOffsetBuildingData, DataOffsetPositions } from '../entities/data-offsets'
 import { EntityTrait } from '../entities/traits'
-import { AIR_ID, BlockId } from '../world/block'
+import { BlockId } from '../world/block'
 
 interface Props {
   game: GameState
@@ -35,7 +35,7 @@ export default ({ type, game, centerX, centerZ }: Props): Result => {
       const canPlaceBuilding = game.tileMetaDataIndex.canPlaceBuilding(areaStartX + x, areaStartZ + z)
       if (!canPlaceBuilding) return { success: false, reason: ErrorReason.OccupiedTile }
 
-      const y = game.world.getHighestBlockHeightSafe(areaStartX + x, areaStartZ + z)
+      const y = game.world.getHighestBlockHeight_safe(areaStartX + x, areaStartZ + z)
 
       if (previousY !== -1 && previousY !== y) return { success: false, reason: ErrorReason.NotPlainTerrain }
 
@@ -47,7 +47,7 @@ export default ({ type, game, centerX, centerZ }: Props): Result => {
     for (let z = 0; z < mask.sizeZ; z++) {
       const computedX = areaStartX + x
       const computedZ = areaStartZ + z
-      game.world.setBlock(computedX, computedZ, BlockId.Stone)
+      game.world.setBlock_safe(computedX, computedZ, BlockId.Stone)
 
       game.tileMetaDataIndex.setBuildingPlacedAt(computedX, computedZ)
     }

@@ -26,9 +26,8 @@ const entryPoints = [
   "update-worker",
   "render-worker",
   "render-helper-worker",
-  "feature-environments/zero",
-  "feature-environments/first",
-  "feature-environments/second",
+  "feature-environments/single-threaded",
+  "feature-environments/multi-threaded",
 ] as const;
 
 const cssFiles = (await fs.readdir("./src/main", { recursive: true }))

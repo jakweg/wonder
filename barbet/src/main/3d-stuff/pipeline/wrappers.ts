@@ -34,7 +34,7 @@ const obtainRendererNameFromContext = (gl: WebGL2RenderingContext | undefined): 
 export const newBeforeDrawWrapper = (canvas: HTMLCanvasElement, camera: Camera) => {
   const gl = obtainWebGl2ContextFromCanvas(canvas)
 
-  const TEXTURE_PIXEL_MULTIPLIER = 1
+  const TEXTURE_PIXEL_MULTIPLIER = 1 / 1
 
   let lastWidth = -1
   let lastHeight = -1

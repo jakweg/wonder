@@ -26,18 +26,14 @@ const FpsCapSetting = (main: HTMLElement) => {
 const PreferredEnvironment = (main: HTMLElement) => {
   const key = 'other/preferred-environment'
   const setting = observeField(CONFIG, key)
-  const titleMapFunction = (v: Environment) =>
-    'Use workers: ' + (v === 'second' ? 'both' : v === 'first' ? 'update only' : 'none')
+  const titleMapFunction = (v: Environment) => 'Use workers: ' + (v === Environment.MultiThreaded ? 'both' : 'none')
   Button(main, map(setting, titleMapFunction), () => {
     switch (CONFIG.get(key)) {
-      case 'second':
-        CONFIG.set(key, 'zero')
-        break
-      case 'first':
-        CONFIG.set(key, 'second')
+      case Environment.MultiThreaded:
+        CONFIG.set(key, Environment.SingleThreaded)
         break
       default:
-        CONFIG.set(key, 'first')
+        CONFIG.set(key, Environment.MultiThreaded)
         break
     }
   })

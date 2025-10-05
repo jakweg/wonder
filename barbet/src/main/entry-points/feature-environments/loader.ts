@@ -16,16 +16,10 @@ export interface ConnectArguments {
   settings: typeof CONFIG
 }
 
-export type Environment =
-  /** SharedArrayBuffer is not available.
-   *  Do everything on the main thread*/
-  | 'zero'
-  /** SharedArrayBuffer is available, but OffscreenCanvas is not.
-   * Do event handling and rendering on the main thread and logic on background thread */
-  | 'first'
-  /** Both SharedArrayBuffer and OffscreenCanvas are available.
-   * Do event handling on the main thread, rendering on render-thread and logic on background thread */
-  | 'second'
+export const enum Environment {
+  SingleThreaded = 'single-threaded',
+  MultiThreaded = 'multi-threaded',
+}
 
 export interface StartRenderArguments {
   canvas: HTMLCanvasElement
@@ -71,14 +65,11 @@ export interface EnvironmentConnection {
 }
 
 export const getSuggestedEnvironmentName = (preferredEnvironment: Environment) => {
-  let usedEnvironment: Environment = 'zero'
+  let usedEnvironment: Environment = Environment.SingleThreaded
 
-  if (sharedMemoryIsAvailable && preferredEnvironment !== 'zero') {
-    const offscreenCanvasIsAvailable = !!(window as any).OffscreenCanvas
-    if (offscreenCanvasIsAvailable && preferredEnvironment !== 'first') usedEnvironment = 'second'
-    else {
-      usedEnvironment = 'first'
-    }
+  const offscreenCanvasIsAvailable = !!(window as any).OffscreenCanvas
+  if (sharedMemoryIsAvailable && offscreenCanvasIsAvailable && preferredEnvironment !== Environment.SingleThreaded) {
+    usedEnvironment = Environment.MultiThreaded
   }
   return usedEnvironment
 }
@@ -101,16 +92,16 @@ const addWorkerPrefetch = (name: string) => {
   document['head']['appendChild'](link)
 }
 
-const preloadWorkers = (both: boolean) => {
+const preloadWorkers = () => {
   if (DEBUG) return
   addWorkerPrefetch('update')
-  if (both) addWorkerPrefetch('render')
+  addWorkerPrefetch('render')
   addWorkerPrefetch('render-helper')
 }
 
 export const createNewEnvironment = async (): Promise<EnvironmentConnection> => {
   const suggestedName = getSuggestedEnvironmentName(CONFIG.get('other/preferred-environment') as Environment)
-  if (suggestedName === 'second') preloadWorkers(true)
-  else if (suggestedName === 'first') preloadWorkers(false)
+  if (suggestedName === Environment.MultiThreaded) preloadWorkers()
+
   return await loadEnvironment(suggestedName)
 }
