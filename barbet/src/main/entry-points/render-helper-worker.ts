@@ -1,36 +1,27 @@
 import { dispatch, Environment } from '@3d/pipeline/scheduler-tasks'
 import { World } from '@game/world/world'
-import { gameMutexFrom } from '@utils/game-mutex'
-import { bind, FromWorker, ToWorker } from '@utils/worker/message-types/render-helper'
-;(async () => {
-  const { sender, receiver } = await bind()
+import { GameMutex, gameMutexFrom } from '@utils/game-mutex'
+import { bind } from '@utils/new-worker/specs/render-helper'
 
-  const handleInitials = async () => {
-    const initials = await receiver.await(ToWorker.SetInitials)
-    return {
-      mutex: gameMutexFrom(initials.mutex),
-      id: initials.id,
-    }
-  }
+let env: Environment | null = null
+let mutex: GameMutex
+let id: any
 
-  const { mutex, id } = await handleInitials()
-
-  let env: Environment | null = null
-
-  receiver.on(ToWorker.SetWorld, received => {
+bind({
+  setInitials({ mutex, id: gotId }) {
+    mutex = gameMutexFrom(mutex)
+    id = gotId
+  },
+  setWorld(received) {
     env = {
       world: World.fromReceived(received),
-      mutexEnter: () => mutex.enterForRenderHelper(id),
-      mutexExit: () => mutex.exitRenderHelper(id),
+      mutexEnter: () => mutex!.enterForRenderHelper(id),
+      mutexExit: () => mutex!.exitRenderHelper(id),
     }
-  })
+  },
+  executeTask(task) {
+    if (!env) throw new Error()
 
-  receiver.on(ToWorker.ExecuteTask, async ({ id, task }) => {
-    if (env == undefined) throw new Error()
-
-    sender.send(FromWorker.TaskDone, {
-      id,
-      task: await dispatch(env, task),
-    })
-  })
-})()
+    return dispatch(env, task)
+  },
+})

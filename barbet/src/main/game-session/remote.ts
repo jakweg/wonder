@@ -4,13 +4,14 @@ import { SaveMethod } from '@game/world/world-saver'
 import { can, MemberPermissions } from '@seampan/room-snapshot'
 import IndexedState from '@utils/state/indexed-state'
 import { FromWorker, spawnNew, ToWorker } from '@utils/worker/message-types/network'
+import { UICanvas } from 'src/main/ui/canvas-background'
 import { Operation } from '.'
 import ActionsBroadcastHelper from '../network/actions-broadcast-helper'
 import { ConnectionStatus, defaults, NetworkStateField } from '../network/state'
 import { createGenericSession } from './generic'
 
 interface Props {
-  canvasProvider: () => HTMLCanvasElement | undefined
+  canvasProvider: () => UICanvas
 }
 
 export type RemoteSession = Awaited<ReturnType<typeof createRemoteSession>>
@@ -47,7 +48,7 @@ export const createRemoteSession = async (props: Props) => {
   state.observe(NetworkStateField.LatencyMilliseconds, ticks => generic.setLatencyMilliseconds(ticks))
 
   const broadcastOperation = (operation: Operation): void => {
-    ws.send.send(ToWorker.BroadcastOperation, operation)
+    ws.send.sendAndForget(ToWorker.BroadcastOperation, operation)
   }
 
   return {
@@ -58,7 +59,7 @@ export const createRemoteSession = async (props: Props) => {
       if (connectionStatus !== ConnectionStatus.Disconnected && connectionStatus !== ConnectionStatus.Error)
         throw new Error('Already connected')
 
-      ws.send.send(ToWorker.Connect, { address: to })
+      ws.send.sendAndForget(ToWorker.Connect, { address: to })
 
       if (!(await ws.receive.await(FromWorker.ConnectionMade)).success)
         throw new Error('failed to establish connection')
@@ -66,7 +67,7 @@ export const createRemoteSession = async (props: Props) => {
     async joinRoom(id: string): Promise<void> {
       if (state.get(NetworkStateField.ConnectionStatus) !== ConnectionStatus.Connected) throw new Error('not connected')
 
-      ws.send.send(ToWorker.JoinRoom, { roomId: id })
+      ws.send.sendAndForget(ToWorker.JoinRoom, { roomId: id })
 
       if (!(await ws.receive.await(FromWorker.JoinedRoom)).ok) throw new Error('failed to join room')
     },
@@ -79,13 +80,13 @@ export const createRemoteSession = async (props: Props) => {
     },
     async lockRoom(lock: boolean) {
       if (state.get(NetworkStateField.ConnectionStatus) !== ConnectionStatus.Connected) throw new Error('not connected')
-      ws.send.send(ToWorker.SetPreventJoins, { prevent: !!lock })
+      ws.send.sendAndForget(ToWorker.SetPreventJoins, { prevent: !!lock })
     },
     async broadcastGameToOthers() {
       const result = await generic.getEnvironment().saveGame({ method: SaveMethod.ToString2 })
 
       if (result.method !== SaveMethod.ToString2) throw new Error()
-      ws.send.send(ToWorker.BroadcastGameState, { serializedState: result.serializedState })
+      ws.send.sendAndForget(ToWorker.BroadcastGameState, { serializedState: result.serializedState })
     },
     resume(tps: number) {
       broadcastOperation({ type: 'start', tps })
@@ -98,7 +99,7 @@ export const createRemoteSession = async (props: Props) => {
       return previousStatus === Status.Running
     },
     setRoomLatencyMilliseconds(ticks: number) {
-      ws.send.send(ToWorker.SetLatencyMilliseconds, { ms: ticks })
+      ws.send.sendAndForget(ToWorker.SetLatencyMilliseconds, { ms: ticks })
     },
     async listenForOperations() {
       while (state.get(NetworkStateField.ConnectionStatus) === ConnectionStatus.Connected) {
@@ -121,7 +122,6 @@ export const createRemoteSession = async (props: Props) => {
     isPaused() {
       return !generic.isRunning()
     },
-    resetRendering: generic.resetRendering,
     terminate(): void {
       ws.terminate()
       generic.terminate()

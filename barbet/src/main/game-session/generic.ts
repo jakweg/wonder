@@ -5,11 +5,12 @@ import {
   GameListeners,
 } from '@entry/feature-environments/loader'
 import { Status } from '@game/state-updater'
+import { UICanvas } from 'src/main/ui/canvas-background'
 import ActionsBroadcastHelper from '../network/actions-broadcast-helper'
 import { TickQueueAction, TickQueueActionType } from '../network/tick-queue-action'
 
 interface Props {
-  canvasProvider: () => HTMLCanvasElement | undefined
+  canvasProvider: () => UICanvas
   sendActionsCallback: ConstructorParameters<typeof ActionsBroadcastHelper>[0]
 }
 
@@ -52,12 +53,11 @@ export const createGenericSession = async (props: Props) => {
     },
     async createNewGame(args: CreateGameArguments): Promise<CreateGameResult> {
       if (currentGame !== null) throw new Error('already loaded')
-      const result = (currentGame = await environment.createNewGame(args))
+      const result = (currentGame = await environment.createNewGame(args, { canvas: props.canvasProvider() }))
       actionsHelper.initializeFromTick(result.updater.getExecutedTicksCount())
 
       result.setGameListeners(gameListener)
 
-      this.resetRendering()
       return result
     },
     setLatencyMilliseconds(ms: number) {
@@ -76,10 +76,6 @@ export const createGenericSession = async (props: Props) => {
 
       tpsForLatency = tps
       calculateAndSetLatencyTicks()
-    },
-    resetRendering() {
-      const canvas = props.canvasProvider()
-      if (canvas) environment.startRender({ canvas })
     },
     stop(): boolean {
       const previousStatus = currentGame?.updater.getCurrentStatus()

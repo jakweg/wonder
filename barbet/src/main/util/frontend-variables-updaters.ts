@@ -1,26 +1,8 @@
-import { AdditionalFrontedFlags, frontedVariables, FrontendVariable, setFrontendVariables } from './frontend-variables'
-import KeyboardController from './keyboard-controller'
-import { createNewBuffer } from './shared-memory'
+import KeyboardController from '@utils/keyboard-controller'
+import { UICanvas } from 'src/main/ui/canvas-background'
+import { AdditionalFrontedFlags, FrontendVariable } from './frontend-variables'
 
-export const initFrontedVariablesFromReceived = (buffer: SharedArrayBuffer) => {
-  setFrontendVariables(buffer, new Int16Array(buffer))
-}
-
-export const initFrontendVariableAndRegisterToWindow = () => {
-  initFrontedVariablesFromReceived(createNewBuffer(FrontendVariable.SIZE * Int16Array.BYTES_PER_ELEMENT))
-
-  KeyboardController.createNewAndRegisterToWindow(frontedVariables)
-  const updateWindowFocus = () => {
-    const hasFocus = document.hasFocus()
-    if (hasFocus) Atomics.or(frontedVariables, FrontendVariable.AdditionalFlags, AdditionalFrontedFlags.WindowHasFocus)
-    else Atomics.and(frontedVariables, FrontendVariable.AdditionalFlags, ~AdditionalFrontedFlags.WindowHasFocus)
-  }
-  window.addEventListener('blur', updateWindowFocus)
-  window.addEventListener('focus', updateWindowFocus)
-  updateWindowFocus()
-}
-
-function observeCanvasSizes(canvas: HTMLCanvasElement) {
+function observeCanvasSizes(canvas: HTMLCanvasElement, frontendVariables: Int16Array) {
   let timeoutId: number = 0
   let frameId: number = 0
   const lastSizes = { lastResizeTime: 0, width: 0, height: 0, pixelRatio: 0 }
@@ -41,8 +23,8 @@ function observeCanvasSizes(canvas: HTMLCanvasElement) {
     lastSizes.lastResizeTime = performance.now()
     if (width === 0 || height === 0) return
 
-    Atomics.store(frontedVariables, FrontendVariable.CanvasDrawingWidth, Math.round(width * pixelRatio))
-    Atomics.store(frontedVariables, FrontendVariable.CanvasDrawingHeight, Math.round(height * pixelRatio))
+    Atomics.store(frontendVariables, FrontendVariable.CanvasDrawingWidth, Math.round(width * pixelRatio))
+    Atomics.store(frontendVariables, FrontendVariable.CanvasDrawingHeight, Math.round(height * pixelRatio))
     if (frameId !== -1) frameId = requestAnimationFrame(checkSizesCallback)
   }
   checkSizesCallback()
@@ -62,8 +44,9 @@ function observeCanvasSizes(canvas: HTMLCanvasElement) {
   }
 }
 
-export const bindFrontendVariablesToCanvas = (canvas: HTMLCanvasElement) => {
-  const unobserve = observeCanvasSizes(canvas)
+export const bindFrontendVariablesToCanvas = ({ element: canvas, frontendVariables: rawVars }: UICanvas) => {
+  const frontendVariables = rawVars as any as Int16Array
+  const unobserve = observeCanvasSizes(canvas, frontendVariables)
 
   const defaultMouseListener = (event: MouseEvent) => {
     event.preventDefault()
@@ -73,36 +56,36 @@ export const bindFrontendVariablesToCanvas = (canvas: HTMLCanvasElement) => {
         ? AdditionalFrontedFlags.LeftMouseButtonPressed
         : AdditionalFrontedFlags.RightMouseButtonPressed
 
-    if (isNowDown) frontedVariables[FrontendVariable.AdditionalFlags] |= buttonAsFlag
+    if (isNowDown) frontendVariables[FrontendVariable.AdditionalFlags]! |= buttonAsFlag
     else {
       const newFlags =
-        Atomics.load(frontedVariables, FrontendVariable.AdditionalFlags) &
+        Atomics.load(frontendVariables, FrontendVariable.AdditionalFlags) &
         ~AdditionalFrontedFlags.LastMouseButtonUnpressedWasRight
       Atomics.store(
-        frontedVariables,
+        frontendVariables,
         FrontendVariable.AdditionalFlags,
         (newFlags & ~buttonAsFlag) |
           (buttonAsFlag === AdditionalFrontedFlags.RightMouseButtonPressed
             ? AdditionalFrontedFlags.LastMouseButtonUnpressedWasRight
             : 0),
       )
-      Atomics.add(frontedVariables, FrontendVariable.LastMouseClickId, 1)
+      Atomics.add(frontendVariables, FrontendVariable.LastMouseClickId, 1)
     }
 
     Atomics.store(
-      frontedVariables,
+      frontendVariables,
       FrontendVariable.MouseCursorPositionX,
       event['offsetX'] * window['devicePixelRatio'],
     )
     Atomics.store(
-      frontedVariables,
+      frontendVariables,
       FrontendVariable.MouseCursorPositionY,
       event['offsetY'] * window['devicePixelRatio'],
     )
   }
   const leaveListener = () => {
     Atomics.and(
-      frontedVariables,
+      frontendVariables,
       FrontendVariable.AdditionalFlags,
       ~(AdditionalFrontedFlags.RightMouseButtonPressed | AdditionalFrontedFlags.LeftMouseButtonPressed),
     )
@@ -113,8 +96,10 @@ export const bindFrontendVariablesToCanvas = (canvas: HTMLCanvasElement) => {
   canvas.addEventListener('contextmenu', defaultMouseListener)
   canvas.addEventListener('mouseleave', leaveListener, { 'passive': true })
 
+  const unobserveKeyboard = KeyboardController.INSTANCE?.addFrontendVariableListener(frontendVariables)
   return () => {
     unobserve()
+    unobserveKeyboard?.()
     canvas.removeEventListener('mousedown', defaultMouseListener)
     canvas.removeEventListener('mouseup', defaultMouseListener)
     canvas.removeEventListener('contextmenu', defaultMouseListener)

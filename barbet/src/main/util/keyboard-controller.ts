@@ -1,4 +1,4 @@
-import { FrontendVariable, PressedKey } from './frontend-variables'
+import { AdditionalFrontedFlags, FrontendVariable, PressedKey } from './frontend-variables'
 
 const defaultKeyMapping: { [key: string]: PressedKey } = {
   'KeyW': PressedKey.Forward,
@@ -23,16 +23,20 @@ class KeyboardController {
   private keyReleasedListeners: Map<string, (code: string) => void> = new Map()
   private maskEnabled: boolean = false
 
-  private constructor(private readonly frontedVariables: Int16Array) {}
+  private readonly frontedVariableListeners: Set<Int16Array> = new Set()
 
-  public static createNewAndRegisterToWindow(frontedVariables: Int16Array): KeyboardController {
-    const controller = new KeyboardController(frontedVariables)
+  private constructor() {}
+
+  public static registerToWindow(): KeyboardController {
+    if (KeyboardController.INSTANCE) return KeyboardController.INSTANCE
+    const controller = (KeyboardController.INSTANCE = new KeyboardController())
 
     document.addEventListener('keydown', event => controller.setKeyPressed(event['code'], true))
     document.addEventListener('keyup', event => controller.setKeyPressed(event['code'], false))
     window.addEventListener('blur', () => controller.cancelAllPressed())
+    window.addEventListener('blur', () => controller.updateWindowFocus())
+    window.addEventListener('focus', () => controller.updateWindowFocus())
 
-    KeyboardController.INSTANCE = controller
     return controller
   }
 
@@ -44,7 +48,17 @@ class KeyboardController {
 
   public cancelAllPressed(): void {
     this.pressedKeys['clear']()
-    Atomics.store(this.frontedVariables, FrontendVariable.PressedKeys, PressedKey.None)
+    for (const frontendVariables of this.frontedVariableListeners)
+      Atomics.store(frontendVariables, FrontendVariable.PressedKeys, PressedKey.None)
+  }
+
+  private updateWindowFocus() {
+    const hasFocus = document.hasFocus()
+    for (const frontendVariables of this.frontedVariableListeners) {
+      if (hasFocus)
+        Atomics.or(frontendVariables, FrontendVariable.AdditionalFlags, AdditionalFrontedFlags.WindowHasFocus)
+      else Atomics.and(frontendVariables, FrontendVariable.AdditionalFlags, ~AdditionalFrontedFlags.WindowHasFocus)
+    }
   }
 
   public isAnyPressed(): boolean {
@@ -67,13 +81,21 @@ class KeyboardController {
       return
     }
 
-    if (pressed) Atomics.or(this.frontedVariables, FrontendVariable.PressedKeys, mapped)
-    else Atomics.and(this.frontedVariables, FrontendVariable.PressedKeys, ~mapped)
+    for (const frontendVariables of this.frontedVariableListeners) {
+      if (pressed) Atomics.or(frontendVariables, FrontendVariable.PressedKeys, mapped)
+      else Atomics.and(frontendVariables, FrontendVariable.PressedKeys, ~mapped)
+    }
   }
 
   public setKeyReleasedListener<T extends string>(code: T, callback: (key: T) => void) {
     if (this.keyReleasedListeners['has'](code)) throw new Error()
     this.keyReleasedListeners['set'](code, callback)
+  }
+
+  public addFrontendVariableListener(frontendVariables: Int16Array): () => void {
+    this.frontedVariableListeners.add(frontendVariables)
+    this.updateWindowFocus()
+    return () => this.frontedVariableListeners.delete(frontendVariables)
   }
 }
 

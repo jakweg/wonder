@@ -1,12 +1,19 @@
+import { FrontendVariable } from '@utils/frontend-variables'
 import { bindFrontendVariablesToCanvas } from '@utils/frontend-variables-updaters'
+import { createNewBuffer } from '@utils/shared-memory'
 import { createElement } from './utils'
+
+export interface UICanvas {
+  element: HTMLCanvasElement
+  frontendVariables: Record<FrontendVariable, number>
+}
 
 export default (parent: HTMLElement) => {
   let element = createElement('canvas', parent) as HTMLCanvasElement
-  let cancelListenersCallback = bindFrontendVariablesToCanvas(element)
+  let cancelListenersCallback = () => {}
   return {
-    recreate(): HTMLCanvasElement {
-      cancelListenersCallback()
+    recreate(): UICanvas {
+      const oldCancelListenersCallback = cancelListenersCallback
       const newElement = document['createElement']('canvas') as HTMLCanvasElement
       newElement['width'] = 0
       newElement['height'] = 0
@@ -17,14 +24,21 @@ export default (parent: HTMLElement) => {
           clearInterval(intervalId)
           old['classList']['add']('_css_fade-out')
           setTimeout(() => {
+            oldCancelListenersCallback()
             old['remove']()
           }, 1500)
         }
       }, 50)
       parent['insertBefore'](newElement, element)
       element = newElement
-      cancelListenersCallback = bindFrontendVariablesToCanvas(newElement)
-      return newElement
+
+      const returnedValue = {
+        element: newElement,
+        frontendVariables: new Int16Array(createNewBuffer(Int16Array.BYTES_PER_ELEMENT * FrontendVariable.SIZE)) as any,
+      } satisfies UICanvas
+
+      cancelListenersCallback = bindFrontendVariablesToCanvas(returnedValue)
+      return returnedValue
     },
   }
 }

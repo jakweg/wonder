@@ -1,6 +1,6 @@
 import { can, MemberPermissions } from '@seampan/room-snapshot'
 import { sleep } from '@seampan/util'
-import { initFrontendVariableAndRegisterToWindow } from '@utils/frontend-variables-updaters'
+import KeyboardController from '@utils/keyboard-controller'
 import { initKeyboardMappings } from '@utils/keyboard-mappings'
 import CONFIG, {
   initSettingsFromLocalStorage,
@@ -18,7 +18,7 @@ import { createUi } from '../ui/root'
 initSettingsFromLocalStorage()
 addSaveCallback(() => saveSettingsToLocalStorage())
 registerSaveSettingsCallback()
-initFrontendVariableAndRegisterToWindow()
+KeyboardController.registerToWindow()
 initKeyboardMappings()
 
 document['body'].classList['remove']('not-loaded-body')
@@ -55,8 +55,9 @@ observeSetting('other/tps', tps => {
   if (session?.isPaused() === false) session.resume(tps)
 })
 
-observeSetting('rendering/antialias', () => setTimeout(() => session?.resetRendering(), 10))
-observeSetting('rendering/power-preference', () => setTimeout(() => session?.resetRendering(), 10))
+// TODO: remove or something as session?.resetRendering() in no longer present
+// observeSetting('rendering/antialias', () => setTimeout(() => session?.resetRendering(), 10))
+// observeSetting('rendering/power-preference', () => setTimeout(() => session?.resetRendering(), 10))
 
 const waitForOtherPlayers = async (state: IndexedState<typeof defaults>, minCount: number) => {
   while (Object.keys(state.get(NetworkStateField.PlayersInRoom) ?? {}).length < minCount) await sleep(50)

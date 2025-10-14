@@ -1,7 +1,9 @@
 import { GameState } from '@game'
 import { ActionsQueue } from '@game/scheduled-actions/queue'
 import { STANDARD_GAME_TICK_RATE } from '@game/state-updater'
+import { WorldSizeLevel } from '@game/world/size'
 import * as vec3 from '@matrix/vec3'
+import { frontedVariables } from '@utils/frontend-variables'
 import { GameMutex, isInWorker } from '@utils/game-mutex'
 import CONFIG from '@utils/persistence/observable-settings'
 import { observeField, reduce } from '@utils/state/subject'
@@ -12,8 +14,6 @@ import { RenderDebugDataCollector } from '@utils/worker/debug-stats/render'
 import TimeMeter from '@utils/worker/debug-stats/time-meter'
 import { Camera } from './camera'
 import ChunkVisibilityIndex from './drawable/chunk-visibility'
-import genericEntity from './drawable/generic-entity'
-import terrain from './drawable/terrain'
 import terrain2d from './drawable/terrain-2d'
 import { GlProgram } from './gpu-resources'
 import { newPipeline } from './pipeline'
@@ -26,7 +26,6 @@ import {
   newFramesLimiter,
   newInputHandler,
 } from './pipeline/wrappers'
-import { WorldSizeLevel } from '@game/world/size'
 
 export interface RenderContext {
   readonly gl: WebGL2RenderingContext
@@ -233,7 +232,7 @@ export const createRenderingSession = async (actionsQueue: ActionsQueue, mutex: 
         stats.frames.frameEnded(elapsedSeconds * 1000)
       }
 
-      const limiter = newFramesLimiter()
+      const limiter = newFramesLimiter(frontedVariables)
       const caller = newAnimationFrameCaller(dt => hadGame && limiter.shouldRender(dt), performRender)
 
       const loadingShadersPromise = pipeline.useContext(drawHelper.rawContext)

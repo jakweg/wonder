@@ -1,7 +1,8 @@
 import { World } from '@game/world/world'
+import { createArray } from '@utils/array-utils'
 import { GameMutex } from '@utils/game-mutex'
+import { spawnNew } from '@utils/new-worker/specs/render-helper'
 import { sharedMemoryIsAvailable } from '@utils/shared-memory'
-import { FromWorker, spawnNew, ToWorker } from '@utils/worker/message-types/render-helper'
 import { dispatch, Environment } from './scheduler-tasks'
 
 export enum TaskType {
@@ -25,57 +26,61 @@ export default interface RenderHelperWorkScheduler {
 
 class WorkerImplementation implements RenderHelperWorkScheduler {
   private constructor(private readonly workers: Awaited<ReturnType<typeof spawnNew>>[]) {
-    for (const w of workers) {
-      w.receive.on(FromWorker.TaskDone, result => {
-        const nextTask = this.tasksQueue.shift()
-        if (nextTask == undefined) this.waitingWorkers.push(w)
-        else w.send.send(ToWorker.ExecuteTask, nextTask)
-
-        const resolve = this.taskIdToResolve.get(result.id)
-        if (resolve) {
-          this.taskIdToResolve.delete(result.id)
-          resolve(result.task)
-        }
-      })
-    }
-    this.waitingWorkers = [...this.workers]
+    this.idleWorkers = [...this.workers]
   }
 
-  private nextTaskId: number = 1
-  private readonly taskIdToResolve: Map<number, (result: TaskResult) => void> = new Map()
-  private readonly tasksQueue: { id: number; task: Task }[] = []
-  private readonly waitingWorkers: Awaited<ReturnType<typeof spawnNew>>[]
+  private readonly tasksWaitingForExecution: { task: Task; resolve: (t: TaskResult) => void }[] = []
+  private readonly idleWorkers: Awaited<ReturnType<typeof spawnNew>>[]
 
   public static async createNew(mutex: GameMutex, workersCount?: number): Promise<RenderHelperWorkScheduler> {
     const count = workersCount === undefined ? Math.max(1, (navigator['hardwareConcurrency'] / 2) | 0) : +workersCount
 
-    const workers = await Promise['all']([...new Array(count)].map((_, i) => spawnNew(i)))
-
     let i = 0
-    for (const w of workers) w.send.send(ToWorker.SetInitials, { mutex: mutex.pass(), id: i++ })
+    const workers = await Promise['all'](
+      createArray(count, async () => {
+        const worker = await spawnNew({})
+        await worker.functions.setInitials({ mutex: mutex.pass(), id: i++ })
+        return worker
+      }),
+    )
 
     return new WorkerImplementation(workers)
   }
 
   public setWorld(world: any): void {
-    this.workers.forEach(e => e.send.send(ToWorker.SetWorld, world))
+    this.workers.forEach(e => e.functions.setWorld(world))
   }
 
   public scheduleTask(task: Task): Promise<TaskResult> {
-    const readyWorker = this.waitingWorkers.pop()
-
-    const id = this.nextTaskId++
-
-    if (readyWorker == undefined) this.tasksQueue.push({ id, task })
-    else readyWorker.send.send(ToWorker.ExecuteTask, { id, task })
-
     return new Promise<TaskResult>(resolve => {
-      this.taskIdToResolve.set(id, resolve)
+      this.tasksWaitingForExecution.push({ task, resolve })
+      this.considerExecutingNextJob()
     })
   }
 
   public terminate(): void {
     this.workers.forEach(e => e.terminate())
+  }
+
+  private considerExecutingNextJob() {
+    const worker = this.idleWorkers.pop()
+    if (!worker) {
+      return
+    }
+
+    const task = this.tasksWaitingForExecution.pop()
+    if (!task) {
+      this.idleWorkers.push(worker)
+      return
+    }
+
+    // we have both worker and task
+    worker.functions.executeTask(task.task).then(result => {
+      this.idleWorkers.push(worker)
+      this.considerExecutingNextJob()
+
+      task.resolve(result)
+    })
   }
 }
 

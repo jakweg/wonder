@@ -3,11 +3,12 @@ import { ActionsQueue } from '@game/scheduled-actions/queue'
 import { sleep } from '@seampan/util'
 import { AdditionalFrontedFlags, frontedVariables, FrontendVariable } from '@utils/frontend-variables'
 import CONFIG, { observeSetting } from '@utils/persistence/observable-settings'
+import { UICanvas } from 'src/main/ui/canvas-background'
 import { Camera } from '../camera'
 import { moveCameraByKeys } from '../camera-keyboard-updater'
 import { MousePickerResultAny } from './mouse-picker'
 
-const obtainWebGl2ContextFromCanvas = (canvas: HTMLCanvasElement): WebGL2RenderingContext => {
+const obtainWebGl2ContextFromCanvas = (canvas: HTMLCanvasElement | OffscreenCanvas): WebGL2RenderingContext => {
   const context = canvas.getContext('webgl2', {
     'alpha': false,
     'antialias': CONFIG.get('rendering/antialias'),
@@ -31,6 +32,47 @@ const obtainRendererNameFromContext = (gl: WebGL2RenderingContext | undefined): 
   return null
 }
 
+export const newContextWrapper = ({ element: canvas, frontendVariables }: UICanvas, camera: Camera) => {
+  const gl = obtainWebGl2ContextFromCanvas(canvas)
+
+  let lastWidth = -1
+  let lastHeight = -1
+
+  return {
+    rawContext: gl,
+    getRendererName() {
+      return obtainRendererNameFromContext(gl) ?? ''
+    },
+    prepareForDraw() {
+      const width = frontendVariables[FrontendVariable.CanvasDrawingWidth]
+      const height = frontendVariables[FrontendVariable.CanvasDrawingHeight]
+      const pixelMultiplier = 1.0
+
+      const TEXTURE_PIXEL_MULTIPLIER = 1 / pixelMultiplier
+
+      if (lastWidth !== width || lastHeight !== height) {
+        camera.setAspectRatio(width / height)
+        lastWidth = width
+        lastHeight = height
+
+        canvas['width'] = (width * TEXTURE_PIXEL_MULTIPLIER) | 0
+        canvas['height'] = (height * TEXTURE_PIXEL_MULTIPLIER) | 0
+      }
+      gl.viewport(0, 0, (width * TEXTURE_PIXEL_MULTIPLIER) | 0, (height * TEXTURE_PIXEL_MULTIPLIER) | 0)
+
+      gl.clearColor(0.15, 0.15, 0.15, 1)
+      gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
+
+      gl.enable(gl.DEPTH_TEST)
+      gl.depthFunc(gl.LEQUAL)
+
+      gl.cullFace(gl.BACK)
+      gl.enable(gl.CULL_FACE)
+    },
+  }
+}
+
+/** @deprecated will be removed soon TODO */
 export const newBeforeDrawWrapper = (canvas: HTMLCanvasElement, camera: Camera) => {
   const gl = obtainWebGl2ContextFromCanvas(canvas)
 
@@ -70,7 +112,7 @@ export const newBeforeDrawWrapper = (canvas: HTMLCanvasElement, camera: Camera) 
   }
 }
 
-export const newFramesLimiter = () => {
+export const newFramesLimiter = (frontendVariables: UICanvas['frontendVariables']) => {
   let minSecondsBetweenFramesFocus = 0
   let minSecondsBetweenFramesBlur = 0
 
@@ -83,7 +125,7 @@ export const newFramesLimiter = () => {
 
   return {
     shouldRender: (dt: number): boolean => {
-      const variables = Atomics.load(frontedVariables, FrontendVariable.AdditionalFlags)
+      const variables = Atomics.load(frontendVariables as any as Int16Array, FrontendVariable.AdditionalFlags)
       const hasFocus = (variables & AdditionalFrontedFlags.WindowHasFocus) === AdditionalFrontedFlags.WindowHasFocus
       return dt >= (hasFocus ? minSecondsBetweenFramesFocus : minSecondsBetweenFramesBlur) * 0.97
     },
@@ -170,7 +212,7 @@ export const newInputHandler = (actionsQueue: ActionsQueue) => {
 
   return {
     handleInputsBeforeDraw(camera: Camera, dt: number) {
-      moveCameraByKeys(camera, dt)
+      moveCameraByKeys(camera, frontedVariables as any, dt)
     },
     shouldRenderForInputs(): InputHandlerRequestForRender | null {
       let eventHappened: EventHappened = EventHappened.None

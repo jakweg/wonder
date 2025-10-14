@@ -151,7 +151,7 @@ export class GameStateImplementation implements GameState {
     if (isInWorker) this.mutex.enterForUpdate()
     else await this.mutex.enterForUpdateAsync()
 
-    const currentTick = ++this.metaData[MetadataField.CurrentTick] | 0
+    const currentTick = ++this.metaData[MetadataField.CurrentTick]! | 0
 
     stats.timeMeter.nowStart(UpdatePhase.ScheduledActions)
     for (const action of additionalActions) {

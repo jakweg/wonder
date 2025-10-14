@@ -1,74 +1,42 @@
-import { Camera } from '@3d/camera'
-import { createRenderingSession } from '@3d/render-context'
-import { createGameStateForRenderer, GameState } from '@game'
-import { SendActionsQueue } from '@game/scheduled-actions/queue'
-import { createStateUpdaterControllerFromReceived } from '@game/state-updater'
-import { initFrontedVariablesFromReceived } from '@utils/frontend-variables-updaters'
-import { gameMutexFrom } from '@utils/game-mutex'
+import { createRenderingSession } from '@3d/new-render-context'
+import { GameMutex, gameMutexFrom } from '@utils/game-mutex'
+import { bind } from '@utils/new-worker/specs/render'
 import CONFIG from '@utils/persistence/observable-settings'
-import { bind, FromWorker, ToWorker } from '@utils/worker/message-types/render'
-;(async () => {
-  const { sender, receiver } = await bind()
-  const mutex = gameMutexFrom(await receiver.await(ToWorker.GameMutex))
-  const actionsQueue = SendActionsQueue.create(action => sender.send(FromWorker.ScheduledAction, action))
-  receiver.suspend()
-  const session = await createRenderingSession(actionsQueue, mutex)
-  receiver.resume()
 
-  let workerStartDelayDifference = 0
-  let gameSnapshot: unknown | null = null
-  let decodedGame: GameState | null = null
+let mutex: GameMutex
+let session: Awaited<ReturnType<typeof createRenderingSession>> | null = null
 
-  receiver.on(ToWorker.NewSettings, settings => {
+const functions = bind({
+  setGameMutex(data) {
+    mutex = gameMutexFrom(data)
+  },
+  setNewSettings(settings) {
     CONFIG.update(settings)
-  })
-
-  receiver.on(ToWorker.TransferCanvas, data => {
-    const canvas = data.canvas as HTMLCanvasElement
-    session.setCanvas(canvas)
-  })
-
-  receiver.on(ToWorker.SetWorkerLoadDelays, data => {
-    workerStartDelayDifference = data.update - data.render
-  })
-
-  receiver.on(ToWorker.GameCreateResult, data => {
-    gameSnapshot = data.game
-    const snapshot = data as any
-    const game = (decodedGame = createGameStateForRenderer(snapshot.game))
-    const decodedUpdater = createStateUpdaterControllerFromReceived(snapshot.updater)
-    const gameTickEstimation = () => decodedUpdater!.estimateCurrentGameTickTime(workerStartDelayDifference)
-    session.setGame(game, gameTickEstimation, () => decodedUpdater.getTickRate())
-  })
-
-  receiver.on(ToWorker.UpdateEntityContainer, data => {
-    decodedGame!.entities.replaceBuffersFromReceived(data)
-  })
-
-  receiver.on(ToWorker.CameraBuffer, data => {
-    session.setCamera(Camera.newUsingBuffer(data.buffer))
-  })
-
-  receiver.on(ToWorker.FrontendVariables, data => {
-    initFrontedVariablesFromReceived(data.buffer)
-  })
-
-  receiver.on(ToWorker.TerminateGame, args => {
-    session.cleanUp()
+  },
+  updateEntityContainer(data) {
+    // decodedGame!.entities.replaceBuffersFromReceived(data)
+  },
+  terminateGame(args) {
+    session?.terminate()
     if (args.terminateEverything) close()
-  })
+  },
+  setUpdateTimesBuffer({ buffer }) {
+    return // TODO find out what is going on
+    // session.stats.updateTimesBuffer = buffer
+  },
+  async startRenderingSession(args) {
+    session = await createRenderingSession(args)
+  },
+})
 
-  receiver.on(ToWorker.UpdateTimesBuffer, ({ buffer }) => {
-    session.stats.updateTimesBuffer = buffer
-  })
+//   const  = SendActionsQueue.create(action => functions.scheduleAction(action))
 
-  let timeoutId: ReturnType<typeof setTimeout>
-  CONFIG.observe('debug/show-info', show => {
-    if (show) {
-      session.stats.receiveUpdates(data => {
-        clearTimeout(timeoutId)
-        timeoutId = setTimeout(() => void sender.send(FromWorker.DebugStatsUpdate, data), 0)
-      })
-    } else session.stats.stopUpdates()
-  })
-})()
+//   let timeoutId: ReturnType<typeof setTimeout>
+//   CONFIG.observe('debug/show-info', show => {
+//     if (show) {
+//       session.stats.receiveUpdates(data => {
+//         clearTimeout(timeoutId)
+//         timeoutId = setTimeout(() => void functions.updateDebugStats(data), 0)
+//       })
+//     } else session.stats.stopUpdates()
+//   })

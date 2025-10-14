@@ -1,5 +1,3 @@
-import { createNewBuffer } from './shared-memory'
-
 export const enum PressedKey {
   None = 0,
   Left = 1 << 1,
@@ -28,9 +26,5 @@ export const enum FrontendVariable {
   SIZE,
 }
 
-export let frontedVariablesBuffer: SharedArrayBuffer = createNewBuffer(0)
+/** @deprecated This array is now always zero. It's not longer usage. */
 export let frontedVariables = new Int16Array(0)
-export const setFrontendVariables = (buffer: SharedArrayBuffer, variables: Int16Array) => {
-  frontedVariablesBuffer = buffer
-  frontedVariables = variables
-}

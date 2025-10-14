@@ -1,5 +1,5 @@
 export interface Sender<T> {
-  send<K extends keyof T>(type: K, value: T[K], transferable?: Transferable[]): void
+  sendAndForget<K extends keyof T>(type: K, value: T[K], transferable?: Transferable[]): void
 }
 
 export interface Receiver<T> {
@@ -16,7 +16,7 @@ export interface Receiver<T> {
 
 export const createSender = <T>(worker: { postMessage: any }): Sender<T> => {
   return {
-    send(type, value, transferable?) {
+    sendAndForget(type, value, transferable?) {
       worker['postMessage']({ type, value }, transferable ?? [])
     },
   }

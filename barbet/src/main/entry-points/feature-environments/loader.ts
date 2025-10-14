@@ -2,16 +2,15 @@ import { DEBUG, JS_ROOT } from '@build'
 import { ScheduledAction } from '@game/scheduled-actions'
 import { StateUpdater } from '@game/state-updater'
 import { SaveGameArguments, SaveGameResult, SaveMethod } from '@game/world/world-saver'
-import { frontedVariablesBuffer } from '@utils/frontend-variables'
 import CONFIG from '@utils/persistence/observable-settings'
 import { getCameraBuffer } from '@utils/persistence/serializable-settings'
 import { sharedMemoryIsAvailable } from '@utils/shared-memory'
 import { RenderDebugStats } from '@utils/worker/debug-stats/render'
 import { UpdateDebugStats } from '@utils/worker/debug-stats/update'
+import { UICanvas } from 'src/main/ui/canvas-background'
 import { TickQueueAction } from '../../network/tick-queue-action'
 
 export interface ConnectArguments {
-  frontendVariables: SharedArrayBuffer
   camera: SharedArrayBuffer
   settings: typeof CONFIG
 }
@@ -22,7 +21,7 @@ export const enum Environment {
 }
 
 export interface StartRenderArguments {
-  canvas: HTMLCanvasElement
+  canvas: UICanvas
 }
 
 export interface CreateGameArguments {
@@ -55,9 +54,7 @@ export interface CreateGameResult {
 export interface EnvironmentConnection {
   name: string
 
-  createNewGame(args: CreateGameArguments): Promise<CreateGameResult>
-
-  startRender(args: StartRenderArguments): void
+  createNewGame(gameArgs: CreateGameArguments, renderArgs: StartRenderArguments): Promise<CreateGameResult>
 
   saveGame<T extends SaveMethod>(args: SaveGameArguments<T>): Promise<SaveGameResult<T>>
 
@@ -77,7 +74,6 @@ export const getSuggestedEnvironmentName = (preferredEnvironment: Environment) =
 export const loadEnvironment = async (name: Environment): Promise<Readonly<EnvironmentConnection>> => {
   const connect = (await import(`${JS_ROOT}/feature-environments/${name}.js`))['bind']
   const args: ConnectArguments = {
-    frontendVariables: frontedVariablesBuffer,
     camera: getCameraBuffer(),
     settings: CONFIG,
   }

@@ -1,8 +1,9 @@
-import { frontedVariables, FrontendVariable, PressedKey } from '@utils/frontend-variables'
+import { FrontendVariable, PressedKey } from '@utils/frontend-variables'
+import { UICanvas } from 'src/main/ui/canvas-background'
 import { Camera } from './camera'
 
-export const moveCameraByKeys = (camera: Camera, dt: number) => {
-  const keys = Atomics.load(frontedVariables, FrontendVariable.PressedKeys) as PressedKey
+export const moveCameraByKeys = (camera: Camera, frontendVariables: UICanvas['frontendVariables'], dt: number) => {
+  const keys = Atomics.load(frontendVariables as any as Int16Array, FrontendVariable.PressedKeys) as PressedKey
   if (keys === PressedKey.None) return
   const speed = dt * 1.2 * camera.eye[1]
 

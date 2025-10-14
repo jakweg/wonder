@@ -1,8 +1,9 @@
+import { UICanvas } from 'src/main/ui/canvas-background'
 import { GameSession } from '.'
 import { createGenericSession } from './generic'
 
 interface Props {
-  canvasProvider: () => HTMLCanvasElement
+  canvasProvider: () => UICanvas
 }
 
 const LOCAL_PLAYER_ID = '~'
@@ -20,7 +21,6 @@ export const createLocalSession = async (props: Props) => {
     async createNewGame(args) {
       await generic.createNewGame(args)
     },
-    resetRendering: generic.resetRendering,
     isMultiplayer() {
       return false
     },

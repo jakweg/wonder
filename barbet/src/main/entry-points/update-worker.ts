@@ -3,7 +3,8 @@ import { createNewStateUpdater } from '@game/state-updater'
 import { StateUpdaterImplementation } from '@game/state-updater/implementation'
 import { loadGameFromArgs } from '@game/world/world-loader'
 import { performGameSave } from '@game/world/world-saver'
-import { gameMutexFrom } from '@utils/game-mutex'
+import { GameMutex, gameMutexFrom } from '@utils/game-mutex'
+import { bind } from '@utils/new-worker/specs/update'
 import CONFIG from '@utils/persistence/observable-settings'
 import { observeField, reduce } from '@utils/state/subject'
 import { FramesMeter } from '@utils/worker/debug-stats/frames-meter'
@@ -11,36 +12,30 @@ import { FRAMES_COUNT_UPDATE } from '@utils/worker/debug-stats/graph-renderer'
 import TimeMeter from '@utils/worker/debug-stats/time-meter'
 import { UpdateDebugDataCollector } from '@utils/worker/debug-stats/update'
 import { UpdatePhase } from '@utils/worker/debug-stats/update-phase'
-import { bind, FromWorker, ToWorker } from '@utils/worker/message-types/update'
 import TickQueue from '../network/tick-queue'
-;(async () => {
-  const { sender, receiver } = await bind()
-  const mutex = gameMutexFrom(await receiver.await(ToWorker.GameMutex))
 
-  const stats = new UpdateDebugDataCollector(new FramesMeter(FRAMES_COUNT_UPDATE), new TimeMeter(UpdatePhase.SIZE))
-  let gameState: GameStateImplementation | null = null
-  let stateUpdater: StateUpdaterImplementation | null = null
-  let tickQueue: TickQueue | null = null
+const stats = new UpdateDebugDataCollector(new FramesMeter(FRAMES_COUNT_UPDATE), new TimeMeter(UpdatePhase.SIZE))
+let mutex: GameMutex | null = null
+let gameState: GameStateImplementation | null = null
+let stateUpdater: StateUpdaterImplementation | null = null
+let tickQueue: TickQueue | null = null
 
-  receiver.on(ToWorker.NewSettings, settings => {
-    CONFIG.update(settings)
-  })
-
-  receiver.on(ToWorker.TerminateGame, args => {
+const functions = bind({
+  setNewSettings: settings => CONFIG.update(settings),
+  terminateGame(args) {
     stateUpdater?.terminate()
     gameState = stateUpdater = null
     if (args.terminateEverything) close()
-  })
-
-  receiver.on(ToWorker.CreateGame, async args => {
+  },
+  async createGame(args) {
     const stateBroadcastCallback = () => {
       if (gameState === null) return
-      sender.send(FromWorker.UpdateEntityContainer, {
+      functions.updateEntityContainer({
         buffers: gameState?.entities?.passBuffers(),
       })
     }
 
-    gameState = (await loadGameFromArgs(args, stats, mutex, stateBroadcastCallback)) as GameStateImplementation
+    gameState = (await loadGameFromArgs(args, stats, mutex!, stateBroadcastCallback)) as GameStateImplementation
 
     tickQueue = TickQueue.createEmpty()
 
@@ -50,47 +45,47 @@ import TickQueue from '../network/tick-queue'
 
         const currentTick = gameState!.currentTick
 
-        sender.send(FromWorker.TickCompleted, { tick: currentTick, updaterActions })
+        functions.markTickCompleted({ tick: currentTick, updaterActions })
       },
       gameState.currentTick,
       tickQueue,
     )
 
-    sender.send(FromWorker.GameCreateResult, {
+    return {
       game: gameState!.passForRenderer(),
       updater: stateUpdater!.pass(),
-    })
-  })
-
-  receiver.on(ToWorker.SaveGame, async data => {
-    const result = gameState ? await performGameSave(gameState, data) : false
-    sender.send(FromWorker.GameSaved, result)
-  })
-
-  receiver.on(ToWorker.AppendToTickQueue, ({ actions, playerId, forTick }) => {
+    }
+  },
+  async saveGame(args) {
+    const result = gameState ? await performGameSave(gameState, args) : false
+    return result
+  },
+  appendToTickQueue({ actions, playerId, forTick }) {
     tickQueue?.setForTick(forTick, playerId, actions)
-  })
-
-  receiver.on(ToWorker.SetPlayerIds, ({ playerIds }) => {
+  },
+  setPlayerIds({ playerIds }) {
     tickQueue?.setRequiredPlayers(playerIds)
-  })
+  },
+  setGameMutex(arg) {
+    mutex = gameMutexFrom(arg)
+  },
+})
 
-  let timeoutId: ReturnType<typeof setTimeout>
-  const previous = CONFIG.get('debug/show-info')
-  CONFIG.set('debug/show-info', true)
-  CONFIG.observe('debug/show-info', show => {
-    if (show) {
-      stats.receiveUpdates(data => {
-        clearTimeout(timeoutId)
-        timeoutId = setTimeout(() => void sender.send(FromWorker.DebugStatsUpdate, data), 0)
-      })
-    } else stats.stopUpdates()
-  })
-  CONFIG.set('debug/show-info', previous)
+let timeoutId: ReturnType<typeof setTimeout>
+const previous = CONFIG.get('debug/show-info')
+CONFIG.set('debug/show-info', true)
+CONFIG.observe('debug/show-info', show => {
+  if (show) {
+    stats.receiveUpdates(data => {
+      clearTimeout(timeoutId)
+      timeoutId = setTimeout(() => void functions.updateDebugStatus(data), 0)
+    })
+  } else stats.stopUpdates()
+})
+CONFIG.set('debug/show-info', previous)
 
-  reduce(
-    [observeField(CONFIG, 'debug/show-info'), observeField(CONFIG, 'debug/show-graphs')],
-    (v, a) => a || v,
-    false,
-  ).on(v => stats.timeMeter.setEnabled(!!v))
-})()
+reduce(
+  [observeField(CONFIG, 'debug/show-info'), observeField(CONFIG, 'debug/show-graphs')],
+  (v, a) => a || v,
+  false,
+).on(v => stats.timeMeter.setEnabled(!!v))

@@ -3,7 +3,7 @@ import { SystemMessageTypeFromWorker } from './message-types/system'
 
 const sendPing = (sender: Sender<SystemMessageTypeFromWorker>) => {
   const now = performance['now']()
-  sender.send('connection-established', { now })
+  sender.sendAndForget('connection-established', { now })
 }
 
 export const genericBind = async <S, R>(): Promise<{ sender: Sender<S>; receiver: Receiver<R> }> => {
