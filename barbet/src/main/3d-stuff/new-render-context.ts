@@ -49,7 +49,7 @@ export const createRenderingSession = async (args: RenderingSessionStartArgs) =>
   const scheduler = await newHelperScheduler(mutex)
   const visibility = ChunkVisibilityIndex.create(decodedGame.world.sizeLevel)
   const camera = Camera.newUsingBuffer(args.cameraBuffer)
-  const context = newContextWrapper(args.canvas, camera)
+  const context = await newContextWrapper(args.canvas, camera)
   const globals = makeShaderGlobals(context.rawContext)
 
   scheduler.setWorld(decodedGame.world.pass())
@@ -93,6 +93,7 @@ export const createRenderingSession = async (args: RenderingSessionStartArgs) =>
 
     context.prepareForDraw()
     for (const e of pipelineElements) e.draw(pipeline)
+    context.finalizeDisplay()
   }
 
   const limiter = newFramesLimiter(args.canvas.frontendVariables)

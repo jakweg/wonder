@@ -1,4 +1,4 @@
-import { VersionHeader, PrecisionHeader, GlobalUniformBlockDeclaration } from '@3d/common-shader'
+import { GlobalUniformBlockDeclaration, PrecisionHeader, VersionHeader } from '@3d/common-shader'
 import { TextureSlot } from '@3d/texture-slot-counter'
 import { DEBUG } from '@build'
 import TypedArray from '@seampan/typed-array'
@@ -114,6 +114,7 @@ export interface Spec<
 
       fragmentMain: (variables: Record<NeverIfAny<T> | NeverIfAny<U> | NeverIfAny<AM[P]> | string, string>) => string
       fragmentFinalColor: string
+      fragmentEntityId?: string
 
       attributes?: Record<AM[P], AttributeSpecification<B>>
 
@@ -266,7 +267,7 @@ function buildShaderSource(params: {
   varyings: Record<string, VaryingSpecification>
   mainSource: (variables: any) => string
   utilDeclarations: any
-  finalVariable: string
+  finalVariable: string | [string, string | undefined]
 }) {
   const availableVariables: any = {}
   const parts: string[] = []
@@ -305,7 +306,10 @@ function buildShaderSource(params: {
   const safeAvailableVariables = new Proxy(availableVariables, handler)
 
   if (!params.isVertex) {
-    parts.push('out vec4 finalFinalColor;')
+    parts.push('layout(location=0) out vec4 finalFinalColor;\n')
+    if (typeof params.finalVariable !== 'string' && params.finalVariable[1]) {
+      parts.push('layout(location=1) out uint finalFinalEntityId;\n')
+    }
   }
 
   if (typeof params.utilDeclarations === 'string') {
@@ -317,12 +321,23 @@ function buildShaderSource(params: {
   parts.push('void main() {\n', params.mainSource(safeAvailableVariables))
   if (params.isVertex) {
     if (params.skipWorldTransform) {
-      parts.push('gl_Position = vec4(', params.finalVariable, ', 1);\ngl_PointSize = 10.0;\n}\n')
+      parts.push('gl_Position = vec4(', params.finalVariable.toString(), ', 1);\ngl_PointSize = 10.0;\n}\n')
     } else {
-      parts.push('gl_Position = u_combinedMatrix * vec4(', params.finalVariable, ', 1);\ngl_PointSize = 10.0;\n}\n')
+      parts.push(
+        'gl_Position = u_combinedMatrix * vec4(',
+        params.finalVariable.toString(),
+        ', 1);\ngl_PointSize = 10.0;\n}\n',
+      )
     }
   } else {
-    parts.push('finalFinalColor = vec4(', params.finalVariable, ');\n}\n')
+    if (typeof params.finalVariable === 'string') parts.push('finalFinalColor = vec4(', params.finalVariable, ');\n}\n')
+    else {
+      parts.push('finalFinalColor = vec4(', params.finalVariable[0], ');\n')
+      if (params.finalVariable[1]) {
+        parts.push('finalFinalEntityId = uint(', params.finalVariable[1], ');\n')
+      }
+      parts.push('}\n')
+    }
   }
 
   return parts.join('')
@@ -385,7 +400,7 @@ function createPrograms<S extends AnySpec<S>>(gl: WebGL2RenderingContext, s: S, 
         varyings: description.varyings ?? {},
         isVertex: false,
         skipWorldTransform: description.skipWorldTransform ?? false,
-        finalVariable: description.fragmentFinalColor,
+        finalVariable: [description.fragmentFinalColor, description.fragmentEntityId],
         utilDeclarations: description.utilDeclarations,
         mainSource: description.fragmentMain,
       })

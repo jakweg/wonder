@@ -4,4 +4,6 @@ export const enum TextureSlot {
   HeightMap,
   Debug_FPSStats,
   Debug_TPSStats,
+  DisplayFinalization,
+  EntityId,
 }

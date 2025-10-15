@@ -68,6 +68,10 @@ vec3 pos = vec3(worldLocation.x, float(heightHere), worldLocation.y) + offsets[p
 v_worldPosition = pos;
 
 pos.y *= ${TerrainHeightMultiplierUniform};
+uint entityId = (uint(worldLocation.x) & 0xFFFFU);
+entityId = entityId << 16U;
+entityId = entityId | (uint(worldLocation.y) & 0xFFFFU);
+${a.entityId} = entityId;
 `
 const fragmentMain = (a: any) => `
 vec3 positionWithinBlock = vec3(fract(${a.worldPosition}.x), fract(${a.worldPosition}.y), fract(${a.worldPosition}.z));
@@ -77,6 +81,7 @@ float distanceFromBorder = smoothstep(0.05, 0.1, distanceFromBorderX) * smoothst
 
 vec3 color = colorsByBlockId[${a.blockIdHere}];
 vec3 finalColor = color * mix(0.5, 1.0, distanceFromBorder);
+uint entityId = ${a.entityId};
 `
 
 export const spec = {
@@ -96,6 +101,7 @@ export const spec = {
       fragmentMain,
       vertexFinalPosition: 'pos',
       fragmentFinalColor: 'vec4(finalColor.rgb, 1.0)',
+      fragmentEntityId: 'entityId',
 
       textureSamplers: {
         terrainType: {},
@@ -104,6 +110,7 @@ export const spec = {
       varyings: {
         blockIdHere: { type: 'uint', flat: true },
         worldPosition: { type: 'vec3' },
+        entityId: { type: 'uint', flat: true },
       },
       attributes: {
         thisChunkId: { count: 1, type: AttrType.UShort, divisor: 1, bindTo: { visibleChunks: true } },

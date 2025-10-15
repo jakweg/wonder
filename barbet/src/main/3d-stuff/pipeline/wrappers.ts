@@ -1,3 +1,4 @@
+import { TextureSlot } from '@3d/texture-slot-counter'
 import { ScheduledActionId } from '@game/scheduled-actions'
 import { ActionsQueue } from '@game/scheduled-actions/queue'
 import { sleep } from '@seampan/util'
@@ -11,7 +12,7 @@ import { MousePickerResultAny } from './mouse-picker'
 const obtainWebGl2ContextFromCanvas = (canvas: HTMLCanvasElement | OffscreenCanvas): WebGL2RenderingContext => {
   const context = canvas.getContext('webgl2', {
     'alpha': false,
-    'antialias': CONFIG.get('rendering/antialias'),
+    'antialias': false,
     'depth': true,
     'stencil': false,
     'failIfMajorPerformanceCaveat': true,
@@ -32,8 +33,154 @@ const obtainRendererNameFromContext = (gl: WebGL2RenderingContext | undefined): 
   return null
 }
 
-export const newContextWrapper = ({ element: canvas, frontendVariables }: UICanvas, camera: Camera) => {
+interface RenderingState {
+  resolveFbo: WebGLFramebuffer
+  colorTexture: WebGLTexture
+  entityIdTexture: WebGLTexture
+  depthBuffer: WebGLRenderbuffer
+
+  fullscreenProgram: WebGLProgram
+}
+
+function createProgram(gl: WebGL2RenderingContext, vsSource: string, fsSource: string): WebGLProgram {
+  const vertexShader = gl.createShader(gl.VERTEX_SHADER)!
+  gl.shaderSource(vertexShader, vsSource)
+  gl.compileShader(vertexShader)
+
+  const fragmentShader = gl.createShader(gl.FRAGMENT_SHADER)!
+  gl.shaderSource(fragmentShader, fsSource)
+  gl.compileShader(fragmentShader)
+
+  const program = gl.createProgram()!
+  gl.attachShader(program, vertexShader)
+  gl.attachShader(program, fragmentShader)
+  gl.linkProgram(program)
+
+  return program
+}
+
+function initializeRendering(gl: WebGL2RenderingContext): RenderingState {
+  const resolveFbo = gl.createFramebuffer()!
+  gl.bindFramebuffer(gl.FRAMEBUFFER, resolveFbo)
+
+  const colorTexture = gl.createTexture()!
+  gl.activeTexture(gl.TEXTURE0 + TextureSlot.DisplayFinalization)
+  gl.bindTexture(gl.TEXTURE_2D, colorTexture)
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, null)
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR)
+  gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, colorTexture, 0)
+
+  const entityIdTexture = gl.createTexture()!
+  gl.activeTexture(gl.TEXTURE0 + TextureSlot.EntityId)
+  gl.bindTexture(gl.TEXTURE_2D, entityIdTexture)
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.R32UI, 1, 1, 0, gl.RED_INTEGER, gl.UNSIGNED_INT, null)
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST)
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST)
+  gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT1, gl.TEXTURE_2D, entityIdTexture, 0)
+
+  const depthBuffer = gl.createRenderbuffer()!
+  gl.bindRenderbuffer(gl.RENDERBUFFER, depthBuffer)
+  gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT24, 1, 1)
+  gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, depthBuffer)
+
+  const vs = `#version 300 es
+        out vec2 v_uv;
+        void main() {
+            float u = float((gl_VertexID << 1) & 2);
+            float v = float(gl_VertexID & 2);
+            v_uv = vec2(u, v);
+            gl_Position = vec4(u * 2.0 - 1.0, v * 2.0 - 1.0, 0.0, 1.0);
+        }`
+  const fs = `#version 300 es
+        precision mediump float;
+        uniform sampler2D u_screenTexture;
+        in vec2 v_uv;
+        out vec4 outColor;
+        void main() {
+            outColor = texture(u_screenTexture, v_uv);
+        }`
+
+  const fullscreenProgram = createProgram(gl, vs, fs)
+
+  gl.bindFramebuffer(gl.FRAMEBUFFER, null)
+
+  return {
+    resolveFbo,
+    colorTexture,
+    entityIdTexture,
+    depthBuffer,
+    fullscreenProgram,
+  }
+}
+
+function handleResize(gl: WebGL2RenderingContext, state: RenderingState, newWidth: number, newHeight: number) {
+  console.log({ newWidth, newHeight })
+  gl.activeTexture(gl.TEXTURE0 + TextureSlot.DisplayFinalization)
+  gl.bindTexture(gl.TEXTURE_2D, state.colorTexture)
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, newWidth, newHeight, 0, gl.RGBA, gl.UNSIGNED_BYTE, null)
+  gl.activeTexture(gl.TEXTURE0 + TextureSlot.EntityId)
+  gl.bindTexture(gl.TEXTURE_2D, state.entityIdTexture)
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.R32UI, newWidth, newHeight, 0, gl.RED_INTEGER, gl.UNSIGNED_INT, null)
+  gl.bindRenderbuffer(gl.RENDERBUFFER, state.depthBuffer)
+  gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT24, newWidth, newHeight)
+
+  gl.activeTexture(gl.TEXTURE0 + TextureSlot.UNUSED)
+  gl.bindTexture(gl.TEXTURE_2D, null)
+  gl.bindRenderbuffer(gl.RENDERBUFFER, null)
+}
+
+function prepareForDraw(gl: WebGL2RenderingContext, state: RenderingState) {
+  const fbo = state.resolveFbo
+  gl.bindFramebuffer(gl.FRAMEBUFFER, fbo)
+
+  // Tell GL to draw to both color attachments
+  gl.drawBuffers([gl.COLOR_ATTACHMENT0, gl.COLOR_ATTACHMENT1])
+
+  gl.viewport(0, 0, gl.canvas.width, gl.canvas.height)
+
+  // Clear color, entity ID, and depth
+  gl.clearBufferfv(gl.COLOR, 0, [0.1, 0.2, 0.3, 1.0]) // Clear color to dark blue
+  gl.clearBufferuiv(gl.COLOR, 1, [0, 0, 0, 0]) // Clear ID to 0
+  gl.clear(gl.DEPTH_BUFFER_BIT)
+}
+
+function finalizeDisplay(gl: WebGL2RenderingContext, state: RenderingState) {
+  // Draw the final color texture to the screen
+  gl.bindFramebuffer(gl.FRAMEBUFFER, null)
+  gl.useProgram(state.fullscreenProgram)
+  gl.activeTexture(gl.TEXTURE0 + TextureSlot.DisplayFinalization)
+  gl.bindTexture(gl.TEXTURE_2D, state.colorTexture)
+  gl.uniform1i(gl.getUniformLocation(state.fullscreenProgram, 'u_screenTexture'), TextureSlot.DisplayFinalization)
+  gl.drawArrays(gl.TRIANGLES, 0, 3)
+}
+
+function readEntityId(gl: WebGL2RenderingContext, state: RenderingState, mouseX: number, mouseY: number): number {
+  gl.bindFramebuffer(gl.FRAMEBUFFER, state.resolveFbo)
+  gl.readBuffer(gl.COLOR_ATTACHMENT1)
+
+  const pixelData = new Uint32Array(1)
+  const canvasHeight = gl.canvas.height
+
+  gl.readPixels(
+    mouseX,
+    canvasHeight - mouseY, // Flip Y coordinate
+    1,
+    1,
+    gl.RED_INTEGER,
+    gl.UNSIGNED_INT,
+    pixelData,
+  )
+
+  // Reset state
+  gl.readBuffer(gl.COLOR_ATTACHMENT0)
+  gl.bindFramebuffer(gl.FRAMEBUFFER, null)
+
+  return pixelData[0]!
+}
+
+export const newContextWrapper = async ({ element: canvas, frontendVariables }: UICanvas, camera: Camera) => {
   const gl = obtainWebGl2ContextFromCanvas(canvas)
+  const state = initializeRendering(gl)
 
   let lastWidth = -1
   let lastHeight = -1
@@ -46,6 +193,7 @@ export const newContextWrapper = ({ element: canvas, frontendVariables }: UICanv
     prepareForDraw() {
       const width = frontendVariables[FrontendVariable.CanvasDrawingWidth]
       const height = frontendVariables[FrontendVariable.CanvasDrawingHeight]
+
       const pixelMultiplier = 1.0
 
       const TEXTURE_PIXEL_MULTIPLIER = 1 / pixelMultiplier
@@ -57,17 +205,26 @@ export const newContextWrapper = ({ element: canvas, frontendVariables }: UICanv
 
         canvas['width'] = (width * TEXTURE_PIXEL_MULTIPLIER) | 0
         canvas['height'] = (height * TEXTURE_PIXEL_MULTIPLIER) | 0
+
+        handleResize(gl, state, (width * TEXTURE_PIXEL_MULTIPLIER) | 0, (height * TEXTURE_PIXEL_MULTIPLIER) | 0)
       }
-      gl.viewport(0, 0, (width * TEXTURE_PIXEL_MULTIPLIER) | 0, (height * TEXTURE_PIXEL_MULTIPLIER) | 0)
 
-      gl.clearColor(0.15, 0.15, 0.15, 1)
-      gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
+      prepareForDraw(gl, state)
+    },
+    finalizeDisplay() {
+      finalizeDisplay(gl, state)
+      const x = frontendVariables[FrontendVariable.MouseCursorPositionX]
+      const y = frontendVariables[FrontendVariable.MouseCursorPositionY]
+      const entityId = readEntityId(gl, state, x, y)
 
-      gl.enable(gl.DEPTH_TEST)
-      gl.depthFunc(gl.LEQUAL)
+      let blockX = -1
+      let blockZ = -1
+      if (entityId > 0) {
+        blockZ = entityId & 0xffff
+        blockX = (entityId >> 16) & 0xffff
+      }
 
-      gl.cullFace(gl.BACK)
-      gl.enable(gl.CULL_FACE)
+      console.log({ x, y, entityId, blockX, blockZ })
     },
   }
 }
