@@ -2,21 +2,33 @@ import { World } from '@game/world/world'
 import { createArray } from '@utils/array-utils'
 import { GameMutex } from '@utils/game-mutex'
 import { spawnNew } from '@utils/new-worker/specs/render-helper'
-import { sharedMemoryIsAvailable } from '@utils/shared-memory'
 import { dispatch, Environment } from './scheduler-tasks'
 
 export enum TaskType {
+  /** @deprecated */
   CreateChunkMesh,
+  Create2dChunkMesh,
 }
 
-export type Task = { type: TaskType.CreateChunkMesh; chunkIndex: number }
-export type TaskResult = {
-  type: TaskType.CreateChunkMesh
-  chunkIndex: number
-  vertexBuffer: SharedArrayBuffer
-  indicesBuffer: SharedArrayBuffer
-  recreationId: number
-}
+export type Task =
+  | { type: TaskType.CreateChunkMesh; chunkIndex: number }
+  | { type: TaskType.Create2dChunkMesh; chunkIndex: number }
+
+export type TaskResult =
+  | {
+      type: TaskType.CreateChunkMesh
+      chunkIndex: number
+      vertexBuffer: SharedArrayBuffer
+      indicesBuffer: SharedArrayBuffer
+      recreationId: number
+    }
+  | {
+      type: TaskType.Create2dChunkMesh
+      chunkIndex: number
+      top: Uint8Array
+      sides: Uint8Array
+      recreationId: number
+    }
 
 export default interface RenderHelperWorkScheduler {
   setWorld(world: any): void
@@ -103,5 +115,7 @@ class InstantImplementation implements RenderHelperWorkScheduler {
 }
 
 export const newHelperScheduler = (mutex: GameMutex): Promise<RenderHelperWorkScheduler> => {
-  return sharedMemoryIsAvailable ? WorkerImplementation.createNew(mutex) : Promise.resolve(new InstantImplementation())
+  // TODO remove
+  return Promise.resolve(new InstantImplementation())
+  // return sharedMemoryIsAvailable ? WorkerImplementation.createNew(mutex) : Promise.resolve(new InstantImplementation())
 }

@@ -1,143 +1,27 @@
-import { GpuAllocator } from '@3d/pipeline/allocator'
-import { Drawable, LoadParams } from '@3d/pipeline/drawable'
-import { RenderContext, ShaderGlobals } from '@3d/render-context'
 import { MetadataField } from '@game'
 
-import ChunkVisibilityIndex from '@3d/drawable/chunk-visibility'
 import { createFromSpec } from '@3d/gpu-resources/ultimate-gpu-pipeline'
 import { NewRenderingPipelineElementCreator } from '@3d/new-render-context'
+import { TaskType } from '@3d/pipeline/work-scheduler'
 import { GENERIC_CHUNK_SIZE } from '@game/world/size'
 import { createArray } from '@utils/array-utils'
-import { spec, SpecImplementation } from './shaders'
-
-interface ShaderCache {
-  implementation: SpecImplementation
-  lastWorldUploadChangeId: number
-}
-
-interface WorldData {
-  metaData: Int32Array
-  blocksPerAxis: number
-  rawBlockData: Uint8Array
-  rawHeightData: Uint8ClampedArray
-  rawChunkModificationIds: Uint16Array
-  lastWorldChangeId: number
-  chunks: ChunkSnapshot[]
-  visibility: ChunkVisibilityIndex
-}
-
-interface BoundData {}
+import { spec } from './shaders'
 
 interface ChunkSnapshot {
+  chunkId: number
   needsRebuild: boolean
+  rebuildRequested: boolean
   lastChunkModificationId: number
   lastChunkUploadId: number
+  buildResult: null | { top: Uint8Array; sides: Uint8Array }
 }
 
-const drawable: () => Drawable<ShaderGlobals, ShaderCache, WorldData, BoundData> = () => ({
-  onConfigModified(previous: ShaderCache | null) {
-    return false
-  },
-  createShader: async function (
-    allocator: GpuAllocator,
-    globals: ShaderGlobals,
-    previous: ShaderCache | null,
-  ): Promise<ShaderCache> {
-    const implementation = createFromSpec(allocator.unsafeRawContext(), spec)
-
-    // TODO improve:
-    globals.bindProgramRaw(allocator.unsafeRawContext(), implementation.programs.default.getPointer())
-
-    return {
-      implementation,
-      lastWorldUploadChangeId: -1,
-    }
-  },
-  createWorld(params: LoadParams, previous: WorldData | null): WorldData {
-    const blocksPerAxis = params.game.world.sizeLevel * GENERIC_CHUNK_SIZE
-    const rawBlockData = params.game.world.rawBlockData
-    const rawHeightData = params.game.world.rawHeightData
-    const metaData = params.game.metaData
-    const rawChunkModificationIds = params.game.world.chunkModificationIds
-    const visibility = params.visibility
-
-    const lastWorldChangeId = -1
-    const chunks = createArray<ChunkSnapshot>(params.game.world.chunkModificationIds.length, () => ({
-      lastChunkUploadId: -1,
-      lastChunkModificationId: -1,
-      needsRebuild: false,
-    }))
-
-    return {
-      metaData,
-      blocksPerAxis,
-      rawBlockData,
-      rawHeightData,
-      rawChunkModificationIds,
-      lastWorldChangeId,
-      chunks,
-      visibility,
-    }
-  },
-  async bindWorldData(
-    allocator: GpuAllocator,
-    shader: ShaderCache,
-    world: WorldData,
-    previous: BoundData,
-  ): Promise<BoundData> {
-    return {}
-  },
-  updateWorld(shader: ShaderCache, world: WorldData, bound: BoundData): void {
-    // check if world is the same in general, works for >99% ticks
-    // const worldChangeId = world.metaData[MetadataField.LastWorldChange]!
-    // if (worldChangeId === world.lastWorldChangeId) return
-    // world.lastWorldChangeId = worldChangeId
-    // // fallback to chunk based checks
-    // const chunks = world.chunks
-    // for (let i = 0, l = chunks.length; i < l; ++i) {
-    //   const chunk = chunks[i]!
-    //   if (chunk.lastChunkModificationId === world.rawChunkModificationIds[i]) {
-    //     // this chunk is the same as previous tick, do nothing
-    //     continue
-    //   }
-    //   chunk.lastChunkModificationId = world.rawChunkModificationIds[i]!
-    //   chunk.needsRebuild = true
-    //   // if (!world.visibility.isChunkIndexVisible(i)) {
-    //   //   // if not visible then keep as is, no need to update
-    //   //   continue
-    //   // }
-    // }
-  },
-  prepareRender(shader: ShaderCache, world: WorldData, bound: BoundData): void {},
-  uploadToGpu(shader: ShaderCache, world: WorldData, bound: BoundData): void {
-    const worldChangeId = world.metaData[MetadataField.LastWorldChange]!
-    if (worldChangeId === shader.lastWorldUploadChangeId) return
-    shader.lastWorldUploadChangeId = worldChangeId
-    shader.implementation.textures.heightMap.setContentSquare(world.rawHeightData, world.blocksPerAxis)
-    shader.implementation.textures.terrainType.setContentSquare(world.rawBlockData, world.blocksPerAxis)
-  },
-  draw(ctx: RenderContext, shader: ShaderCache, world: WorldData, bound: BoundData): void {
-    const gl = ctx.gl
-    const impl = shader.implementation
-    impl.start()
-
-    const visibleChunksList = ctx.visibility.getVisibleChunkIds()
-    const visibleChunks = new Uint16Array(visibleChunksList)
-    impl.buffers.visibleChunks.setContent(visibleChunks)
-
-    gl.useProgram(null)
-    impl.programs.default.use()
-
-    const numberOfQuadsPerChunk = GENERIC_CHUNK_SIZE * GENERIC_CHUNK_SIZE
-    gl.drawArraysInstanced(gl.TRIANGLES, 0, 6 * numberOfQuadsPerChunk, visibleChunksList.length)
-
-    impl.stop()
-  },
-  drawForMousePicker(ctx: RenderContext, shader: ShaderCache, world: WorldData, bound: BoundData): void {},
-})
-
-export default (({ pipeline: { gl, visibility }, globals, game }) => {
+export default (({ pipeline: { gl, visibility }, globals, game, scheduler }) => {
   const implementation = createFromSpec(gl, spec)
+  implementation.textures.ambientOcclusion.setSize(
+    GENERIC_CHUNK_SIZE * game.world.sizeLevel,
+    GENERIC_CHUNK_SIZE * game.world.sizeLevel,
+  )
 
   // TODO improve:
   globals.bindProgramRaw(gl, implementation.programs.default.getPointer())
@@ -149,37 +33,109 @@ export default (({ pipeline: { gl, visibility }, globals, game }) => {
   const rawBlockData = game.world.rawBlockData
   const rawHeightData = game.world.rawHeightData
 
-  // const rawChunkModificationIds = game.world.chunkModificationIds
-  // const lastWorldChangeId = -1
-  // const chunks = createArray<ChunkSnapshot>(game.world.chunkModificationIds.length, () => ({
-  //   lastChunkUploadId: -1,
-  //   lastChunkModificationId: -1,
-  //   needsRebuild: false,
-  // }))
+  const rawChunkModificationIds = game.world.chunkModificationIds
+  let lastWorldChangeId = -1
+  const chunks = createArray<ChunkSnapshot>(game.world.chunkModificationIds.length, chunkId => ({
+    chunkId,
+    lastChunkUploadId: -1,
+    lastChunkModificationId: -1,
+    needsRebuild: false,
+    rebuildRequested: false,
+    buildResult: null,
+  }))
+  const chunksThatNeedUpload: ChunkSnapshot[] = []
 
   return {
-    updateWorldSync() {},
+    updateWorldSync() {
+      const worldChangeId = metaData[MetadataField.LastWorldChange]!
+      if (worldChangeId === lastWorldUploadChangeId) {
+        // no change in world
+        return
+      }
+      lastWorldChangeId = worldChangeId
+
+      let chunkIndex = -1
+      for (const chunk of chunks) {
+        chunkIndex++
+
+        const chunkModificationId = rawChunkModificationIds[chunkIndex]!
+
+        if (chunkModificationId === chunk.lastChunkModificationId) {
+          // no change since last rebuild
+          continue
+        }
+
+        chunk.lastChunkModificationId = chunkModificationId
+        chunk.needsRebuild = true
+      }
+    },
     uploadToGpu(pipeline) {
       const worldChangeId = metaData[MetadataField.LastWorldChange]!
-      if (worldChangeId === lastWorldUploadChangeId) return
-      lastWorldUploadChangeId = worldChangeId
-      implementation.textures.heightMap.setContentSquare(rawHeightData, blocksPerAxis)
-      implementation.textures.terrainType.setContentSquare(rawBlockData, blocksPerAxis)
+      if (worldChangeId !== lastWorldUploadChangeId) {
+        lastWorldUploadChangeId = worldChangeId
+        implementation.textures.heightMap.setContentSquare(rawHeightData, blocksPerAxis)
+        implementation.textures.terrainType.setContentSquare(rawBlockData, blocksPerAxis)
+      }
+
+      for (const chunk of chunksThatNeedUpload) {
+        const chunkZ = chunk.chunkId % game.world.sizeLevel | 0
+        const chunkX = (chunk.chunkId / game.world.sizeLevel) | 0
+        implementation.textures.ambientOcclusion.setPartialContent2D(
+          chunk.buildResult!.top,
+          chunkX * GENERIC_CHUNK_SIZE,
+          chunkZ * GENERIC_CHUNK_SIZE,
+          GENERIC_CHUNK_SIZE,
+          GENERIC_CHUNK_SIZE,
+        )
+        // console.log('uploading chunk', chunk)
+        // chunk.lastChunkUploadId =
+        // TODO upload chunk mesh
+      }
+      chunksThatNeedUpload.length = 0
     },
     draw(pipeline) {
-      implementation.start()
-
       const visibleChunksList = visibility.getVisibleChunkIds()
       const visibleChunks = new Uint16Array(visibleChunksList)
       implementation.buffers.visibleChunks.setContent(visibleChunks)
 
-      gl.useProgram(null)
       implementation.programs.default.use()
 
       const numberOfQuadsPerChunk = GENERIC_CHUNK_SIZE * GENERIC_CHUNK_SIZE
       gl.drawArraysInstanced(gl.TRIANGLES, 0, 6 * numberOfQuadsPerChunk, visibleChunksList.length)
 
-      implementation.stop()
+      implementation.programs.default.finish()
+
+      for (const chunkIndex of visibleChunks) {
+        const chunk = chunks[chunkIndex]!
+        if (!chunk.buildResult) continue
+        console.log(chunk.buildResult.sides.length)
+        implementation.buffers.sidesBuffer.setContent(chunk.buildResult.sides)
+        implementation.programs.instancedSides.use()
+
+        gl.drawArraysInstanced(gl.TRIANGLES, 0, 6, chunk.buildResult.sides.length / 4)
+
+        implementation.programs.instancedSides.finish()
+        break
+      }
+
+      for (const chunkIndex of visibleChunks) {
+        const chunk = chunks[chunkIndex]!
+        if (chunk.needsRebuild && !chunk.rebuildRequested) {
+          chunk.rebuildRequested = true
+          scheduler.scheduleTask({ type: TaskType.Create2dChunkMesh, chunkIndex }).then(result => {
+            if (result.type !== TaskType.Create2dChunkMesh) return
+            // console.log('got result for chunk creation', result)
+            const chunk = chunks[result.chunkIndex]!
+            chunk.rebuildRequested = false
+            // if received mesh is out of date then mark the chunk that it still needs rebuild
+            chunk.needsRebuild = chunk.lastChunkModificationId !== result.recreationId
+            chunk.lastChunkModificationId = result.recreationId
+            chunk.buildResult = { sides: result.sides, top: result.top }
+            // even if it's out of date try to send it to GPU anyway
+            chunksThatNeedUpload.push(chunk)
+          })
+        }
+      }
     },
   }
 }) satisfies NewRenderingPipelineElementCreator

@@ -8,7 +8,6 @@ const settingsToDefaults = {
   'other/pause-on-blur': false,
   'rendering/fps-cap': 0, // vsync only
   'rendering/fps-cap-on-blur': 15,
-  'rendering/antialias': (globalThis['devicePixelRatio'] ?? 2) < 1.5, // disable antialias by default on high density displays such as phones
   'rendering/show-tile-borders': false,
   'rendering/ambient-occlusion': true,
   'rendering/terrain-height': 0.6,

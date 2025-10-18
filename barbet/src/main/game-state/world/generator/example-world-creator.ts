@@ -42,6 +42,24 @@ const placeDebugFeatures = (game: GameStateImplementation) => {
     sz: blocksPerAxis - 6,
   })
 
+  fillTerrain({
+    game,
+    fillWith: BlockId.Sand,
+    x: 10,
+    sx: 20,
+    z: 10,
+    sz: 11,
+  })
+
+  game.world.setHeight_unsafe(10, 10, 2)
+  game.world.setHeight_unsafe(11, 10, 3)
+  game.world.setHeight_unsafe(12, 10, 10)
+  game.world.setHeight_unsafe(13, 10, 2)
+  game.world.setHeight_unsafe(14, 10, 2)
+  game.world.setHeight_unsafe(15, 10, 2)
+
+  for (const index of game.world.rawHeightData.keys()) game.world.rawHeightData[index]! += 5
+
   // spawnUnit({ game, x: 7, z: 8, color: 0/* UnitColorPaletteId.GreenOrange */, facing: Direction.PositiveXNegativeZ })
   spawnSlime({ game, x: 4, z: 11, facing: Direction.PositiveXNegativeZ })
   spawnSlime({ game, x: 8, z: 8, facing: Direction.PositiveXNegativeZ })

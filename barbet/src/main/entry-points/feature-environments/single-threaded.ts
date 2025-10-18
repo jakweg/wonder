@@ -66,7 +66,7 @@ export const bind = (args: ConnectArguments): EnvironmentConnection => {
         tickQueue,
       )
 
-      const session = createRenderingSession({
+      session = await createRenderingSession({
         canvas: renderArgs.canvas,
         cameraBuffer: args.camera,
         passedMutex: mutex.pass(),
@@ -96,11 +96,6 @@ export const bind = (args: ConnectArguments): EnvironmentConnection => {
       ).on(v => stats.timeMeter.setEnabled(!!v))
 
       updater = createStateUpdaterControllerFromReceived(updaterInstance.pass())
-      session.setGame(
-        game,
-        () => updater!.estimateCurrentGameTickTime(0),
-        () => updater!.getTickRate(),
-      )
       return {
         renderDebugStats,
         updateDebugStats,
@@ -117,7 +112,7 @@ export const bind = (args: ConnectArguments): EnvironmentConnection => {
       }
     },
     terminate(_: TerminateGameArguments) {
-      session?.cleanUp()
+      session?.terminate()
       updater?.stop()
       gameListeners = actionsQueue = game = updater = null
     },

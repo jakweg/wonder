@@ -1,8 +1,9 @@
+import { GENERIC_CHUNK_SIZE } from '@game/world/size'
 import { buildChunkMesh } from '@game/world/world-to-mesh-converter'
 import { Environment } from '.'
 import { Task, TaskResult, TaskType } from '../work-scheduler'
-import { GENERIC_CHUNK_SIZE } from '@game/world/size'
 
+/** @deprecated */
 export default async (env: Environment, task: Task): Promise<TaskResult> => {
   if (task.type !== TaskType.CreateChunkMesh) throw new Error()
 

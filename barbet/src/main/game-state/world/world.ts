@@ -206,6 +206,11 @@ export class World {
     return this.getHighestBlockHeight_unsafe(x, z)
   }
 
+  public getHighestBlockHeight_orElse(x: number, z: number, fallback: number): number {
+    if (!this.checkCoords(x, z)) return fallback
+    return this.getHighestBlockHeight_unsafe(x, z)
+  }
+
   private checkCoords(x: number, z: number) {
     const size = this.sizeLevel * GENERIC_CHUNK_SIZE
     return !(x < 0 || x >= size || (x | 0) !== x || z < 0 || z >= size || (z | 0) !== z)
@@ -230,6 +235,6 @@ export class World {
 
     const absoluteIndex = chunkIndex * GENERIC_CHUNK_SIZE * GENERIC_CHUNK_SIZE + withinChunkIndex
 
-    return absoluteIndex
+    return absoluteIndex | 0
   }
 }

@@ -55,10 +55,6 @@ observeSetting('other/tps', tps => {
   if (session?.isPaused() === false) session.resume(tps)
 })
 
-// TODO: remove or something as session?.resetRendering() in no longer present
-// observeSetting('rendering/antialias', () => setTimeout(() => session?.resetRendering(), 10))
-// observeSetting('rendering/power-preference', () => setTimeout(() => session?.resetRendering(), 10))
-
 const waitForOtherPlayers = async (state: IndexedState<typeof defaults>, minCount: number) => {
   while (Object.keys(state.get(NetworkStateField.PlayersInRoom) ?? {}).length < minCount) await sleep(50)
 }

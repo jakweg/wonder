@@ -9,10 +9,8 @@ export default (root: HTMLElement) => {
   Header(root, constant('Video settings'), true)
   const main = createElement('main', root)
 
-  BooleanSwitch(main, 'rendering/antialias', (v: boolean) => `Antialiasing: ${v ? 'ON' : 'OFF'}`)
   FpsCapSetting(main)
   BooleanSwitch(main, 'rendering/show-tile-borders', (v: boolean) => `Tile borders: ${v ? 'ON' : 'OFF'}`)
-  BooleanSwitch(main, 'rendering/ambient-occlusion', (v: boolean) => `Ambient occlusion: ${v ? 'ON' : 'OFF'}`)
   PreferredEnvironment(main)
   PreferredPowerPreference(main)
 }

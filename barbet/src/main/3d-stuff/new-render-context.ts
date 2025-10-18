@@ -3,7 +3,7 @@ import { moveCameraByKeys } from '@3d/camera-keyboard-updater'
 import ChunkVisibilityIndex from '@3d/drawable/chunk-visibility'
 import { createElements } from '@3d/elements'
 import { makeShaderGlobals, ShaderGlobals } from '@3d/global-gpu-resources'
-import { newHelperScheduler } from '@3d/pipeline/work-scheduler'
+import RenderHelperWorkScheduler, { newHelperScheduler } from '@3d/pipeline/work-scheduler'
 import { newAnimationFrameCaller, newContextWrapper, newFramesLimiter } from '@3d/pipeline/wrappers'
 import { createGameStateForRenderer, GameState } from '@game'
 import { createStateUpdaterControllerFromReceived, STANDARD_GAME_TICK_RATE } from '@game/state-updater'
@@ -35,6 +35,7 @@ interface NewRenderingPipelineElementCreatorArgs {
   pipeline: NewRenderingPipeline
   game: GameState
   globals: ShaderGlobals
+  scheduler: RenderHelperWorkScheduler
 }
 
 export type NewRenderingPipelineElementCreator = (
@@ -63,6 +64,7 @@ export const createRenderingSession = async (args: RenderingSessionStartArgs) =>
     pipeline,
     game: decodedGame,
     globals,
+    scheduler,
   })
 
   const performRender = async (elapsedSeconds: number, secondsSinceFirstRender: number) => {

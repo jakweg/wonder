@@ -8,8 +8,8 @@ let mutex: GameMutex
 let id: any
 
 bind({
-  setInitials({ mutex, id: gotId }) {
-    mutex = gameMutexFrom(mutex)
+  setInitials({ mutex: mutexMaterial, id: gotId }) {
+    mutex = gameMutexFrom(mutexMaterial)
     id = gotId
   },
   setWorld(received) {

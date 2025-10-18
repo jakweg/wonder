@@ -1,6 +1,6 @@
+import { GENERIC_CHUNK_SIZE, MAX_WORLD_HEIGHT, WorldSizeLevel } from '@game/world/size'
 import { createNewBuffer } from '@utils/shared-memory'
 import { AIR_ID, allBlocks, BlockId } from './block'
-import { GENERIC_CHUNK_SIZE, MAX_WORLD_HEIGHT, WorldSizeLevel } from '@game/world/size'
 
 const NO_ELEMENT_INDEX_MARKER = 4294967295
 const NO_COLOR_VALUE = 2

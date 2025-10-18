@@ -2,7 +2,7 @@ import KeyboardController from '@utils/keyboard-controller'
 import { UICanvas } from 'src/main/ui/canvas-background'
 import { AdditionalFrontedFlags, FrontendVariable } from './frontend-variables'
 
-function observeCanvasSizes(canvas: HTMLCanvasElement, frontendVariables: Int16Array) {
+function observeCanvasSize(canvas: HTMLCanvasElement, frontendVariables: Int16Array, aferResize: () => void) {
   let timeoutId: number = 0
   let frameId: number = 0
   const lastSizes = { lastResizeTime: 0, width: 0, height: 0, pixelRatio: 0 }
@@ -46,7 +46,19 @@ function observeCanvasSizes(canvas: HTMLCanvasElement, frontendVariables: Int16A
 
 export const bindFrontendVariablesToCanvas = ({ element: canvas, frontendVariables: rawVars }: UICanvas) => {
   const frontendVariables = rawVars as any as Int16Array
-  const unobserve = observeCanvasSizes(canvas, frontendVariables)
+
+  const mouseMoveListener = (event: MouseEvent) => {
+    Atomics.store(
+      frontendVariables,
+      FrontendVariable.MouseCursorPositionX,
+      event['offsetX'] * window['devicePixelRatio'],
+    )
+    Atomics.store(
+      frontendVariables,
+      FrontendVariable.MouseCursorPositionY,
+      event['offsetY'] * window['devicePixelRatio'],
+    )
+  }
 
   const defaultMouseListener = (event: MouseEvent) => {
     event.preventDefault()
@@ -89,8 +101,13 @@ export const bindFrontendVariablesToCanvas = ({ element: canvas, frontendVariabl
       FrontendVariable.AdditionalFlags,
       ~(AdditionalFrontedFlags.RightMouseButtonPressed | AdditionalFrontedFlags.LeftMouseButtonPressed),
     )
+    Atomics.store(frontendVariables, FrontendVariable.MouseCursorPositionX, -1)
+    Atomics.store(frontendVariables, FrontendVariable.MouseCursorPositionY, -1)
   }
 
+  const unobserveCanvasSize = observeCanvasSize(canvas, frontendVariables, leaveListener)
+
+  canvas.addEventListener('mousemove', mouseMoveListener, { 'passive': true })
   canvas.addEventListener('mousedown', defaultMouseListener)
   canvas.addEventListener('mouseup', defaultMouseListener)
   canvas.addEventListener('contextmenu', defaultMouseListener)
@@ -98,8 +115,9 @@ export const bindFrontendVariablesToCanvas = ({ element: canvas, frontendVariabl
 
   const unobserveKeyboard = KeyboardController.INSTANCE?.addFrontendVariableListener(frontendVariables)
   return () => {
-    unobserve()
+    unobserveCanvasSize()
     unobserveKeyboard?.()
+    canvas.removeEventListener('mousemove', mouseMoveListener)
     canvas.removeEventListener('mousedown', defaultMouseListener)
     canvas.removeEventListener('mouseup', defaultMouseListener)
     canvas.removeEventListener('contextmenu', defaultMouseListener)

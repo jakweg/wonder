@@ -1,3 +1,4 @@
+import { AsyncEntityIdReader } from '@3d/pipeline/async-entity-id-reader'
 import { TextureSlot } from '@3d/texture-slot-counter'
 import { ScheduledActionId } from '@game/scheduled-actions'
 import { ActionsQueue } from '@game/scheduled-actions/queue'
@@ -114,7 +115,6 @@ function initializeRendering(gl: WebGL2RenderingContext): RenderingState {
 }
 
 function handleResize(gl: WebGL2RenderingContext, state: RenderingState, newWidth: number, newHeight: number) {
-  console.log({ newWidth, newHeight })
   gl.activeTexture(gl.TEXTURE0 + TextureSlot.DisplayFinalization)
   gl.bindTexture(gl.TEXTURE_2D, state.colorTexture)
   gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, newWidth, newHeight, 0, gl.RGBA, gl.UNSIGNED_BYTE, null)
@@ -133,15 +133,17 @@ function prepareForDraw(gl: WebGL2RenderingContext, state: RenderingState) {
   const fbo = state.resolveFbo
   gl.bindFramebuffer(gl.FRAMEBUFFER, fbo)
 
-  // Tell GL to draw to both color attachments
   gl.drawBuffers([gl.COLOR_ATTACHMENT0, gl.COLOR_ATTACHMENT1])
 
   gl.viewport(0, 0, gl.canvas.width, gl.canvas.height)
 
-  // Clear color, entity ID, and depth
   gl.clearBufferfv(gl.COLOR, 0, [0.1, 0.2, 0.3, 1.0]) // Clear color to dark blue
   gl.clearBufferuiv(gl.COLOR, 1, [0, 0, 0, 0]) // Clear ID to 0
   gl.clear(gl.DEPTH_BUFFER_BIT)
+  gl.enable(gl.DEPTH_TEST)
+  gl.disable(gl.CULL_FACE)
+  // gl.enable(gl.CULL_FACE)
+  gl.cullFace(gl.BACK)
 }
 
 function finalizeDisplay(gl: WebGL2RenderingContext, state: RenderingState) {
@@ -181,6 +183,7 @@ function readEntityId(gl: WebGL2RenderingContext, state: RenderingState, mouseX:
 export const newContextWrapper = async ({ element: canvas, frontendVariables }: UICanvas, camera: Camera) => {
   const gl = obtainWebGl2ContextFromCanvas(canvas)
   const state = initializeRendering(gl)
+  const entityIdReader = new AsyncEntityIdReader(gl)
 
   let lastWidth = -1
   let lastHeight = -1
@@ -212,19 +215,28 @@ export const newContextWrapper = async ({ element: canvas, frontendVariables }: 
       prepareForDraw(gl, state)
     },
     finalizeDisplay() {
-      finalizeDisplay(gl, state)
-      const x = frontendVariables[FrontendVariable.MouseCursorPositionX]
-      const y = frontendVariables[FrontendVariable.MouseCursorPositionY]
-      const entityId = readEntityId(gl, state, x, y)
-
-      let blockX = -1
-      let blockZ = -1
-      if (entityId > 0) {
-        blockZ = entityId & 0xffff
-        blockX = (entityId >> 16) & 0xffff
+      if (entityIdReader.canRead()) {
+        const x = frontendVariables[FrontendVariable.MouseCursorPositionX]
+        const y = frontendVariables[FrontendVariable.MouseCursorPositionY]
+        if (x >= 0 && y >= 0) {
+          entityIdReader.readEntityId(x, y)?.then(entityId => {
+            let blockX = -1
+            let blockZ = -1
+            if (entityId !== 0) {
+              const isBlock = entityId >>> 31 === 1
+              if (!isBlock) {
+                console.log('not a block', { entityId })
+                return
+              }
+              const posMask = 0xffff >> 2
+              blockZ = entityId & posMask
+              blockX = (entityId >> 14) & posMask
+            }
+            // console.log({ x, y, entityId, blockX, blockZ })
+          })
+        }
       }
-
-      console.log({ x, y, entityId, blockX, blockZ })
+      finalizeDisplay(gl, state)
     },
   }
 }

@@ -80,7 +80,7 @@ type AttributeSpecification<B extends string | symbol | number> = {
       }
     | {
         disabled?: false
-        bindTo: Record<B, true>
+        bindTo: Partial<Record<B, true>>
       }
   )
 
@@ -132,12 +132,18 @@ type AnySpec<
 > = Spec<keyof S['buffers'], keyof S['programs'], keyof S['programs'][any]['uniforms'], keyof S['textures']>
 
 type Implementation<S extends AnySpec<S>> = {
-  start: () => void
-  stop: () => void
-  buffers: Record<keyof S['buffers'], { setContent: (value: TypedArray) => void }>
+  buffers: Record<
+    keyof S['buffers'],
+    {
+      setSize: (bytes: number) => void
+      setPartialContent: (value: TypedArray, destinationByteOffset: number) => void
+      setContent: (value: TypedArray) => void
+    }
+  >
   programs: {
     [P in keyof S['programs']]: {
       use: () => void
+      finish: () => void
       getPointer(): WebGLProgram
       unsafeUniformLocations: Record<
         S['programs'][P] extends { uniforms: infer U } ? keyof U : never,
@@ -148,6 +154,14 @@ type Implementation<S extends AnySpec<S>> = {
   textures: Record<
     keyof S['textures'],
     {
+      setSize: (width: number, height: number) => void
+      setPartialContent2D: (
+        value: TypedArray,
+        destinationX: number,
+        destinationY: number,
+        width: number,
+        height: number,
+      ) => void
       setContentSquare: (value: TypedArray, sizeInOneDimension: number) => void
       setContent2D: (value: TypedArray, width: number, height: number) => void
     }
@@ -159,20 +173,9 @@ export const createFromSpec = <S extends AnySpec<S>>(gl: WebGL2RenderingContext,
   const textures = createTextures(gl, s)
   const programs = createPrograms(gl, s, textures)
 
-  const vao = gl.createVertexArray()
-  gl.bindVertexArray(vao)
-
   bindAttributesToBuffers(gl, buffers, programs)
 
-  gl.bindVertexArray(null)
-
   return {
-    start() {
-      gl.bindVertexArray(vao)
-    },
-    stop() {
-      gl.bindVertexArray(null)
-    },
     buffers,
     textures,
     programs,
@@ -181,51 +184,80 @@ export const createFromSpec = <S extends AnySpec<S>>(gl: WebGL2RenderingContext,
 
 function bindAttributesToBuffers(gl: WebGL2RenderingContext, buffers: any, programs: any) {
   for (const program of Object.values(programs)) {
+    ;(program as any).use()
     const attributeLocations = (program as any).attributes as Record<any, number>
-    const attributes = ((program as any).spec.attributes ?? {}) as Record<any, AttributeSpecification<any>>
-    const entries = Object.entries(attributes) as [string, AttributeSpecification<any>][]
+    const allAttributes = ((program as any).spec.attributes ?? {}) as Record<any, AttributeSpecification<any>>
 
-    const totalSize = entries.map(([_, v]) => v.count * getBytesSize(v.type))['reduce']((a, b) => a + b, 0)
+    const attributesByBuffer = new Map<string, { key: string; spec: AttributeSpecification<any> }[]>()
 
-    let offset = 0
-    for (const [key, attribute] of entries) {
+    for (const [key, attributeSpec] of Object.entries(allAttributes)) {
       const index = attributeLocations[key]
-      const type = attribute.type
-      if (index !== undefined) {
-        if (attribute.disabled === true) {
-          gl.disableVertexAttribArray(index)
-          continue
-        }
+      if (index === undefined) continue
 
-        const [bufferName, ...rest] = Object.keys(attribute.bindTo)
-        // There must be only a single bindTo buffer
-        if (rest.length || !bufferName) throw new Error()
+      if (attributeSpec.disabled === true) {
+        gl.disableVertexAttribArray(index)
+        continue
+      }
 
-        const foundBuffer = buffers[bufferName]
-        if (!foundBuffer?.unsafePointer || foundBuffer?.spec?.element) throw new Error()
+      const [bufferName] = Object.keys(attributeSpec.bindTo)
+      if (!bufferName) {
+        throw new Error(`Attribute '${key}' has no buffer binding ('bindTo').`)
+      }
 
-        gl.bindBuffer(gl.ARRAY_BUFFER, foundBuffer.unsafePointer)
+      if (!attributesByBuffer.has(bufferName)) {
+        attributesByBuffer.set(bufferName, [])
+      }
+      attributesByBuffer.get(bufferName)!.push({ key, spec: attributeSpec })
+    }
+
+    for (const [bufferName, attributes] of attributesByBuffer.entries()) {
+      const foundBuffer = buffers[bufferName]
+      if (!foundBuffer?.unsafePointer || foundBuffer?.spec?.element) {
+        throw new Error(`Buffer '${bufferName}' not found, is an element buffer, or has no pointer.`)
+      }
+
+      // Bind the buffer *once* for this group of attributes
+      gl.bindBuffer(gl.ARRAY_BUFFER, foundBuffer.unsafePointer)
+
+      const isInterleaved = attributes.length > 1
+
+      const stride = isInterleaved
+        ? attributes.reduce((acc, { spec }) => acc + spec.count * getBytesSize(spec.type), 0)
+        : 0
+
+      let offset = 0
+
+      // 3. Set pointers for each attribute *in this buffer*
+      for (const { key, spec: attribute } of attributes) {
+        const index = attributeLocations[key]!
+        const type = attribute.type
 
         gl.enableVertexAttribArray(index)
 
-        if ((attribute as any).normalize === undefined ? isInt(type) : false)
-          gl.vertexAttribIPointer(index, attribute.count, getGlValue(gl, type), totalSize, offset)
-        else
+        if ((attribute as any).normalize === undefined ? isInt(type) : false) {
+          gl.vertexAttribIPointer(index, attribute.count, getGlValue(gl, type), stride, offset)
+        } else {
           gl.vertexAttribPointer(
             index,
             attribute.count,
             getGlValue(gl, type),
             (attribute as any).normalize ?? false,
-            totalSize,
+            stride,
             offset,
           )
+        }
 
         if (attribute.divisor !== undefined) {
           gl.vertexAttribDivisor(index, attribute.divisor)
         }
+
+        if (isInterleaved) {
+          offset += attribute.count * getBytesSize(type)
+        }
       }
-      offset += attribute.count * getBytesSize(type)
     }
+
+    ;(program as any).finish()
   }
 
   gl.bindBuffer(gl.ARRAY_BUFFER, null)
@@ -332,7 +364,8 @@ function buildShaderSource(params: {
   } else {
     if (typeof params.finalVariable === 'string') parts.push('finalFinalColor = vec4(', params.finalVariable, ');\n}\n')
     else {
-      parts.push('finalFinalColor = vec4(', params.finalVariable[0], ');\n')
+      parts.push('finalFinalColor = gl_FrontFacing ? vec4(', params.finalVariable[0], ') : vec4(1,0,0,1);\n')
+      // parts.push('finalFinalColor = vec4(', params.finalVariable[0], ');\n')
       if (params.finalVariable[1]) {
         parts.push('finalFinalEntityId = uint(', params.finalVariable[1], ');\n')
       }
@@ -428,13 +461,18 @@ function createPrograms<S extends AnySpec<S>>(gl: WebGL2RenderingContext, s: S, 
       gl.useProgram(program)
       for (const name of Object.keys(description.textureSamplers ?? {})) {
         const location = uniforms[name]
-        if (!location) throw new Error()
+        if (!location) {
+          console.warn('texture', name, 'is declared, but not used')
+          continue
+        }
         const bindingPoint = (textures[name]?.spec as TextureSpecification)?.textureSlot
         if (bindingPoint == null) throw new Error()
         gl.uniform1i(location, bindingPoint)
       }
       gl.useProgram(null)
 
+      const vao = gl.createVertexArray()
+      let isUsing = false
       return [
         entry[0],
         {
@@ -442,7 +480,15 @@ function createPrograms<S extends AnySpec<S>>(gl: WebGL2RenderingContext, s: S, 
           uniforms,
           spec: description,
           use() {
+            if (isUsing) throw new Error(`Called use() on ${entry[0]} program, but finish() was not called before`)
+            isUsing = true
             gl.useProgram(program)
+            gl.bindVertexArray(vao)
+          },
+          finish() {
+            isUsing = false
+            gl.useProgram(null)
+            gl.bindVertexArray(null)
           },
           unsafeUniformLocations: uniforms,
           getPointer() {
@@ -461,13 +507,23 @@ function createBuffers<S extends AnySpec<S>>(gl: WebGL2RenderingContext, s: S) {
       const glBuffer = gl.createBuffer()
 
       const target = description.element === true ? gl.ELEMENT_ARRAY_BUFFER : gl.ARRAY_BUFFER
-      const usage = description.dynamic ? gl.DYNAMIC_DRAW : gl.STATIC_READ
+      const usage = description.dynamic ? gl.DYNAMIC_DRAW : gl.STATIC_DRAW
 
       return [
         entry[0],
         {
           unsafePointer: glBuffer,
           spec: description,
+          setSize: (bytes: number) => {
+            gl.bindBuffer(target, glBuffer)
+            gl.bufferData(target, bytes, usage)
+            gl.bindBuffer(target, null)
+          },
+          setPartialContent: (value: TypedArray, destinationByteOffset: number) => {
+            gl.bindBuffer(target, glBuffer)
+            gl.bufferSubData(target, destinationByteOffset, value)
+            gl.bindBuffer(target, null)
+          },
           setContent: (value: TypedArray) => {
             gl.bindBuffer(target, glBuffer)
             gl.bufferData(target, value, usage)
@@ -514,6 +570,22 @@ function createTextures<S extends AnySpec<S>>(gl: WebGL2RenderingContext, s: S) 
             gl.activeTexture(glSlot)
             gl.bindTexture(target, glTexture)
             gl.texImage2D(target, 0, internalFormat, width, height, 0, format, type, value)
+          },
+          setPartialContent2D: (
+            value: TypedArray,
+            destinationX: number,
+            destinationY: number,
+            width: number,
+            height: number,
+          ) => {
+            gl.activeTexture(glSlot)
+            gl.bindTexture(target, glTexture)
+            gl.texSubImage2D(target, 0, destinationX, destinationY, width, height, format, type, value)
+          },
+          setSize: (width: number, height: number) => {
+            gl.activeTexture(glSlot)
+            gl.bindTexture(target, glTexture)
+            gl.texImage2D(target, 0, internalFormat, width, height, 0, format, type, null)
           },
         },
       ]
