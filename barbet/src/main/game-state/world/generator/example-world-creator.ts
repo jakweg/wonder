@@ -57,6 +57,15 @@ const placeDebugFeatures = (game: GameStateImplementation) => {
   game.world.setHeight_unsafe(13, 10, 2)
   game.world.setHeight_unsafe(14, 10, 2)
   game.world.setHeight_unsafe(15, 10, 2)
+  game.world.setHeight_unsafe(15, 11, 2)
+  game.world.setHeight_unsafe(15, 12, 2)
+  game.world.setHeight_unsafe(15, 13, 2)
+  game.world.setHeight_unsafe(15, 14, 3)
+  game.world.setHeight_unsafe(15, 15, 3)
+
+  game.world.setHeight_unsafe(19, 18, 1)
+  game.world.setHeight_unsafe(19, 19, 1)
+  game.world.setHeight_unsafe(19, 20, 1)
 
   for (const index of game.world.rawHeightData.keys()) game.world.rawHeightData[index]! += 5
 

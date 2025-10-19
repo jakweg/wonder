@@ -112,6 +112,8 @@ export interface Spec<
 
       skipWorldTransform?: boolean
 
+      drawElements?: Partial<Record<B, true>>
+
       fragmentMain: (variables: Record<NeverIfAny<T> | NeverIfAny<U> | NeverIfAny<AM[P]> | string, string>) => string
       fragmentFinalColor: string
       fragmentEntityId?: string
@@ -171,7 +173,7 @@ type Implementation<S extends AnySpec<S>> = {
 export const createFromSpec = <S extends AnySpec<S>>(gl: WebGL2RenderingContext, s: S): Implementation<S> => {
   const buffers = createBuffers(gl, s)
   const textures = createTextures(gl, s)
-  const programs = createPrograms(gl, s, textures)
+  const programs = createPrograms(gl, s, textures, buffers)
 
   bindAttributesToBuffers(gl, buffers, programs)
 
@@ -408,7 +410,7 @@ const isCompilationOk = (
   return false
 }
 
-function createPrograms<S extends AnySpec<S>>(gl: WebGL2RenderingContext, s: S, textures: any) {
+function createPrograms<S extends AnySpec<S>>(gl: WebGL2RenderingContext, s: S, textures: any, buffers: any) {
   return Object.fromEntries(
     Object.entries(s.programs ?? {}).map(entry => {
       const description = entry[1]! as AnySpec<S>['programs'][keyof AnySpec<S>['programs']]
@@ -471,7 +473,19 @@ function createPrograms<S extends AnySpec<S>>(gl: WebGL2RenderingContext, s: S, 
       }
       gl.useProgram(null)
 
+      let elementsBuffer: WebGLBuffer | null = null
+      if (description.drawElements) {
+        const [bufferName, ...rest] = Object.keys(description.drawElements)
+        if (!bufferName || rest.length) throw new Error()
+        elementsBuffer = buffers[bufferName]?.unsafePointer
+        if (!elementsBuffer) throw new Error(`Elements buffer ${bufferName} not found`)
+      }
+
       const vao = gl.createVertexArray()
+      gl.bindVertexArray(vao)
+      gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, elementsBuffer)
+      gl.bindVertexArray(null)
+
       let isUsing = false
       return [
         entry[0],

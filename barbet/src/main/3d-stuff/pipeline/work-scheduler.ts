@@ -1,4 +1,5 @@
 import { World } from '@game/world/world'
+import TypedArray from '@seampan/typed-array'
 import { createArray } from '@utils/array-utils'
 import { GameMutex } from '@utils/game-mutex'
 import { spawnNew } from '@utils/new-worker/specs/render-helper'
@@ -25,9 +26,10 @@ export type TaskResult =
   | {
       type: TaskType.Create2dChunkMesh
       chunkIndex: number
-      top: Uint8Array
-      sides: Uint8Array
+      top: TypedArray
       recreationId: number
+      sidesVertexes: TypedArray
+      sidesElements: TypedArray
     }
 
 export default interface RenderHelperWorkScheduler {

@@ -44,6 +44,7 @@ const uint[6] quadIndexToVertexInQuadNumberFlipped = uint[6] (
   2U, 0U, 3U
 );
 const float normalizedAoValues[4] = float[4](1.0, 0.7, 0.5, 0.3);
+// const float normalizedAoValues[4] = float[4](1.0, 0.5, 0.5, 0.5);
 
 const vec3 colorsByBlockId[${allBlockColors.length}] = vec3[${allBlockColors.length}](${allBlockColors.join(',\n')});
 
@@ -90,10 +91,9 @@ ${a.aoValueForThisVertex} = normalizedAoValues[aoForThisVertex];
 uint heightHere = texelFetch(${a.heightMap}, chunkMappedWorldLocation, 0).r;
 
 vec3 pos = vec3(worldLocation.x, float(heightHere), worldLocation.y) + vertexOffsetsY[quadIndexToVertexInQuadNumber[partOfThisQuad]];
-${a.positionOnOneAxis} = vec2(pos.x, pos.z);
+${a.voxelPosition} = pos;
 
 pos.y *= ${TerrainHeightMultiplierUniform};
-${a.finalPosition} = pos;
 uint posMask = 0xFFFFU >> 2U;
 uint entityId = 1U << 3U; // terrainBit + 3 bits for direction
 entityId = (entityId << 14U) | (uint(pos.x) & posMask);
@@ -102,24 +102,49 @@ ${a.entityId} = entityId;
 `
 const fragmentMain = (isForTops: boolean) => (a: any) =>
   `
-vec2 positionWithinBlock = vec2(fract(${a.positionOnOneAxis}.x), fract(${a.positionOnOneAxis}.y));
-float distanceFromBorderX =  1.0 - abs(positionWithinBlock.x - 0.5) * 2.0;
-float distanceFromBorderZ =  1.0 - abs(positionWithinBlock.y - 0.5) * 2.0;
-float lineThicknessMultiplier = ${isForTops ? '1.0' : TerrainHeightMultiplierUniform};
-float distanceFromBorder = smoothstep(0.02 / lineThicknessMultiplier, 0.05 / lineThicknessMultiplier, distanceFromBorderX) 
-                         * smoothstep(0.02,                           0.05, distanceFromBorderZ);
+float distanceFromBorderX =  1.0 - abs(fract(${a.voxelPosition}.x) - 0.5) * 2.0;
+float distanceFromBorderY =  1.0 - abs(fract(${a.voxelPosition}.y) - 0.5) * 2.0;
+float distanceFromBorderZ =  1.0 - abs(fract(${a.voxelPosition}.z) - 0.5) * 2.0;
 
-float ao = pow(${a.aoValueForThisVertex}, 0.8);
+float distanceFromBorder = 1.0;
+vec2 distanceFactors;
+if (distanceFromBorderY == 0.0) 
+  distanceFactors = vec2(distanceFromBorderX, distanceFromBorderZ);
+if (distanceFromBorderX == 0.0) 
+  distanceFactors = vec2(distanceFromBorderY, distanceFromBorderZ);
+if (distanceFromBorderZ == 0.0) 
+  distanceFactors = vec2(distanceFromBorderY, distanceFromBorderX);
+
+float borderThickness = 0.07;
+float smallerDistance = min(distanceFactors.x,distanceFactors.y);
+distanceFromBorder = smoothstep(0.8, 1.0, min(borderThickness, smallerDistance) / borderThickness);
+
+// float ao = pow(${a.aoValueForThisVertex}, smallerDistance);
+float aoLight = pow(${a.aoValueForThisVertex}, 1.2);
 
 vec3 color = colorsByBlockId[${a.blockIdHere}];
-vec3 finalColor = color * mix(0.5, 1.0, distanceFromBorder) * ao;
+vec3 finalColor = color * mix(0.4, 1.0, distanceFromBorder) * aoLight;
 uint entityId = ${a.entityId};
+`
+
+const sidesVertexMain = (a: any) => `
+
+
+vec3 pos = vec3(${a.positionX}, float(${a.positionY}) * ${TerrainHeightMultiplierUniform}, ${a.positionZ});
+
+${a.blockIdHere} = ${BlockId.Sand}U;
+
+// vec3 worldPosition = vec3(intPosition.x, float(intPosition.y) * ${TerrainHeightMultiplierUniform}, intPosition.z);
+${a.voxelPosition} = vec3(${a.positionX}, ${a.positionY}, ${a.positionZ});
+
+${a.aoValueForThisVertex} = normalizedAoValues[${a.ao} & 3U];
 `
 
 export const spec = {
   buffers: {
     visibleChunks: { dynamic: true },
     sidesBuffer: { dynamic: false },
+    sidesElements: { dynamic: false, element: true },
   },
   textures: {
     terrainType: {
@@ -148,10 +173,9 @@ export const spec = {
       },
       varyings: {
         blockIdHere: { type: 'uint', flat: true },
-        positionOnOneAxis: { type: 'vec2' },
         entityId: { type: 'uint', flat: true },
         aoValueForThisVertex: { type: 'float' },
-        finalPosition: { type: 'vec3' },
+        voxelPosition: { type: 'vec3' },
       },
       attributes: {
         thisChunkId: {
@@ -164,70 +188,8 @@ export const spec = {
     },
     instancedSides: {
       utilDeclarations,
-      vertexMain: a => `
-uint partOfThisQuad = uint(gl_VertexID % 6);
-bool isXSide   = (${a.quadIndex1} & 128U) == 128U;
-bool needsFlip = (${a.quadIndex1} &  64U) == 64U;
-uint quadIndexWithinChunk = ((${a.quadIndex1} & 15U) << 8U) | ${a.quadIndex2};
-
-ivec2 worldLocation = ivec2(quadIndexWithinChunk % ${GENERIC_CHUNK_SIZE}U, quadIndexWithinChunk / ${GENERIC_CHUNK_SIZE}U);
-
-// ivec2 chunkMappedWorldLocation = calculateTextureCoordsForPosition(uint(worldLocation.x), uint(worldLocation.y));
-// uint heightHere = texelFetch(${a.heightMap}, chunkMappedWorldLocation, 0).r;
-
-
-
-ivec3 intPosition = ivec3(worldLocation.x, 0, worldLocation.y);
-uint quadIndex = needsFlip ? quadIndexToVertexInQuadNumberFlipped[partOfThisQuad] : quadIndexToVertexInQuadNumber[partOfThisQuad];
-intPosition += isXSide ? vertexOffsetsX[quadIndex] : vertexOffsetsZ[quadIndex];
-intPosition.y += int(${a.trueBottom});
-
-
-// if (needsFlip) intPosition = ivec3(0,0,0);
-
-
-
-
-
-
-
-// ivec3 intPosition = ivec3(worldLocation.x, 0.0, worldLocation.y) 
-//     + (isXSide ? vertexOffsetsX[quadIndexToVertexInQuadNumber[partOfThisQuad]] : vertexOffsetsZ[quadIndexToVertexInQuadNumber[partOfThisQuad]]);
-
-// if (intPosition.y == 0)
-//   intPosition.y = int(${a.trueBottom});
-// else
-//   intPosition.y = int(heightHere);
-
-// float y_top = float(max(heightHere, ${a.trueBottom}));
-// float y_bottom = float(min(heightHere, ${a.trueBottom}));
-
-// vec3 baseOffset = isXSide 
-//     ? vertexOffsetsX[quadIndexToVertexInQuadNumber[partOfThisQuad]] 
-//     : vertexOffsetsZ[quadIndexToVertexInQuadNumber[partOfThisQuad]];
-
-// ivec3 intPosition = ivec3(worldLocation.x, 0, worldLocation.y) + ivec3(baseOffset);
-
-// // If baseOffset.y is 1, it's a top vertex -> use y_top
-// // If baseOffset.y is 0, it's a bottom vertex -> use y_bottom
-// intPosition.y = (baseOffset.y == 1.0) ? int(y_top) : int(y_bottom);
-
-${a.positionOnOneAxis} = vec2(float(intPosition.y), isXSide ? intPosition.z : intPosition.x);
-
-// bool needsOffsetBlockId = ${a.trueBottom} > heightHere;
-// uint xBlockIdOffset = (needsOffsetBlockId && isXSide) ? 1U : 0U;
-// uint zBlockIdOffset = (needsOffsetBlockId && !isXSide) ? 1U : 0U;
-
-// ivec2 blockIdPos = calculateTextureCoordsForPosition(uint(worldLocation.x) + xBlockIdOffset, uint(worldLocation.y) + zBlockIdOffset);
-// ${a.blockIdHere} = texelFetch(${a.terrainType}, blockIdPos, 0).r;
-${a.blockIdHere} = ${BlockId.Gravel}U;
-
-vec3 worldPosition = vec3(intPosition.x, float(intPosition.y) * ${TerrainHeightMultiplierUniform}, intPosition.z);
-${a.finalPosition} = worldPosition;
-
-${a.aoValueForThisVertex} = normalizedAoValues[(${a.aoByte} >> (quadIndexToVertexInQuadNumber[partOfThisQuad] * 2U)) & 3U];
-      `,
-      vertexFinalPosition: 'worldPosition',
+      vertexMain: sidesVertexMain,
+      vertexFinalPosition: 'pos',
       fragmentMain: fragmentMain(false),
       fragmentFinalColor: 'vec4(finalColor.rgb, 1.0)',
       fragmentEntityId: '0',
@@ -237,18 +199,18 @@ ${a.aoValueForThisVertex} = normalizedAoValues[(${a.aoByte} >> (quadIndexToVerte
         heightMap: {},
       },
       attributes: {
-        quadIndex1: { count: 1, type: AttrType.UByte, divisor: 1, bindTo: { sidesBuffer: true } },
-        quadIndex2: { count: 1, type: AttrType.UByte, divisor: 1, bindTo: { sidesBuffer: true } },
-        trueBottom: { count: 1, type: AttrType.UByte, divisor: 1, bindTo: { sidesBuffer: true } },
-        aoByte: { count: 1, type: AttrType.UByte, divisor: 1, bindTo: { sidesBuffer: true } },
+        positionX: { count: 1, type: AttrType.UByte, bindTo: { sidesBuffer: true } },
+        positionY: { count: 1, type: AttrType.UByte, bindTo: { sidesBuffer: true } },
+        positionZ: { count: 1, type: AttrType.UByte, bindTo: { sidesBuffer: true } },
+        ao: { count: 1, type: AttrType.UByte, bindTo: { sidesBuffer: true } },
       },
+      drawElements: { sidesElements: true },
       uniforms: {},
       varyings: {
         blockIdHere: { type: 'uint', flat: true },
-        positionOnOneAxis: { type: 'vec2' },
         entityId: { type: 'uint', flat: true },
-        aoValueForThisVertex: { type: 'float' },
-        finalPosition: { type: 'vec3' },
+        aoValueForThisVertex: { type: 'float', flat: false },
+        voxelPosition: { type: 'vec3' },
       },
     },
   },

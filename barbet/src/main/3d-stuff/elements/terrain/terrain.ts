@@ -4,6 +4,7 @@ import { createFromSpec } from '@3d/gpu-resources/ultimate-gpu-pipeline'
 import { NewRenderingPipelineElementCreator } from '@3d/new-render-context'
 import { TaskType } from '@3d/pipeline/work-scheduler'
 import { GENERIC_CHUNK_SIZE } from '@game/world/size'
+import TypedArray from '@seampan/typed-array'
 import { createArray } from '@utils/array-utils'
 import { spec } from './shaders'
 
@@ -13,7 +14,7 @@ interface ChunkSnapshot {
   rebuildRequested: boolean
   lastChunkModificationId: number
   lastChunkUploadId: number
-  buildResult: null | { top: Uint8Array; sides: Uint8Array }
+  buildResult: null | { top: TypedArray; sidesVertexes: TypedArray; sidesElements: TypedArray }
 }
 
 export default (({ pipeline: { gl, visibility }, globals, game, scheduler }) => {
@@ -108,11 +109,13 @@ export default (({ pipeline: { gl, visibility }, globals, game, scheduler }) => 
       for (const chunkIndex of visibleChunks) {
         const chunk = chunks[chunkIndex]!
         if (!chunk.buildResult) continue
-        console.log(chunk.buildResult.sides.length)
-        implementation.buffers.sidesBuffer.setContent(chunk.buildResult.sides)
+        implementation.buffers.sidesElements.setContent(chunk.buildResult.sidesElements)
+        implementation.buffers.sidesBuffer.setContent(chunk.buildResult.sidesVertexes)
+
         implementation.programs.instancedSides.use()
 
-        gl.drawArraysInstanced(gl.TRIANGLES, 0, 6, chunk.buildResult.sides.length / 4)
+        gl.drawElements(gl.TRIANGLES, chunk.buildResult.sidesElements.length, gl.UNSIGNED_INT, 0)
+        // gl.drawArraysInstanced(gl.TRIANGLES, 0, 6, chunk.buildResult.sides.length / 4)
 
         implementation.programs.instancedSides.finish()
         break
@@ -130,7 +133,11 @@ export default (({ pipeline: { gl, visibility }, globals, game, scheduler }) => 
             // if received mesh is out of date then mark the chunk that it still needs rebuild
             chunk.needsRebuild = chunk.lastChunkModificationId !== result.recreationId
             chunk.lastChunkModificationId = result.recreationId
-            chunk.buildResult = { sides: result.sides, top: result.top }
+            chunk.buildResult = {
+              sidesVertexes: result.sidesVertexes,
+              sidesElements: result.sidesElements,
+              top: result.top,
+            }
             // even if it's out of date try to send it to GPU anyway
             chunksThatNeedUpload.push(chunk)
           })
