@@ -3,6 +3,7 @@ import TypedArray from '@seampan/typed-array'
 import { createArray } from '@utils/array-utils'
 import { GameMutex } from '@utils/game-mutex'
 import { spawnNew } from '@utils/new-worker/specs/render-helper'
+import { sharedMemoryIsAvailable } from '@utils/shared-memory'
 import { dispatch, Environment } from './scheduler-tasks'
 
 export enum TaskType {
@@ -28,8 +29,7 @@ export type TaskResult =
       chunkIndex: number
       top: TypedArray
       recreationId: number
-      sidesVertexes: TypedArray
-      sidesElements: TypedArray
+      sides: TypedArray
     }
 
 export default interface RenderHelperWorkScheduler {
@@ -117,7 +117,5 @@ class InstantImplementation implements RenderHelperWorkScheduler {
 }
 
 export const newHelperScheduler = (mutex: GameMutex): Promise<RenderHelperWorkScheduler> => {
-  // TODO remove
-  return Promise.resolve(new InstantImplementation())
-  // return sharedMemoryIsAvailable ? WorkerImplementation.createNew(mutex) : Promise.resolve(new InstantImplementation())
+  return sharedMemoryIsAvailable ? WorkerImplementation.createNew(mutex) : Promise.resolve(new InstantImplementation())
 }

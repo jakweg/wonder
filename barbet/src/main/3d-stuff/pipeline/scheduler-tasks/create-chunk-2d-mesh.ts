@@ -1,3 +1,4 @@
+import { BlockId } from '@game/world/block'
 import { GENERIC_CHUNK_SIZE } from '@game/world/size'
 import { World } from '@game/world/world'
 import { Environment } from '.'
@@ -45,7 +46,7 @@ const createVertexBufferForTopLayer = (chunkX: number, chunkY: number, world: Wo
   return new Uint8Array(numbers)
 }
 
-const createMeshForSideLayers = (chunkX: number, chunkY: number, world: World) => {
+const createVertexBufferForSideLayers = (chunkX: number, chunkY: number, world: World) => {
   const getAoByteForVerticalXPlainVertex = (thisBlockHeight: number, x: number, z: number, positiveX: boolean) => {
     const y_nz = world.getHighestBlockHeight_orElse(x + (!positiveX ? -1 : 0), z - 1, -1)
     const y_pz = world.getHighestBlockHeight_orElse(x + (!positiveX ? -1 : 0), z, -1)
@@ -69,35 +70,18 @@ const createMeshForSideLayers = (chunkX: number, chunkY: number, world: World) =
     return (o1 + o2 + o3 + o4) & 0b11
   }
 
-  const indexes: number[] = []
-  // map of vertexes where key is `${x}-${y}-${z}`
-  const vertexes = new Map<string, { x: number; y: number; z: number; ao: number; index: number }>()
+  const finalVertexesList_u16: number[] = []
 
-  const createVertexIfNeeded = (
-    x: number,
-    y: number,
-    z: number,
-    isX: boolean,
-    isPositive: boolean,
-  ): Parameters<(typeof vertexes)['set']>[1] => {
-    const key = `${x}-${y}-${z}-${crypto.randomUUID()}`
-    let got = vertexes.get(key)
-    if (got === undefined) {
-      const ao = isX
-        ? getAoByteForVerticalXPlainVertex(y, x, z, isPositive)
-        : getAoByteForVerticalZPlainVertex(y, x, z, isPositive)
+  const createVertex = (x: number, y: number, z: number, isX: boolean, isPositive: boolean, blockType: BlockId) => {
+    const ao = isX
+      ? getAoByteForVerticalXPlainVertex(y, x, z, isPositive)
+      : getAoByteForVerticalZPlainVertex(y, x, z, isPositive)
 
-      const index = vertexes.size
-      got = {
-        index,
-        x,
-        y,
-        z,
-        ao,
-      } satisfies ReturnType<(typeof vertexes)['get']>
-      vertexes.set(key, got)
-    }
-    return got!
+    finalVertexesList_u16.push(
+      (x & 0b111_1111_1111_1111) | (((ao >> 1) & 0b1) << 15),
+      (z & 0b111_1111_1111_1111) | (((ao >> 0) & 0b1) << 15),
+      ((y & 0xff) << 8) | (blockType & 0xff),
+    )
   }
 
   let quadIndexWithinChunk = -1
@@ -112,71 +96,83 @@ const createMeshForSideLayers = (chunkX: number, chunkY: number, world: World) =
       const nextZBlockHeight = world.getHighestBlockHeight_orElse(x, z + 1, thisBlockHeight)
 
       if (nextXBlockHeight !== thisBlockHeight) {
-        let less, more, needsFlip
+        let less, more, needsFlip, blockType
         if (nextXBlockHeight < thisBlockHeight) {
           less = nextXBlockHeight
           more = thisBlockHeight
           needsFlip = true
+          blockType = world.getBlock_unsafe(x, z)
         } else {
           less = thisBlockHeight
           more = nextXBlockHeight
           needsFlip = false
+          blockType = world.getBlock_unsafe(x + 1, z)
         }
 
         for (let height = less; height < more; ++height) {
-          const v0 = createVertexIfNeeded(x + 1, height, z, true, needsFlip)
-          const v1 = createVertexIfNeeded(x + 1, height, z + 1, true, needsFlip)
-          const v2 = createVertexIfNeeded(x + 1, height + 1, z + 1, true, needsFlip)
-          const v3 = createVertexIfNeeded(x + 1, height + 1, z, true, needsFlip)
-
           if (needsFlip) {
-            indexes.push(v2.index, v1.index, v0.index, v2.index, v0.index, v3.index)
+            createVertex(x + 1, height + 1, z + 1, true, needsFlip, blockType)
+            createVertex(x + 1, height, z + 1, true, needsFlip, blockType)
+            createVertex(x + 1, height, z, true, needsFlip, blockType)
+
+            createVertex(x + 1, height + 1, z + 1, true, needsFlip, blockType)
+            createVertex(x + 1, height, z, true, needsFlip, blockType)
+            createVertex(x + 1, height + 1, z, true, needsFlip, blockType)
+            // indexes.push(v2.index, v1.index, v0.index, v2.index, v0.index, v3.index)
           } else {
-            indexes.push(v0.index, v1.index, v2.index, v0.index, v2.index, v3.index)
+            createVertex(x + 1, height, z, true, needsFlip, blockType)
+            createVertex(x + 1, height, z + 1, true, needsFlip, blockType)
+            createVertex(x + 1, height + 1, z + 1, true, needsFlip, blockType)
+
+            createVertex(x + 1, height, z, true, needsFlip, blockType)
+            createVertex(x + 1, height + 1, z + 1, true, needsFlip, blockType)
+            createVertex(x + 1, height + 1, z, true, needsFlip, blockType)
+            // indexes.push(v0.index, v1.index, v2.index, v0.index, v2.index, v3.index)
           }
         }
       }
 
       if (nextZBlockHeight !== thisBlockHeight) {
-        let less, more, needsFlip
+        let less, more, needsFlip, blockType
         if (nextZBlockHeight < thisBlockHeight) {
           less = nextZBlockHeight
           more = thisBlockHeight
           needsFlip = true
+          blockType = world.getBlock_unsafe(x, z)
         } else {
           less = thisBlockHeight
           more = nextZBlockHeight
           needsFlip = false
+          blockType = world.getBlock_unsafe(x, z + 1)
         }
 
         for (let height = less; height < more; ++height) {
-          const v0 = createVertexIfNeeded(x, height, z + 1, false, !needsFlip)
-          const v1 = createVertexIfNeeded(x + 1, height, z + 1, false, !needsFlip)
-          const v2 = createVertexIfNeeded(x + 1, height + 1, z + 1, false, !needsFlip)
-          const v3 = createVertexIfNeeded(x, height + 1, z + 1, false, !needsFlip)
-
           if (needsFlip) {
-            indexes.push(v0.index, v1.index, v2.index, v0.index, v2.index, v3.index)
+            createVertex(x, height, z + 1, false, !needsFlip, blockType)
+            createVertex(x + 1, height, z + 1, false, !needsFlip, blockType)
+            createVertex(x + 1, height + 1, z + 1, false, !needsFlip, blockType)
+
+            createVertex(x, height, z + 1, false, !needsFlip, blockType)
+            createVertex(x + 1, height + 1, z + 1, false, !needsFlip, blockType)
+            createVertex(x, height + 1, z + 1, false, !needsFlip, blockType)
+
+            // indexes.push(v0.index, v1.index, v2.index, v0.index, v2.index, v3.index)
           } else {
-            indexes.push(v2.index, v1.index, v0.index, v2.index, v0.index, v3.index)
+            createVertex(x + 1, height + 1, z + 1, false, !needsFlip, blockType)
+            createVertex(x + 1, height, z + 1, false, !needsFlip, blockType)
+            createVertex(x, height, z + 1, false, !needsFlip, blockType)
+
+            createVertex(x + 1, height + 1, z + 1, false, !needsFlip, blockType)
+            createVertex(x, height, z + 1, false, !needsFlip, blockType)
+            createVertex(x, height + 1, z + 1, false, !needsFlip, blockType)
+            // indexes.push(v2.index, v1.index, v0.index, v2.index, v0.index, v3.index)
           }
         }
       }
     }
   }
 
-  const vertexesBuffer = new Uint8Array(vertexes.size * 4)
-  let i = 0
-  for (const vertex of vertexes.values()) {
-    vertexesBuffer[i++] = vertex.x
-    vertexesBuffer[i++] = vertex.y
-    vertexesBuffer[i++] = vertex.z
-    vertexesBuffer[i++] = vertex.ao
-  }
-  return {
-    vertexes: vertexesBuffer,
-    indexes: new Uint32Array(indexes),
-  }
+  return new Uint16Array(finalVertexesList_u16)
 }
 
 export default async (env: Environment, task: Task & { type: TaskType.Create2dChunkMesh }): Promise<TaskResult> => {
@@ -187,15 +183,14 @@ export default async (env: Environment, task: Task & { type: TaskType.Create2dCh
   env.mutexEnter()
   const recreationId = world.chunkModificationIds[task.chunkIndex]!
   const top = createVertexBufferForTopLayer(i, j, world)
-  const mesh = createMeshForSideLayers(i, j, world)
+  const sides = createVertexBufferForSideLayers(i, j, world)
   env.mutexExit()
 
   return {
     type: TaskType.Create2dChunkMesh,
     chunkIndex: task.chunkIndex,
     top,
-    sidesVertexes: mesh.vertexes,
-    sidesElements: mesh.indexes,
+    sides,
     recreationId,
   }
 }

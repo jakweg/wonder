@@ -2,8 +2,10 @@ import { TerrainHeightMultiplierUniform, WorldSizeInChunksUniform } from '@3d/co
 import { AttrType } from '@3d/gpu-resources/program'
 import { createFromSpec, Spec } from '@3d/gpu-resources/ultimate-gpu-pipeline'
 import { TextureSlot } from '@3d/texture-slot-counter'
-import { allBlocks, BlockId } from '@game/world/block'
+import { allBlocks } from '@game/world/block'
 import { GENERIC_CHUNK_SIZE } from '@game/world/size'
+
+export const BYTES_PER_VERTEX = 6
 
 const allBlockColors = /* @__PURE__ */ allBlocks
   .map(block => [
@@ -21,30 +23,11 @@ const vec3[4] vertexOffsetsY = vec3[4] (
   vec3(1.0, 0.0, 0.0)  // 3: NE
 );
 
-const ivec3[4] vertexOffsetsX = ivec3[4] (
-  ivec3(1, 0, 0), // 0: Bottom-Left
-  ivec3(1, 1, 0), // 1: Top-Left
-  ivec3(1, 1, 1), // 2: Top-Right
-  ivec3(1, 0, 1)  // 3: Bottom-Right
-);
-
-const ivec3[4] vertexOffsetsZ = ivec3[4] (
-  ivec3(0, 0, 1), // 0: Bottom-Left
-  ivec3(0, 1, 1), // 1: Top-Left
-  ivec3(1, 1, 1), // 2: Top-Right
-  ivec3(1, 0, 1)  // 3: Bottom-Right
-);
-
 const uint[6] quadIndexToVertexInQuadNumber = uint[6] (
   0U, 1U, 2U,
   0U, 2U, 3U
 );
-const uint[6] quadIndexToVertexInQuadNumberFlipped = uint[6] (
-  2U, 1U, 0U,
-  2U, 0U, 3U
-);
 const float normalizedAoValues[4] = float[4](1.0, 0.7, 0.5, 0.3);
-// const float normalizedAoValues[4] = float[4](1.0, 0.5, 0.5, 0.5);
 
 const vec3 colorsByBlockId[${allBlockColors.length}] = vec3[${allBlockColors.length}](${allBlockColors.join(',\n')});
 
@@ -100,7 +83,20 @@ entityId = (entityId << 14U) | (uint(pos.x) & posMask);
 entityId = (entityId << 14U) | (uint(pos.z) & posMask);
 ${a.entityId} = entityId;
 `
-const fragmentMain = (isForTops: boolean) => (a: any) =>
+
+const sidesVertexMain = (a: any) => `
+uint x = ${a.positionX} & ${0b111_1111_1111_1111}U;
+uint z = ${a.positionZ} & ${0b111_1111_1111_1111}U;
+uint ao = ((${a.positionX} >> 15U) << 1U) | ((${a.positionZ} >> 15U)) ;
+
+vec3 pos = vec3(x, float(${a.positionY}) * ${TerrainHeightMultiplierUniform}, z);
+
+${a.blockIdHere} = ${a.blockType};
+${a.voxelPosition} = vec3(x, ${a.positionY}, z);
+${a.aoValueForThisVertex} = normalizedAoValues[ao & 3U];
+`
+
+const fragmentMain = (a: any) =>
   `
 float distanceFromBorderX =  1.0 - abs(fract(${a.voxelPosition}.x) - 0.5) * 2.0;
 float distanceFromBorderY =  1.0 - abs(fract(${a.voxelPosition}.y) - 0.5) * 2.0;
@@ -119,7 +115,6 @@ float borderThickness = 0.07;
 float smallerDistance = min(distanceFactors.x,distanceFactors.y);
 distanceFromBorder = smoothstep(0.8, 1.0, min(borderThickness, smallerDistance) / borderThickness);
 
-// float ao = pow(${a.aoValueForThisVertex}, smallerDistance);
 float aoLight = pow(${a.aoValueForThisVertex}, 1.2);
 
 vec3 color = colorsByBlockId[${a.blockIdHere}];
@@ -127,23 +122,10 @@ vec3 finalColor = color * mix(0.4, 1.0, distanceFromBorder) * aoLight;
 uint entityId = ${a.entityId};
 `
 
-const sidesVertexMain = (a: any) => `
-
-
-vec3 pos = vec3(${a.positionX}, float(${a.positionY}) * ${TerrainHeightMultiplierUniform}, ${a.positionZ});
-
-${a.blockIdHere} = ${BlockId.Sand}U;
-
-// vec3 worldPosition = vec3(intPosition.x, float(intPosition.y) * ${TerrainHeightMultiplierUniform}, intPosition.z);
-${a.voxelPosition} = vec3(${a.positionX}, ${a.positionY}, ${a.positionZ});
-
-${a.aoValueForThisVertex} = normalizedAoValues[${a.ao} & 3U];
-`
-
 export const spec = {
   buffers: {
     visibleChunks: { dynamic: true },
-    sidesBuffer: { dynamic: false },
+    sidesBuffer: { dynamic: false, usesTicketBasedAllocations: true },
     sidesElements: { dynamic: false, element: true },
   },
   textures: {
@@ -158,10 +140,10 @@ export const spec = {
     },
   },
   programs: {
-    default: {
+    tops: {
       utilDeclarations,
       vertexMain,
-      fragmentMain: fragmentMain(true),
+      fragmentMain,
       vertexFinalPosition: 'pos',
       fragmentFinalColor: 'vec4(finalColor.rgb, 1.0)',
       fragmentEntityId: 'entityId',
@@ -186,11 +168,11 @@ export const spec = {
         },
       },
     },
-    instancedSides: {
+    sides: {
       utilDeclarations,
       vertexMain: sidesVertexMain,
       vertexFinalPosition: 'pos',
-      fragmentMain: fragmentMain(false),
+      fragmentMain,
       fragmentFinalColor: 'vec4(finalColor.rgb, 1.0)',
       fragmentEntityId: '0',
 
@@ -199,10 +181,10 @@ export const spec = {
         heightMap: {},
       },
       attributes: {
-        positionX: { count: 1, type: AttrType.UByte, bindTo: { sidesBuffer: true } },
+        positionX: { count: 1, type: AttrType.UShort, bindTo: { sidesBuffer: true } },
+        positionZ: { count: 1, type: AttrType.UShort, bindTo: { sidesBuffer: true } },
+        blockType: { count: 1, type: AttrType.UByte, bindTo: { sidesBuffer: true } },
         positionY: { count: 1, type: AttrType.UByte, bindTo: { sidesBuffer: true } },
-        positionZ: { count: 1, type: AttrType.UByte, bindTo: { sidesBuffer: true } },
-        ao: { count: 1, type: AttrType.UByte, bindTo: { sidesBuffer: true } },
       },
       drawElements: { sidesElements: true },
       uniforms: {},

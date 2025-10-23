@@ -1,6 +1,6 @@
+import { MAX_WORLD_HEIGHT } from '@game/world/size'
 import { makeNoise2D } from '@seampan/noise/2d'
 import { BiomeId } from '../biome'
-import { MAX_WORLD_HEIGHT } from '@game/world/size'
 
 export interface GeneratorSettings {
   blocksPerAxis: number
@@ -77,7 +77,7 @@ export const generateHeightMap = (settings: GeneratorSettings): Uint8Array => {
       const value5 = foo4(noise5(x * factor5, zFactored5))
 
       const height = (((foo2(value2) * 5 + value * 2) / 7) * 0.7 + 0.3) * value3 * value4 * value5
-      data[index] = (height * MAX_WORLD_HEIGHT) | 0
+      data[index] = (height * MAX_WORLD_HEIGHT * 0.3) | 0
       index++
     }
   }

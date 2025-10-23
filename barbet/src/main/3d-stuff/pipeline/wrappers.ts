@@ -41,6 +41,7 @@ interface RenderingState {
   depthBuffer: WebGLRenderbuffer
 
   fullscreenProgram: WebGLProgram
+  screenTextureUniform: WebGLUniformLocation
 }
 
 function createProgram(gl: WebGL2RenderingContext, vsSource: string, fsSource: string): WebGLProgram {
@@ -105,12 +106,15 @@ function initializeRendering(gl: WebGL2RenderingContext): RenderingState {
 
   gl.bindFramebuffer(gl.FRAMEBUFFER, null)
 
+  const screenTextureUniform = gl.getUniformLocation(fullscreenProgram, 'u_screenTexture')!
+
   return {
     resolveFbo,
     colorTexture,
     entityIdTexture,
     depthBuffer,
     fullscreenProgram,
+    screenTextureUniform,
   }
 }
 
@@ -141,8 +145,8 @@ function prepareForDraw(gl: WebGL2RenderingContext, state: RenderingState) {
   gl.clearBufferuiv(gl.COLOR, 1, [0, 0, 0, 0]) // Clear ID to 0
   gl.clear(gl.DEPTH_BUFFER_BIT)
   gl.enable(gl.DEPTH_TEST)
-  gl.disable(gl.CULL_FACE)
-  // gl.enable(gl.CULL_FACE)
+  // gl.disable(gl.CULL_FACE)
+  gl.enable(gl.CULL_FACE)
   gl.cullFace(gl.BACK)
 }
 
@@ -152,32 +156,8 @@ function finalizeDisplay(gl: WebGL2RenderingContext, state: RenderingState) {
   gl.useProgram(state.fullscreenProgram)
   gl.activeTexture(gl.TEXTURE0 + TextureSlot.DisplayFinalization)
   gl.bindTexture(gl.TEXTURE_2D, state.colorTexture)
-  gl.uniform1i(gl.getUniformLocation(state.fullscreenProgram, 'u_screenTexture'), TextureSlot.DisplayFinalization)
+  gl.uniform1i(state.screenTextureUniform, TextureSlot.DisplayFinalization)
   gl.drawArrays(gl.TRIANGLES, 0, 3)
-}
-
-function readEntityId(gl: WebGL2RenderingContext, state: RenderingState, mouseX: number, mouseY: number): number {
-  gl.bindFramebuffer(gl.FRAMEBUFFER, state.resolveFbo)
-  gl.readBuffer(gl.COLOR_ATTACHMENT1)
-
-  const pixelData = new Uint32Array(1)
-  const canvasHeight = gl.canvas.height
-
-  gl.readPixels(
-    mouseX,
-    canvasHeight - mouseY, // Flip Y coordinate
-    1,
-    1,
-    gl.RED_INTEGER,
-    gl.UNSIGNED_INT,
-    pixelData,
-  )
-
-  // Reset state
-  gl.readBuffer(gl.COLOR_ATTACHMENT0)
-  gl.bindFramebuffer(gl.FRAMEBUFFER, null)
-
-  return pixelData[0]!
 }
 
 export const newContextWrapper = async ({ element: canvas, frontendVariables }: UICanvas, camera: Camera) => {

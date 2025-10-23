@@ -1,4 +1,5 @@
 import { GlobalUniformBlockDeclaration, PrecisionHeader, VersionHeader } from '@3d/common-shader'
+import { createTicketAllocatedBuffer, TicketAllocatedBuffer } from '@3d/gpu-resources/ticket-allocated-buffer'
 import { TextureSlot } from '@3d/texture-slot-counter'
 import { DEBUG } from '@build'
 import TypedArray from '@seampan/typed-array'
@@ -99,7 +100,10 @@ export interface Spec<
   T extends string | number | symbol,
   AM extends Record<P, string | number | symbol> = any,
 > {
-  buffers?: Record<B, { dynamic: boolean; element?: true }>
+  buffers?: Record<
+    B,
+    { dynamic: boolean; element?: true; usesTicketBasedAllocations?: true; initialBytesCapacity?: number }
+  >
   programs?: Record<
     P,
     {
@@ -134,14 +138,15 @@ type AnySpec<
 > = Spec<keyof S['buffers'], keyof S['programs'], keyof S['programs'][any]['uniforms'], keyof S['textures']>
 
 type Implementation<S extends AnySpec<S>> = {
-  buffers: Record<
-    keyof S['buffers'],
-    {
-      setSize: (bytes: number) => void
-      setPartialContent: (value: TypedArray, destinationByteOffset: number) => void
-      setContent: (value: TypedArray) => void
-    }
-  >
+  buffers: {
+    [B in keyof S['buffers']]: S['buffers'][B] extends { usesTicketBasedAllocations: true }
+      ? TicketAllocatedBuffer
+      : {
+          setSize: (bytes: number) => void
+          setPartialContent: (value: TypedArray, destinationByteOffset: number) => void
+          setContent: (value: TypedArray) => void
+        }
+  }
   programs: {
     [P in keyof S['programs']]: {
       use: () => void
@@ -201,8 +206,8 @@ function bindAttributesToBuffers(gl: WebGL2RenderingContext, buffers: any, progr
         continue
       }
 
-      const [bufferName] = Object.keys(attributeSpec.bindTo)
-      if (!bufferName) {
+      const [bufferName, ...rest] = Object.keys(attributeSpec.bindTo)
+      if (!bufferName || rest.length) {
         throw new Error(`Attribute '${key}' has no buffer binding ('bindTo').`)
       }
 
@@ -366,8 +371,14 @@ function buildShaderSource(params: {
   } else {
     if (typeof params.finalVariable === 'string') parts.push('finalFinalColor = vec4(', params.finalVariable, ');\n}\n')
     else {
-      parts.push('finalFinalColor = gl_FrontFacing ? vec4(', params.finalVariable[0], ') : vec4(1,0,0,1);\n')
-      // parts.push('finalFinalColor = vec4(', params.finalVariable[0], ');\n')
+      // parts.push(
+      //   'finalFinalColor = gl_FrontFacing ? vec4(',
+      //   params.finalVariable[0],
+      //   ') : vec4(sin(',
+      //   RenderTimeUniform,
+      //   ' * 10.0) / 2.0 + 0.5,0,0,1);\n',
+      // )
+      parts.push('finalFinalColor = vec4(', params.finalVariable[0], ');\n')
       if (params.finalVariable[1]) {
         parts.push('finalFinalEntityId = uint(', params.finalVariable[1], ');\n')
       }
@@ -523,11 +534,17 @@ function createBuffers<S extends AnySpec<S>>(gl: WebGL2RenderingContext, s: S) {
       const target = description.element === true ? gl.ELEMENT_ARRAY_BUFFER : gl.ARRAY_BUFFER
       const usage = description.dynamic ? gl.DYNAMIC_DRAW : gl.STATIC_DRAW
 
-      return [
-        entry[0],
-        {
-          unsafePointer: glBuffer,
-          spec: description,
+      let bufferObject
+      if (description.usesTicketBasedAllocations)
+        bufferObject = createTicketAllocatedBuffer(gl, glBuffer, target, usage, description.initialBytesCapacity)
+      else {
+        if (description.initialBytesCapacity !== undefined) {
+          gl.bindBuffer(target, glBuffer)
+          gl.bufferData(target, description.initialBytesCapacity, usage)
+          gl.bindBuffer(target, null)
+        }
+
+        bufferObject = {
           setSize: (bytes: number) => {
             gl.bindBuffer(target, glBuffer)
             gl.bufferData(target, bytes, usage)
@@ -543,6 +560,15 @@ function createBuffers<S extends AnySpec<S>>(gl: WebGL2RenderingContext, s: S) {
             gl.bufferData(target, value, usage)
             gl.bindBuffer(target, null)
           },
+        }
+      }
+
+      return [
+        entry[0],
+        {
+          unsafePointer: glBuffer,
+          spec: description,
+          ...bufferObject,
         },
       ]
     }),

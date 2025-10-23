@@ -6,18 +6,19 @@ import { TaskType } from '@3d/pipeline/work-scheduler'
 import { GENERIC_CHUNK_SIZE } from '@game/world/size'
 import TypedArray from '@seampan/typed-array'
 import { createArray } from '@utils/array-utils'
-import { spec } from './shaders'
+import { BYTES_PER_VERTEX, spec } from './shaders'
 
 interface ChunkSnapshot {
   chunkId: number
   needsRebuild: boolean
   rebuildRequested: boolean
   lastChunkModificationId: number
-  lastChunkUploadId: number
-  buildResult: null | { top: TypedArray; sidesVertexes: TypedArray; sidesElements: TypedArray }
+  gpuBufferVertexOffset: number
+  modelVertexCount: number
+  buildResult: null | { top: TypedArray; sides: TypedArray }
 }
 
-export default (({ pipeline: { gl, visibility }, globals, game, scheduler }) => {
+export default (({ pipeline: { gl, visibility }, globals, game, scheduler, drawing }) => {
   const implementation = createFromSpec(gl, spec)
   implementation.textures.ambientOcclusion.setSize(
     GENERIC_CHUNK_SIZE * game.world.sizeLevel,
@@ -25,9 +26,12 @@ export default (({ pipeline: { gl, visibility }, globals, game, scheduler }) => 
   )
 
   // TODO improve:
-  globals.bindProgramRaw(gl, implementation.programs.default.getPointer())
+  globals.bindProgramRaw(gl, implementation.programs.tops.getPointer())
 
   let lastWorldUploadChangeId = -1
+
+  const cacheFirstsBuffer = new Int32Array(game.world.sizeLevel * game.world.sizeLevel)
+  const cacheCountsBuffer = new Int32Array(game.world.sizeLevel * game.world.sizeLevel)
 
   const metaData = game.metaData
   const blocksPerAxis = game.world.sizeLevel * GENERIC_CHUNK_SIZE
@@ -38,11 +42,12 @@ export default (({ pipeline: { gl, visibility }, globals, game, scheduler }) => 
   let lastWorldChangeId = -1
   const chunks = createArray<ChunkSnapshot>(game.world.chunkModificationIds.length, chunkId => ({
     chunkId,
-    lastChunkUploadId: -1,
     lastChunkModificationId: -1,
     needsRebuild: false,
     rebuildRequested: false,
     buildResult: null,
+    gpuBufferVertexOffset: -1,
+    modelVertexCount: 0,
   }))
   const chunksThatNeedUpload: ChunkSnapshot[] = []
 
@@ -88,9 +93,11 @@ export default (({ pipeline: { gl, visibility }, globals, game, scheduler }) => 
           GENERIC_CHUNK_SIZE,
           GENERIC_CHUNK_SIZE,
         )
-        // console.log('uploading chunk', chunk)
-        // chunk.lastChunkUploadId =
-        // TODO upload chunk mesh
+
+        const oldByteOffset = (chunk.gpuBufferVertexOffset * BYTES_PER_VERTEX) | 0
+        const newByteOffset = implementation.buffers.sidesBuffer.replaceContent(oldByteOffset, chunk.buildResult!.sides)
+        chunk.gpuBufferVertexOffset = (newByteOffset / BYTES_PER_VERTEX) | 0
+        chunk.modelVertexCount = (chunk.buildResult!.sides.byteLength / BYTES_PER_VERTEX) | 0
       }
       chunksThatNeedUpload.length = 0
     },
@@ -99,27 +106,24 @@ export default (({ pipeline: { gl, visibility }, globals, game, scheduler }) => 
       const visibleChunks = new Uint16Array(visibleChunksList)
       implementation.buffers.visibleChunks.setContent(visibleChunks)
 
-      implementation.programs.default.use()
-
+      implementation.programs.tops.use()
       const numberOfQuadsPerChunk = GENERIC_CHUNK_SIZE * GENERIC_CHUNK_SIZE
-      gl.drawArraysInstanced(gl.TRIANGLES, 0, 6 * numberOfQuadsPerChunk, visibleChunksList.length)
+      drawing.drawArraysInstanced(0, 6 * numberOfQuadsPerChunk, visibleChunksList.length)
+      implementation.programs.tops.finish()
 
-      implementation.programs.default.finish()
-
-      for (const chunkIndex of visibleChunks) {
+      implementation.programs.sides.use()
+      let drawChunksCount = 0
+      for (const chunkIndex of visibleChunksList) {
         const chunk = chunks[chunkIndex]!
-        if (!chunk.buildResult) continue
-        implementation.buffers.sidesElements.setContent(chunk.buildResult.sidesElements)
-        implementation.buffers.sidesBuffer.setContent(chunk.buildResult.sidesVertexes)
-
-        implementation.programs.instancedSides.use()
-
-        gl.drawElements(gl.TRIANGLES, chunk.buildResult.sidesElements.length, gl.UNSIGNED_INT, 0)
-        // gl.drawArraysInstanced(gl.TRIANGLES, 0, 6, chunk.buildResult.sides.length / 4)
-
-        implementation.programs.instancedSides.finish()
-        break
+        if (chunk.modelVertexCount === 0) continue
+        cacheFirstsBuffer[drawChunksCount] = chunk.gpuBufferVertexOffset
+        cacheCountsBuffer[drawChunksCount] = chunk.modelVertexCount
+        drawChunksCount++
       }
+
+      drawing.multiDrawArrays(cacheFirstsBuffer, cacheCountsBuffer, drawChunksCount)
+
+      implementation.programs.sides.finish()
 
       for (const chunkIndex of visibleChunks) {
         const chunk = chunks[chunkIndex]!
@@ -127,15 +131,13 @@ export default (({ pipeline: { gl, visibility }, globals, game, scheduler }) => 
           chunk.rebuildRequested = true
           scheduler.scheduleTask({ type: TaskType.Create2dChunkMesh, chunkIndex }).then(result => {
             if (result.type !== TaskType.Create2dChunkMesh) return
-            // console.log('got result for chunk creation', result)
             const chunk = chunks[result.chunkIndex]!
             chunk.rebuildRequested = false
             // if received mesh is out of date then mark the chunk that it still needs rebuild
             chunk.needsRebuild = chunk.lastChunkModificationId !== result.recreationId
             chunk.lastChunkModificationId = result.recreationId
             chunk.buildResult = {
-              sidesVertexes: result.sidesVertexes,
-              sidesElements: result.sidesElements,
+              sides: result.sides,
               top: result.top,
             }
             // even if it's out of date try to send it to GPU anyway

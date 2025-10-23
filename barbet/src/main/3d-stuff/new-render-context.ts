@@ -3,6 +3,7 @@ import { moveCameraByKeys } from '@3d/camera-keyboard-updater'
 import ChunkVisibilityIndex from '@3d/drawable/chunk-visibility'
 import { createElements } from '@3d/elements'
 import { makeShaderGlobals, ShaderGlobals } from '@3d/global-gpu-resources'
+import DrawingContext, { newDrawingContextFromGl } from '@3d/gpu-resources/drawing-context'
 import RenderHelperWorkScheduler, { newHelperScheduler } from '@3d/pipeline/work-scheduler'
 import { newAnimationFrameCaller, newContextWrapper, newFramesLimiter } from '@3d/pipeline/wrappers'
 import { createGameStateForRenderer, GameState } from '@game'
@@ -36,6 +37,7 @@ interface NewRenderingPipelineElementCreatorArgs {
   game: GameState
   globals: ShaderGlobals
   scheduler: RenderHelperWorkScheduler
+  drawing: DrawingContext
 }
 
 export type NewRenderingPipelineElementCreator = (
@@ -52,6 +54,7 @@ export const createRenderingSession = async (args: RenderingSessionStartArgs) =>
   const camera = Camera.newUsingBuffer(args.cameraBuffer)
   const context = await newContextWrapper(args.canvas, camera)
   const globals = makeShaderGlobals(context.rawContext)
+  const drawing = newDrawingContextFromGl(context.rawContext)
 
   scheduler.setWorld(decodedGame.world.pass())
 
@@ -65,6 +68,7 @@ export const createRenderingSession = async (args: RenderingSessionStartArgs) =>
     game: decodedGame,
     globals,
     scheduler,
+    drawing,
   })
 
   const performRender = async (elapsedSeconds: number, secondsSinceFirstRender: number) => {
