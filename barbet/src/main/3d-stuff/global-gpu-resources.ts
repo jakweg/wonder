@@ -1,4 +1,5 @@
 import { Camera } from '@3d/camera'
+import { createFromSpec, Spec } from '@3d/gpu-resources/ultimate-gpu-pipeline'
 import * as vec3 from '@matrix/vec3'
 
 export const makeShaderGlobals = (gl: WebGL2RenderingContext) => {
@@ -25,15 +26,24 @@ export const makeShaderGlobals = (gl: WebGL2RenderingContext) => {
   const light = [0.55, 1, -0.6, 0.4]
   vec3.normalize(light, light)
 
-  return {
-    bindProgramRaw(gl: WebGL2RenderingContext, programRaw: WebGLProgram): void {
-      const BINDING_POINT = 0
-      const blockIndex = gl.getUniformBlockIndex(programRaw, 'Globals')
+  const bindProgramRaw = (programRaw: WebGLProgram): void => {
+    const BINDING_POINT = 0
+    const blockIndex = gl.getUniformBlockIndex(programRaw, 'Globals')
 
-      gl.bindBuffer(gl.UNIFORM_BUFFER, rawUniformBuffer)
-      gl.uniformBlockBinding(programRaw, blockIndex, BINDING_POINT)
-      gl.bindBufferBase(gl.UNIFORM_BUFFER, BINDING_POINT, rawUniformBuffer)
-      gl.bindBuffer(gl.UNIFORM_BUFFER, null)
+    gl.bindBuffer(gl.UNIFORM_BUFFER, rawUniformBuffer)
+    gl.uniformBlockBinding(programRaw, blockIndex, BINDING_POINT)
+    gl.bindBufferBase(gl.UNIFORM_BUFFER, BINDING_POINT, rawUniformBuffer)
+    gl.bindBuffer(gl.UNIFORM_BUFFER, null)
+  }
+
+  return {
+    createGpuResources<S extends Spec<any, any, any, any, any>>(spec: S): ReturnType<typeof createFromSpec<S>> {
+      const implementation = createFromSpec(gl, spec)
+
+      for (const program of Object.values(implementation.programs)) {
+        bindProgramRaw((program as any).unsafePointer)
+      }
+      return implementation
     },
     update(
       camera: Camera,

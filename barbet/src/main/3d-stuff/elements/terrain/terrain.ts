@@ -1,6 +1,5 @@
 import { MetadataField } from '@game'
 
-import { createFromSpec } from '@3d/gpu-resources/ultimate-gpu-pipeline'
 import { NewRenderingPipelineElementCreator } from '@3d/new-render-context'
 import { TaskType } from '@3d/pipeline/work-scheduler'
 import { GENERIC_CHUNK_SIZE } from '@game/world/size'
@@ -19,14 +18,11 @@ interface ChunkSnapshot {
 }
 
 export default (({ pipeline: { gl, visibility }, globals, game, scheduler, drawing }) => {
-  const implementation = createFromSpec(gl, spec)
+  const implementation = globals.createGpuResources(spec)
   implementation.textures.ambientOcclusion.setSize(
     GENERIC_CHUNK_SIZE * game.world.sizeLevel,
     GENERIC_CHUNK_SIZE * game.world.sizeLevel,
   )
-
-  // TODO improve:
-  globals.bindProgramRaw(gl, implementation.programs.tops.getPointer())
 
   let lastWorldUploadChangeId = -1
 

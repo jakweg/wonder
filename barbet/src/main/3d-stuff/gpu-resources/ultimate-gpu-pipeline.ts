@@ -151,6 +151,7 @@ type Implementation<S extends AnySpec<S>> = {
     [P in keyof S['programs']]: {
       use: () => void
       finish: () => void
+      /** @deprecated Raw resources should not be exposed to outside */
       getPointer(): WebGLProgram
       unsafeUniformLocations: Record<
         S['programs'][P] extends { uniforms: infer U } ? keyof U : never,
@@ -501,6 +502,7 @@ function createPrograms<S extends AnySpec<S>>(gl: WebGL2RenderingContext, s: S, 
       return [
         entry[0],
         {
+          unsafePointer: program,
           attributes,
           uniforms,
           spec: description,

@@ -176,10 +176,6 @@ export const spec = {
       fragmentFinalColor: 'vec4(finalColor.rgb, 1.0)',
       fragmentEntityId: '0',
 
-      textureSamplers: {
-        terrainType: {},
-        heightMap: {},
-      },
       attributes: {
         positionX: { count: 1, type: AttrType.UShort, bindTo: { sidesBuffer: true } },
         positionZ: { count: 1, type: AttrType.UShort, bindTo: { sidesBuffer: true } },
