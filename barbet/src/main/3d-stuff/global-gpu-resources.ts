@@ -1,4 +1,5 @@
 import { Camera } from '@3d/camera'
+import { newDrawingContextFromGl } from '@3d/gpu-resources/drawing-context'
 import { createFromSpec, Spec } from '@3d/gpu-resources/ultimate-gpu-pipeline'
 import * as vec3 from '@matrix/vec3'
 
@@ -36,9 +37,11 @@ export const makeShaderGlobals = (gl: WebGL2RenderingContext) => {
     gl.bindBuffer(gl.UNIFORM_BUFFER, null)
   }
 
+  const drawing = newDrawingContextFromGl(gl)
+
   return {
     createGpuResources<S extends Spec<any, any, any, any, any>>(spec: S): ReturnType<typeof createFromSpec<S>> {
-      const implementation = createFromSpec(gl, spec)
+      const implementation = createFromSpec(gl, spec, drawing)
 
       for (const program of Object.values(implementation.programs)) {
         bindProgramRaw((program as any).unsafePointer)

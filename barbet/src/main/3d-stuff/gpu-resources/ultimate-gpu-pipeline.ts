@@ -1,4 +1,5 @@
 import { GlobalUniformBlockDeclaration, PrecisionHeader, VersionHeader } from '@3d/common-shader'
+import DrawingContext from '@3d/gpu-resources/drawing-context'
 import { createTicketAllocatedBuffer, TicketAllocatedBuffer } from '@3d/gpu-resources/ticket-allocated-buffer'
 import { TextureSlot } from '@3d/texture-slot-counter'
 import { DEBUG } from '@build'
@@ -151,13 +152,11 @@ type Implementation<S extends AnySpec<S>> = {
     [P in keyof S['programs']]: {
       use: () => void
       finish: () => void
-      /** @deprecated Raw resources should not be exposed to outside */
-      getPointer(): WebGLProgram
       unsafeUniformLocations: Record<
         S['programs'][P] extends { uniforms: infer U } ? keyof U : never,
         WebGLUniformLocation
       >
-    }
+    } & DrawingContext
   }
   textures: Record<
     keyof S['textures'],
@@ -176,10 +175,14 @@ type Implementation<S extends AnySpec<S>> = {
   >
 }
 
-export const createFromSpec = <S extends AnySpec<S>>(gl: WebGL2RenderingContext, s: S): Implementation<S> => {
+export const createFromSpec = <S extends AnySpec<S>>(
+  gl: WebGL2RenderingContext,
+  s: S,
+  globalDrawingContext: DrawingContext,
+): Implementation<S> => {
   const buffers = createBuffers(gl, s)
   const textures = createTextures(gl, s)
-  const programs = createPrograms(gl, s, textures, buffers)
+  const programs = createPrograms(gl, s, textures, buffers, globalDrawingContext)
 
   bindAttributesToBuffers(gl, buffers, programs)
 
@@ -422,7 +425,13 @@ const isCompilationOk = (
   return false
 }
 
-function createPrograms<S extends AnySpec<S>>(gl: WebGL2RenderingContext, s: S, textures: any, buffers: any) {
+function createPrograms<S extends AnySpec<S>>(
+  gl: WebGL2RenderingContext,
+  s: S,
+  textures: any,
+  buffers: any,
+  globalDrawingContext: DrawingContext,
+) {
   return Object.fromEntries(
     Object.entries(s.programs ?? {}).map(entry => {
       const description = entry[1]! as AnySpec<S>['programs'][keyof AnySpec<S>['programs']]
@@ -498,6 +507,21 @@ function createPrograms<S extends AnySpec<S>>(gl: WebGL2RenderingContext, s: S, 
       gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, elementsBuffer)
       gl.bindVertexArray(null)
 
+      const drawingObject = Object.fromEntries(
+        Object.entries(globalDrawingContext).map(([name, func]) => {
+          return [
+            name,
+            (...args: any[]) => {
+              gl.useProgram(program)
+              gl.bindVertexArray(vao)
+              func(...args)
+              gl.useProgram(null)
+              gl.bindVertexArray(null)
+            },
+          ]
+        }),
+      )
+
       let isUsing = false
       return [
         entry[0],
@@ -518,9 +542,7 @@ function createPrograms<S extends AnySpec<S>>(gl: WebGL2RenderingContext, s: S, 
             gl.bindVertexArray(null)
           },
           unsafeUniformLocations: uniforms,
-          getPointer() {
-            return program
-          },
+          ...drawingObject,
         },
       ]
     }),

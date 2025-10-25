@@ -17,7 +17,7 @@ interface ChunkSnapshot {
   buildResult: null | { top: TypedArray; sides: TypedArray }
 }
 
-export default (({ pipeline: { gl, visibility }, globals, game, scheduler, drawing }) => {
+export default (({ pipeline: { visibility }, globals, game, scheduler }) => {
   const implementation = globals.createGpuResources(spec)
   implementation.textures.ambientOcclusion.setSize(
     GENERIC_CHUNK_SIZE * game.world.sizeLevel,
@@ -26,6 +26,7 @@ export default (({ pipeline: { gl, visibility }, globals, game, scheduler, drawi
 
   let lastWorldUploadChangeId = -1
 
+  let cacheDrawChunksCount = 0
   const cacheFirstsBuffer = new Int32Array(game.world.sizeLevel * game.world.sizeLevel)
   const cacheCountsBuffer = new Int32Array(game.world.sizeLevel * game.world.sizeLevel)
 
@@ -46,6 +47,38 @@ export default (({ pipeline: { gl, visibility }, globals, game, scheduler, drawi
     modelVertexCount: 0,
   }))
   const chunksThatNeedUpload: ChunkSnapshot[] = []
+
+  function prepareCacheAndChunksBeforeDraw(visibleChunkIds: readonly number[]) {
+    let drawChunksCount = 0
+    for (const chunkIndex of visibleChunkIds) {
+      const chunk = chunks[chunkIndex]!
+
+      if (chunk.needsRebuild && !chunk.rebuildRequested) {
+        chunk.rebuildRequested = true
+        scheduler.scheduleTask({ type: TaskType.Create2dChunkMesh, chunkIndex }).then(result => {
+          if (result.type !== TaskType.Create2dChunkMesh) return
+          const chunk = chunks[result.chunkIndex]!
+          chunk.rebuildRequested = false
+          // if received mesh is out of date then mark the chunk that it still needs rebuild
+          chunk.needsRebuild = chunk.lastChunkModificationId !== result.recreationId
+          chunk.lastChunkModificationId = result.recreationId
+          chunk.buildResult = {
+            sides: result.sides,
+            top: result.top,
+          }
+          // even if it's out of date try to send it to GPU anyway
+          chunksThatNeedUpload.push(chunk)
+        })
+      }
+
+      if (chunk.modelVertexCount > 0) {
+        cacheFirstsBuffer[drawChunksCount] = chunk.gpuBufferVertexOffset
+        cacheCountsBuffer[drawChunksCount] = chunk.modelVertexCount
+        drawChunksCount++
+      }
+    }
+    cacheDrawChunksCount = drawChunksCount
+  }
 
   return {
     updateWorldSync() {
@@ -71,7 +104,7 @@ export default (({ pipeline: { gl, visibility }, globals, game, scheduler, drawi
         chunk.needsRebuild = true
       }
     },
-    uploadToGpu(pipeline) {
+    uploadToGpu() {
       const worldChangeId = metaData[MetadataField.LastWorldChange]!
       if (worldChangeId !== lastWorldUploadChangeId) {
         lastWorldUploadChangeId = worldChangeId
@@ -97,50 +130,17 @@ export default (({ pipeline: { gl, visibility }, globals, game, scheduler, drawi
       }
       chunksThatNeedUpload.length = 0
     },
-    draw(pipeline) {
+    draw() {
       const visibleChunksList = visibility.getVisibleChunkIds()
+      prepareCacheAndChunksBeforeDraw(visibleChunksList)
+
       const visibleChunks = new Uint16Array(visibleChunksList)
       implementation.buffers.visibleChunks.setContent(visibleChunks)
 
-      implementation.programs.tops.use()
       const numberOfQuadsPerChunk = GENERIC_CHUNK_SIZE * GENERIC_CHUNK_SIZE
-      drawing.drawArraysInstanced(0, 6 * numberOfQuadsPerChunk, visibleChunksList.length)
-      implementation.programs.tops.finish()
+      implementation.programs.tops.drawArraysInstanced(0, 6 * numberOfQuadsPerChunk, visibleChunksList.length)
 
-      implementation.programs.sides.use()
-      let drawChunksCount = 0
-      for (const chunkIndex of visibleChunksList) {
-        const chunk = chunks[chunkIndex]!
-        if (chunk.modelVertexCount === 0) continue
-        cacheFirstsBuffer[drawChunksCount] = chunk.gpuBufferVertexOffset
-        cacheCountsBuffer[drawChunksCount] = chunk.modelVertexCount
-        drawChunksCount++
-      }
-
-      drawing.multiDrawArrays(cacheFirstsBuffer, cacheCountsBuffer, drawChunksCount)
-
-      implementation.programs.sides.finish()
-
-      for (const chunkIndex of visibleChunks) {
-        const chunk = chunks[chunkIndex]!
-        if (chunk.needsRebuild && !chunk.rebuildRequested) {
-          chunk.rebuildRequested = true
-          scheduler.scheduleTask({ type: TaskType.Create2dChunkMesh, chunkIndex }).then(result => {
-            if (result.type !== TaskType.Create2dChunkMesh) return
-            const chunk = chunks[result.chunkIndex]!
-            chunk.rebuildRequested = false
-            // if received mesh is out of date then mark the chunk that it still needs rebuild
-            chunk.needsRebuild = chunk.lastChunkModificationId !== result.recreationId
-            chunk.lastChunkModificationId = result.recreationId
-            chunk.buildResult = {
-              sides: result.sides,
-              top: result.top,
-            }
-            // even if it's out of date try to send it to GPU anyway
-            chunksThatNeedUpload.push(chunk)
-          })
-        }
-      }
+      implementation.programs.sides.multiDrawArrays(cacheFirstsBuffer, cacheCountsBuffer, cacheDrawChunksCount)
     },
   }
 }) satisfies NewRenderingPipelineElementCreator
