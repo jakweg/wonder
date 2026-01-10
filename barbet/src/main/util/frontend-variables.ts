@@ -26,6 +26,3 @@ export const enum FrontendVariable {
   CanvasDrawingHeight,
   SIZE,
 }
-
-/** @deprecated This array is now always zero. It's not longer usage. */
-export let frontedVariables = new Int16Array(0)

@@ -13,9 +13,6 @@ const functions = bind({
   setNewSettings(settings) {
     CONFIG.update(settings)
   },
-  updateEntityContainer(data) {
-    // decodedGame!.entities.replaceBuffersFromReceived(data)
-  },
   terminateGame(args) {
     session?.terminate()
     if (args.terminateEverything) close()

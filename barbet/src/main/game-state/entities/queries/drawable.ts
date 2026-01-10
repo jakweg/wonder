@@ -1,4 +1,3 @@
-import ChunkVisibilityIndex from '@3d/drawable/chunk-visibility'
 import { DataOffsetDrawables, DataOffsetIds, DataOffsetPositions } from '../data-offsets'
 import EntityContainer from '../entity-container'
 

@@ -11,12 +11,11 @@ import { UpdateDebugDataCollector } from '@utils/worker/debug-stats/update'
 import { GroundItemsIndex } from '../ground-items-index'
 import { SurfaceResourcesIndex } from '../surface-resources/surface-resources-index'
 import { TileMetaDataIndex } from '../tile-meta-data-index'
-import { BlockId } from './block'
 import { fillEmptyWorldWithDefaultData } from './generator/example-world-creator'
-import { World } from './world'
 import { WorldSizeLevel } from './size'
+import { World } from './world'
 
-export const createEmptyGame = (mutex: GameMutex, stateBroadcastCallback: () => void): GameState => {
+export const createEmptyGame = (mutex: GameMutex): GameState => {
   const sizeLevel: WorldSizeLevel = CONFIG.get('debug/debug-world') ? WorldSizeLevel.SuperTiny : WorldSizeLevel.Default
 
   const world = World.createEmpty(sizeLevel)
@@ -35,7 +34,6 @@ export const createEmptyGame = (mutex: GameMutex, stateBroadcastCallback: () => 
     resources,
     random,
     mutex,
-    stateBroadcastCallback,
   )
 
   fillEmptyWorldWithDefaultData(gameState)
@@ -43,50 +41,34 @@ export const createEmptyGame = (mutex: GameMutex, stateBroadcastCallback: () => 
   return gameState
 }
 
-export const loadGameFromDb = async (
-  id: string,
-  mutex: GameMutex,
-  stateBroadcastCallback: () => void,
-): Promise<GameState> => {
+export const loadGameFromDb = async (id: string, mutex: GameMutex): Promise<GameState> => {
   const data = await readSaveData(id)
   setArrayEncodingType(ArrayEncodingType.Array)
   try {
-    return GameStateImplementation.deserialize(data, mutex, stateBroadcastCallback)
+    return GameStateImplementation.deserialize(data, mutex)
   } finally {
     setArrayEncodingType(ArrayEncodingType.None)
   }
 }
 
-export const loadGameFromString = async (
-  value: string,
-  mutex: GameMutex,
-  stateBroadcastCallback: () => void,
-): Promise<GameState> => {
+export const loadGameFromString = async (value: string, mutex: GameMutex): Promise<GameState> => {
   setArrayEncodingType(ArrayEncodingType.String)
   try {
     const object = JSON.parse(value)
-    return GameStateImplementation.deserialize(object, mutex, stateBroadcastCallback)
+    return GameStateImplementation.deserialize(object, mutex)
   } finally {
     setArrayEncodingType(ArrayEncodingType.None)
   }
 }
 
-export const loadGameFromFile = async (
-  file: File,
-  mutex: GameMutex,
-  stateBroadcastCallback: () => void,
-): Promise<GameState> => {
+export const loadGameFromFile = async (file: File, mutex: GameMutex): Promise<GameState> => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader()
     reader['onerror'] = reject
     reader['onload'] = () => {
       try {
         setArrayEncodingType(ArrayEncodingType.String)
-        const state = GameStateImplementation.deserialize(
-          JSON.parse(reader['result'] as string),
-          mutex,
-          stateBroadcastCallback,
-        )
+        const state = GameStateImplementation.deserialize(JSON.parse(reader['result'] as string), mutex)
         setArrayEncodingType(ArrayEncodingType.None)
         resolve(state)
       } catch (e) {
@@ -101,7 +83,6 @@ export const loadGameFromArgs = async (
   args: CreateGameArguments,
   stats: UpdateDebugDataCollector,
   mutex: GameMutex,
-  stateBroadcastCallback: () => any,
 ) => {
   const start = performance['now']()
   const saveName = args.saveName
@@ -109,10 +90,10 @@ export const loadGameFromArgs = async (
   const string = args.stringToRead
 
   try {
-    if (string !== undefined) return await loadGameFromString(string, mutex, stateBroadcastCallback)
-    else if (file !== undefined) return await loadGameFromFile(file, mutex, stateBroadcastCallback)
-    else if (saveName !== undefined) return await loadGameFromDb(saveName, mutex, stateBroadcastCallback)
-    else return createEmptyGame(mutex, stateBroadcastCallback)
+    if (string !== undefined) return await loadGameFromString(string, mutex)
+    else if (file !== undefined) return await loadGameFromFile(file, mutex)
+    else if (saveName !== undefined) return await loadGameFromDb(saveName, mutex)
+    else return createEmptyGame(mutex)
   } finally {
     const duration = performance['now']() - start
     stats.setLoadingGameTime(duration)

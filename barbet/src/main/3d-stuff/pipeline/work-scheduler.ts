@@ -9,30 +9,18 @@ import { sharedMemoryIsAvailable } from '@utils/shared-memory'
 import { dispatch, Environment } from './scheduler-tasks'
 
 export enum TaskType {
-  /** @deprecated */
-  CreateChunkMesh,
   Create2dChunkMesh,
 }
 
-export type Task =
-  | { type: TaskType.CreateChunkMesh; chunkIndex: number }
-  | { type: TaskType.Create2dChunkMesh; chunkIndex: number }
+export type Task = { type: TaskType.Create2dChunkMesh; chunkIndex: number }
 
-export type TaskResult =
-  | {
-      type: TaskType.CreateChunkMesh
-      chunkIndex: number
-      vertexBuffer: SharedArrayBuffer
-      indicesBuffer: SharedArrayBuffer
-      recreationId: number
-    }
-  | {
-      type: TaskType.Create2dChunkMesh
-      chunkIndex: number
-      top: TypedArray
-      recreationId: number
-      sides: TypedArray
-    }
+export type TaskResult = {
+  type: TaskType.Create2dChunkMesh
+  chunkIndex: number
+  top: TypedArray
+  recreationId: number
+  sides: TypedArray
+}
 
 export default interface RenderHelperWorkScheduler {
   setWorld(world: any): void

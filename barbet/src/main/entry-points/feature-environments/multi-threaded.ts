@@ -17,7 +17,6 @@ export const bind = async (args: ConnectArguments): Promise<EnvironmentConnectio
   setCameraBuffer(args.camera)
   args.settings.observeEverything(s => CONFIG.replace(s))
 
-  let entityContainerSnapshotForRenderer: any = null
   let listeners: GameListeners | null = null
   let updater: StateUpdater | null = null
 
@@ -38,10 +37,6 @@ export const bind = async (args: ConnectArguments): Promise<EnvironmentConnectio
     spawnNewUpdateWorker({
       markTickCompleted(data) {
         listeners?.onTickCompleted(data.tick)
-      },
-      updateEntityContainer(data) {
-        entityContainerSnapshotForRenderer = data
-        renderWorker.functions.updateEntityContainer(data)
       },
       updateDebugStatus(data) {
         if (firstTimeUpdateDebugStatus) updateDebugStats.replaceFromArray(data)
@@ -66,7 +61,7 @@ export const bind = async (args: ConnectArguments): Promise<EnvironmentConnectio
   const terminate = (args: TerminateGameArguments) => {
     renderWorker.functions.terminateGame(args)
     updateWorker.functions.terminateGame(args)
-    entityContainerSnapshotForRenderer = updater = listeners = null
+    updater = listeners = null
 
     if (args.terminateEverything) {
       setTimeout(() => updateWorker.terminate(), 10_000)

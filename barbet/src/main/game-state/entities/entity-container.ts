@@ -60,6 +60,7 @@ const createTypedArrayAllocator = (
   },
 })
 
+/** @deprecated */
 class EntityContainer {
   public buffersChanged: boolean = false
   public readonly ids

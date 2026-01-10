@@ -4,11 +4,8 @@ import { decodeArray, encodeArray } from '@utils/persistence/serializers'
 import { createNewBuffer } from '@utils/shared-memory'
 import { UpdateDebugDataCollector } from '@utils/worker/debug-stats/update'
 import { UpdatePhase } from '@utils/worker/debug-stats/update-phase'
-import { ActivityId, getActivityPerformFunction } from './activities'
 import { DelayedComputer, deserializeDelayedComputer } from './delayed-computer'
-import { DataOffsetWithActivity } from './entities/data-offsets'
 import EntityContainer from './entities/entity-container'
-import { findAllNotSuspendedEntitiesWithActivity } from './entities/queries/with-activity'
 import { GroundItemsIndex } from './ground-items-index'
 import { execute, ScheduledAction } from './scheduled-actions'
 import { ReceiveActionsQueue } from './scheduled-actions/queue'
@@ -64,7 +61,6 @@ export class GameStateImplementation implements GameState {
     public readonly surfaceResources: SurfaceResourcesIndex,
     public readonly seededRandom: SeededRandom,
     private readonly mutex: GameMutex,
-    private readonly stateBroadcastCallback: () => void,
   ) {}
 
   public get currentTick(): number {
@@ -80,7 +76,6 @@ export class GameStateImplementation implements GameState {
     surfaceResources: SurfaceResourcesIndex,
     seededRandom: SeededRandom,
     mutex: GameMutex,
-    stateBroadcastCallback: () => void,
   ): GameStateImplementation {
     return new GameStateImplementation(
       new Int32Array(createNewBuffer(MetadataField.SIZE * Int32Array.BYTES_PER_ELEMENT)),
@@ -92,15 +87,10 @@ export class GameStateImplementation implements GameState {
       surfaceResources,
       seededRandom,
       mutex,
-      stateBroadcastCallback,
     )
   }
 
-  public static deserialize(
-    object: any,
-    mutex: GameMutex,
-    stateBroadcastCallback: () => void,
-  ): GameStateImplementation {
+  public static deserialize(object: any, mutex: GameMutex): GameStateImplementation {
     const world = World.deserialize(object['world'])
     const tileMetaDataIndex = TileMetaDataIndex.deserialize(object['tileMetaDataIndex'], world.rawHeightData)
     return new GameStateImplementation(
@@ -113,7 +103,6 @@ export class GameStateImplementation implements GameState {
       SurfaceResourcesIndex.deserialize(object['surfaceResources']),
       SeededRandom.fromSeed(object['random']),
       mutex,
-      stateBroadcastCallback,
     )
   }
 
@@ -159,26 +148,11 @@ export class GameStateImplementation implements GameState {
     }
 
     stats.timeMeter.nowStart(UpdatePhase.EntityActivities)
-    const container = this.entities
-    const rawData = container.withActivities.rawData
-    findAllNotSuspendedEntitiesWithActivity(
-      this.entities,
-      entity => {
-        const currentActivity = rawData[entity.withActivity + DataOffsetWithActivity.CurrentActivityId]! as ActivityId
 
-        const perform = getActivityPerformFunction(currentActivity)
-        perform(this, entity)
-      },
-      currentTick,
-    )
+    // TODO: advance activities
 
     stats.timeMeter.nowStart(UpdatePhase.ActionsQueue)
     this.actionsQueue.executeAllUntilEmpty(this)
-
-    if (container.buffersChanged) {
-      container.buffersChanged = false
-      this.stateBroadcastCallback()
-    }
 
     this.mutex.exitUpdate()
     this.isRunningLogic = false

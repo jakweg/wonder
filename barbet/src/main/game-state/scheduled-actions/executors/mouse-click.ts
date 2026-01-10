@@ -1,4 +1,4 @@
-import { MousePickableType, MousePickerResultAny, MousePickerTerrainResult } from '@3d/pipeline/mouse-picker'
+// import { MousePickableType, MousePickerResultAny, MousePickerTerrainResult } from '@3d/pipeline/mouse-picker'
 import { GameState, MetadataField } from '@game'
 import { BuildingId } from '@game/buildings'
 import { BlockId } from '@game/world/block'
@@ -7,21 +7,21 @@ import { ScheduledActionId } from '../index'
 
 export type Action = {
   type: ScheduledActionId.MouseClick
-  pick: MousePickerResultAny
+  pick: any // MousePickerResultAny
   wasLeftClick: boolean
 }
 
 export const execute = (action: Action, game: GameState) => {
   const pick = action.pick
 
-  switch (pick.pickedType) {
-    case MousePickableType.Terrain:
-      handlePickBlock(pick, action.wasLeftClick, game)
-      break
-  }
+  // switch (pick.pickedType) {
+  //   case MousePickableType.Terrain:
+  //     handlePickBlock(pick, action.wasLeftClick, game)
+  //     break
+  // }
 }
 
-const handlePickBlock = (result: MousePickerTerrainResult, wasLeftClick: boolean, game: GameState) => {
+const handlePickBlock = (result: any /* MousePickerTerrainResult */, wasLeftClick: boolean, game: GameState) => {
   if (wasLeftClick)
     placeBuilding({
       game,

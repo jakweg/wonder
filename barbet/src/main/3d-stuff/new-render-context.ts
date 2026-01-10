@@ -1,5 +1,5 @@
 import { Camera } from '@3d/camera'
-import ChunkVisibilityIndex from '@3d/drawable/chunk-visibility'
+import ChunkVisibilityIndex from '@3d/chunk-visibility'
 import { createElements } from '@3d/elements'
 import { makeShaderGlobals, ShaderGlobals } from '@3d/global-gpu-resources'
 import RenderHelperWorkScheduler, { newHelperScheduler } from '@3d/pipeline/work-scheduler'
@@ -10,10 +10,11 @@ import { gameMutexFrom, isInWorker } from '@utils/game-mutex'
 import CONFIG from '@utils/persistence/observable-settings'
 import { DrawPhase } from '@utils/worker/debug-stats/draw-phase'
 import { FramesMeter } from '@utils/worker/debug-stats/frames-meter'
-import { FRAMES_COUNT_RENDERING } from '@utils/worker/debug-stats/graph-renderer'
 import { RenderDebugDataCollector } from '@utils/worker/debug-stats/render'
 import TimeMeter from '@utils/worker/debug-stats/time-meter'
 import { UICanvas } from 'src/main/ui/canvas-background'
+
+const FRAMES_COUNT_RENDERING = 240
 
 export type RenderingSessionStartArgs = {
   passedMutex: Parameters<typeof gameMutexFrom>[0]

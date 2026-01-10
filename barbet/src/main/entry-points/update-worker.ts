@@ -8,11 +8,12 @@ import { bind } from '@utils/new-worker/specs/update'
 import CONFIG from '@utils/persistence/observable-settings'
 import { observeField, reduce } from '@utils/state/subject'
 import { FramesMeter } from '@utils/worker/debug-stats/frames-meter'
-import { FRAMES_COUNT_UPDATE } from '@utils/worker/debug-stats/graph-renderer'
 import TimeMeter from '@utils/worker/debug-stats/time-meter'
 import { UpdateDebugDataCollector } from '@utils/worker/debug-stats/update'
 import { UpdatePhase } from '@utils/worker/debug-stats/update-phase'
 import TickQueue from '../network/tick-queue'
+
+const FRAMES_COUNT_UPDATE = 180
 
 const stats = new UpdateDebugDataCollector(new FramesMeter(FRAMES_COUNT_UPDATE), new TimeMeter(UpdatePhase.SIZE))
 let mutex: GameMutex | null = null
@@ -28,14 +29,7 @@ const functions = bind({
     if (args.terminateEverything) close()
   },
   async createGame(args) {
-    const stateBroadcastCallback = () => {
-      if (gameState === null) return
-      functions.updateEntityContainer({
-        buffers: gameState?.entities?.passBuffers(),
-      })
-    }
-
-    gameState = (await loadGameFromArgs(args, stats, mutex!, stateBroadcastCallback)) as GameStateImplementation
+    gameState = (await loadGameFromArgs(args, stats, mutex!)) as GameStateImplementation
 
     tickQueue = TickQueue.createEmpty()
 

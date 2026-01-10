@@ -14,8 +14,6 @@ const spec = {
     setGameMutex: {} as { argument: any },
     setNewSettings: {} as { argument: any },
     startRenderingSession: {} as { argument: RenderingSessionStartArgs; transferable: true },
-    /** @deprecated */
-    updateEntityContainer: {} as { argument: { buffers: SharedArrayBuffer[] } },
     terminateGame: {} as { argument: TerminateGameArguments },
     /** @deprecated not sure if should be deprecated */
     setUpdateTimesBuffer: {} as { argument: { buffer: SharedArrayBuffer } },
