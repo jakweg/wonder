@@ -1,8 +1,10 @@
+import { Environment as LoaderEnvironment } from '@entry/feature-environments/loader'
 import { World } from '@game/world/world'
 import TypedArray from '@seampan/typed-array'
 import { createArray } from '@utils/array-utils'
 import { GameMutex } from '@utils/game-mutex'
 import { spawnNew } from '@utils/new-worker/specs/render-helper'
+import CONFIG from '@utils/persistence/observable-settings'
 import { sharedMemoryIsAvailable } from '@utils/shared-memory'
 import { dispatch, Environment } from './scheduler-tasks'
 
@@ -117,5 +119,7 @@ class InstantImplementation implements RenderHelperWorkScheduler {
 }
 
 export const newHelperScheduler = (mutex: GameMutex): Promise<RenderHelperWorkScheduler> => {
-  return sharedMemoryIsAvailable ? WorkerImplementation.createNew(mutex) : Promise.resolve(new InstantImplementation())
+  return sharedMemoryIsAvailable && CONFIG.get('other/preferred-environment') !== LoaderEnvironment.SingleThreaded
+    ? WorkerImplementation.createNew(mutex)
+    : Promise.resolve(new InstantImplementation())
 }

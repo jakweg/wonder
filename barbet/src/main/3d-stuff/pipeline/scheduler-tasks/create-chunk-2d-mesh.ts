@@ -78,8 +78,8 @@ const createVertexBufferForSideLayers = (chunkX: number, chunkY: number, world: 
       : getAoByteForVerticalZPlainVertex(y, x, z, isPositive)
 
     finalVertexesList_u16.push(
-      (x & 0b111_1111_1111_1111) | (((ao >> 1) & 0b1) << 15),
-      (z & 0b111_1111_1111_1111) | (((ao >> 0) & 0b1) << 15),
+      (x & 0b11_1111_1111_1111) | (((ao >> 1) & 0b11) << 14),
+      (z & 0b11_1111_1111_1111) | ((((isPositive ? 0b01 : 0b00) | (isX ? 0b10 : 0b00)) & 0b11) << 14),
       ((y & 0xff) << 8) | (blockType & 0xff),
     )
   }
@@ -115,9 +115,9 @@ const createVertexBufferForSideLayers = (chunkX: number, chunkY: number, world: 
             createVertex(x + 1, height, z + 1, true, needsFlip, blockType)
             createVertex(x + 1, height, z, true, needsFlip, blockType)
 
+            createVertex(x + 1, height + 1, z, true, needsFlip, blockType)
             createVertex(x + 1, height + 1, z + 1, true, needsFlip, blockType)
             createVertex(x + 1, height, z, true, needsFlip, blockType)
-            createVertex(x + 1, height + 1, z, true, needsFlip, blockType)
             // indexes.push(v2.index, v1.index, v0.index, v2.index, v0.index, v3.index)
           } else {
             createVertex(x + 1, height, z, true, needsFlip, blockType)
@@ -148,13 +148,13 @@ const createVertexBufferForSideLayers = (chunkX: number, chunkY: number, world: 
 
         for (let height = less; height < more; ++height) {
           if (needsFlip) {
+            createVertex(x + 1, height + 1, z + 1, false, !needsFlip, blockType)
             createVertex(x, height, z + 1, false, !needsFlip, blockType)
             createVertex(x + 1, height, z + 1, false, !needsFlip, blockType)
-            createVertex(x + 1, height + 1, z + 1, false, !needsFlip, blockType)
 
+            createVertex(x, height + 1, z + 1, false, !needsFlip, blockType)
             createVertex(x, height, z + 1, false, !needsFlip, blockType)
             createVertex(x + 1, height + 1, z + 1, false, !needsFlip, blockType)
-            createVertex(x, height + 1, z + 1, false, !needsFlip, blockType)
 
             // indexes.push(v0.index, v1.index, v2.index, v0.index, v2.index, v3.index)
           } else {

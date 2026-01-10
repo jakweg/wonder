@@ -79,21 +79,28 @@ ${a.voxelPosition} = pos;
 pos.y *= ${TerrainHeightMultiplierUniform};
 uint posMask = 0xFFFFU >> 2U;
 uint entityId = 1U << 3U; // terrainBit + 3 bits for direction
-entityId = (entityId << 14U) | (uint(pos.x) & posMask);
-entityId = (entityId << 14U) | (uint(pos.z) & posMask);
+entityId = (entityId << 14U) | (uint(worldLocation.x) & posMask);
+entityId = (entityId << 14U) | (uint(worldLocation.y) & posMask);
 ${a.entityId} = entityId;
 `
 
 const sidesVertexMain = (a: any) => `
-uint x = ${a.positionX} & ${0b111_1111_1111_1111}U;
-uint z = ${a.positionZ} & ${0b111_1111_1111_1111}U;
-uint ao = ((${a.positionX} >> 15U) << 1U) | ((${a.positionZ} >> 15U)) ;
+uint x = ${a.positionX} & ${0b11_1111_1111_1111}U;
+uint z = ${a.positionZ} & ${0b11_1111_1111_1111}U;
+uint ao = (${a.positionX} >> 14U) & ${0b11}U;
+bool isPositive = ((${a.positionZ} >> 14U) & ${0b1}U) == 1U;
+bool isX = ((${a.positionZ} >> 15U) & ${0b1}U) == 1U;
 
 vec3 pos = vec3(x, float(${a.positionY}) * ${TerrainHeightMultiplierUniform}, z);
 
 ${a.blockIdHere} = ${a.blockType};
 ${a.voxelPosition} = vec3(x, ${a.positionY}, z);
 ${a.aoValueForThisVertex} = normalizedAoValues[ao & 3U];
+uint posMask = 0xFFFFU >> 2U;
+uint entityId = 1U << 3U; // terrainBit + 3 bits for direction
+entityId = (entityId << 14U) | (uint(x) + ((isX && isPositive) ? -1U : 0U) & posMask);
+entityId = (entityId << 14U) | (uint(z) & posMask);
+${a.entityId} = entityId;
 `
 
 const fragmentMain = (a: any) =>
@@ -174,7 +181,7 @@ export const spec = {
       vertexFinalPosition: 'pos',
       fragmentMain,
       fragmentFinalColor: 'vec4(finalColor.rgb, 1.0)',
-      fragmentEntityId: '0',
+      fragmentEntityId: 'entityId',
 
       attributes: {
         positionX: { count: 1, type: AttrType.UShort, bindTo: { sidesBuffer: true } },

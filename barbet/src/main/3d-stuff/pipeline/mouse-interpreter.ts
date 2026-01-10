@@ -16,7 +16,7 @@ interface CameraDelta {
 const DISTANCE_MIN = 2
 const PITCH_MIN = (-Math.PI / 2) * 0.8
 const PITCH_MAX = (-Math.PI / 2) * 0.2
-const CAMERA_MOVE_SPEED = 20
+const CAMERA_MOVE_SPEED = 15
 
 const updateDeltaByKeys = (delta: CameraDelta, frontendVariables: UICanvas['frontendVariables']) => {
   const keys = Atomics.load(frontendVariables as any as Int16Array, FrontendVariable.PressedKeys) as PressedKey
@@ -56,10 +56,10 @@ const calculateSolidBlockLookingAt = (
   const stepVector = vec3.create()
   vec3.sub(stepVector, target, eye)
   vec3.normalize(stepVector, stepVector)
-  vec3.scale(stepVector, stepVector, 0.1)
+  vec3.scale(stepVector, stepVector, 0.2)
 
-  // fail after 1000 failed tests - to avoid infinite loop when looking at the sky or void
-  for (let i = 1; i < 1000; ++i) {
+  // fail after 10000 failed tests - to avoid infinite loop when looking at the sky or void
+  for (let i = 1; i < 10000; ++i) {
     vec3.scale(temporaryVectorForBlockTest, stepVector, i)
     vec3.add(temporaryVectorForBlockTest, temporaryVectorForBlockTest, eye)
 
@@ -106,6 +106,15 @@ export const createNewMouseInterpreter = () => {
       terrainHeight: number,
       dt: number,
     ) {
+      // check if camera is in block for some reason
+      const terrainHeightAtCameraPosition =
+        (game.world.getHighestBlockHeight_orElse(camera.eye[0] | 0, camera.eye[2] | 0, -1) + 2) * terrainHeight
+      if (camera.eye[1] <= terrainHeightAtCameraPosition) {
+        const willBumpCameraBy = terrainHeightAtCameraPosition + terrainHeight * 5 - camera.eye[1]
+        camera.eye[1] += willBumpCameraBy
+        camera.target[1] += willBumpCameraBy
+      }
+
       const lookingAtPosition = calculateSolidBlockLookingAt(camera.target, camera.eye, game.world, terrainHeight)
       vec3.copy(camera.target, lookingAtPosition)
       distance = vec3.distance(camera.eye, camera.target)
