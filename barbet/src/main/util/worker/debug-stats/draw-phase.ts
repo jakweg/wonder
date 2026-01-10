@@ -1,10 +1,13 @@
 export const enum DrawPhase {
-  HandleInputs,
   LockMutex,
   UpdateWorld,
-  PrepareRender,
   GPUUpload,
   Draw,
+  /** @deprecated */
+  PrepareRender,
+  /** @deprecated */
+  HandleInputs,
+  /** @deprecated */
   DrawForMousePicker,
   SIZE,
 }

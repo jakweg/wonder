@@ -173,7 +173,7 @@ export const newContextWrapper = async ({ element: canvas, frontendVariables }: 
   return {
     rawContext: gl,
     getRendererName() {
-      return obtainRendererNameFromContext(gl) ?? ''
+      return obtainRendererNameFromContext(gl) ?? '<unknown renderer>'
     },
     prepareForDraw() {
       const width = frontendVariables[FrontendVariable.CanvasDrawingWidth]

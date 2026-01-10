@@ -3,6 +3,7 @@ import { FramesMeter } from './frames-meter'
 
 export const enum StatField {
   RendererName,
+  /** @deprecated */
   DrawCallsCount,
   VisibleChunksCount,
   DrawTimesBuffer,
@@ -29,6 +30,7 @@ export class RenderDebugDataCollector {
     this.rawStats.set(StatField.RendererName, name || '?')
   }
 
+  /** @deprecated */
   public incrementDrawCalls(value: number = 1) {
     this.rawStats.set(StatField.DrawCallsCount, this.rawStats.get(StatField.DrawCallsCount) + value)
   }

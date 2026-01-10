@@ -11,7 +11,11 @@ import { observeField, reduce } from '@utils/state/subject'
 import { FramesMeter } from '@utils/worker/debug-stats/frames-meter'
 import { newStatsObject as newRenderStatsObject } from '@utils/worker/debug-stats/render'
 import TimeMeter from '@utils/worker/debug-stats/time-meter'
-import { newStatsObject as newUpdateStatsObject, UpdateDebugDataCollector } from '@utils/worker/debug-stats/update'
+import {
+  newStatsObject as newUpdateStatsObject,
+  StatField,
+  UpdateDebugDataCollector,
+} from '@utils/worker/debug-stats/update'
 import { UpdatePhase } from '@utils/worker/debug-stats/update-phase'
 import TickQueue from '../../network/tick-queue'
 import { TickQueueAction } from '../../network/tick-queue-action'
@@ -75,19 +79,18 @@ export const bind = (args: ConnectArguments): EnvironmentConnection => {
         workerStartDelayDifference: 0,
       })
 
-      // TODO makes stats work again
-      // session.stats.updateTimesBuffer = updateDebugStats.get(StatField.UpdateTimes) as any as SharedArrayBuffer
-      // let timeoutId: ReturnType<typeof setTimeout>
-      // CONFIG.observe('debug/show-info', show => {
-      //   if (show) {
-      //     session!.stats.receiveUpdates(data => {
-      //       clearTimeout(timeoutId)
-      //       timeoutId = setTimeout(() => renderDebugStats.replaceFromArray(data), 0)
-      //     })
-      //   } else {
-      //     session!.stats.stopUpdates()
-      //   }
-      // })
+      session.stats.updateTimesBuffer = updateDebugStats.get(StatField.UpdateTimes) as any as SharedArrayBuffer
+      let timeoutId: ReturnType<typeof setTimeout>
+      CONFIG.observe('debug/show-info', show => {
+        if (show) {
+          session!.stats.receiveUpdates(data => {
+            clearTimeout(timeoutId)
+            timeoutId = setTimeout(() => renderDebugStats.replaceFromArray(data), 0)
+          })
+        } else {
+          session!.stats.stopUpdates()
+        }
+      })
 
       reduce(
         [observeField(CONFIG, 'debug/show-info'), observeField(CONFIG, 'debug/show-graphs')],

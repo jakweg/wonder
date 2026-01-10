@@ -22,6 +22,7 @@ const spec = {
     setPlayerIds: {} as { argument: { playerIds: string[] }; result: void },
   },
   from: {
+    /** @deprecated entities container should be static */
     updateEntityContainer: {} as { argument: { buffers: SharedArrayBuffer[] }; result: void },
     markTickCompleted: {} as { argument: { tick: number; updaterActions: UpdaterAction[] }; result: void },
     updateDebugStatus: {} as { argument: any; result: void },

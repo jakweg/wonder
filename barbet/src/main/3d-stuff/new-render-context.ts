@@ -8,6 +8,11 @@ import { createGameStateForRenderer, GameState } from '@game'
 import { createStateUpdaterControllerFromReceived, STANDARD_GAME_TICK_RATE } from '@game/state-updater'
 import { gameMutexFrom, isInWorker } from '@utils/game-mutex'
 import CONFIG from '@utils/persistence/observable-settings'
+import { DrawPhase } from '@utils/worker/debug-stats/draw-phase'
+import { FramesMeter } from '@utils/worker/debug-stats/frames-meter'
+import { FRAMES_COUNT_RENDERING } from '@utils/worker/debug-stats/graph-renderer'
+import { RenderDebugDataCollector } from '@utils/worker/debug-stats/render'
+import TimeMeter from '@utils/worker/debug-stats/time-meter'
 import { UICanvas } from 'src/main/ui/canvas-background'
 
 export type RenderingSessionStartArgs = {
@@ -42,6 +47,9 @@ export type NewRenderingPipelineElementCreator = (
 ) => NewRenderingPipelineElement
 
 export const createRenderingSession = async (args: RenderingSessionStartArgs) => {
+  const stats = new RenderDebugDataCollector(new FramesMeter(FRAMES_COUNT_RENDERING))
+  const timeMeter = new TimeMeter<DrawPhase>(DrawPhase.SIZE)
+  timeMeter.setEnabled(true)
   const mutex = gameMutexFrom(args.passedMutex)
   const decodedGame = createGameStateForRenderer(args.passedGame)
   const decodedUpdater = createStateUpdaterControllerFromReceived(args.updater)
@@ -52,6 +60,7 @@ export const createRenderingSession = async (args: RenderingSessionStartArgs) =>
   const context = await newContextWrapper(args.canvas, camera)
   const globals = makeShaderGlobals(context.rawContext)
 
+  stats.setRendererName(context.getRendererName())
   scheduler.setWorld(decodedGame.world.pass())
 
   const pipeline: NewRenderingPipeline = {
@@ -67,20 +76,25 @@ export const createRenderingSession = async (args: RenderingSessionStartArgs) =>
   })
 
   const performRender = async (elapsedSeconds: number, secondsSinceFirstRender: number) => {
-    const terrainHeight = CONFIG.get('rendering/terrain-height')
+    stats.frames.frameStarted()
+    timeMeter.beginSession(DrawPhase.LockMutex)
 
     if (isInWorker) mutex.enterForRender()
     else await mutex.enterForRenderAsync()
 
+    timeMeter.nowStart(DrawPhase.UpdateWorld)
+    const terrainHeight = CONFIG.get('rendering/terrain-height')
     context.updateCameraWithMutexHeld(elapsedSeconds, decodedGame, terrainHeight)
     camera.updateMatrix()
-    visibility.update(camera.combinedMatrix)
+    stats.setVisibleChunksCount(visibility.update(camera.combinedMatrix))
 
     const gameTickValue = gameTickEstimation()
 
     for (const e of pipelineElements) e.updateWorldSync()
 
     mutex.exitRender()
+
+    timeMeter.nowStart(DrawPhase.GPUUpload)
 
     globals.update(
       camera,
@@ -93,9 +107,13 @@ export const createRenderingSession = async (args: RenderingSessionStartArgs) =>
 
     for (const e of pipelineElements) e.uploadToGpu()
 
+    timeMeter.nowStart(DrawPhase.Draw)
     context.prepareForDraw()
     for (const e of pipelineElements) e.draw()
     context.finalizeDisplay(elapsedSeconds)
+
+    stats.updateWithTimeMeasurements(timeMeter.endSessionAndGetRawResults())
+    stats.frames.frameEnded(elapsedSeconds * 1000)
   }
 
   const limiter = newFramesLimiter(args.canvas.frontendVariables)
@@ -104,6 +122,7 @@ export const createRenderingSession = async (args: RenderingSessionStartArgs) =>
   caller?.start()
 
   return {
+    stats,
     terminate() {
       caller.stop()
       limiter.cleanUp()

@@ -84,6 +84,7 @@ export default class TimeMeter<T extends number> {
     )
   }
 
+  /** @deprecated decide if should be always enabled? */
   public setEnabled(enabled: boolean): void {
     this.enabled = enabled
   }
@@ -112,7 +113,7 @@ export default class TimeMeter<T extends number> {
       for (const m of this.measurements) m.endSession(now)
     }
 
-    return this.rawBuffer
+    return this.rawBuffer as any
   }
 
   public getRawBuffer(): SharedArrayBuffer {
