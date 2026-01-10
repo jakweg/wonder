@@ -1,5 +1,7 @@
 import { AsyncEntityIdReader } from '@3d/pipeline/async-entity-id-reader'
+import { createNewMouseInterpreter } from '@3d/pipeline/mouse-interpreter'
 import { TextureSlot } from '@3d/texture-slot-counter'
+import { GameState } from '@game'
 import { ScheduledActionId } from '@game/scheduled-actions'
 import { ActionsQueue } from '@game/scheduled-actions/queue'
 import { sleep } from '@seampan/util'
@@ -7,7 +9,6 @@ import { AdditionalFrontedFlags, frontedVariables, FrontendVariable } from '@uti
 import CONFIG, { observeSetting } from '@utils/persistence/observable-settings'
 import { UICanvas } from 'src/main/ui/canvas-background'
 import { Camera } from '../camera'
-import { moveCameraByKeys } from '../camera-keyboard-updater'
 import { MousePickerResultAny } from './mouse-picker'
 
 const obtainWebGl2ContextFromCanvas = (canvas: HTMLCanvasElement | OffscreenCanvas): WebGL2RenderingContext => {
@@ -164,6 +165,7 @@ export const newContextWrapper = async ({ element: canvas, frontendVariables }: 
   const gl = obtainWebGl2ContextFromCanvas(canvas)
   const state = initializeRendering(gl)
   const entityIdReader = new AsyncEntityIdReader(gl)
+  const mouse = createNewMouseInterpreter()
 
   let lastWidth = -1
   let lastHeight = -1
@@ -194,7 +196,10 @@ export const newContextWrapper = async ({ element: canvas, frontendVariables }: 
 
       prepareForDraw(gl, state)
     },
-    finalizeDisplay() {
+    updateCameraWithMutexHeld(dt: number, game: GameState, terrainHeight: number) {
+      mouse.updateCameraBasedOnInputsWithMutexHeld(camera, frontendVariables, game, terrainHeight, dt)
+    },
+    finalizeDisplay(dt: number) {
       if (entityIdReader.canRead()) {
         const x = frontendVariables[FrontendVariable.MouseCursorPositionX]
         const y = frontendVariables[FrontendVariable.MouseCursorPositionY]
@@ -361,7 +366,8 @@ export const newInputHandler = (actionsQueue: ActionsQueue) => {
 
   return {
     handleInputsBeforeDraw(camera: Camera, dt: number) {
-      moveCameraByKeys(camera, frontedVariables as any, dt)
+      console.log('would call moveCameraByKeys')
+      // moveCameraByKeys(camera, frontedVariables as any, dt)
     },
     shouldRenderForInputs(): InputHandlerRequestForRender | null {
       let eventHappened: EventHappened = EventHappened.None

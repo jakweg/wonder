@@ -67,7 +67,7 @@ const placeDebugFeatures = (game: GameStateImplementation) => {
   game.world.setHeight_unsafe(19, 19, 1)
   game.world.setHeight_unsafe(19, 20, 1)
 
-  for (const index of game.world.rawHeightData.keys()) game.world.rawHeightData[index]! += 5
+  for (const index of game.world.rawHeightData.keys()) game.world.rawHeightData[index]! += 3
 
   // spawnUnit({ game, x: 7, z: 8, color: 0/* UnitColorPaletteId.GreenOrange */, facing: Direction.PositiveXNegativeZ })
   spawnSlime({ game, x: 4, z: 11, facing: Direction.PositiveXNegativeZ })

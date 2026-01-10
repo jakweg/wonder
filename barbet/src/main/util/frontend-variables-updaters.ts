@@ -95,6 +95,12 @@ export const bindFrontendVariablesToCanvas = ({ element: canvas, frontendVariabl
       event['offsetY'] * window['devicePixelRatio'],
     )
   }
+
+  const wheelListener = (event: WheelEvent) => {
+    const rawDelta = event['deltaY']
+    Atomics.store(frontendVariables, FrontendVariable.MouseWheelDelta, rawDelta | 0)
+  }
+
   const leaveListener = () => {
     Atomics.and(
       frontendVariables,
@@ -103,6 +109,7 @@ export const bindFrontendVariablesToCanvas = ({ element: canvas, frontendVariabl
     )
     Atomics.store(frontendVariables, FrontendVariable.MouseCursorPositionX, -1)
     Atomics.store(frontendVariables, FrontendVariable.MouseCursorPositionY, -1)
+    Atomics.store(frontendVariables, FrontendVariable.MouseWheelDelta, 0)
   }
 
   const unobserveCanvasSize = observeCanvasSize(canvas, frontendVariables, leaveListener)
@@ -111,6 +118,7 @@ export const bindFrontendVariablesToCanvas = ({ element: canvas, frontendVariabl
   canvas.addEventListener('mousedown', defaultMouseListener)
   canvas.addEventListener('mouseup', defaultMouseListener)
   canvas.addEventListener('contextmenu', defaultMouseListener)
+  canvas.addEventListener('wheel', wheelListener, { 'passive': true })
   canvas.addEventListener('mouseleave', leaveListener, { 'passive': true })
 
   const unobserveKeyboard = KeyboardController.INSTANCE?.addFrontendVariableListener(frontendVariables)
@@ -121,6 +129,7 @@ export const bindFrontendVariablesToCanvas = ({ element: canvas, frontendVariabl
     canvas.removeEventListener('mousedown', defaultMouseListener)
     canvas.removeEventListener('mouseup', defaultMouseListener)
     canvas.removeEventListener('contextmenu', defaultMouseListener)
+    canvas.removeEventListener('wheel', wheelListener)
     canvas.removeEventListener('mouseleave', leaveListener)
   }
 }

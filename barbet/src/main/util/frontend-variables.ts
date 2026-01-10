@@ -19,6 +19,7 @@ export const enum FrontendVariable {
   PressedKeys,
   MouseCursorPositionX,
   MouseCursorPositionY,
+  MouseWheelDelta,
   AdditionalFlags,
   LastMouseClickId,
   CanvasDrawingWidth,

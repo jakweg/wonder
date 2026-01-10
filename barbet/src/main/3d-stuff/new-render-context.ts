@@ -1,5 +1,4 @@
 import { Camera } from '@3d/camera'
-import { moveCameraByKeys } from '@3d/camera-keyboard-updater'
 import ChunkVisibilityIndex from '@3d/drawable/chunk-visibility'
 import { createElements } from '@3d/elements'
 import { makeShaderGlobals, ShaderGlobals } from '@3d/global-gpu-resources'
@@ -68,13 +67,14 @@ export const createRenderingSession = async (args: RenderingSessionStartArgs) =>
   })
 
   const performRender = async (elapsedSeconds: number, secondsSinceFirstRender: number) => {
-    moveCameraByKeys(camera, args.canvas.frontendVariables, elapsedSeconds)
-    if (camera.updateMatrixIfNeeded()) {
-      visibility.update(camera.combinedMatrix)
-    }
+    const terrainHeight = CONFIG.get('rendering/terrain-height')
 
     if (isInWorker) mutex.enterForRender()
     else await mutex.enterForRenderAsync()
+
+    context.updateCameraWithMutexHeld(elapsedSeconds, decodedGame, terrainHeight)
+    camera.updateMatrix()
+    visibility.update(camera.combinedMatrix)
 
     const gameTickValue = gameTickEstimation()
 
@@ -87,7 +87,7 @@ export const createRenderingSession = async (args: RenderingSessionStartArgs) =>
       secondsSinceFirstRender,
       (secondsSinceFirstRender * decodedUpdater.getTickRate()) / STANDARD_GAME_TICK_RATE,
       gameTickValue,
-      CONFIG.get('rendering/terrain-height'),
+      terrainHeight,
       decodedGame.world.sizeLevel,
     )
 
@@ -95,7 +95,7 @@ export const createRenderingSession = async (args: RenderingSessionStartArgs) =>
 
     context.prepareForDraw()
     for (const e of pipelineElements) e.draw()
-    context.finalizeDisplay()
+    context.finalizeDisplay(elapsedSeconds)
   }
 
   const limiter = newFramesLimiter(args.canvas.frontendVariables)

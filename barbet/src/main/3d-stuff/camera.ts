@@ -2,20 +2,17 @@ import * as mat4 from '@matrix//mat4'
 import * as vec3 from '@matrix//vec3'
 import { createNewBuffer } from '@utils/shared-memory'
 
-const FOV = Math.PI / 2
+const FOV = Math.PI / 3
 export const universalUpVector = vec3.fromValues(0, 1, 0)
 
 export class Camera {
-  public lastEyeChangeId: number = 1
-  private lastRegisteredEyeChangeId: number = 0
-
   private constructor(
     private readonly internalBuffer: SharedArrayBuffer,
     public readonly perspectiveMatrix: mat4,
     public readonly viewMatrix: mat4,
     public readonly combinedMatrix: mat4,
-    public readonly eye: vec3,
-    public readonly center: vec3,
+    public readonly eye: [number, number, number],
+    public readonly target: [number, number, number],
   ) {}
 
   public static newUsingBuffer(buffer: SharedArrayBuffer): Camera {
@@ -46,25 +43,11 @@ export class Camera {
 
   public setAspectRatio(aspect: number): void {
     mat4.perspectiveNO(this.perspectiveMatrix, FOV, aspect, 0.1, 5000)
-    this.lastEyeChangeId++
   }
 
-  public updateMatrixIfNeeded(): boolean {
-    if (this.lastRegisteredEyeChangeId === this.lastEyeChangeId) return false
-    this.lastRegisteredEyeChangeId = this.lastEyeChangeId
-    mat4.lookAt(this.viewMatrix, this.eye, this.center, universalUpVector)
+  public updateMatrix(): void {
+    mat4.lookAt(this.viewMatrix, this.eye, this.target, universalUpVector)
     mat4.multiply(this.combinedMatrix, this.perspectiveMatrix, this.viewMatrix)
-    return true
-  }
-
-  public moveCamera(x: number, y: number, z: number): void {
-    this.eye[0] += x
-    this.eye[1] += y
-    this.eye[2] += z
-    this.center[0] += x
-    this.center[1] += y
-    this.center[2] += z
-    this.lastEyeChangeId++
   }
 }
 

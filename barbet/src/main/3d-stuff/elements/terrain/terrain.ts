@@ -1,7 +1,6 @@
-import { MetadataField } from '@game'
-
 import { NewRenderingPipelineElementCreator } from '@3d/new-render-context'
 import { TaskType } from '@3d/pipeline/work-scheduler'
+import { MetadataField } from '@game'
 import { GENERIC_CHUNK_SIZE } from '@game/world/size'
 import TypedArray from '@seampan/typed-array'
 import { createArray } from '@utils/array-utils'
