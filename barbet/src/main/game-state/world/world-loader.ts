@@ -2,6 +2,7 @@ import { CreateGameArguments } from '@entry/feature-environments/loader'
 import { GameState, GameStateImplementation } from '@game'
 import { createNewDelayedComputer } from '@game/delayed-computer'
 import EntityContainer from '@game/entities/entity-container'
+import { createEntityStore } from '@game/new-entities/store'
 import SeededRandom from '@seampan/seeded-random'
 import { GameMutex } from '@utils/game-mutex'
 import CONFIG from '@utils/persistence/observable-settings'
@@ -23,12 +24,14 @@ export const createEmptyGame = (mutex: GameMutex): GameState => {
   const tileMetaDataIndex = TileMetaDataIndex.createNew(world.sizeLevel, world.rawHeightData)
   const delayedComputer = createNewDelayedComputer()
   const entityContainer = EntityContainer.createEmptyContainer()
+  const entities2 = createEntityStore(false, null)
   const resources = SurfaceResourcesIndex.createNew(world.sizeLevel)
   const random = SeededRandom.fromSeed(1)
   const gameState = GameStateImplementation.createNew(
     world,
     itemsOnGround,
     entityContainer,
+    entities2,
     tileMetaDataIndex,
     delayedComputer,
     resources,

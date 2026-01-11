@@ -1,3 +1,4 @@
+import { createEntityStore, GeneralEntityStore } from '@game/new-entities/store'
 import SeededRandom from '@seampan/seeded-random'
 import { GameMutex, isInWorker } from '@utils/game-mutex'
 import { decodeArray, encodeArray } from '@utils/persistence/serializers'
@@ -18,6 +19,7 @@ export interface GameState {
   readonly world: World
   readonly groundItems: GroundItemsIndex
   readonly entities: EntityContainer
+  readonly entities2: GeneralEntityStore
   readonly tileMetaDataIndex: TileMetaDataIndex
   readonly surfaceResources: SurfaceResourcesIndex
 
@@ -37,6 +39,7 @@ export const createGameStateForRenderer = (object: any): GameState => {
     world: World.fromReceived(object.world),
     groundItems: GroundItemsIndex.fromReceived(object.groundItems),
     entities: EntityContainer.fromReceived(object.entities),
+    entities2: createEntityStore(true, { rendererReceived: object.entities2 }) as any,
     tileMetaDataIndex: TileMetaDataIndex.fromReceived(object.tileMetaDataIndex),
     surfaceResources: SurfaceResourcesIndex.fromReceived(object.surfaceResources),
 
@@ -56,6 +59,7 @@ export class GameStateImplementation implements GameState {
     public readonly world: World,
     public readonly groundItems: GroundItemsIndex,
     public readonly entities: EntityContainer,
+    public readonly entities2: GeneralEntityStore,
     public readonly tileMetaDataIndex: TileMetaDataIndex,
     public readonly delayedComputer: DelayedComputer,
     public readonly surfaceResources: SurfaceResourcesIndex,
@@ -71,6 +75,7 @@ export class GameStateImplementation implements GameState {
     world: World,
     groundItems: GroundItemsIndex,
     entities: EntityContainer,
+    entities2: GeneralEntityStore,
     tileMetaDataIndex: TileMetaDataIndex,
     delayedComputer: DelayedComputer,
     surfaceResources: SurfaceResourcesIndex,
@@ -82,6 +87,7 @@ export class GameStateImplementation implements GameState {
       world,
       groundItems,
       entities,
+      entities2,
       tileMetaDataIndex,
       delayedComputer,
       surfaceResources,
@@ -98,6 +104,7 @@ export class GameStateImplementation implements GameState {
       world,
       GroundItemsIndex.deserialize(object['groundItems']),
       EntityContainer.deserialize(object['entities']),
+      createEntityStore(false, { serializedState: object['entities2'] }),
       tileMetaDataIndex,
       deserializeDelayedComputer(object['delayedComputer']),
       SurfaceResourcesIndex.deserialize(object['surfaceResources']),
@@ -112,6 +119,7 @@ export class GameStateImplementation implements GameState {
       world: this.world.pass(),
       groundItems: this.groundItems.pass(),
       entities: this.entities.pass(),
+      entities2: this.entities2.pass(),
       surfaceResources: this.surfaceResources.pass(),
       tileMetaDataIndex: this.tileMetaDataIndex.pass(),
     }
@@ -124,6 +132,7 @@ export class GameStateImplementation implements GameState {
       'world': this.world.serialize(),
       'groundItems': this.groundItems.serialize(),
       'entities': this.entities.serialize(),
+      'entities2': this.entities2.serialize(),
       'surfaceResources': this.surfaceResources.serialize(),
       'tileMetaDataIndex': this.tileMetaDataIndex.serialize(),
       'delayedComputer': this.delayedComputer.serialize(),
