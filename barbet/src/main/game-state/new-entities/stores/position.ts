@@ -32,13 +32,19 @@ const PositionStoreCreator = (init: StoreInitializer) => {
 
         return { x, z }
       },
+      getPositionX(entityId: EntityId): number {
+        return positions.getValueForEntity_orElse(entityId, Fields.X, 0)
+      },
+      getPositionZ(entityId: EntityId): number {
+        return positions.getValueForEntity_orElse(entityId, Fields.Z, 0)
+      },
     },
     write: {
-      setPosition(entityId: EntityId, x: number, y: number): void {
+      setPosition(entityId: EntityId, x: number, z: number): void {
         if (!isEntitySupported(entityId)) return
 
         positions.setValueForEntity_orThrow(entityId, Fields.X, x)
-        positions.setValueForEntity_orThrow(entityId, Fields.Z, y)
+        positions.setValueForEntity_orThrow(entityId, Fields.Z, z)
       },
     },
     lifecycle: {

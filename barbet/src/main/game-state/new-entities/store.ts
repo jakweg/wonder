@@ -7,8 +7,10 @@ import {
   StoreDescription,
   StoreLifecycle,
 } from '@game/new-entities/stores/factory'
+import FacingStoreCreator from '@game/new-entities/stores/facing'
 import GenerationStoreCreator from '@game/new-entities/stores/generation'
 import PositionStoreCreator from '@game/new-entities/stores/position'
+import SlimeAnimationStoreCreator from '@game/new-entities/stores/slime-animation'
 import SlimeMetadataStoreCreator from '@game/new-entities/stores/slime-metadata'
 
 /** Invoked by GameState at the end of a tick to run removal callbacks and free slots */
@@ -117,6 +119,8 @@ export const createEntityStore = <RO extends boolean>(
     generationStore,
     PositionStoreCreator(init),
     SlimeMetadataStoreCreator(init),
+    FacingStoreCreator(init),
+    SlimeAnimationStoreCreator(init),
   )
 
   return Object.freeze({

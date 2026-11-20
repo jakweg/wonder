@@ -54,6 +54,48 @@ const getBytesSize = (type: AttrType) => {
       throw new Error()
   }
 }
+
+export interface InterleavedAttributesLayout<K extends string> {
+  readonly strideBytes: number
+  readonly byteOffsets: Readonly<Record<K, number>>
+  readonly elementOffsets: Readonly<Record<K, number>>
+}
+
+export const computeAttributesLayout = <
+  T extends Record<string, { readonly count: number; readonly type: AttrType }>,
+>(
+  attributes: T,
+): InterleavedAttributesLayout<Extract<keyof T, string>> => {
+  let byteOffset = 0
+  let maxComponentBytes = 1
+  const byteOffsets: Record<string, number> = {}
+  const elementOffsets: Record<string, number> = {}
+
+  for (const [key, attribute] of Object.entries(attributes)) {
+    const componentBytes = getBytesSize(attribute.type)
+    if (componentBytes > maxComponentBytes) {
+      maxComponentBytes = componentBytes
+    }
+    if (byteOffset % componentBytes !== 0) {
+      throw new Error(`Attribute '${key}' at byte offset ${byteOffset} is not aligned to ${componentBytes} bytes.`)
+    }
+    byteOffsets[key] = byteOffset
+    elementOffsets[key] = byteOffset / componentBytes
+    byteOffset += attribute.count * componentBytes
+  }
+
+  if (byteOffset % maxComponentBytes !== 0) {
+    throw new Error(
+      `Interleaved stride ${byteOffset} bytes is not aligned to max component size ${maxComponentBytes} bytes.`,
+    )
+  }
+
+  return {
+    strideBytes: byteOffset,
+    byteOffsets: byteOffsets as Readonly<Record<Extract<keyof T, string>, number>>,
+    elementOffsets: elementOffsets as Readonly<Record<Extract<keyof T, string>, number>>,
+  }
+}
 const getGlValue = (gl: WebGL2RenderingContext, type: AttrType) => {
   switch (type) {
     case AttrType.Float:
@@ -138,15 +180,30 @@ type AnySpec<
   S extends Spec<keyof S['buffers'], keyof S['programs'], keyof S['programs'][any]['uniforms'], keyof S['textures']>,
 > = Spec<keyof S['buffers'], keyof S['programs'], keyof S['programs'][any]['uniforms'], keyof S['textures']>
 
+type ProgramAttributes<Prog> = Prog extends { readonly attributes: infer A } ? A : {}
+
+type AttributesBoundToBuffer<S extends AnySpec<S>, B> = {
+  [P in keyof S['programs']]: {
+    [A in keyof ProgramAttributes<S['programs'][P]>]: ProgramAttributes<S['programs'][P]>[A] extends {
+      readonly bindTo: { readonly [K in B & PropertyKey]: true }
+    }
+      ? A
+      : never
+  }[keyof ProgramAttributes<S['programs'][P]>]
+}[keyof S['programs']] &
+  string
+
 type Implementation<S extends AnySpec<S>> = {
   buffers: {
-    [B in keyof S['buffers']]: S['buffers'][B] extends { usesTicketBasedAllocations: true }
+    [B in keyof S['buffers']]: (S['buffers'][B] extends { usesTicketBasedAllocations: true }
       ? TicketAllocatedBuffer
       : {
           setSize: (bytes: number) => void
           setPartialContent: (value: TypedArray, destinationByteOffset: number) => void
           setContent: (value: TypedArray) => void
-        }
+        }) & {
+      readonly layout: InterleavedAttributesLayout<AttributesBoundToBuffer<S, B>>
+    }
   }
   programs: {
     [P in keyof S['programs']]: {
@@ -199,14 +256,15 @@ function bindAttributesToBuffers(gl: WebGL2RenderingContext, buffers: any, progr
     const attributeLocations = (program as any).attributes as Record<any, number>
     const allAttributes = ((program as any).spec.attributes ?? {}) as Record<any, AttributeSpecification<any>>
 
-    const attributesByBuffer = new Map<string, { key: string; spec: AttributeSpecification<any> }[]>()
+    const attributesByBuffer = new Map<string, Record<string, AttributeSpecification<any>>>()
 
     for (const [key, attributeSpec] of Object.entries(allAttributes)) {
       const index = attributeLocations[key]
-      if (index === undefined) continue
 
       if (attributeSpec.disabled === true) {
-        gl.disableVertexAttribArray(index)
+        if (index !== undefined) {
+          gl.disableVertexAttribArray(index)
+        }
         continue
       }
 
@@ -215,55 +273,60 @@ function bindAttributesToBuffers(gl: WebGL2RenderingContext, buffers: any, progr
         throw new Error(`Attribute '${key}' has no buffer binding ('bindTo').`)
       }
 
-      if (!attributesByBuffer.has(bufferName)) {
-        attributesByBuffer.set(bufferName, [])
+      let group = attributesByBuffer.get(bufferName)
+      if (!group) {
+        group = {}
+        attributesByBuffer.set(bufferName, group)
       }
-      attributesByBuffer.get(bufferName)!.push({ key, spec: attributeSpec })
+      group[key] = attributeSpec
     }
 
-    for (const [bufferName, attributes] of attributesByBuffer.entries()) {
+    for (const [bufferName, group] of attributesByBuffer.entries()) {
       const foundBuffer = buffers[bufferName]
       if (!foundBuffer?.unsafePointer || foundBuffer?.spec?.element) {
         throw new Error(`Buffer '${bufferName}' not found, is an element buffer, or has no pointer.`)
       }
 
+      const layout = computeAttributesLayout(group)
+      if (foundBuffer.layout.strideBytes > 0 && foundBuffer.layout.strideBytes !== layout.strideBytes) {
+        throw new Error(
+          `Conflicting attribute layouts bound to buffer '${bufferName}' (${foundBuffer.layout.strideBytes} vs ${layout.strideBytes} bytes).`,
+        )
+      }
+      foundBuffer.layout = layout
+
       // Bind the buffer *once* for this group of attributes
       gl.bindBuffer(gl.ARRAY_BUFFER, foundBuffer.unsafePointer)
 
-      const isInterleaved = attributes.length > 1
+      const entries = Object.entries(group)
+      const isInterleaved = entries.length > 1
+      const glStride = isInterleaved ? layout.strideBytes : 0
 
-      const stride = isInterleaved
-        ? attributes.reduce((acc, { spec }) => acc + spec.count * getBytesSize(spec.type), 0)
-        : 0
+      // Set pointers for each active attribute in this buffer
+      for (const [key, attribute] of entries) {
+        const index = attributeLocations[key]
+        if (index === undefined) continue
 
-      let offset = 0
-
-      // 3. Set pointers for each attribute *in this buffer*
-      for (const { key, spec: attribute } of attributes) {
-        const index = attributeLocations[key]!
         const type = attribute.type
+        const offset = layout.byteOffsets[key]!
 
         gl.enableVertexAttribArray(index)
 
         if ((attribute as any).normalize === undefined ? isInt(type) : false) {
-          gl.vertexAttribIPointer(index, attribute.count, getGlValue(gl, type), stride, offset)
+          gl.vertexAttribIPointer(index, attribute.count, getGlValue(gl, type), glStride, offset)
         } else {
           gl.vertexAttribPointer(
             index,
             attribute.count,
             getGlValue(gl, type),
             (attribute as any).normalize ?? false,
-            stride,
+            glStride,
             offset,
           )
         }
 
         if (attribute.divisor !== undefined) {
           gl.vertexAttribDivisor(index, attribute.divisor)
-        }
-
-        if (isInterleaved) {
-          offset += attribute.count * getBytesSize(type)
         }
       }
     }
@@ -592,6 +655,7 @@ function createBuffers<S extends AnySpec<S>>(gl: WebGL2RenderingContext, s: S) {
         {
           unsafePointer: glBuffer,
           spec: description,
+          layout: { strideBytes: 0, byteOffsets: {}, elementOffsets: {} },
           ...bufferObject,
         },
       ]

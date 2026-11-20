@@ -36,6 +36,24 @@ const GenerationStoreCreator = (init: StoreInitializer) => {
 
         return readGeneration === generation
       },
+      fillAliveIdsOfKind(kind: EntityKind, out: Uint32Array): number {
+        if (!isKindSupported(kind)) return 0
+
+        const maxEntities = getMaxEntitiesByKind(kind)
+        const limit = Math.min(out.length, maxEntities)
+        let count = 0
+
+        for (let i = 0; i < maxEntities; ++i) {
+          const probeId = createAliveEntityIdFromRaw(kind, 0, i)
+          const generationId = generations.getValueForEntity_orThrow(probeId, Fields.AliveBitAndGenerationId)
+          if (!isEntityAliveByGenerationId(generationId)) continue
+
+          if (count >= limit) break
+          out[count++] = createAliveEntityIdFromRaw(kind, generationId, i) as unknown as number
+        }
+
+        return count
+      },
     },
     write: {},
     internal: {

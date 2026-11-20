@@ -48,3 +48,7 @@ export const entityId_extractGeneration = (id: EntityId): EntityKind => {
 export const entityId_extractIndex = (id: EntityId): number => {
   return ((id as any as number) >> 0) & 0xffff
 }
+
+export const entityId_asUint32 = (id: EntityId): number => {
+  return (id as any) | 0
+}
