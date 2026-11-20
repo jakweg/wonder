@@ -1,4 +1,3 @@
-import { MainRenderer } from '@3d/main-renderer'
 import lazy from '@seampan/lazy'
 import { MeshBuffer } from '.'
 
@@ -52,7 +51,7 @@ const elements = /* @__PURE__ */ lazy(
     ]),
 )
 
-export const createMeshBuffer = (renderer: MainRenderer): MeshBuffer => {
+export const createMeshBuffer = (renderer: any): MeshBuffer => {
   const array = renderer.createBuffer(true, false)
   array.setContent(vertexesInHand())
   const indices = renderer.createBuffer(false, false)

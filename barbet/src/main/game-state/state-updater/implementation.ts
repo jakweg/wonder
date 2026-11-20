@@ -18,9 +18,11 @@ const waitForStatusNotStopped = async (memory: Int32Array): Promise<Status> => {
     if (status !== Status.Stopped) return status
 
     await new Promise(resolve => setTimeout(resolve, 0))
-    await ((isInWorker ? Atomics.wait : waitAsyncCompat)(memory, BufferField.Status, status, 50) as unknown as any)[
-      'value'
-    ]
+    if (isInWorker) {
+      Atomics.wait(memory, BufferField.Status, status, 50)
+    } else {
+      await waitAsyncCompat(memory, BufferField.Status, status, 50)['value']
+    }
   }
 }
 
@@ -60,7 +62,7 @@ const performLogicUpdates = async (memory: Int32Array, func: (tick: number) => P
         console.error(e)
         console.error('Terminating state updater')
         Atomics.store(memory, BufferField.Status, Status.Terminated)
-        throw new Error(e)
+        throw new Error(String(e))
       }
     }
   }

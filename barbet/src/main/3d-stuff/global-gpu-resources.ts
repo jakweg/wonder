@@ -58,7 +58,7 @@ export const makeShaderGlobals = (gl: WebGL2RenderingContext) => {
     ) {
       const combinedMatrix = camera.combinedMatrix
       for (let i = 0; i < 16; ++i) {
-        jsBufferFloat32[i] = combinedMatrix[i]
+        jsBufferFloat32[i] = combinedMatrix[i]!
       }
 
       jsBufferFloat32[16 + 0] = secondsSinceFirstRender

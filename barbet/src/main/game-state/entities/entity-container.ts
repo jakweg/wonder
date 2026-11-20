@@ -130,7 +130,7 @@ class EntityContainer {
   public static deserialize(object: any): EntityContainer {
     let container: EntityContainer
     const buffers = (object['buffers'] as string[]).map(
-      b => decodeArray(b, true, Uint8Array)['buffer'] as SharedArrayBuffer,
+      b => decodeArray(b, true, Uint8Array)['buffer'] as unknown as SharedArrayBuffer,
     )
 
     const allocator = createTypedArrayAllocator(buffers, () => (container.buffersChanged = true))
@@ -182,6 +182,7 @@ class EntityContainer {
       withActivity: hasTrait(traits, EntityTrait.WithActivity) ? this.withActivities.pushBack() : NO_INDEX,
       activityMemory: hasTrait(traits, EntityTrait.WithActivity) ? this.activitiesMemory.pushBack() : NO_INDEX,
       interruptible: hasTrait(traits, EntityTrait.Interruptible) ? this.interruptibles.pushBack() : NO_INDEX,
+      buildingData: hasTrait(traits, EntityTrait.BuildingData) ? this.buildingData.pushBack() : NO_INDEX,
     }
 
     let index = record.idIndex

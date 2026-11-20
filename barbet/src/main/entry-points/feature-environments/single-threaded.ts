@@ -51,12 +51,11 @@ export const bind = (args: ConnectArguments): EnvironmentConnection => {
       if (game !== null) this.terminate({})
 
       const mutex = createNewGameMutex()
-      const stateBroadcastCallback = () => void 0 // ignore, since everything is locally anyway
       actionsQueue = SendActionsQueue.create(action => {
         gameListeners?.onInputCaused(action)
       })
 
-      game = (await loadGameFromArgs(gameArgs, stats, mutex, stateBroadcastCallback)) as GameStateImplementation
+      game = (await loadGameFromArgs(gameArgs, stats, mutex)) as GameStateImplementation
 
       tickQueue = TickQueue.createEmpty()
 

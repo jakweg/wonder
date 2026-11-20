@@ -21,7 +21,7 @@ export const setup = (game: GameStateImplementation, unit: EntityTraitIndicesRec
 
   withActivitiesMemory[unit.withActivity + DataOffsetWithActivity.CurrentActivityId] = ActivityId.Slime_SlowRotate
   const pointer =
-    (withActivitiesMemory[unit.withActivity + DataOffsetWithActivity.MemoryPointer] += MemoryField.SIZE) +
+    (withActivitiesMemory[unit.withActivity + DataOffsetWithActivity.MemoryPointer]! += MemoryField.SIZE) +
     unit.activityMemory
   withActivitiesMemory[unit.withActivity + DataOffsetWithActivity.SuspendUntilTick] = memory[
     pointer - MemoryField.FinishTick

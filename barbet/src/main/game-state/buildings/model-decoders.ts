@@ -1,3 +1,4 @@
+import { GENERIC_CHUNK_SIZE } from '@game/world/size'
 import { ArrayEncodingType, setArrayEncodingType } from '@utils/persistence/serializers'
 import { AIR_ID } from '../world/block'
 import { World } from '../world/world'
@@ -26,8 +27,8 @@ const countSolidBlocksInWorld = (world: World): number => {
 }
 
 const createInProgressStates = (world: World, statesCount: number, totalNonAirBlocks: number): Mesh[] => {
-  const chunkSize = Math.max(world.size.sizeX, world.size.sizeZ)
-  const meshes: Mesh[] = [{ indices: new Uint32Array(), vertexes: new Float32Array() }]
+  const chunkSize = world.sizeLevel * GENERIC_CHUNK_SIZE
+  const meshes: Mesh[] = [{ indices: new Uint16Array(), vertexes: new Uint8Array() }]
   const rawBlockData = new Uint8Array(world.rawBlockData.length)
   let nonAirBlocksCount = 0
   let nextStateOnNonAirBlocksCount = ((meshes.length / statesCount) * totalNonAirBlocks) | 0
@@ -39,7 +40,7 @@ const createInProgressStates = (world: World, statesCount: number, totalNonAirBl
         const mesh = buildChunkMesh(
           {
             rawBlockData,
-            size: world.size,
+            sizeLevel: world.sizeLevel,
           },
           0,
           0,
@@ -52,8 +53,8 @@ const createInProgressStates = (world: World, statesCount: number, totalNonAirBl
   }
 
   const offset = 0.001
-  let offsetX = -world.size.sizeX / 2 + offset + 0.5
-  let offsetZ = -world.size.sizeZ / 2 + offset + 0.5
+  const offsetX = -chunkSize / 2 + offset + 0.5
+  const offsetZ = -chunkSize / 2 + offset + 0.5
 
   for (const mesh of meshes) moveChunkMesh(mesh, offsetX, offset, offsetZ)
 

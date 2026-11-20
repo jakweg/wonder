@@ -19,7 +19,7 @@ export const newSubject = <T>(defaultValue: T | undefined = undefined): [Subject
 
 const constructSubject = <T>(params: {
   defaultValue: T | undefined
-  start: (set: Setter<T | undefined>) => void
+  start: (set: Setter<T>) => void
   end: () => void
 }): [Subject<T>, Setter<T>] => {
   let currentValue: T | undefined = params.defaultValue
@@ -43,7 +43,7 @@ const constructSubject = <T>(params: {
       const newCallback = callback['bind'](null)
       listeners.push(newCallback)
 
-      if (!ignoreFirstCall) newCallback(currentValue)
+      if (!ignoreFirstCall) newCallback(currentValue as T, undefined)
 
       return () => {
         const index = listeners.indexOf(newCallback)
@@ -103,7 +103,7 @@ export const intervalProducer = <T>(value: () => T, interval: number): Subject<T
   let cancelTimeout: any = null
   let cancelAnimation: any = null
 
-  const schedule = (set: Setter<T | undefined>) =>
+  const schedule = (set: Setter<T>) =>
     (cancelTimeout = setTimeout(() => {
       cancelAnimation = requestAnimationFrame(() => {
         set(() => value())

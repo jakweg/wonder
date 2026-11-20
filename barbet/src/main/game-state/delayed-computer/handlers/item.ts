@@ -1,9 +1,10 @@
 import { GameState } from '@game'
+import { GENERIC_CHUNK_SIZE } from '@game/world/size'
 import { ItemRequest, RequestType } from '../request'
 import { ItemResult } from '../result'
 
 export default (req: ItemRequest, game: GameState): ItemResult => {
-  const maxSizeToSearch = Math.max(game.world.size.sizeX, game.world.size.sizeZ)
+  const maxSizeToSearch = game.world.sizeLevel * GENERIC_CHUNK_SIZE
   for (let tilesDistance = 1; tilesDistance < maxSizeToSearch; tilesDistance++) {
     let x = req.searchCenterX - tilesDistance
     for (let z = req.searchCenterZ - tilesDistance, tz = req.searchCenterZ + tilesDistance; z <= tz; z++) {

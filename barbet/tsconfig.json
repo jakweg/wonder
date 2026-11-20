@@ -9,10 +9,11 @@
     "noImplicitReturns": true,
     "noImplicitOverride": true,
     "noUncheckedIndexedAccess": true,
-    "baseUrl": ".",
+    "skipLibCheck": true,
     "allowArbitraryExtensions": true,
     "lib": ["ES2024", "dom", "webworker"],
     "paths": {
+      "src/*": ["./src/*"],
       "@matrix/*": ["../seampan/matrix/*"],
       "@seampan/*": ["../seampan/*"],
       "@3d/*": ["./src/main/3d-stuff/*"],

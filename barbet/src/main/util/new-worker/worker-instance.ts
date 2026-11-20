@@ -182,9 +182,16 @@ export const bind = <T extends WorkerSpecification<any, any>>(
   globalThis['postMessage']({ now })
 
   const universalPostMessage = (msg: any) => globalThis['postMessage'](msg)
+  const universalPostMessageWithTransfer = (msg: any, transfer: Transferable[]) =>
+    (globalThis as unknown as DedicatedWorkerGlobalScope)['postMessage'](msg, transfer)
 
   const sCloned = { ...s, to: s.from, from: s.to }
-  const { senders, universalOnMessage } = setupSharedCommunications(sCloned, listeners, universalPostMessage)
+  const { senders, universalOnMessage } = setupSharedCommunications(
+    sCloned,
+    listeners,
+    universalPostMessage,
+    universalPostMessageWithTransfer,
+  )
 
   globalThis['addEventListener']('message', ({ data }) => {
     universalOnMessage(data as LowLevelMessage)

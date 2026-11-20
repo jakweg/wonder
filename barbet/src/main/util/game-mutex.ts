@@ -8,9 +8,14 @@ type WaitAsyncResult = {
 export const isInWorker = !location.reload
 const useNativeWaitAsync: boolean = !!Atomics.waitAsync && sharedMemoryIsAvailable
 
-export const waitAsyncCompat = useNativeWaitAsync
-  ? Atomics.waitAsync
-  : (typedArray: Int32Array, index: number, value: bigint, timeout?: number): WaitAsyncResult => {
+export const waitAsyncCompat: (
+  typedArray: Int32Array,
+  index: number,
+  value: number,
+  timeout?: number,
+) => WaitAsyncResult = useNativeWaitAsync
+  ? (Atomics.waitAsync as any)
+  : (typedArray: Int32Array, index: number, value: number, timeout?: number): WaitAsyncResult => {
       const load = Atomics.load(typedArray, index) as any
       if (load !== value) return { 'async': false, 'value': Promise.resolve('ok') }
 

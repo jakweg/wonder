@@ -14,6 +14,7 @@ export const enum EntityTrait {
   Drawable = Alive | Position | (1 << 1),
   Interruptible = Alive | (1 << 2),
   WithActivity = Alive | (1 << 3),
+  BuildingData = Alive | (1 << 4),
 }
 
 export const createEmptyTraitRecord = () => ({
@@ -25,15 +26,11 @@ export const createEmptyTraitRecord = () => ({
   withActivity: 0,
   activityMemory: 0,
   interruptible: 0,
+  buildingData: 0,
 })
 
-type ExcludedFields = 'idIndex' | 'thisId' | 'thisTraits'
-
 export type EntityTraitIndicesRecord<
-  Options extends Exclude<keyof ReturnType<typeof createEmptyTraitRecord>, ExcludedFields> = Exclude<
-    keyof ReturnType<typeof createEmptyTraitRecord>,
-    ExcludedFields
-  >,
+  Options extends keyof ReturnType<typeof createEmptyTraitRecord> = keyof ReturnType<typeof createEmptyTraitRecord>,
 > = Pick<ReturnType<typeof createEmptyTraitRecord>, Options>
 
 export const hasTrait = (all: EntityTrait, required: EntityTrait): boolean => (all & required) === required

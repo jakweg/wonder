@@ -1,5 +1,5 @@
-import * as mat4 from '@matrix//mat4'
-import * as vec3 from '@matrix//vec3'
+import * as mat4 from '@matrix/mat4'
+import * as vec3 from '@matrix/vec3'
 import { createNewBuffer } from '@utils/shared-memory'
 
 const FOV = Math.PI / 3
@@ -8,9 +8,9 @@ export const universalUpVector = vec3.fromValues(0, 1, 0)
 export class Camera {
   private constructor(
     private readonly internalBuffer: SharedArrayBuffer,
-    public readonly perspectiveMatrix: mat4,
-    public readonly viewMatrix: mat4,
-    public readonly combinedMatrix: mat4,
+    public readonly perspectiveMatrix: Float32Array,
+    public readonly viewMatrix: Float32Array,
+    public readonly combinedMatrix: Float32Array,
     public readonly eye: [number, number, number],
     public readonly target: [number, number, number],
   ) {}
@@ -19,8 +19,8 @@ export class Camera {
     const floatSize = Float32Array.BYTES_PER_ELEMENT
     const perspectiveMatrix = mat4.create()
 
-    const eye = new Float32Array(buffer, 0, 3)
-    const center = new Float32Array(buffer, floatSize * 3, 3)
+    const eye = new Float32Array(buffer, 0, 3) as unknown as [number, number, number]
+    const center = new Float32Array(buffer, floatSize * 3, 3) as unknown as [number, number, number]
 
     const viewMatrix = mat4.lookAt(mat4.create(), eye, center, universalUpVector)
 

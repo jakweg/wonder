@@ -48,7 +48,7 @@ abstract class TimeMeterGeneric<T extends number> {
 
 class TimeMeterSum<T extends number> extends TimeMeterGeneric<T> {
   protected handleSubmitTime(value: number, index: number): void {
-    this.measurements[index] += value
+    this.measurements[index]! += value
   }
 }
 

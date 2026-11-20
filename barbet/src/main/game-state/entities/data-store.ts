@@ -45,7 +45,7 @@ export class DataStore<T extends TypedArray> {
 
   public pushBack(): number {
     const oldRawData = this._rawData
-    const currentElementsCount = this.countsArray[0]++
+    const currentElementsCount = this.countsArray[0]!++
     const newElementIndex = currentElementsCount * this.singleSize
     const currentCapacity = oldRawData.length
     if (newElementIndex + this.singleSize >= currentCapacity) {

@@ -1,4 +1,3 @@
-import { Pose } from '@3d/model/entity/slime/pose'
 import { ModelId } from '@3d/model/model-id'
 import { GameStateImplementation } from '@game'
 import { ActivityId } from '..'

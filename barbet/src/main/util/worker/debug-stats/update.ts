@@ -12,8 +12,8 @@ export const enum StatField {
 export const newStatsObject = () =>
   IndexedState.fromObject({
     [StatField.GameLoadTimeMs]: 0,
-    [StatField.UpdateTimes]: new ArrayBuffer(0),
-    [StatField.UpdateTimesDetailed]: new ArrayBuffer(0),
+    [StatField.UpdateTimes]: new ArrayBuffer(0) as ArrayBufferLike,
+    [StatField.UpdateTimesDetailed]: new ArrayBuffer(0) as ArrayBufferLike,
   })
 
 export type UpdateDebugStats = ReturnType<typeof newStatsObject>

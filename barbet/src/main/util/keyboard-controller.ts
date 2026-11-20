@@ -89,7 +89,7 @@ class KeyboardController {
 
   public setKeyReleasedListener<T extends string>(code: T, callback: (key: T) => void) {
     if (this.keyReleasedListeners['has'](code)) throw new Error()
-    this.keyReleasedListeners['set'](code, callback)
+    this.keyReleasedListeners['set'](code, callback as (code: string) => void)
   }
 
   public addFrontendVariableListener(frontendVariables: Int16Array): () => void {

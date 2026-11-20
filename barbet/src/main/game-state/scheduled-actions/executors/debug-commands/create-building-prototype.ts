@@ -1,4 +1,5 @@
 import { GameState } from '@game'
+import { SERIALIZE } from '@game/game-state-piece'
 import { ArrayEncodingType, setArrayEncodingType } from '@utils/persistence/serializers'
 import { ScheduledActionId } from '../../'
 import { computeWorldBoundingBox } from '../../../world/bounding-box'
@@ -27,6 +28,6 @@ export const execute = (_: Action, game: GameState) => {
   )
 
   setArrayEncodingType(ArrayEncodingType.String)
-  console.log(newOne.serialize())
+  console.log(newOne[SERIALIZE]())
   setArrayEncodingType(ArrayEncodingType.None)
 }
