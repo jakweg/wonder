@@ -1,6 +1,7 @@
 import GameStatePiece, { PASS, SERIALIZE } from '@game/game-state-piece'
 import EntityId, { INVALID_ENTITY_ID } from '@game/new-entities/id'
 import { EntityKind } from '@game/new-entities/kind'
+import ActivityStoreCreator from '@game/new-entities/stores/activity'
 import {
   createEntitiesStorageFactory,
   FlattenedMergedStore,
@@ -123,6 +124,7 @@ export const createEntityStore = <RO extends boolean>(
     FacingStoreCreator(init),
     SlimeAnimationStoreCreator(init),
     InterruptionsStoreCreator(init),
+    ActivityStoreCreator(init),
   )
 
   return Object.freeze({

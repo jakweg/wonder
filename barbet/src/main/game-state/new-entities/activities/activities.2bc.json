@@ -1,0 +1,99 @@
+{
+  "$schema": "https://raw.githubusercontent.com/JakubekWeg/wonder/master/barbet/enum-schema.json",
+  "name": "ActivityId",
+  "output-file": "index",
+  "add-size": true,
+  "values": {
+    "None": {
+      "@perform": {
+        "from": "./defaults",
+        "property": "perform"
+      },
+      "@onInterruption": {
+        "from": "./defaults",
+        "property": "onInterruptionPassToParent"
+      },
+      "@onChildFinished": {
+        "from": "./defaults",
+        "property": "onChildFinished"
+      },
+      "@onAbort": {
+        "from": "./defaults",
+        "property": "onAbort"
+      }
+    },
+    "#Slime": {
+      "import-prefix": "./slime/",
+      "values": {
+        "Idle": {
+          "@perform": {
+            "from": "idle",
+            "property": "perform"
+          },
+          "@onInterruption": {
+            "from": "idle",
+            "property": "onInterruption"
+          },
+          "@onChildFinished": {
+            "from": "idle",
+            "property": "onChildFinished"
+          },
+          "@onAbort": {
+            "from": "idle",
+            "property": "onAbort"
+          }
+        },
+        "SlowRotate": {
+          "@perform": {
+            "from": "slow-rotate",
+            "property": "perform"
+          },
+          "@onInterruption": {
+            "from": "slow-rotate",
+            "property": "onInterruption"
+          },
+          "@onChildFinished": {
+            "from": "slow-rotate",
+            "property": "onChildFinished"
+          },
+          "@onAbort": {
+            "from": "slow-rotate",
+            "property": "onAbort"
+          }
+        },
+        "Jump": {
+          "@perform": {
+            "from": "jump",
+            "property": "perform"
+          },
+          "@onInterruption": {
+            "from": "jump",
+            "property": "onInterruption"
+          },
+          "@onChildFinished": {
+            "from": "jump",
+            "property": "onChildFinished"
+          },
+          "@onAbort": {
+            "from": "jump",
+            "property": "onAbort"
+          }
+        }
+      }
+    }
+  },
+  "getters": {
+    "getActivityPerform": {
+      "field": "@perform"
+    },
+    "getActivityOnInterruption": {
+      "field": "@onInterruption"
+    },
+    "getActivityOnChildFinished": {
+      "field": "@onChildFinished"
+    },
+    "getActivityOnAbort": {
+      "field": "@onAbort"
+    }
+  }
+}

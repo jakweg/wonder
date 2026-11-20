@@ -9,9 +9,9 @@ import { allBiomes } from '../biome'
 import { BlockId } from '../block'
 import { World } from '../world'
 import { generateBiomeMap, generateHeightMap } from './generator'
+import * as SlimeIdle from '@game/new-entities/activities/slime/idle'
 import { INVALID_ENTITY_ID } from '@game/new-entities/id'
 import { EntityKind } from '@game/new-entities/kind'
-import { SlimeAnimationId } from '@game/new-entities/stores/slime-animation'
 import { SlimeColorId } from '@game/new-entities/stores/slime-metadata'
 
 const placeDebugFeatures = (game: GameStateImplementation) => {
@@ -85,16 +85,12 @@ const placeDebugFeatures = (game: GameStateImplementation) => {
   groundItems.setItem(13, 14, ItemType.Box)
   groundItems.setItem(3, 3, ItemType.Box)
 
-
   const spawnDebugSlime = (options: {
     x: number
     z: number
     size?: number
     color?: SlimeColorId
-    previousFacing?: Direction
     facing?: Direction
-    animationId?: SlimeAnimationId
-    animationStartTick?: number
   }) => {
     const id = game.entities2.spawnNewEntitySync(EntityKind.Slime)
     if (id === INVALID_ENTITY_ID) {
@@ -108,49 +104,17 @@ const placeDebugFeatures = (game: GameStateImplementation) => {
     if (options.color !== undefined) {
       game.entities2.setSlimeColor(id, options.color)
     }
-    const targetFacing = options.facing ?? Direction.PositiveXNegativeZ
-    if (options.previousFacing !== undefined) {
-      game.entities2.snapFacing(id, options.previousFacing)
-      game.entities2.setFacing(id, targetFacing)
-    } else {
-      game.entities2.snapFacing(id, targetFacing)
-    }
-    if (options.animationId !== undefined) {
-      game.entities2.setSlimeAnimation(id, options.animationId, options.animationStartTick ?? game.currentTick)
-    }
+    game.entities2.snapFacing(id, options.facing ?? Direction.PositiveXNegativeZ)
+    SlimeIdle.push(game, id)
   }
 
-  // Test slimes within SuperTiny world bounds (0..31) covering sizes, colors, facings, terrain heights & animations
+  // Test slimes within SuperTiny world bounds (0..31) covering sizes, colors, facings & terrain heights
   spawnDebugSlime({ x: 6, z: 6, size: 2, color: SlimeColorId.Cyan, facing: Direction.PositiveXPositiveZ })
   spawnDebugSlime({ x: 8, z: 6, size: 1, color: SlimeColorId.Lime, facing: Direction.PositiveZ })
-  spawnDebugSlime({
-    x: 10,
-    z: 7,
-    size: 3,
-    color: SlimeColorId.Magenta,
-    previousFacing: Direction.NegativeX,
-    facing: Direction.PositiveXPositiveZ,
-    animationId: SlimeAnimationId.SlowRotate,
-  })
-  spawnDebugSlime({
-    x: 11,
-    z: 10,
-    size: 2,
-    color: SlimeColorId.Amber,
-    previousFacing: Direction.NegativeZ,
-    facing: Direction.PositiveX,
-    animationId: SlimeAnimationId.Jump,
-  })
+  spawnDebugSlime({ x: 10, z: 7, size: 3, color: SlimeColorId.Magenta, facing: Direction.PositiveXPositiveZ })
+  spawnDebugSlime({ x: 11, z: 10, size: 2, color: SlimeColorId.Amber, facing: Direction.PositiveX })
   spawnDebugSlime({ x: 12, z: 10, size: 4, color: SlimeColorId.Purple, facing: Direction.PositiveXNegativeZ })
-  spawnDebugSlime({
-    x: 14,
-    z: 8,
-    size: 2,
-    color: SlimeColorId.Emerald,
-    previousFacing: Direction.PositiveZ,
-    facing: Direction.NegativeXNegativeZ,
-    animationId: SlimeAnimationId.Jump,
-  })
+  spawnDebugSlime({ x: 14, z: 8, size: 2, color: SlimeColorId.Emerald, facing: Direction.NegativeXNegativeZ })
 }
 
 const placeMoreRealTerrain = (game: GameStateImplementation) => {

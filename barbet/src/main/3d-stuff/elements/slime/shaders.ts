@@ -5,7 +5,7 @@ import {
   TerrainHeightMultiplierUniform,
 } from '@3d/common-shader'
 import { AttrType, createFromSpec, Spec } from '@3d/gpu-resources/ultimate-gpu-pipeline'
-import { JUMP_DURATION, SLOW_ROTATE_DURATION } from '@game/activities/slime/constants'
+import { JUMP_DURATION, SLOW_ROTATE_DURATION } from '@game/new-entities/activities/slime/constants'
 import { SlimeAnimationId } from '@game/new-entities/stores/slime-animation'
 import { SLIME_COLOR_PALETTE } from '@game/new-entities/stores/slime-metadata'
 import { SlimeMeshPart } from './mesh'
@@ -58,7 +58,7 @@ float computeFacingAngle(uint packedFacing, uint animationId, float elapsedTicks
 
   float duration = ${IDLE_ROTATE_DURATION.toFixed(1)};
   if (animationId == ${SlimeAnimationId.SlowRotate}U) {
-    duration = ${SLOW_ROTATE_DURATION.toFixed(1)} - modelY * 5.0;
+    duration = ${(SLOW_ROTATE_DURATION - 2.5).toFixed(1)} - modelY * 5.0;
   } else if (animationId == ${SlimeAnimationId.Jump}U) {
     duration = ${JUMP_DURATION.toFixed(1)};
   }

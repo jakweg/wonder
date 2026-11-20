@@ -1,3 +1,4 @@
+import { createEntityActivitiesRunner } from '@game/new-entities/activities/runner'
 import { createEntityStore, GeneralEntityStore, INTERNAL_REMOVE_MARKED_ENTITIES } from '@game/new-entities/store'
 import SeededRandom from '@seampan/seeded-random'
 import { GameMutex, isInWorker } from '@utils/game-mutex'
@@ -54,6 +55,7 @@ export const createGameStateForRenderer = (object: any): GameState => {
 export class GameStateImplementation implements GameState {
   /** @deprecated remove it? it may be used in the future */
   public readonly actionsQueue: ReceiveActionsQueue = ReceiveActionsQueue.create()
+  private readonly activitiesRunner = createEntityActivitiesRunner()
   private isRunningLogic: boolean = false
 
   private constructor(
@@ -159,8 +161,7 @@ export class GameStateImplementation implements GameState {
     }
 
     stats.timeMeter.nowStart(UpdatePhase.EntityActivities)
-
-    // TODO: advance activities
+    this.activitiesRunner.advanceActivities(this)
 
     stats.timeMeter.nowStart(UpdatePhase.ActionsQueue)
     this.actionsQueue.executeAllUntilEmpty(this)
