@@ -18,10 +18,10 @@ export const enum SlimeColorId {
   Amber = 12,
   Yellow = 13,
   Coral = 14,
-  Pearl = 15,
+  Rainbow = 15,
 }
 
-/** 16-entry RGB palette (0xRRGGBB) indexed by SlimeColorId (0..15) */
+/** 16-entry RGB palette (0xRRGGBB) indexed by SlimeColorId (0..15); entry 15 is animated dynamically in shader */
 export const SLIME_COLOR_PALETTE: readonly number[] = [
   0x00ffff, // 0: Cyan
   0x4ade80, // 1: Lime
@@ -38,7 +38,7 @@ export const SLIME_COLOR_PALETTE: readonly number[] = [
   0xf59e0b, // 12: Amber
   0xfacc15, // 13: Yellow
   0xfb7185, // 14: Coral
-  0xe2e8f0, // 15: Pearl
+  0xffffff, // 15: Rainbow (computed dynamically from RenderTimeUniform)
 ]
 
 export const MIN_SLIME_SIZE = 0

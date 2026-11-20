@@ -122,6 +122,7 @@ const placeDebugFeatures = (game: GameStateImplementation) => {
   spawnSlimeEntity(game, { x: 11, z: 10, size: 6, color: SlimeColorId.Amber, facing: Direction.PositiveX })
   spawnSlimeEntity(game, { x: 12, z: 10, size: 15, color: SlimeColorId.Purple, facing: Direction.PositiveXNegativeZ })
   spawnSlimeEntity(game, { x: 14, z: 8, size: 12, color: SlimeColorId.Emerald, facing: Direction.NegativeXNegativeZ })
+  spawnSlimeEntity(game, { x: 7, z: 9, size: 10, color: SlimeColorId.Rainbow, facing: Direction.PositiveXPositiveZ })
 }
 
 const placeMoreRealTerrain = (game: GameStateImplementation) => {

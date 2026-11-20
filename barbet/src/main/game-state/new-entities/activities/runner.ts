@@ -12,23 +12,6 @@ import { getMaxEntitiesByKind } from '@game/new-entities/kind'
 import { ACTIVITY_SUPPORTED_KINDS, SLEEP_INDEFINITELY } from '@game/new-entities/stores/activity'
 
 /**
- * Aborts and pops unfinished activity frames strictly above `targetDepth`, invoking `onAbort` on each popped frame.
- */
-export const abortActivitiesAbove = (
-  game: GameStateImplementation,
-  entityId: EntityId,
-  targetDepth: number,
-): void => {
-  while (game.entities2.getActivityStackDepth(entityId) > targetDepth) {
-    const topFrame = game.entities2.getTopActivityFrame(entityId)
-    if (!topFrame) break
-
-    getActivityOnAbort(topFrame.activityId)(game, entityId, topFrame.state)
-    game.entities2.popActivityFrame(entityId)
-  }
-}
-
-/**
  * Delivers the entity's pending interruption to its top activity frame, unwinding via `onAbort` on `AbortAndPassToParent`.
  */
 export const deliverPendingInterruption = (

@@ -8,10 +8,16 @@ import {
 import { AttrType, createFromSpec, Spec } from '@3d/gpu-resources/ultimate-gpu-pipeline'
 import { JUMP_DURATION, SLOW_ROTATE_DURATION } from '@game/new-entities/activities/slime/constants'
 import { SlimeAnimationId } from '@game/new-entities/stores/slime-animation'
-import { SLIME_COLOR_PALETTE, SLIME_MIN_SCALE, SLIME_SCALE_STEP } from '@game/new-entities/stores/slime-metadata'
+import {
+  SLIME_COLOR_PALETTE,
+  SLIME_MIN_SCALE,
+  SLIME_SCALE_STEP,
+  SlimeColorId,
+} from '@game/new-entities/stores/slime-metadata'
 import { SlimeMeshPart } from './mesh'
 
 const IDLE_ROTATE_DURATION = 5
+const RAINBOW_CYCLES_PER_SECOND = 0.05
 
 const slimePaletteGlsl = /* @__PURE__ */ SLIME_COLOR_PALETTE.map(hex => {
   const red = (((hex >> 16) & 0xff) / 255).toFixed(6)
@@ -132,6 +138,20 @@ vec3 placeInWorld(vec3 model, uint size, uvec2 positionXZ, uint positionY) {
   );
   return model;
 }
+
+vec3 computeRainbowColor(uint entityId) {
+  float entityHueOffset = fract(float(entityId & 0xFFFFU) * 0.61803399);
+  float hue = fract(${RenderTimeUniform} * ${RAINBOW_CYCLES_PER_SECOND.toFixed(4)} + entityHueOffset);
+  vec3 spectrum = clamp(abs(mod(hue * 6.0 + vec3(0.0, 4.0, 2.0), 6.0) - 3.0) - 1.0, 0.0, 1.0);
+  return mix(vec3(1.0), spectrum, 0.82) * 0.96;
+}
+
+vec3 resolveSlimeBodyColor(uint colorId, uint entityId) {
+  if (colorId == ${SlimeColorId.Rainbow}U) {
+    return computeRainbowColor(entityId);
+  }
+  return slimePalette[colorId & 0xFU];
+}
 `
 
 const vertexMain = (a: any) => `
@@ -160,7 +180,7 @@ ${a.pickedEntityId} = ${a.entityId};
 
 const fragmentMain = (a: any) => `
 vec3 baseColor = (${a.facePartId} == ${SlimeMeshPart.Body}U)
-  ? slimePalette[${a.colorId} & 0xFU]
+  ? resolveSlimeBodyColor(${a.colorId}, ${a.pickedEntityId})
   : vec3(0.07);
 
 float light = clamp(dot(normalize(${a.worldNormal}), u_light.xyz), u_light.w, 1.0);
