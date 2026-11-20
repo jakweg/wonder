@@ -13,7 +13,7 @@ export const enum EntityKind {
 export const getMaxEntitiesByKind = (kind: EntityKind) => {
   switch (kind) {
     case EntityKind.Slime:
-      return 100
+      return 10_240
     default:
       return 0
   }

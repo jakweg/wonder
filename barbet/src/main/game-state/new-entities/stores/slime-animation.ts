@@ -6,6 +6,7 @@ export const enum SlimeAnimationId {
   Idle = 0,
   SlowRotate = 1,
   Jump = 2,
+  JumpForward = 3,
 }
 
 const enum IdFields {

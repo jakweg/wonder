@@ -1,7 +1,10 @@
 import { GameStateImplementation } from '@game'
+import * as SlimeIdle from '@game/new-entities/activities/slime/idle'
+import { INVALID_ENTITY_ID } from '@game/new-entities/id'
+import { EntityKind } from '@game/new-entities/kind'
+import { SLIME_COLOR_PALETTE, SLIME_SIZE_COUNT, SlimeColorId } from '@game/new-entities/stores/slime-metadata'
 import { GENERIC_CHUNK_SIZE } from '@game/world/size'
 import fillTerrain from '@sync-operations/fill-terrain'
-import spawnSlime from '@sync-operations/spawn-slime'
 import { Direction } from '@utils/direction'
 import CONFIG from '@utils/persistence/observable-settings'
 import { ItemType } from '../../items'
@@ -9,10 +12,37 @@ import { allBiomes } from '../biome'
 import { BlockId } from '../block'
 import { World } from '../world'
 import { generateBiomeMap, generateHeightMap } from './generator'
-import * as SlimeIdle from '@game/new-entities/activities/slime/idle'
-import { INVALID_ENTITY_ID } from '@game/new-entities/id'
-import { EntityKind } from '@game/new-entities/kind'
-import { SlimeColorId } from '@game/new-entities/stores/slime-metadata'
+
+const spawnSlimeEntity = (
+  game: GameStateImplementation,
+  options: {
+    x: number
+    z: number
+    size?: number
+    color?: SlimeColorId
+    facing?: Direction
+  },
+): void => {
+  const blocksPerAxis = game.world.sizeLevel * GENERIC_CHUNK_SIZE
+  if (options.x < 0 || options.x >= blocksPerAxis || options.z < 0 || options.z >= blocksPerAxis) return
+  if (game.world.getHighestBlockHeight_unsafe(options.x, options.z) <= 0) return
+
+  const entityId = game.entities2.spawnNewEntitySync(EntityKind.Slime)
+  if (entityId === INVALID_ENTITY_ID) {
+    console.warn('Unable to spawn entity')
+    return
+  }
+
+  game.entities2.setPosition(entityId, options.x, options.z)
+  if (options.size !== undefined) {
+    game.entities2.setSlimeSize(entityId, options.size)
+  }
+  if (options.color !== undefined) {
+    game.entities2.setSlimeColor(entityId, options.color)
+  }
+  game.entities2.snapFacing(entityId, options.facing ?? Direction.PositiveXNegativeZ)
+  SlimeIdle.push(game, entityId)
+}
 
 const placeDebugFeatures = (game: GameStateImplementation) => {
   const { world, groundItems } = game
@@ -74,9 +104,9 @@ const placeDebugFeatures = (game: GameStateImplementation) => {
   for (const index of game.world.rawHeightData.keys()) game.world.rawHeightData[index]! += 3
 
   // spawnUnit({ game, x: 7, z: 8, color: 0/* UnitColorPaletteId.GreenOrange */, facing: Direction.PositiveXNegativeZ })
-  spawnSlime({ game, x: 4, z: 11, facing: Direction.PositiveXNegativeZ })
-  spawnSlime({ game, x: 8, z: 8, facing: Direction.PositiveXNegativeZ })
-  spawnSlime({ game, x: 9, z: 4, facing: Direction.PositiveXNegativeZ })
+  spawnSlimeEntity(game, { x: 4, z: 11, size: 6, color: SlimeColorId.Cyan, facing: Direction.PositiveXNegativeZ })
+  spawnSlimeEntity(game, { x: 8, z: 8, size: 4, color: SlimeColorId.Sky, facing: Direction.PositiveXNegativeZ })
+  spawnSlimeEntity(game, { x: 9, z: 4, size: 8, color: SlimeColorId.Mint, facing: Direction.PositiveXNegativeZ })
 
   groundItems.setItem(17, 14, ItemType.Box)
   groundItems.setItem(16, 14, ItemType.Box)
@@ -85,51 +115,28 @@ const placeDebugFeatures = (game: GameStateImplementation) => {
   groundItems.setItem(13, 14, ItemType.Box)
   groundItems.setItem(3, 3, ItemType.Box)
 
-  const spawnDebugSlime = (options: {
-    x: number
-    z: number
-    size?: number
-    color?: SlimeColorId
-    facing?: Direction
-  }) => {
-    const id = game.entities2.spawnNewEntitySync(EntityKind.Slime)
-    if (id === INVALID_ENTITY_ID) {
-      console.warn('Unable to spawn entity')
-      return
-    }
-    game.entities2.setPosition(id, options.x, options.z)
-    if (options.size !== undefined) {
-      game.entities2.setSlimeSize(id, options.size)
-    }
-    if (options.color !== undefined) {
-      game.entities2.setSlimeColor(id, options.color)
-    }
-    game.entities2.snapFacing(id, options.facing ?? Direction.PositiveXNegativeZ)
-    SlimeIdle.push(game, id)
-  }
-
-  // Test slimes within SuperTiny world bounds (0..31) covering sizes, colors, facings & terrain heights
-  spawnDebugSlime({ x: 6, z: 6, size: 2, color: SlimeColorId.Cyan, facing: Direction.PositiveXPositiveZ })
-  spawnDebugSlime({ x: 8, z: 6, size: 1, color: SlimeColorId.Lime, facing: Direction.PositiveZ })
-  spawnDebugSlime({ x: 10, z: 7, size: 3, color: SlimeColorId.Magenta, facing: Direction.PositiveXPositiveZ })
-  spawnDebugSlime({ x: 11, z: 10, size: 2, color: SlimeColorId.Amber, facing: Direction.PositiveX })
-  spawnDebugSlime({ x: 12, z: 10, size: 4, color: SlimeColorId.Purple, facing: Direction.PositiveXNegativeZ })
-  spawnDebugSlime({ x: 14, z: 8, size: 2, color: SlimeColorId.Emerald, facing: Direction.NegativeXNegativeZ })
+  // Test slimes within SuperTiny world bounds (0..31) covering the 16-step size spectrum (0..15 -> 0.4x..1.9x)
+  spawnSlimeEntity(game, { x: 6, z: 6, size: 0, color: SlimeColorId.Cyan, facing: Direction.PositiveXPositiveZ })
+  spawnSlimeEntity(game, { x: 8, z: 6, size: 2, color: SlimeColorId.Lime, facing: Direction.PositiveZ })
+  spawnSlimeEntity(game, { x: 10, z: 7, size: 9, color: SlimeColorId.Magenta, facing: Direction.PositiveXPositiveZ })
+  spawnSlimeEntity(game, { x: 11, z: 10, size: 6, color: SlimeColorId.Amber, facing: Direction.PositiveX })
+  spawnSlimeEntity(game, { x: 12, z: 10, size: 15, color: SlimeColorId.Purple, facing: Direction.PositiveXNegativeZ })
+  spawnSlimeEntity(game, { x: 14, z: 8, size: 12, color: SlimeColorId.Emerald, facing: Direction.NegativeXNegativeZ })
 }
 
 const placeMoreRealTerrain = (game: GameStateImplementation) => {
   const groundItems = game.groundItems
   const blocksPerAxis = game.world.sizeLevel * GENERIC_CHUNK_SIZE
   generateRandomTerrain(game.world)
-  for (let i = 0; i < 10_000; i++)
-    spawnSlime({
-      game,
+  for (let i = 0; i < 10_000; i++) {
+    spawnSlimeEntity(game, {
       x: game.seededRandom.nextInt(blocksPerAxis),
       z: game.seededRandom.nextInt(blocksPerAxis),
-      facing: game.seededRandom.nextInt(8),
-      size: game.seededRandom.nextInt(3) + 1,
-      color: game.seededRandom.nextInt(0xffffff),
+      facing: game.seededRandom.nextInt(8) as Direction,
+      size: game.seededRandom.nextInt(SLIME_SIZE_COUNT),
+      color: game.seededRandom.nextInt(SLIME_COLOR_PALETTE.length) as SlimeColorId,
     })
+  }
   groundItems.setItem(67, 77, ItemType.Box)
 }
 

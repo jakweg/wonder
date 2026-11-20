@@ -41,8 +41,15 @@ export const SLIME_COLOR_PALETTE: readonly number[] = [
   0xe2e8f0, // 15: Pearl
 ]
 
-/** Default size = 2 corresponds to 1.0x world scale (size / 2.0) */
-export const DEFAULT_SLIME_SIZE = 2
+export const MIN_SLIME_SIZE = 0
+export const MAX_SLIME_SIZE = 15
+export const SLIME_SIZE_COUNT = MAX_SLIME_SIZE - MIN_SLIME_SIZE + 1
+
+export const SLIME_MIN_SCALE = 0.4
+export const SLIME_SCALE_STEP = 0.1
+
+/** Default size = 6 corresponds to 1.0x world scale (0.4 + 6 * 0.1) */
+export const DEFAULT_SLIME_SIZE = 6
 const DEFAULT_PACKED_SIZE_AND_COLOR = ((DEFAULT_SLIME_SIZE & 0b1111) << 4) | (SlimeColorId.Cyan & 0b1111)
 
 const enum Fields {
@@ -86,8 +93,9 @@ const SlimeMetadataStoreCreator = (init: StoreInitializer) => {
       setSlimeSize(entityId: EntityId, size: number): void {
         if (!isEntitySupported(entityId)) return
 
+        const clampedSize = Math.max(MIN_SLIME_SIZE, Math.min(MAX_SLIME_SIZE, size | 0))
         const current = slimeMetadata.getValueForEntity_orThrow(entityId, Fields.SizeAndColor)
-        const packed = (current & 0b0000_1111) | ((size & 0b1111) << 4)
+        const packed = (current & 0b0000_1111) | (clampedSize << 4)
         slimeMetadata.setValueForEntity_orThrow(entityId, Fields.SizeAndColor, packed)
       },
       setSlimeColor(entityId: EntityId, color: SlimeColorId): void {

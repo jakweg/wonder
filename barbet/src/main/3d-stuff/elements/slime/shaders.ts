@@ -2,12 +2,13 @@ import {
   GameTickUniform,
   PIConstantHeader,
   RenderTimeUniform,
+  RotationVectorsDeclaration,
   TerrainHeightMultiplierUniform,
 } from '@3d/common-shader'
 import { AttrType, createFromSpec, Spec } from '@3d/gpu-resources/ultimate-gpu-pipeline'
 import { JUMP_DURATION, SLOW_ROTATE_DURATION } from '@game/new-entities/activities/slime/constants'
 import { SlimeAnimationId } from '@game/new-entities/stores/slime-animation'
-import { SLIME_COLOR_PALETTE } from '@game/new-entities/stores/slime-metadata'
+import { SLIME_COLOR_PALETTE, SLIME_MIN_SCALE, SLIME_SCALE_STEP } from '@game/new-entities/stores/slime-metadata'
 import { SlimeMeshPart } from './mesh'
 
 const IDLE_ROTATE_DURATION = 5
@@ -21,6 +22,7 @@ const slimePaletteGlsl = /* @__PURE__ */ SLIME_COLOR_PALETTE.map(hex => {
 
 const utilDeclarations = () => `
 ${PIConstantHeader()}
+${RotationVectorsDeclaration()}
 
 const vec3 slimePalette[${slimePaletteGlsl.length}] = vec3[${slimePaletteGlsl.length}](
   ${slimePaletteGlsl.join(',\n  ')}
@@ -59,7 +61,7 @@ float computeFacingAngle(uint packedFacing, uint animationId, float elapsedTicks
   float duration = ${IDLE_ROTATE_DURATION.toFixed(1)};
   if (animationId == ${SlimeAnimationId.SlowRotate}U) {
     duration = ${(SLOW_ROTATE_DURATION - 2.5).toFixed(1)} - modelY * 5.0;
-  } else if (animationId == ${SlimeAnimationId.Jump}U) {
+  } else if (animationId == ${SlimeAnimationId.Jump}U || animationId == ${SlimeAnimationId.JumpForward}U) {
     duration = ${JUMP_DURATION.toFixed(1)};
   }
 
@@ -82,13 +84,21 @@ vec3 applyIdleMotion(vec3 model, float phase) {
   return rotateAroundY(lookAngle) * model;
 }
 
+bool isJumpAnimation(uint animationId) {
+  return animationId == ${SlimeAnimationId.Jump}U || animationId == ${SlimeAnimationId.JumpForward}U;
+}
+
+float computeJumpPhase(float progress) {
+  return clamp((progress - 0.5) * 1.6 + 0.5, 0.0, 1.0);
+}
+
 vec3 applyJumpMotion(vec3 model, uint animationId, float elapsedTicks) {
-  if (animationId != ${SlimeAnimationId.Jump}U) {
+  if (!isJumpAnimation(animationId)) {
     return model;
   }
 
   float progress = clamp(elapsedTicks / ${JUMP_DURATION.toFixed(1)}, 0.0, 1.0);
-  float jumpPhase = clamp((progress - 0.5) * 1.6 + 0.5, 0.0, 1.0);
+  float jumpPhase = computeJumpPhase(progress);
   float jumpArc = jumpPhase * (1.0 - jumpPhase);
 
   float p = progress;
@@ -98,8 +108,19 @@ vec3 applyJumpMotion(vec3 model, uint animationId, float elapsedTicks) {
   return model;
 }
 
+vec3 computeForwardJumpWorldOffset(uint animationId, uint packedFacing, float elapsedTicks) {
+  if (animationId != ${SlimeAnimationId.JumpForward}U) {
+    return vec3(0.0);
+  }
+
+  float progress = clamp(elapsedTicks / ${JUMP_DURATION.toFixed(1)}, 0.0, 1.0);
+  float jumpPhase = computeJumpPhase(progress);
+  uint currentDirection = packedFacing & 7U;
+  return rotationVectors[currentDirection] * (jumpPhase - 1.0);
+}
+
 vec3 placeInWorld(vec3 model, uint size, uvec2 positionXZ, uint positionY) {
-  float scale = float(size) / 2.0;
+  float scale = ${SLIME_MIN_SCALE.toFixed(2)} + float(size) * ${SLIME_SCALE_STEP.toFixed(2)};
   model.y += 0.5;
   model *= scale;
   model.y -= 0.5;
@@ -129,6 +150,7 @@ model = applyJumpMotion(model, ${a.animationId}, elapsedTicks);
 
 uint size = (${a.sizeAndColor} >> 4U) & 0xFU;
 vec3 worldPosition = placeInWorld(model, size, ${a.positionXZ}, ${a.positionY});
+worldPosition += computeForwardJumpWorldOffset(${a.animationId}, ${a.facing}, elapsedTicks);
 
 ${a.worldNormal} = normal;
 ${a.facePartId} = ${a.partId};

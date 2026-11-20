@@ -3,6 +3,8 @@ import EntityId, {
   calculateNewGenerationIdForAliveEntity,
   createAliveEntityIdFromRaw,
   entityId_extractGeneration,
+  entityId_extractIndex,
+  entityId_extractKind,
   INVALID_ENTITY_ID,
   isEntityAliveByGenerationId,
 } from '@game/new-entities/id'
@@ -24,6 +26,9 @@ const GenerationStoreCreator = (init: StoreInitializer) => {
       generations: { internalType: Uint8Array, fieldsPerEntity: Fields.SIZE },
     },
   })
+
+  // Lowest potentially free slot index per kind (all indices < minFreeIndexByKind[kind] are guaranteed alive)
+  const minFreeIndexByKind = new Uint32Array(EntityKind.SIZE)
 
   return {
     read: {
@@ -63,7 +68,7 @@ const GenerationStoreCreator = (init: StoreInitializer) => {
 
         const maxAliveOfThisKind = getMaxEntitiesByKind(kind)
 
-        for (let i = 0; i < maxAliveOfThisKind; ++i) {
+        for (let i = minFreeIndexByKind[kind]!; i < maxAliveOfThisKind; ++i) {
           const currentGenerationId = generations.getValueForEntity_orThrow(
             createAliveEntityIdFromRaw(kind, /* placeholder, does not matter  */ 0, i),
             Fields.AliveBitAndGenerationId,
@@ -73,6 +78,7 @@ const GenerationStoreCreator = (init: StoreInitializer) => {
             continue
           }
 
+          minFreeIndexByKind[kind] = i + 1
           const newGenerationId = calculateNewGenerationIdForAliveEntity(currentGenerationId)
           const newEntityId = createAliveEntityIdFromRaw(kind, newGenerationId, i)
 
@@ -81,6 +87,7 @@ const GenerationStoreCreator = (init: StoreInitializer) => {
           return newEntityId
         }
 
+        minFreeIndexByKind[kind] = maxAliveOfThisKind
         // looks like we can't spawn entity, probably we run out of `maxAliveOfThisKind`
         return INVALID_ENTITY_ID
       },
@@ -97,6 +104,12 @@ const GenerationStoreCreator = (init: StoreInitializer) => {
           Fields.AliveBitAndGenerationId,
           calculateDeadGenerationId(readGeneration),
         )
+
+        const kind = entityId_extractKind(entityId)
+        const index = entityId_extractIndex(entityId)
+        if (index < minFreeIndexByKind[kind]!) {
+          minFreeIndexByKind[kind] = index
+        }
       },
     },
   }

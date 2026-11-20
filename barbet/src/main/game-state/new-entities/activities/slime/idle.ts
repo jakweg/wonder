@@ -43,7 +43,7 @@ export const onChildFinished = (
 ): void => {
   if (child.finishedActivityId === ActivityId.Slime_Jump) {
     const _jumpRoll: number = child.result
-    console.log('Slime jumped and returned', {_jumpRoll})
+    // console.log('Slime jumped and returned', {_jumpRoll})
   }
 
   game.entities2.setSlimeAnimation(self, SlimeAnimationId.Idle, game.currentTick)
