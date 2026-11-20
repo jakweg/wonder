@@ -1,5 +1,5 @@
 import { NewRenderingPipelineElementCreator } from '@3d/new-render-context'
-import EntityId, { entityId_asUint32 } from '@game/new-entities/id'
+import  { entityId_asUint32,  } from '@game/new-entities/id'
 import { EntityKind, getMaxEntitiesByKind } from '@game/new-entities/kind'
 import { createSlimesForDrawingQuery } from '@game/new-entities/stores/queries/slimes-for-drawing'
 import { createArray } from '@utils/array-utils'

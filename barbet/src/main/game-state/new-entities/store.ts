@@ -9,6 +9,7 @@ import {
 } from '@game/new-entities/stores/factory'
 import FacingStoreCreator from '@game/new-entities/stores/facing'
 import GenerationStoreCreator from '@game/new-entities/stores/generation'
+import InterruptionsStoreCreator from '@game/new-entities/stores/interruptions'
 import PositionStoreCreator from '@game/new-entities/stores/position'
 import SlimeAnimationStoreCreator from '@game/new-entities/stores/slime-animation'
 import SlimeMetadataStoreCreator from '@game/new-entities/stores/slime-metadata'
@@ -121,6 +122,7 @@ export const createEntityStore = <RO extends boolean>(
     SlimeMetadataStoreCreator(init),
     FacingStoreCreator(init),
     SlimeAnimationStoreCreator(init),
+    InterruptionsStoreCreator(init),
   )
 
   return Object.freeze({

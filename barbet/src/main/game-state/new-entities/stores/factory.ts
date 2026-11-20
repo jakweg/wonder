@@ -32,6 +32,17 @@ type TypedArrayConstructor =
 
 type DataBufferSpec = { internalType: TypedArrayConstructor; fieldsPerEntity: number }
 
+type DataMapCodec<T> = {
+  encode: (value: T) => unknown
+  decode: (encoded: unknown) => T
+}
+
+type DataMapSpec<T = unknown> =
+  | DataMapCodec<T>
+  | ({ value: T })
+
+type ExtractDataMapValue<S> = S extends DataMapCodec<infer T> ? T : S extends { value: infer T } ? T : unknown
+
 type DataBufferImplementationSpec = {
   getValueForEntity_orThrow(entityId: EntityId, field: number): number
   getValueForEntity_orElse(entityId: EntityId, field: number, fallbackValue: number): number
@@ -40,16 +51,20 @@ type DataBufferImplementationSpec = {
 }
 
 export interface StoreInitializer extends GameStatePiece {
-  prepareStorage<D extends {}>(options: {
+  prepareStorage<
+    D extends Record<string, DataBufferSpec> = {},
+    M extends Record<string, DataMapSpec<any>> = {},
+  >(options: {
     supportedKinds: EntityKind[]
-    dataBuffers: {
-      [key in keyof D]: DataBufferSpec
-    }
+    dataBuffers?: D
+    dataMaps?: M
   }): {
     isKindSupported: (kind: EntityKind) => boolean
     isEntitySupported: (entityId: EntityId) => boolean
     storage: {
       [key in keyof D]: DataBufferImplementationSpec
+    } & {
+      [key in keyof M]: Map<EntityId, ExtractDataMapValue<M[key]>>
     }
   }
 }
@@ -97,16 +112,22 @@ const createDataBufferImplementation = (
 export const createEntitiesStorageFactory = (
   options: { serializedState?: any; rendererReceived?: any } | null,
 ): StoreInitializer => {
+  const isRenderer = Boolean(options?.rendererReceived)
   let incomingBuffers: SharedArrayBuffer[] = []
+  let incomingMaps: [EntityId, unknown][][] = []
   if (options?.rendererReceived) {
     incomingBuffers = [...options.rendererReceived.buffers]
   } else if (options?.serializedState) {
     incomingBuffers = options.serializedState['buffers'].map(
       (b: any) => decodeArray(b, true, Uint8Array)['buffer'] as unknown as SharedArrayBuffer,
     )
+    if (Array.isArray(options.serializedState['maps'])) {
+      incomingMaps = [...options.serializedState['maps']]
+    }
   }
 
   const ownedBuffers: SharedArrayBuffer[] = []
+  const ownedMaps: { serialize: () => [EntityId, unknown][] }[] = []
 
   return {
     [PASS]() {
@@ -117,11 +138,11 @@ export const createEntitiesStorageFactory = (
     [SERIALIZE]() {
       return {
         'buffers': ownedBuffers.map(b => encodeArray(new Uint8Array(b))),
+        'maps': ownedMaps.map(entry => entry.serialize()),
       }
     },
     prepareStorage(options) {
       validateKinds(options.supportedKinds)
-      const offsets = calculateOffsetsForEntityKinds(options.supportedKinds)
 
       const isKindSupported = (kind: EntityKind) => {
         return options.supportedKinds.includes(kind)
@@ -131,8 +152,14 @@ export const createEntitiesStorageFactory = (
         return isKindSupported(kind)
       }
 
-      const storage = Object.fromEntries(
-        Object.entries(options.dataBuffers).map(([key, value_]) => {
+      const storage: Record<string, unknown> = {}
+      const bufferEntries = Object.entries(options.dataBuffers ?? {})
+      const mapEntries = Object.entries(options.dataMaps ?? {})
+
+      if (bufferEntries.length > 0) {
+        const offsets = calculateOffsetsForEntityKinds(options.supportedKinds)
+
+        for (const [key, value_] of bufferEntries) {
           const value = value_ as DataBufferSpec
           if (value.fieldsPerEntity !== (value.fieldsPerEntity | 0) || value.fieldsPerEntity === 0) throw new Error()
 
@@ -152,16 +179,60 @@ export const createEntitiesStorageFactory = (
             mappedOffsets.push((offsets as any)[i] * value.fieldsPerEntity)
           }
 
-          const impl = createDataBufferImplementation(array, mappedOffsets, value.fieldsPerEntity, isKindSupported)
+          storage[key] = createDataBufferImplementation(array, mappedOffsets, value.fieldsPerEntity, isKindSupported)
+        }
+      }
 
-          return [key, impl]
-        }),
-      ) as any
+      for (const [key, value_] of mapEntries) {
+        if (storage[key] !== undefined) {
+          throw new Error(`Duplicate storage key "${key}" in dataBuffers and dataMaps`)
+        }
+        const spec = value_ as DataMapSpec<unknown> & { encode: any, decode: any}
+        if (Boolean((spec).encode) !== Boolean((spec).decode)) {
+          throw new Error(`Data map "${key}" must provide both encode and decode, or neither`)
+        }
+
+        if (isRenderer) {
+          storage[key] = Symbol('not supported in renderer')
+          continue
+        }
+
+        const map = new Map<EntityId, unknown>()
+        const incomingEntries = incomingMaps.shift()
+        if (incomingEntries) {
+          for (const [rawEntityId, rawValue] of incomingEntries) {
+            const entityId = rawEntityId as EntityId
+            const kind = entityId_extractKind(entityId)
+            if (!isKindSupported(kind)) {
+              throw new Error(`Kind ${kind} not supported in this data store`)
+            }
+            const decodedValue = spec.decode ? spec.decode(rawValue) : rawValue
+            map.set(entityId, decodedValue)
+          }
+        }
+
+        ownedMaps.push({
+          serialize() {
+            const entries: [EntityId, unknown][] = []
+            for (const [entityId, value] of map.entries()) {
+              const encodedValue = spec.encode
+                ? spec.encode(value)
+                : value === undefined
+                  ? undefined
+                  : JSON.parse(JSON.stringify(value))
+              entries.push([entityId, encodedValue])
+            }
+            return entries
+          },
+        })
+
+        storage[key] = map
+      }
 
       return {
         isKindSupported,
         isEntitySupported,
-        storage,
+        storage: storage as any,
       }
     },
   }
