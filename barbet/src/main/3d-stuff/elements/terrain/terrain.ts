@@ -112,7 +112,7 @@ export default (({ pipeline: { visibility }, globals, game, scheduler }) => {
       }
 
       for (const chunk of chunksThatNeedUpload) {
-        const chunkZ = chunk.chunkId % game.world.sizeLevel | 0
+        const chunkZ = (chunk.chunkId % game.world.sizeLevel) | 0
         const chunkX = (chunk.chunkId / game.world.sizeLevel) | 0
         implementation.textures.ambientOcclusion.setPartialContent2D(
           chunk.buildResult!.top,

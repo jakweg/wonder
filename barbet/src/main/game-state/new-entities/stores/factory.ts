@@ -1,18 +1,26 @@
+import GameStatePiece, { PASS, SERIALIZE } from '@game/game-state-piece'
 import EntityId, { entityId_extractIndex, entityId_extractKind } from '@game/new-entities/id'
 import { EntityKind, calculateOffsetsForEntityKinds } from '@game/new-entities/kind'
 import { decodeArray, encodeArray } from '@utils/persistence/serializers'
 import { createNewBuffer } from '@utils/shared-memory'
 
+export interface StoreLifecycle {
+  onEntityAllocated?: (entityId: EntityId) => void
+  onEntityAboutToRemove?: (entityId: EntityId) => void
+}
+
 export interface StoreDescription<R extends object, W extends object> {
   read: R
   write: W
+  lifecycle?: StoreLifecycle
 }
 
-type UnionToIntersection<U> = (U extends any ? (k: U) => void : never) extends (k: infer I) => void ? I : never
-
-export type FlattenedMergedStore<RO extends boolean, T extends StoreDescription<any, any>[]> = UnionToIntersection<
-  T[number] extends StoreDescription<infer R, infer W> ? (RO extends true ? R : R & W) : never
->
+export type FlattenedMergedStore<
+  RO extends boolean,
+  T extends readonly StoreDescription<any, any>[],
+> = T extends readonly [StoreDescription<infer R, infer W>, ...infer Rest extends readonly StoreDescription<any, any>[]]
+  ? ([RO] extends [true] ? R : R & W) & FlattenedMergedStore<RO, Rest>
+  : {}
 
 type TypedArrayConstructor =
   | typeof Float32Array
@@ -31,9 +39,7 @@ type DataBufferImplementationSpec = {
   setValueForEntity_orThrow(entityId: EntityId, field: number, newValue: number): void
 }
 
-export interface StoreInitializer {
-  pass(): unknown
-  serialize(): unknown
+export interface StoreInitializer extends GameStatePiece {
   prepareStorage<D extends {}>(options: {
     supportedKinds: EntityKind[]
     dataBuffers: {
@@ -85,28 +91,32 @@ const createDataBufferImplementation = (
       const absoluteIndex = offsets[kind]! + index * fieldsPerEntity + field
       array[absoluteIndex] = newValue
     },
-  }
+  } satisfies DataBufferImplementationSpec
 }
 
 export const createEntitiesStorageFactory = (
   options: { serializedState?: any; rendererReceived?: any } | null,
 ): StoreInitializer => {
-  let buffersAvailable: any[] = []
+  let incomingBuffers: SharedArrayBuffer[] = []
   if (options?.rendererReceived) {
-    buffersAvailable = options.rendererReceived.buffers
+    incomingBuffers = [...options.rendererReceived.buffers]
   } else if (options?.serializedState) {
-    buffersAvailable = options.serializedState['buffers'].map((b: any) => decodeArray(b, true, Uint8Array)['buffer'])
+    incomingBuffers = options.serializedState['buffers'].map(
+      (b: any) => decodeArray(b, true, Uint8Array)['buffer'] as unknown as SharedArrayBuffer,
+    )
   }
 
+  const ownedBuffers: SharedArrayBuffer[] = []
+
   return {
-    pass() {
+    [PASS]() {
       return {
-        buffers: buffersAvailable.map(e => e['buffer']),
+        buffers: ownedBuffers,
       }
     },
-    serialize() {
+    [SERIALIZE]() {
       return {
-        'buffers': buffersAvailable.map(b => encodeArray(b)),
+        'buffers': ownedBuffers.map(b => encodeArray(new Uint8Array(b))),
       }
     },
     prepareStorage(options) {
@@ -127,12 +137,15 @@ export const createEntitiesStorageFactory = (
           if (value.fieldsPerEntity !== (value.fieldsPerEntity | 0) || value.fieldsPerEntity === 0) throw new Error()
 
           const bytesSize = value.internalType['BYTES_PER_ELEMENT'] * value.fieldsPerEntity * offsets[EntityKind.SIZE]
-          let internalBuffer = buffersAvailable.shift()
+          let internalBuffer = incomingBuffers.shift()
           if (!internalBuffer) {
             internalBuffer = createNewBuffer(bytesSize)
-            buffersAvailable.push(internalBuffer)
+          } else if (internalBuffer.byteLength !== bytesSize) {
+            throw new Error(`Expected buffer of ${bytesSize} bytes, got ${internalBuffer.byteLength}`)
           }
-          const array = new value.internalType(internalBuffer)
+          ownedBuffers.push(internalBuffer)
+          // Invoking constructor of the array
+          const array = new value.internalType(internalBuffer as unknown as ArrayBuffer)
 
           const mappedOffsets: number[] = []
           for (let i = 0; i < EntityKind.SIZE; ++i) {

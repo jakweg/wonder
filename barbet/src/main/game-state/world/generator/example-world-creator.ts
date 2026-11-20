@@ -9,6 +9,8 @@ import { allBiomes } from '../biome'
 import { BlockId } from '../block'
 import { World } from '../world'
 import { generateBiomeMap, generateHeightMap } from './generator'
+import { EntityKind } from '@game/new-entities/kind'
+import { INVALID_ENTITY_ID } from '@game/new-entities/id'
 
 const placeDebugFeatures = (game: GameStateImplementation) => {
   const { world, groundItems } = game
@@ -80,6 +82,14 @@ const placeDebugFeatures = (game: GameStateImplementation) => {
   groundItems.setItem(14, 14, ItemType.Box)
   groundItems.setItem(13, 14, ItemType.Box)
   groundItems.setItem(3, 3, ItemType.Box)
+
+
+  const newEntityId = game.entities2.spawnNewEntitySync(EntityKind.Slime)
+  if (newEntityId === INVALID_ENTITY_ID) console.warn('Unable to spawn entity')
+  console.log({newEntityId})
+  game.entities2.setPosition(newEntityId, 21, 37)
+  console.log(game.entities2.getPosition(INVALID_ENTITY_ID))
+  console.log(game.entities2.getPosition(newEntityId))
 }
 
 const placeMoreRealTerrain = (game: GameStateImplementation) => {

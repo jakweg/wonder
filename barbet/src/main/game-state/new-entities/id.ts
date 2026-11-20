@@ -1,8 +1,8 @@
 import { EntityKind } from '@game/new-entities/kind'
 
-export declare class EntityId {
-  private thisIsPhantomClass: 'does not use directly!'
-  private constructor()
+export class EntityId {
+  private _thisIsPhantomClass: 'does not use directly!' = null as any
+  private constructor() { void(this._thisIsPhantomClass) }
 }
 
 export default EntityId
@@ -31,6 +31,10 @@ export const calculateNewGenerationIdForAliveEntity = (generationId: number): nu
   const newGeneration = (oldGeneration + 1) & 0b111_1111
   const aliveBit = 1 << 7
   return aliveBit | newGeneration
+}
+
+export const calculateDeadGenerationId = (generationId: number): number => {
+  return generationId & 0b111_1111
 }
 
 export const entityId_extractKind = (id: EntityId): EntityKind => {

@@ -2,8 +2,9 @@ import { decodeArray, encodeArray } from '@utils/persistence/serializers'
 import { createNewBuffer } from '@utils/shared-memory'
 import { BlockId } from './block'
 import { GENERIC_CHUNK_SIZE, WorldSizeLevel } from './size'
+import GameStatePiece, { PASS, SERIALIZE } from '@game/game-state-piece'
 
-export class World {
+export class World implements GameStatePiece {
   private constructor(
     public readonly sizeLevel: WorldSizeLevel,
     public readonly rawBlockData: Uint8Array,
@@ -94,7 +95,7 @@ export class World {
     for (let i = 0, l = chunkModificationIds.length; i < l; i++) chunkModificationIds[i]!++
   }
 
-  public pass(): unknown {
+  public [PASS](): unknown {
     return {
       size: this.sizeLevel,
       blocks: this.rawBlockData['buffer'],
@@ -103,7 +104,7 @@ export class World {
     }
   }
 
-  public serialize(): any {
+  public [SERIALIZE](): any {
     return {
       'size': this.sizeLevel,
       'blocks': encodeArray(this.rawBlockData),
@@ -230,7 +231,7 @@ export class World {
     const withinChunkX = x % GENERIC_CHUNK_SIZE | 0
     const withinChunkZ = z % GENERIC_CHUNK_SIZE | 0
 
-    const chunkIndex = (((chunkZ * this.sizeLevel) | 0) + chunkX) | 0
+    const chunkIndex = (((chunkX * this.sizeLevel) | 0) + chunkZ) | 0
     const withinChunkIndex = (((withinChunkZ * GENERIC_CHUNK_SIZE) | 0) + withinChunkX) | 0
 
     const absoluteIndex = chunkIndex * GENERIC_CHUNK_SIZE * GENERIC_CHUNK_SIZE + withinChunkIndex

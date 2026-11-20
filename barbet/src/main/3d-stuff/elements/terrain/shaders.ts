@@ -38,7 +38,7 @@ ivec2 calculateTextureCoordsForPosition(uint x, uint z) {
   uint withinChunkX = x % ${GENERIC_CHUNK_SIZE}U;
   uint withinChunkZ = z % ${GENERIC_CHUNK_SIZE}U;
 
-  uint chunkIndex = chunkZ * ${WorldSizeInChunksUniform} + chunkX;
+  uint chunkIndex = chunkX * ${WorldSizeInChunksUniform} + chunkZ;
   uint withinChunkIndex = withinChunkZ * ${GENERIC_CHUNK_SIZE}U + withinChunkX;
 
   uint absoluteIndex = chunkIndex * (${GENERIC_CHUNK_SIZE}U * ${GENERIC_CHUNK_SIZE}U) + withinChunkIndex;

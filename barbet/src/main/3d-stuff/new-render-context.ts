@@ -5,6 +5,7 @@ import { makeShaderGlobals, ShaderGlobals } from '@3d/global-gpu-resources'
 import RenderHelperWorkScheduler, { newHelperScheduler } from '@3d/pipeline/work-scheduler'
 import { newAnimationFrameCaller, newContextWrapper, newFramesLimiter } from '@3d/pipeline/wrappers'
 import { createGameStateForRenderer, GameState } from '@game'
+import { PASS } from '@game/game-state-piece'
 import { createStateUpdaterControllerFromReceived, STANDARD_GAME_TICK_RATE } from '@game/state-updater'
 import { gameMutexFrom, isInWorker } from '@utils/game-mutex'
 import CONFIG from '@utils/persistence/observable-settings'
@@ -62,7 +63,7 @@ export const createRenderingSession = async (args: RenderingSessionStartArgs) =>
   const globals = makeShaderGlobals(context.rawContext)
 
   stats.setRendererName(context.getRendererName())
-  scheduler.setWorld(decodedGame.world.pass())
+  scheduler.setWorld(decodedGame.world[PASS]())
 
   const pipeline: NewRenderingPipeline = {
     gl: context.rawContext,

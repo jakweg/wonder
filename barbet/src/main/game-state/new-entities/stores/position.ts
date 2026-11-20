@@ -1,6 +1,6 @@
 import EntityId from '@game/new-entities/id'
 import { EntityKind } from '@game/new-entities/kind'
-import { StoreInitializer } from '@game/new-entities/stores/factory'
+import { StoreDescription, StoreInitializer } from '@game/new-entities/stores/factory'
 
 const enum Fields {
   X,
@@ -8,6 +8,9 @@ const enum Fields {
   SIZE,
 }
 
+/**
+ * PositionStore allows entities to store 16bit integer positions of them self on the map
+ */
 const PositionStoreCreator = (init: StoreInitializer) => {
   const {
     isEntitySupported,
@@ -38,7 +41,15 @@ const PositionStoreCreator = (init: StoreInitializer) => {
         positions.setValueForEntity_orThrow(entityId, Fields.Z, y)
       },
     },
-  }
+    lifecycle: {
+      onEntityAllocated(entityId: EntityId): void {
+        if (!isEntitySupported(entityId)) return
+
+        positions.setValueForEntity_orThrow(entityId, Fields.X, 0)
+        positions.setValueForEntity_orThrow(entityId, Fields.Z, 0)
+      },
+    },
+  } satisfies StoreDescription<object, object>
 }
 
 export default PositionStoreCreator

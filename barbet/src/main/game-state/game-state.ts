@@ -1,4 +1,4 @@
-import { createEntityStore, GeneralEntityStore } from '@game/new-entities/store'
+import { createEntityStore, GeneralEntityStore, INTERNAL_REMOVE_MARKED_ENTITIES } from '@game/new-entities/store'
 import SeededRandom from '@seampan/seeded-random'
 import { GameMutex, isInWorker } from '@utils/game-mutex'
 import { decodeArray, encodeArray } from '@utils/persistence/serializers'
@@ -13,6 +13,8 @@ import { ReceiveActionsQueue } from './scheduled-actions/queue'
 import { SurfaceResourcesIndex } from './surface-resources/surface-resources-index'
 import { TileMetaDataIndex } from './tile-meta-data-index'
 import { World } from './world/world'
+import { EntityKind } from './new-entities/kind'
+import { PASS, SERIALIZE } from './game-state-piece'
 
 export interface GameState {
   readonly metaData: Int32Array
@@ -116,10 +118,10 @@ export class GameStateImplementation implements GameState {
   public passForRenderer(): unknown {
     return {
       metadata: this.metaData['buffer'],
-      world: this.world.pass(),
+      world: this.world[PASS](),
       groundItems: this.groundItems.pass(),
       entities: this.entities.pass(),
-      entities2: this.entities2.pass(),
+      entities2: this.entities2[PASS](),
       surfaceResources: this.surfaceResources.pass(),
       tileMetaDataIndex: this.tileMetaDataIndex.pass(),
     }
@@ -129,10 +131,10 @@ export class GameStateImplementation implements GameState {
     if (this.delayedComputer == null) throw new Error('Missing delayedComputer')
     return {
       'metadata': encodeArray(this.metaData),
-      'world': this.world.serialize(),
+      'world': this.world[SERIALIZE](),
       'groundItems': this.groundItems.serialize(),
       'entities': this.entities.serialize(),
-      'entities2': this.entities2.serialize(),
+      'entities2': this.entities2[SERIALIZE](),
       'surfaceResources': this.surfaceResources.serialize(),
       'tileMetaDataIndex': this.tileMetaDataIndex.serialize(),
       'delayedComputer': this.delayedComputer.serialize(),
@@ -162,6 +164,8 @@ export class GameStateImplementation implements GameState {
 
     stats.timeMeter.nowStart(UpdatePhase.ActionsQueue)
     this.actionsQueue.executeAllUntilEmpty(this)
+
+    this.entities2[INTERNAL_REMOVE_MARKED_ENTITIES]()
 
     this.mutex.exitUpdate()
     this.isRunningLogic = false
