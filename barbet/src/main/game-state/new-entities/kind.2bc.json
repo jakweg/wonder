@@ -1,0 +1,20 @@
+{
+    "name": "EntityKind",
+    "output-file": "kind",
+    "add-size": true,
+    "values": {
+        "Invalid": {
+            "#comment": "Represents invalid entity kind, should never be used",
+            "max-entities": 0
+        },
+        "Slime": {
+            "#comment": "Represents primitive slime entity, for debug and development",
+            "max-entities": 1000
+        }
+    },
+    "getters": {
+        "getMaxEntitiesByKind": {
+            "field": "max-entities"
+        }
+    }
+}

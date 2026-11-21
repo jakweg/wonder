@@ -40,6 +40,9 @@
               },
               "^[^@].*$": {
                 "type": ["string", "number", "boolean"]
+              },
+              "^#comment$": {
+                "type": ["string"]
               }
             }
           },
@@ -63,6 +66,9 @@
             },
             "^[^@]*$": {
               "type": ["string", "number", "boolean"]
+            },
+            "^#comment$": {
+              "type": ["string"]
             }
           }
         }
