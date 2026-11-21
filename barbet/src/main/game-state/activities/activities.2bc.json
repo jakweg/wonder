@@ -1,5 +1,4 @@
 {
-  "$schema": "https://raw.githubusercontent.com/JakubekWeg/wonder/master/barbet/enum-schema.json",
   "name": "ActivityId",
   "output-file": "index",
   "values": {

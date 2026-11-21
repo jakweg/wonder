@@ -30,9 +30,13 @@ const findFiles = async (src: string, condition: (name: string) => boolean) => {
 
 const newCompiledContent = () => ({
   _content: [] as string[],
+  _imported_paths: new Map<string, string>, // <fileName, import_in_code> 
   _import_counter: 0,
   addImport(fileName: string, propertyName: string): string {
+    const existingName = this._imported_paths.get(fileName)
+    if (existingName) return existingName
     const name = `imported_${this._import_counter++}`;
+    this._imported_paths.set(fileName, name)
     if (propertyName) {
       this._content.unshift(
         "import * as ",

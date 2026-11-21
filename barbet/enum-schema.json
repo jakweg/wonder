@@ -38,14 +38,14 @@
                 },
                 "required": ["from", "property"]
               },
-              "^.*$": {
+              "^[^@].*$": {
                 "type": ["string", "number", "boolean"]
               }
             }
           },
           "required": ["import-prefix", "values"]
         },
-        "^.*$": {
+        "^[^#].*$": {
           "type": "object",
           "patternProperties": {
             "^@.*$": {
@@ -61,7 +61,7 @@
               },
               "required": ["from", "property"]
             },
-            "^.*$": {
+            "^[^@]*$": {
               "type": ["string", "number", "boolean"]
             }
           }

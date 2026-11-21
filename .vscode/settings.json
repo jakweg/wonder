@@ -9,5 +9,11 @@
   },
   "javascript.preferences.autoImportFileExcludePatterns": ["**/dist/**"],
   "typescript.preferences.autoImportFileExcludePatterns": ["**/dist/**"],
-  "git.ignoreLimitWarning": true
+  "git.ignoreLimitWarning": true,
+  "json.schemas": [
+    {
+      "fileMatch": ["**/*.2bc.json"],
+      "url": "./barbet/enum-schema.json"
+    }
+  ]
 }
