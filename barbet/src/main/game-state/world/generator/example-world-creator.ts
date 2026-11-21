@@ -103,11 +103,6 @@ const placeDebugFeatures = (game: GameStateImplementation) => {
 
   for (const index of game.world.rawHeightData.keys()) game.world.rawHeightData[index]! += 3
 
-  // spawnUnit({ game, x: 7, z: 8, color: 0/* UnitColorPaletteId.GreenOrange */, facing: Direction.PositiveXNegativeZ })
-  spawnSlimeEntity(game, { x: 4, z: 11, size: 6, color: SlimeColorId.Cyan, facing: Direction.PositiveXNegativeZ })
-  spawnSlimeEntity(game, { x: 8, z: 8, size: 4, color: SlimeColorId.Sky, facing: Direction.PositiveXNegativeZ })
-  spawnSlimeEntity(game, { x: 9, z: 4, size: 8, color: SlimeColorId.Mint, facing: Direction.PositiveXNegativeZ })
-
   groundItems.setItem(17, 14, ItemType.Box)
   groundItems.setItem(16, 14, ItemType.Box)
   groundItems.setItem(15, 14, ItemType.Box)
@@ -116,10 +111,6 @@ const placeDebugFeatures = (game: GameStateImplementation) => {
   groundItems.setItem(3, 3, ItemType.Box)
 
   // Test slimes within SuperTiny world bounds (0..31) covering the 16-step size spectrum (0..15 -> 0.4x..1.9x)
-  spawnSlimeEntity(game, { x: 6, z: 6, size: 0, color: SlimeColorId.Cyan, facing: Direction.PositiveXPositiveZ })
-  spawnSlimeEntity(game, { x: 8, z: 6, size: 2, color: SlimeColorId.Lime, facing: Direction.PositiveZ })
-  spawnSlimeEntity(game, { x: 10, z: 7, size: 9, color: SlimeColorId.Magenta, facing: Direction.PositiveXPositiveZ })
-  spawnSlimeEntity(game, { x: 11, z: 10, size: 6, color: SlimeColorId.Amber, facing: Direction.PositiveX })
   spawnSlimeEntity(game, { x: 12, z: 10, size: 15, color: SlimeColorId.Purple, facing: Direction.PositiveXNegativeZ })
   spawnSlimeEntity(game, { x: 14, z: 8, size: 12, color: SlimeColorId.Emerald, facing: Direction.NegativeXNegativeZ })
   spawnSlimeEntity(game, { x: 7, z: 9, size: 10, color: SlimeColorId.Rainbow, facing: Direction.PositiveXPositiveZ })
@@ -129,7 +120,7 @@ const placeMoreRealTerrain = (game: GameStateImplementation) => {
   const groundItems = game.groundItems
   const blocksPerAxis = game.world.sizeLevel * GENERIC_CHUNK_SIZE
   generateRandomTerrain(game.world)
-  for (let i = 0; i < 10_000; i++) {
+  for (let i = 0; i < 2_000; i++) {
     spawnSlimeEntity(game, {
       x: game.seededRandom.nextInt(blocksPerAxis),
       z: game.seededRandom.nextInt(blocksPerAxis),

@@ -1,6 +1,6 @@
 import GameStatePiece, { PASS, SERIALIZE } from '@game/game-state-piece'
 import EntityId, { entityId_extractIndex, entityId_extractKind } from '@game/new-entities/id'
-import { EntityKind, calculateOffsetsForEntityKinds } from '@game/new-entities/kind'
+import { EntityKind, getMaxEntitiesByKind } from '@game/new-entities/kind'
 import { decodeArray, encodeArray } from '@utils/persistence/serializers'
 import { createNewBuffer } from '@utils/shared-memory'
 
@@ -15,12 +15,16 @@ export interface StoreDescription<R extends object, W extends object> {
   lifecycle?: StoreLifecycle
 }
 
+type UnionToIntersection<U> = (U extends any ? (value: U) => void : never) extends (value: infer I) => void ? I : never
+
+type StoreRead<S> = S extends StoreDescription<infer R, any> ? R : never
+type StoreWrite<S> = S extends StoreDescription<any, infer W> ? W : never
+
 export type FlattenedMergedStore<
   RO extends boolean,
   T extends readonly StoreDescription<any, any>[],
-> = T extends readonly [StoreDescription<infer R, infer W>, ...infer Rest extends readonly StoreDescription<any, any>[]]
-  ? ([RO] extends [true] ? R : R & W) & FlattenedMergedStore<RO, Rest>
-  : {}
+> = UnionToIntersection<StoreRead<T[number]>> &
+  ([RO] extends [true] ? unknown : UnionToIntersection<StoreWrite<T[number]>>)
 
 type TypedArrayConstructor =
   | typeof Float32Array
@@ -37,9 +41,7 @@ type DataMapCodec<T> = {
   decode: (encoded: unknown) => T
 }
 
-type DataMapSpec<T = unknown> =
-  | DataMapCodec<T>
-  | ({ value: T })
+type DataMapSpec<T = unknown> = DataMapCodec<T> | { value: T }
 
 type ExtractDataMapValue<S> = S extends DataMapCodec<infer T> ? T : S extends { value: infer T } ? T : unknown
 
@@ -187,8 +189,8 @@ export const createEntitiesStorageFactory = (
         if (storage[key] !== undefined) {
           throw new Error(`Duplicate storage key "${key}" in dataBuffers and dataMaps`)
         }
-        const spec = value_ as DataMapSpec<unknown> & { encode: any, decode: any}
-        if (Boolean((spec).encode) !== Boolean((spec).decode)) {
+        const spec = value_ as DataMapSpec<unknown> & { encode: any; decode: any }
+        if (Boolean(spec.encode) !== Boolean(spec.decode)) {
           throw new Error(`Data map "${key}" must provide both encode and decode, or neither`)
         }
 
@@ -236,4 +238,25 @@ export const createEntitiesStorageFactory = (
       }
     },
   }
+}
+
+/**
+ * Returns how much space to reserve for entities of such kind
+ */
+const calculateOffsetsForEntityKinds = (
+  allowedKinds: readonly EntityKind[],
+): Readonly<{ [key in EntityKind]: number }> => {
+  const offsetsArray: number[] = []
+
+  let offsetSoFar = 0
+  for (let i = 0; i <= EntityKind.SIZE; ++i) {
+    offsetsArray.push(offsetSoFar)
+
+    if (allowedKinds.includes(i)) {
+      const max = getMaxEntitiesByKind(i)
+      offsetSoFar += max
+    }
+  }
+
+  return offsetsArray as any
 }

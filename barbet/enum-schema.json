@@ -26,17 +26,34 @@
             "^values$": {
               "type": "object",
               "^@.*$": {
-                "type": "object",
-                "additionalProperties": false,
-                "properties": {
-                  "from": {
-                    "type": "string"
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "from": {
+                        "type": "string"
+                      },
+                      "property": {
+                        "type": ["string", "null"]
+                      }
+                    },
+                    "required": ["from", "property"]
                   },
-                  "property": {
-                    "type": ["string", "null"]
+                  {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "default-from": {
+                        "type": "string"
+                      }
+                    },
+                    "required": ["default-from"]
                   }
-                },
-                "required": ["from", "property"]
+                ]
+              },
+              "^@@.*$": {
+                "type": ["string"]
               },
               "^[^@].*$": {
                 "type": ["string", "number", "boolean"]
@@ -52,17 +69,59 @@
           "type": "object",
           "patternProperties": {
             "^@.*$": {
-              "type": "object",
-              "additionalProperties": false,
-              "properties": {
-                "from": {
-                  "type": "string"
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "anyOf": [{
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "from": {
+                      "type": "string"
+                    },
+                    "property": {
+                      "type": ["string", "null"]
+                    }
+                  },
+                  "required": ["from", "property"]
                 },
-                "property": {
-                  "type": ["string", "null"]
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "default-from": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["default-from"]
+                }]
+                  }
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "from": {
+                      "type": "string"
+                    },
+                    "property": {
+                      "type": ["string", "null"]
+                    }
+                  },
+                  "required": ["from", "property"]
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "default-from": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["default-from"]
                 }
-              },
-              "required": ["from", "property"]
+              ]
             },
             "^[^@]*$": {
               "type": ["string", "number", "boolean"]
@@ -85,6 +144,9 @@
             },
             "if-invalid-enum": {
               "enum": ["throw", "return-null", "return-undefined"]
+            },
+            "type": {
+              "enum": ["getter", "reverse-mapping", "all-values"]
             }
           },
           "additionalProperties": false,

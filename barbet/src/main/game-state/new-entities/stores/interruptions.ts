@@ -1,5 +1,5 @@
 import EntityId from '@game/new-entities/id'
-import { EntityKind } from '@game/new-entities/kind'
+import { getEntityKindsByStore } from '@game/new-entities/kind'
 import { StoreDescription, StoreInitializer } from '@game/new-entities/stores/factory'
 
 export const enum InterruptionType {
@@ -26,19 +26,19 @@ interface PendingInterruptionRecord {
  * InterruptionsStore stores the highest-priority pending interruption per entity
  * along with a transient delta set of newly interrupted entity IDs for O(1) wakeup checks.
  */
-const InterruptionsStoreCreator = (init: StoreInitializer) => {
+const Creator = (init: StoreInitializer) => {
   const {
     isEntitySupported,
     storage: { interruptions },
   } = init.prepareStorage({
-    supportedKinds: [EntityKind.Slime],
+    supportedKinds: getEntityKindsByStore(Creator),
     dataMaps: {
       interruptions: {} as { value: PendingInterruptionRecord },
     },
   })
 
   const newlyInterrupted = new Set<EntityId>()
-  if (interruptions instanceof Map){
+  if (interruptions instanceof Map) {
     for (const [entityId, record] of interruptions.entries()) {
       if (!record.deferred) {
         newlyInterrupted.add(entityId)
@@ -103,4 +103,4 @@ const InterruptionsStoreCreator = (init: StoreInitializer) => {
   } satisfies StoreDescription<object, object>
 }
 
-export default InterruptionsStoreCreator
+export default Creator

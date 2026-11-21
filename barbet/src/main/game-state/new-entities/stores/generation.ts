@@ -8,7 +8,7 @@ import EntityId, {
   INVALID_ENTITY_ID,
   isEntityAliveByGenerationId,
 } from '@game/new-entities/id'
-import { EntityKind, getMaxEntitiesByKind } from '@game/new-entities/kind'
+import { EntityKind, getEntityKindsByStore, getMaxEntitiesByKind } from '@game/new-entities/kind'
 import { StoreInitializer } from '@game/new-entities/stores/factory'
 
 const enum Fields {
@@ -16,12 +16,12 @@ const enum Fields {
   SIZE,
 }
 
-const GenerationStoreCreator = (init: StoreInitializer) => {
+const Creator = (init: StoreInitializer) => {
   const {
     isKindSupported,
     storage: { generations },
   } = init.prepareStorage({
-    supportedKinds: [EntityKind.Slime],
+    supportedKinds: getEntityKindsByStore(Creator),
     dataBuffers: {
       generations: { internalType: Uint8Array, fieldsPerEntity: Fields.SIZE },
     },
@@ -115,4 +115,4 @@ const GenerationStoreCreator = (init: StoreInitializer) => {
   }
 }
 
-export default GenerationStoreCreator
+export default Creator

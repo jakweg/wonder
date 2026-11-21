@@ -1,4 +1,5 @@
 {
+  "type": "module",
   "dependencies": {
     "@types/node": "^24.5.2",
     "html-minifier": "^4.0.0",

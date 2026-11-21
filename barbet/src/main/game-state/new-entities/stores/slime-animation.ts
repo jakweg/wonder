@@ -1,5 +1,5 @@
 import EntityId from '@game/new-entities/id'
-import { EntityKind } from '@game/new-entities/kind'
+import { getEntityKindsByStore } from '@game/new-entities/kind'
 import { StoreDescription, StoreInitializer } from '@game/new-entities/stores/factory'
 
 export const enum SlimeAnimationId {
@@ -22,12 +22,12 @@ const enum TickFields {
 /**
  * SlimeAnimationStore stores an 8-bit SlimeAnimationId and a 32-bit animation start tick per slime entity
  */
-const SlimeAnimationStoreCreator = (init: StoreInitializer) => {
+const Creator = (init: StoreInitializer) => {
   const {
     isEntitySupported,
     storage: { animationIds, animationStartTicks },
   } = init.prepareStorage({
-    supportedKinds: [EntityKind.Slime],
+    supportedKinds: getEntityKindsByStore(Creator),
     dataBuffers: {
       animationIds: { internalType: Uint8Array, fieldsPerEntity: IdFields.SIZE },
       animationStartTicks: { internalType: Uint32Array, fieldsPerEntity: TickFields.SIZE },
@@ -66,4 +66,4 @@ const SlimeAnimationStoreCreator = (init: StoreInitializer) => {
   } satisfies StoreDescription<object, object>
 }
 
-export default SlimeAnimationStoreCreator
+export default Creator

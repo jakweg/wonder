@@ -8,8 +8,7 @@ import {
 } from '@game/new-entities/activities'
 import { ActivityResult, CompletedChild, InterruptionResolution } from '@game/new-entities/activities/types'
 import EntityId from '@game/new-entities/id'
-import { getMaxEntitiesByKind } from '@game/new-entities/kind'
-import { ACTIVITY_SUPPORTED_KINDS, SLEEP_INDEFINITELY } from '@game/new-entities/stores/activity'
+import { SLEEP_INDEFINITELY } from '@game/new-entities/stores/activity'
 
 /**
  * Delivers the entity's pending interruption to its top activity frame, unwinding via `onAbort` on `AbortAndPassToParent`.
@@ -65,7 +64,9 @@ export const finishActivity = <Id extends ActivityId>(
 ): void => {
   const topFrame = game.entities2.getTopActivityFrame(entityId)
   if (!topFrame || topFrame.activityId !== finishedActivityId) {
-    throw new Error(`finishActivity expected top frame ${finishedActivityId}, got ${topFrame?.activityId ?? 'empty stack'}`)
+    throw new Error(
+      `finishActivity expected top frame ${finishedActivityId}, got ${topFrame?.activityId ?? 'empty stack'}`,
+    )
   }
 
   game.entities2.popActivityFrame(entityId)
@@ -98,11 +99,7 @@ export interface EntityActivitiesRunner {
 }
 
 export const createEntityActivitiesRunner = (): EntityActivitiesRunner => {
-  let maxCapacity = 0
-  for (const kind of ACTIVITY_SUPPORTED_KINDS) {
-    maxCapacity += getMaxEntitiesByKind(kind)
-  }
-  let scratchEntityIds = new Uint32Array(Math.max(8, maxCapacity))
+  let scratchEntityIds = new Uint32Array(64)
 
   const drainInterruptions = (game: GameStateImplementation): void => {
     while (true) {
@@ -126,7 +123,12 @@ export const createEntityActivitiesRunner = (): EntityActivitiesRunner => {
 
       drainInterruptions(game)
 
-      const dueCount = game.entities2.fillDueActivityEntityIds(currentTick, scratchEntityIds)
+      let dueCount = game.entities2.fillDueActivityEntityIds(currentTick, scratchEntityIds)
+      while (dueCount === -1) {
+        scratchEntityIds = new Uint32Array(scratchEntityIds.length * 2)
+        dueCount = game.entities2.fillDueActivityEntityIds(currentTick, scratchEntityIds)
+      }
+
       for (let i = 0; i < dueCount; ++i) {
         const entityId = scratchEntityIds[i]! as unknown as EntityId
         if (!game.entities2.isEntityAlive(entityId)) continue

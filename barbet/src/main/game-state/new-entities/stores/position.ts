@@ -1,5 +1,5 @@
 import EntityId from '@game/new-entities/id'
-import { EntityKind } from '@game/new-entities/kind'
+import { getEntityKindsByStore } from '@game/new-entities/kind'
 import { StoreDescription, StoreInitializer } from '@game/new-entities/stores/factory'
 
 const enum Fields {
@@ -11,12 +11,12 @@ const enum Fields {
 /**
  * PositionStore allows entities to store 16bit integer positions of them self on the map
  */
-const PositionStoreCreator = (init: StoreInitializer) => {
+const Creator = (init: StoreInitializer) => {
   const {
     isEntitySupported,
     storage: { positions },
   } = init.prepareStorage({
-    supportedKinds: [EntityKind.Slime],
+    supportedKinds: getEntityKindsByStore(Creator),
     dataBuffers: {
       positions: { internalType: Uint16Array, fieldsPerEntity: Fields.SIZE },
     },
@@ -58,5 +58,4 @@ const PositionStoreCreator = (init: StoreInitializer) => {
   } satisfies StoreDescription<object, object>
 }
 
-export default PositionStoreCreator
-
+export default Creator

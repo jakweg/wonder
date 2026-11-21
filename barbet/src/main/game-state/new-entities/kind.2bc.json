@@ -1,20 +1,38 @@
 {
-    "name": "EntityKind",
-    "output-file": "kind",
-    "add-size": true,
-    "values": {
-        "Invalid": {
-            "#comment": "Represents invalid entity kind, should never be used",
-            "max-entities": 0
-        },
-        "Slime": {
-            "#comment": "Represents primitive slime entity, for debug and development",
-            "max-entities": 1000
-        }
+  "name": "EntityKind",
+  "output-file": "kind",
+  "add-size": true,
+  "values": {
+    "Invalid": {
+      "#comment": "Represents invalid entity kind, should never be used",
+      "max-entities": 0,
+      "@store": []
     },
-    "getters": {
-        "getMaxEntitiesByKind": {
-            "field": "max-entities"
-        }
+    "Slime": {
+      "#comment": "Represents primitive slime entity, for debug and development",
+      "max-entities": 2000,
+      "@store": [
+        { "default-from": "./stores/generation" },
+        { "default-from": "./stores/position" },
+        { "default-from": "./stores/facing" },
+        { "default-from": "./stores/slime-metadata" },
+        { "default-from": "./stores/slime-animation" },
+        { "default-from": "./stores/interruptions" },
+        { "default-from": "./stores/activity" }
+      ]
     }
+  },
+  "getters": {
+    "getMaxEntitiesByKind": {
+      "field": "max-entities"
+    },
+    "getEntityKindsByStore": {
+      "field": "store",
+      "type": "reverse-mapping"
+    },
+    "listAllStores": {
+      "field": "store",
+      "type": "all-values"
+    }
+  }
 }

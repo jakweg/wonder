@@ -1,19 +1,13 @@
 import GameStatePiece, { PASS, SERIALIZE } from '@game/game-state-piece'
 import EntityId, { INVALID_ENTITY_ID } from '@game/new-entities/id'
-import { EntityKind } from '@game/new-entities/kind'
-import ActivityStoreCreator from '@game/new-entities/stores/activity'
+import { EntityKind, listAllStores } from '@game/new-entities/kind'
 import {
   createEntitiesStorageFactory,
   FlattenedMergedStore,
   StoreDescription,
   StoreLifecycle,
 } from '@game/new-entities/stores/factory'
-import FacingStoreCreator from '@game/new-entities/stores/facing'
 import GenerationStoreCreator from '@game/new-entities/stores/generation'
-import InterruptionsStoreCreator from '@game/new-entities/stores/interruptions'
-import PositionStoreCreator from '@game/new-entities/stores/position'
-import SlimeAnimationStoreCreator from '@game/new-entities/stores/slime-animation'
-import SlimeMetadataStoreCreator from '@game/new-entities/stores/slime-metadata'
 
 /** Invoked by GameState at the end of a tick to run removal callbacks and free slots */
 export const INTERNAL_REMOVE_MARKED_ENTITIES = Symbol()
@@ -115,17 +109,11 @@ export const createEntityStore = <RO extends boolean>(
     },
   } satisfies StoreDescription<object, object>
 
-  const { combined, lifecycle } = mergeStores(
-    readonly,
-    lifecycleStore,
-    generationStore,
-    PositionStoreCreator(init),
-    SlimeMetadataStoreCreator(init),
-    FacingStoreCreator(init),
-    SlimeAnimationStoreCreator(init),
-    InterruptionsStoreCreator(init),
-    ActivityStoreCreator(init),
-  )
+  const restOfTheStores = listAllStores()
+    .filter(s => s !== GenerationStoreCreator) // GenerationStore is initialized above and is always used
+    .map(s => s(init))
+
+  const { combined, lifecycle } = mergeStores(readonly, lifecycleStore, generationStore, ...restOfTheStores)
 
   return Object.freeze({
     [PASS]() {
@@ -138,5 +126,5 @@ export const createEntityStore = <RO extends boolean>(
   }) satisfies GameStatePiece
 }
 
-export type GeneralEntityStoreReadonly = ReturnType<typeof createEntityStore<true>>
+export type GeneralEntityStoreReadonly = Unpack<ReturnType<typeof createEntityStore<true>>>
 export type GeneralEntityStore = Unpack<ReturnType<typeof createEntityStore<false>>>

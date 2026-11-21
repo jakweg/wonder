@@ -1,12 +1,10 @@
 import type { ActivityId } from '@game/new-entities/activities'
 import EntityId from '@game/new-entities/id'
-import { EntityKind } from '@game/new-entities/kind'
+import { getEntityKindsByStore } from '@game/new-entities/kind'
 import { StoreDescription, StoreInitializer } from '@game/new-entities/stores/factory'
 
 /** Max Uint32 (4_294_967_295). Always normalize wake ticks with `>>> 0` so values stay positive JS numbers. */
 export const SLEEP_INDEFINITELY = 0xffff_ffff
-
-export const ACTIVITY_SUPPORTED_KINDS: readonly EntityKind[] = [EntityKind.Slime]
 
 export interface ActivityFrame<S = any> {
   readonly activityId: ActivityId
@@ -21,12 +19,12 @@ export interface EntityActivityEntry {
 /**
  * ActivityStore maintains each active entity's call stack of `{ activityId, state }` frames and next `wakeTick`.
  */
-const ActivityStoreCreator = (init: StoreInitializer) => {
+const Creator = (init: StoreInitializer) => {
   const {
     isEntitySupported,
     storage: { activities },
   } = init.prepareStorage({
-    supportedKinds: [...ACTIVITY_SUPPORTED_KINDS],
+    supportedKinds: getEntityKindsByStore(Creator),
     dataMaps: {
       activities: {} as { value: EntityActivityEntry },
     },
@@ -86,7 +84,7 @@ const ActivityStoreCreator = (init: StoreInitializer) => {
 
         for (const [entityId, entry] of activities.entries()) {
           if (entry.frames.length > 0 && entry.wakeTick <= normalizedCurrentTick) {
-            if (count >= limit) break
+            if (count >= limit) return -1
             out[count++] = entityId as unknown as number
           }
         }
@@ -102,4 +100,4 @@ const ActivityStoreCreator = (init: StoreInitializer) => {
   } satisfies StoreDescription<object, object>
 }
 
-export default ActivityStoreCreator
+export default Creator

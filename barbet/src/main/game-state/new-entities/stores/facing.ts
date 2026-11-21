@@ -1,5 +1,5 @@
 import EntityId from '@game/new-entities/id'
-import { EntityKind } from '@game/new-entities/kind'
+import { getEntityKindsByStore } from '@game/new-entities/kind'
 import { StoreDescription, StoreInitializer } from '@game/new-entities/stores/factory'
 import { Direction } from '@utils/direction'
 
@@ -12,12 +12,12 @@ const enum Fields {
  * FacingStore packs 3-bit previous Direction (bits 3..5) and 3-bit current Direction (bits 0..2) in a single byte.
  * Shared across rotatable entity kinds.
  */
-const FacingStoreCreator = (init: StoreInitializer) => {
+const Creator = (init: StoreInitializer) => {
   const {
     isEntitySupported,
     storage: { facings },
   } = init.prepareStorage({
-    supportedKinds: [EntityKind.Slime],
+    supportedKinds: getEntityKindsByStore(Creator),
     dataBuffers: {
       facings: { internalType: Uint8Array, fieldsPerEntity: Fields.SIZE },
     },
@@ -69,4 +69,4 @@ const FacingStoreCreator = (init: StoreInitializer) => {
   } satisfies StoreDescription<object, object>
 }
 
-export default FacingStoreCreator
+export default Creator

@@ -1,5 +1,5 @@
 import EntityId from '@game/new-entities/id'
-import { EntityKind } from '@game/new-entities/kind'
+import { getEntityKindsByStore } from '@game/new-entities/kind'
 import { StoreDescription, StoreInitializer } from '@game/new-entities/stores/factory'
 
 export const enum SlimeColorId {
@@ -60,12 +60,12 @@ const enum Fields {
 /**
  * SlimeMetadataStore allows slime entities to store 4-bit size and 4-bit color ID in a single byte
  */
-const SlimeMetadataStoreCreator = (init: StoreInitializer) => {
+const Creator = (init: StoreInitializer) => {
   const {
     isEntitySupported,
     storage: { slimeMetadata },
   } = init.prepareStorage({
-    supportedKinds: [EntityKind.Slime],
+    supportedKinds: getEntityKindsByStore(Creator),
     dataBuffers: {
       slimeMetadata: { internalType: Uint8Array, fieldsPerEntity: Fields.SIZE },
     },
@@ -116,4 +116,4 @@ const SlimeMetadataStoreCreator = (init: StoreInitializer) => {
   } satisfies StoreDescription<object, object>
 }
 
-export default SlimeMetadataStoreCreator
+export default Creator
