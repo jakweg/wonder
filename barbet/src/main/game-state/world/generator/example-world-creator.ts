@@ -1,8 +1,24 @@
 import { GameStateImplementation } from '@game'
 import * as SlimeIdle from '@game/new-entities/activities/slime/idle'
+import * as SteveIdle from '@game/new-entities/activities/steve/idle'
 import { INVALID_ENTITY_ID } from '@game/new-entities/id'
 import { EntityKind } from '@game/new-entities/kind'
 import { SLIME_COLOR_PALETTE, SLIME_SIZE_COUNT, SlimeColorId } from '@game/new-entities/stores/slime-metadata'
+import {
+  DEFAULT_STEVE_APPEARANCE,
+  DEFAULT_STEVE_HEIGHT_STEP,
+  DEFAULT_STEVE_WIDTH_STEP,
+  generateRandomSteveAppearance,
+  packSteveAppearance,
+  SteveEyeColorId,
+  SteveHairColorId,
+  SteveHairStyle,
+  StevePantsColorId,
+  SteveShirtColorId,
+  SteveShirtTrimStyle,
+  SteveShoeColorId,
+  SteveSkinToneId,
+} from '@game/new-entities/stores/steve-metadata'
 import { GENERIC_CHUNK_SIZE } from '@game/world/size'
 import fillTerrain from '@sync-operations/fill-terrain'
 import { Direction } from '@utils/direction'
@@ -12,6 +28,34 @@ import { allBiomes } from '../biome'
 import { BlockId } from '../block'
 import { World } from '../world'
 import { generateBiomeMap, generateHeightMap } from './generator'
+
+const spawnSteveEntity = (
+  game: GameStateImplementation,
+  options: {
+    x: number
+    z: number
+    facing?: Direction
+    appearance?: number
+  },
+): void => {
+  const blocksPerAxis = game.world.sizeLevel * GENERIC_CHUNK_SIZE
+  if (options.x < 0 || options.x >= blocksPerAxis || options.z < 0 || options.z >= blocksPerAxis) return
+
+  const block = game.world.getBlock_unsafe(options.x, options.z)
+  if (block === BlockId.Air || block === BlockId.Water) return
+  if (game.world.getHighestBlockHeight_unsafe(options.x, options.z) <= 0) return
+
+  const entityId = game.entities2.spawnNewEntitySync(EntityKind.Steve)
+  if (entityId === INVALID_ENTITY_ID) {
+    console.warn('Unable to spawn entity')
+    return
+  }
+
+  game.entities2.setPosition(entityId, options.x, options.z)
+  game.entities2.setSteveAppearanceRaw(entityId, options.appearance ?? generateRandomSteveAppearance(game.seededRandom))
+  game.entities2.snapFacing(entityId, options.facing ?? Direction.PositiveXNegativeZ)
+  SteveIdle.push(game, entityId)
+}
 
 const spawnSlimeEntity = (
   game: GameStateImplementation,
@@ -114,6 +158,34 @@ const placeDebugFeatures = (game: GameStateImplementation) => {
   spawnSlimeEntity(game, { x: 12, z: 10, size: 15, color: SlimeColorId.Purple, facing: Direction.PositiveXNegativeZ })
   spawnSlimeEntity(game, { x: 14, z: 8, size: 12, color: SlimeColorId.Emerald, facing: Direction.NegativeXNegativeZ })
   spawnSlimeEntity(game, { x: 7, z: 9, size: 10, color: SlimeColorId.Rainbow, facing: Direction.PositiveXPositiveZ })
+
+  spawnSteveEntity(game, {
+    x: 7,
+    z: 8,
+    facing: Direction.PositiveXNegativeZ,
+    appearance: DEFAULT_STEVE_APPEARANCE,
+  })
+  spawnSteveEntity(game, { x: 19, z: 9, facing: Direction.PositiveXPositiveZ })
+  spawnSteveEntity(game, { x: 5, z: 8, facing: Direction.PositiveX })
+  spawnSteveEntity(game, {
+    x: 20,
+    z: 20,
+    facing: Direction.PositiveX,
+    appearance: packSteveAppearance({
+      shirtColor: SteveShirtColorId.Teal,
+      pantsColor: StevePantsColorId.Indigo,
+      hairColor: SteveHairColorId.DarkBrown,
+      skinTone: SteveSkinToneId.Tan,
+      eyeColor: SteveEyeColorId.Indigo,
+      shoeColor: SteveShoeColorId.Grey,
+      hairStyle: SteveHairStyle.Classic,
+      shirtTrimStyle: SteveShirtTrimStyle.MatchingDark,
+      hasBeard: false,
+      hasLongSleeves: false,
+      heightStep: DEFAULT_STEVE_HEIGHT_STEP,
+      widthStep: DEFAULT_STEVE_WIDTH_STEP,
+    }),
+  })
 }
 
 const placeMoreRealTerrain = (game: GameStateImplementation) => {
@@ -127,6 +199,13 @@ const placeMoreRealTerrain = (game: GameStateImplementation) => {
       facing: game.seededRandom.nextInt(8) as Direction,
       size: game.seededRandom.nextInt(SLIME_SIZE_COUNT),
       color: game.seededRandom.nextInt(SLIME_COLOR_PALETTE.length) as SlimeColorId,
+    })
+  }
+  for (let i = 0; i < 20_000; i++) {
+    spawnSteveEntity(game, {
+      x: game.seededRandom.nextInt(blocksPerAxis),
+      z: game.seededRandom.nextInt(blocksPerAxis),
+      facing: game.seededRandom.nextInt(8) as Direction,
     })
   }
   groundItems.setItem(67, 77, ItemType.Box)

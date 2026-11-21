@@ -23,7 +23,7 @@ export class WorkerInstance<SendTypes, ReceiveTypes> {
     public readonly startDelay: number,
     public readonly send: Sender<SendTypes>,
     public readonly receive: Receiver<ReceiveTypes>,
-  ) { }
+  ) {}
 
   public static async spawnNew<S, R>(scriptName: string, name: string): Promise<WorkerInstance<S, R>> {
     const worker = new Worker(policy['createScriptURL'](scriptName), { 'name': name, 'type': 'module' })

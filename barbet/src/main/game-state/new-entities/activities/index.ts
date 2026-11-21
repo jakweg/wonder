@@ -1,3 +1,6 @@
+import * as imported_steve_waving_hand_6 from './steve/waving-hand'
+import * as imported_steve_walk_5 from './steve/walk'
+import * as imported_steve_idle_4 from './steve/idle'
 import * as imported_slime_jump_3 from './slime/jump'
 import * as imported_slime_slow_rotate_2 from './slime/slow-rotate'
 import * as imported_slime_idle_1 from './slime/idle'
@@ -12,6 +15,9 @@ export const enum ActivityId {
   Slime_Idle,
   Slime_SlowRotate,
   Slime_Jump,
+  Steve_Idle,
+  Steve_Walk,
+  Steve_WavingHand,
   SIZE,
 }
 export const getActivityPerform = (value: ActivityId) => {
@@ -25,6 +31,12 @@ export const getActivityPerform = (value: ActivityId) => {
       return imported_slime_slow_rotate_2.perform
     case ActivityId.Slime_Jump:
       return imported_slime_jump_3.perform
+    case ActivityId.Steve_Idle:
+      return imported_steve_idle_4.perform
+    case ActivityId.Steve_Walk:
+      return imported_steve_walk_5.perform
+    case ActivityId.Steve_WavingHand:
+      return imported_steve_waving_hand_6.perform
     default:
       throw new Error()
   }
@@ -40,6 +52,12 @@ export const getActivityOnInterruption = (value: ActivityId) => {
       return imported_slime_slow_rotate_2.onInterruption
     case ActivityId.Slime_Jump:
       return imported_slime_jump_3.onInterruption
+    case ActivityId.Steve_Idle:
+      return imported_steve_idle_4.onInterruption
+    case ActivityId.Steve_Walk:
+      return imported_steve_walk_5.onInterruption
+    case ActivityId.Steve_WavingHand:
+      return imported_steve_waving_hand_6.onInterruption
     default:
       throw new Error()
   }
@@ -55,6 +73,12 @@ export const getActivityOnChildFinished = (value: ActivityId) => {
       return imported_slime_slow_rotate_2.onChildFinished
     case ActivityId.Slime_Jump:
       return imported_slime_jump_3.onChildFinished
+    case ActivityId.Steve_Idle:
+      return imported_steve_idle_4.onChildFinished
+    case ActivityId.Steve_Walk:
+      return imported_steve_walk_5.onChildFinished
+    case ActivityId.Steve_WavingHand:
+      return imported_steve_waving_hand_6.onChildFinished
     default:
       throw new Error()
   }
@@ -70,6 +94,12 @@ export const getActivityOnAbort = (value: ActivityId) => {
       return imported_slime_slow_rotate_2.onAbort
     case ActivityId.Slime_Jump:
       return imported_slime_jump_3.onAbort
+    case ActivityId.Steve_Idle:
+      return imported_steve_idle_4.onAbort
+    case ActivityId.Steve_Walk:
+      return imported_steve_walk_5.onAbort
+    case ActivityId.Steve_WavingHand:
+      return imported_steve_waving_hand_6.onAbort
     default:
       throw new Error()
   }

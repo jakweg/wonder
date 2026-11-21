@@ -20,6 +20,19 @@
         { "default-from": "./stores/interruptions" },
         { "default-from": "./stores/activity" }
       ]
+    },
+    "Steve": {
+      "#comment": "Represents humanoid Steve entity",
+      "max-entities": 20000,
+      "@store": [
+        { "default-from": "./stores/generation" },
+        { "default-from": "./stores/position" },
+        { "default-from": "./stores/facing" },
+        { "default-from": "./stores/steve-metadata" },
+        { "default-from": "./stores/steve-animation" },
+        { "default-from": "./stores/interruptions" },
+        { "default-from": "./stores/activity" }
+      ]
     }
   },
   "getters": {

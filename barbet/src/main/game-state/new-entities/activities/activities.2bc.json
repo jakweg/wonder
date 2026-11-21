@@ -79,6 +79,65 @@
           }
         }
       }
+    },
+    "#Steve": {
+      "import-prefix": "./steve/",
+      "values": {
+        "Idle": {
+          "@perform": {
+            "from": "idle",
+            "property": "perform"
+          },
+          "@onInterruption": {
+            "from": "idle",
+            "property": "onInterruption"
+          },
+          "@onChildFinished": {
+            "from": "idle",
+            "property": "onChildFinished"
+          },
+          "@onAbort": {
+            "from": "idle",
+            "property": "onAbort"
+          }
+        },
+        "Walk": {
+          "@perform": {
+            "from": "walk",
+            "property": "perform"
+          },
+          "@onInterruption": {
+            "from": "walk",
+            "property": "onInterruption"
+          },
+          "@onChildFinished": {
+            "from": "walk",
+            "property": "onChildFinished"
+          },
+          "@onAbort": {
+            "from": "walk",
+            "property": "onAbort"
+          }
+        },
+        "WavingHand": {
+          "@perform": {
+            "from": "waving-hand",
+            "property": "perform"
+          },
+          "@onInterruption": {
+            "from": "waving-hand",
+            "property": "onInterruption"
+          },
+          "@onChildFinished": {
+            "from": "waving-hand",
+            "property": "onChildFinished"
+          },
+          "@onAbort": {
+            "from": "waving-hand",
+            "property": "onAbort"
+          }
+        }
+      }
     }
   },
   "getters": {
