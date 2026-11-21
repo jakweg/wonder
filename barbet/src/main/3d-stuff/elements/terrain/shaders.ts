@@ -2,18 +2,22 @@ import { TerrainHeightMultiplierUniform, WorldSizeInChunksUniform } from '@3d/co
 import { AttrType } from '@3d/gpu-resources/program'
 import { createFromSpec, Spec } from '@3d/gpu-resources/ultimate-gpu-pipeline'
 import { TextureSlot } from '@3d/texture-slot-counter'
-import { allBlocks } from '@game/world/block'
+import { BlockId, getBlockColor } from '@game/world/block'
 import { GENERIC_CHUNK_SIZE } from '@game/world/size'
 
 export const BYTES_PER_VERTEX = 6
 
-const allBlockColors = /* @__PURE__ */ allBlocks
-  .map(block => [
-    (((block.color >> 16) & 0xff) / 255).toFixed(9),
-    (((block.color >> 8) & 0xff) / 255).toFixed(9),
-    (((block.color >> 0) & 0xff) / 255).toFixed(9),
-  ])
-  .map(([r, g, b]) => `vec3(${r},${g},${b})`)
+const allBlockColors = /* @__PURE__ */ (() => {
+  const colors: string[] = []
+  for (let blockId = 0; blockId < BlockId.SIZE; blockId++) {
+    const color = getBlockColor(blockId)
+    const r = (((color >> 16) & 0xff) / 255).toFixed(9)
+    const g = (((color >> 8) & 0xff) / 255).toFixed(9)
+    const b = (((color >> 0) & 0xff) / 255).toFixed(9)
+    colors.push(`vec3(${r},${g},${b})`)
+  }
+  return colors
+})()
 
 const utilDeclarations = () => `
 const vec3[4] vertexOffsetsY = vec3[4] (

@@ -1,6 +1,6 @@
 import { GENERIC_CHUNK_SIZE, MAX_WORLD_HEIGHT, WorldSizeLevel } from '@game/world/size'
 import { createNewBuffer } from '@utils/shared-memory'
-import { AIR_ID, allBlocks, BlockId } from './block'
+import { BlockId, getBlockColor } from './block'
 
 const NO_ELEMENT_INDEX_MARKER = 4294967295
 const NO_COLOR_VALUE = 2
@@ -63,7 +63,7 @@ export const buildChunkMesh = (world: WorldLike, chunkX: number, chunkZ: number,
   const isBlockAir = (x: number, y: number, z: number): number => {
     if (x < 0 || y < 0 || z < 0 || x >= sizeX || y >= sizeY || z >= sizeZ) return 1
     const thisBlockId = worldData[y * sizeX * sizeZ + x * sizeZ + z]! as BlockId
-    return thisBlockId === AIR_ID ? 1 : 0
+    return thisBlockId === BlockId.Air ? 1 : 0
   }
 
   const computeAmbientOcclusion = (x: number, y: number, z: number): number => {
@@ -144,17 +144,20 @@ export const buildChunkMesh = (world: WorldLike, chunkX: number, chunkZ: number,
     for (let z = chunkZ * chunkSize, mz = Math.min((chunkZ + 1) * chunkSize, sizeZ); z < mz; z++) {
       for (let x = chunkX * chunkSize, mx = Math.min((chunkX + 1) * chunkSize, sizeX); x < mx; x++) {
         const thisBlockId = worldData[y * sizeX * sizeZ + x * sizeZ + z]! as BlockId
-        if (thisBlockId === AIR_ID) continue
+        if (thisBlockId === BlockId.Air) continue
 
-        const needsTop = y === sizeY - 1 || (worldData[(y + 1) * sizeX * sizeZ + x * sizeZ + z]! as BlockId) === AIR_ID
-        // const needsBottom = y === 0 || worldData[(y - 1) * sizeX * sizeZ + x * sizeZ + z]! as BlockId === AIR_ID
+        const needsTop =
+          y === sizeY - 1 || (worldData[(y + 1) * sizeX * sizeZ + x * sizeZ + z]! as BlockId) === BlockId.Air
+        // const needsBottom = y === 0 || worldData[(y - 1) * sizeX * sizeZ + x * sizeZ + z]! as BlockId === BlockId.Air
         const needsBottom = false // disabled temporarily
         const needsPositiveZ =
-          z === sizeZ - 1 || (worldData[y * sizeX * sizeZ + x * sizeZ + (z + 1)]! as BlockId) === AIR_ID
-        const needsNegativeZ = z === 0 || (worldData[y * sizeX * sizeZ + x * sizeZ + (z - 1)]! as BlockId) === AIR_ID
+          z === sizeZ - 1 || (worldData[y * sizeX * sizeZ + x * sizeZ + (z + 1)]! as BlockId) === BlockId.Air
+        const needsNegativeZ =
+          z === 0 || (worldData[y * sizeX * sizeZ + x * sizeZ + (z - 1)]! as BlockId) === BlockId.Air
         const needsPositiveX =
-          x === sizeX - 1 || (worldData[y * sizeX * sizeZ + (x + 1) * sizeZ + z]! as BlockId) === AIR_ID
-        const needsNegativeX = x === 0 || (worldData[y * sizeX * sizeZ + (x - 1) * sizeZ + z]! as BlockId) === AIR_ID
+          x === sizeX - 1 || (worldData[y * sizeX * sizeZ + (x + 1) * sizeZ + z]! as BlockId) === BlockId.Air
+        const needsNegativeX =
+          x === 0 || (worldData[y * sizeX * sizeZ + (x - 1) * sizeZ + z]! as BlockId) === BlockId.Air
 
         const needsHorizontal = needsTop || needsBottom
         const needsAnySide = needsPositiveZ || needsNegativeZ || needsPositiveX || needsNegativeX
@@ -182,8 +185,7 @@ export const buildChunkMesh = (world: WorldLike, chunkX: number, chunkZ: number,
           e8 = addVertexIfNotExists(x + 1, y, z)
         }
 
-        const thisBlock = allBlocks[thisBlockId]!
-        const color = thisBlock.color
+        const color = getBlockColor(thisBlockId)
 
         if (needsTop) {
           e1 = setVertexData(e1, color, 0b011001, x, y, z)

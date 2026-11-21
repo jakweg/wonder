@@ -1,6 +1,6 @@
 import { GENERIC_CHUNK_SIZE } from '@game/world/size'
 import { ArrayEncodingType, setArrayEncodingType } from '@utils/persistence/serializers'
-import { AIR_ID } from '../world/block'
+import { BlockId } from '../world/block'
 import { World } from '../world/world'
 import { buildChunkMesh, Mesh, moveChunkMesh } from '../world/world-to-mesh-converter'
 import { BuildingMesh } from './'
@@ -21,7 +21,7 @@ export const decodeVertexesAndIndices = (data: any, inProgressStatesCount: numbe
 const countSolidBlocksInWorld = (world: World): number => {
   let count = 0
   for (const blockId of world.rawBlockData) {
-    if (blockId !== AIR_ID) count++
+    if (blockId !== BlockId.Air) count++
   }
   return count
 }
@@ -34,7 +34,7 @@ const createInProgressStates = (world: World, statesCount: number, totalNonAirBl
   let nextStateOnNonAirBlocksCount = ((meshes.length / statesCount) * totalNonAirBlocks) | 0
   for (let i = 0, l = rawBlockData.length; i < l; i++) {
     const blockId = (rawBlockData[i] = world.rawBlockData[i]!)
-    if (blockId !== AIR_ID) {
+    if (blockId !== BlockId.Air) {
       nonAirBlocksCount++
       if (nextStateOnNonAirBlocksCount <= nonAirBlocksCount) {
         const mesh = buildChunkMesh(

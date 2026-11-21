@@ -147,6 +147,9 @@
             },
             "type": {
               "enum": ["getter", "reverse-mapping", "all-values"]
+            },
+            "convert-hex-colors": {
+              "type": "boolean"
             }
           },
           "additionalProperties": false,

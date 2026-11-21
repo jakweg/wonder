@@ -1,0 +1,37 @@
+{
+  "name": "BlockId",
+  "output-file": "block",
+  "add-size": true,
+  "values": {
+    "Air": {
+      "color": "#000000"
+    },
+    "Stone": {
+      "color": "#696868"
+    },
+    "Grass": {
+      "color": "#68ba41"
+    },
+    "Sand": {
+      "color": "#dbd0a5"
+    },
+    "Snow": {
+      "color": "#f2f2f2"
+    },
+    "Water": {
+      "color": "#377de9"
+    },
+    "Ice": {
+      "color": "#8fb4fa"
+    },
+    "Gravel": {
+      "color": "#858180"
+    }
+  },
+  "getters": {
+    "getBlockColor": {
+      "field": "color",
+      "convert-hex-colors": true
+    }
+  }
+}

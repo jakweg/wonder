@@ -106,6 +106,7 @@ const transformFile = async (fileName: string) => {
     description.getters ?? {},
   )) {
     const getterType = ((getter as any)['type'] ?? 'getter') as 'reverse-mapping' | 'getter' | 'all-values'
+    const convertHexColors = (getter as any)['convert-hex-colors'] === true
       compiledContent.push(`export const `);
       compiledContent.push(getterName);
     if (getterType === 'all-values') {
@@ -140,7 +141,16 @@ compiledContent.push(' = (')
           throw new Error(
             `Value is missing for getter ${getterName} for enum ${name}`,
           );
-        if (typeof value === "string" || typeof value === "number" || typeof value === "boolean")
+        if (convertHexColors) {
+          if (typeof value !== "string" || !/^#[0-9a-fA-F]{6}$/.test(value)) {
+            throw new Error(
+              `Invalid hex color ${JSON.stringify(value)} for getter ${getterName} for enum ${name}`,
+            );
+          }
+          const hexLiteral = `0x${value.substring(1).toLowerCase()}`;
+          actualValues.get(fullEnumName)!.push(hexLiteral);
+          (getterType === 'getter') && compiledContent.push(hexLiteral);
+        } else if (typeof value === "string" || typeof value === "number" || typeof value === "boolean")
           {
             const stringValue = JSON.stringify(value)
             actualValues.get(fullEnumName)!.push(stringValue)
