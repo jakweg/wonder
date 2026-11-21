@@ -45,7 +45,7 @@ class DelayedComputerImpl implements DelayedComputer {
 
     index = 1
     const resultsArray: number[] = []
-    requestsArray.push(this.results.size)
+    requestsArray.push(this.results['size'])
     for (const item of this.results.values()) index += encodeResult(item, resultsArray as unknown as Int32Array, index)
 
     return {

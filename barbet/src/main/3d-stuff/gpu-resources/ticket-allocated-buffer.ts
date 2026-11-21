@@ -74,7 +74,7 @@ export const createTicketAllocatedBuffer = (
         }
       }
 
-      let availableFreeBlockIndex = freeBlocks.findIndex(b => b.size >= contentSize)
+      let availableFreeBlockIndex = freeBlocks['findIndex'](b => b.size >= contentSize)
       // resizing existing buffer
       if (availableFreeBlockIndex < 0) {
         const newCapacity = Math.ceil((currentCapacity + contentSize) / currentCapacity) * currentCapacity
@@ -96,7 +96,7 @@ export const createTicketAllocatedBuffer = (
 
         gl.deleteBuffer(temporaryBuffer)
 
-        const lastFreeBlock = freeBlocks.at(-1)
+        const lastFreeBlock = freeBlocks['at'](-1)
         if (lastFreeBlock) {
           lastFreeBlock.size += newCapacity - currentCapacity
         } else {

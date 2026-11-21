@@ -459,8 +459,8 @@ function buildShaderSource(params: {
 const printShaderSourceWithLines = (isError: boolean, gl: WebGL2RenderingContext, shader: WebGLShader) => {
   const source = gl
     .getShaderSource(shader)
-    ?.split('\n')
-    ?.map((content, index) => (index + 1).toString().padStart(3, '0') + `:  ` + content)
+    ?.['split']('\n')
+    ?.map((content, index) => (index + 1).toString()['padStart'](3, '0') + `:  ` + content)
     ?.join('\n')
 
   console[isError ? 'error' : 'warn'](source)

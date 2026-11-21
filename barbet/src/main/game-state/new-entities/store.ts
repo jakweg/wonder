@@ -32,9 +32,9 @@ const mergeStores = <T extends StoreDescription<any, any>[], RO extends boolean>
   const onEntityAboutToRemoveListeners: ((entityId: EntityId) => void)[] = []
 
   for (const store of stores) {
-    Object.assign(combined, store.read)
+    Object['assign'](combined, store.read)
     if (!readonly) {
-      Object.assign(combined, store.write)
+      Object['assign'](combined, store.write)
       if (store.lifecycle?.onEntityAllocated) {
         onEntityAllocatedListeners.push(store.lifecycle.onEntityAllocated)
       }

@@ -130,8 +130,8 @@ export const spawnNew = async <T extends WorkerSpecification<any, any>>(s: T, li
     // worker will send its current time once it's ready
     worker['addEventListener'](
       'message',
-      ({ data }) => {
-        timeDifference = performance['now']() - (data as any).now
+      event => {
+        timeDifference = performance['now']() - (event['data'] as any).now
         resolve()
       },
       { 'once': true },
@@ -151,8 +151,8 @@ export const spawnNew = async <T extends WorkerSpecification<any, any>>(s: T, li
     universalPostMessageWithTransfer,
   )
 
-  worker['addEventListener']('message', ({ data }) => {
-    universalOnMessage(data as LowLevelMessage)
+  worker['addEventListener']('message', event => {
+    universalOnMessage(event['data'] as LowLevelMessage)
   })
 
   return {
@@ -193,8 +193,8 @@ export const bind = <T extends WorkerSpecification<any, any>>(
     universalPostMessageWithTransfer,
   )
 
-  globalThis['addEventListener']('message', ({ data }) => {
-    universalOnMessage(data as LowLevelMessage)
+  globalThis['addEventListener']('message', event => {
+    universalOnMessage(event['data'] as LowLevelMessage)
   })
 
   return senders as {

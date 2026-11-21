@@ -74,7 +74,7 @@ export interface StoreInitializer extends GameStatePiece {
 const validateKinds = (supportedKinds: EntityKind[]) => {
   if (supportedKinds.length === 0) throw new Error()
   if (new Set(supportedKinds)['size'] !== supportedKinds.length) throw new Error()
-  if (supportedKinds.includes(EntityKind.Invalid) || supportedKinds.includes(EntityKind.SIZE)) throw new Error()
+  if (supportedKinds['includes'](EntityKind.Invalid) || supportedKinds['includes'](EntityKind.SIZE)) throw new Error()
 }
 
 const createDataBufferImplementation = (
@@ -147,7 +147,7 @@ export const createEntitiesStorageFactory = (
       validateKinds(options.supportedKinds)
 
       const isKindSupported = (kind: EntityKind) => {
-        return options.supportedKinds.includes(kind)
+        return options.supportedKinds['includes'](kind)
       }
       const isEntitySupported = (entityId: EntityId) => {
         const kind = entityId_extractKind(entityId)
@@ -252,7 +252,7 @@ const calculateOffsetsForEntityKinds = (
   for (let i = 0; i <= EntityKind.SIZE; ++i) {
     offsetsArray.push(offsetSoFar)
 
-    if (allowedKinds.includes(i)) {
+    if (allowedKinds['includes'](i)) {
       const max = getMaxEntitiesByKind(i)
       offsetSoFar += max
     }

@@ -34,7 +34,7 @@ const Creator = (init: StoreInitializer) => {
     read: {},
     write: {
       getTopActivityFrame(entityId: EntityId): ActivityFrame | undefined {
-        return activities.get(entityId)?.frames.at(-1)
+        return activities.get(entityId)?.frames['at'](-1)
       },
       getActivityStackDepth(entityId: EntityId): number {
         return activities.get(entityId)?.frames.length ?? 0

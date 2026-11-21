@@ -20,7 +20,7 @@ const CAMERA_MOVE_SPEED = 15
 
 const updateDeltaByKeys = (delta: CameraDelta, frontendVariables: UICanvas['frontendVariables']) => {
   const keys = Atomics.load(frontendVariables as any as Int16Array, FrontendVariable.PressedKeys) as PressedKey
-  const zoomDelta = Atomics.exchange(frontendVariables as any, FrontendVariable.MouseWheelDelta, 0)
+  const zoomDelta = Atomics['exchange'](frontendVariables as any, FrontendVariable.MouseWheelDelta, 0)
 
   let dx = 0,
     dz = 0,
