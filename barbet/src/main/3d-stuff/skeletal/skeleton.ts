@@ -100,6 +100,18 @@ export const extractBoneRefKey = <BoneName extends string>(ref: BoneRef<BoneName
   return keys[0] as BoneName
 }
 
+export const resolveBoneIndex = <BoneName extends string>(
+  skeleton: CompiledSkeleton<BoneName>,
+  ref: BoneRef<BoneName>,
+): number => {
+  const name = extractBoneRefKey(ref)
+  const index = skeleton.boneIndexByName[name]
+  if (index === undefined) {
+    throw new Error(`Unknown bone '${name}' in skeleton.`)
+  }
+  return index
+}
+
 export interface BoneDefinition<BoneName extends string> {
   /** Parent bone in the kinematic hierarchy (e.g. `{ Torso: true }`), or omit for root bones */
   readonly parent?: BoneRef<BoneName>

@@ -1,4 +1,4 @@
-import { ClipMetadataFlag, getSharedSkeletalPoseAtlas, POSE_ATLAS_FRAMES, PoseAtlasAllocation } from './pose-atlas'
+import { ClipMetadataFlag, POSE_ATLAS_FRAMES, PoseAtlasAllocation } from './pose-atlas'
 import { CompiledSkeleton } from './skeleton'
 
 export const NO_CROSSFADE_FRAME = 255
@@ -11,12 +11,12 @@ export const generateSkeletalRigGlsl = <BoneName extends string>(
   skeleton: CompiledSkeleton<BoneName>,
   allocation: PoseAtlasAllocation,
 ): string => {
-  const atlasHeight = getSharedSkeletalPoseAtlas().height
   const pivotsGlsl = skeleton.pivots
     .map(([x, y, z]) => `vec3(${x.toFixed(6)}, ${y.toFixed(6)}, ${z.toFixed(6)})`)
     .join(',\n  ')
   const parentsGlsl = skeleton.parentIndices.join(', ')
   const boneCount = skeleton.boneNames.length
+  const maxClipIndex = Math.max(0, allocation.clipCount - 1)
 
   return `
 const int RIG_BONE_COUNT = ${boneCount};
@@ -24,7 +24,6 @@ const int RIG_MAX_CHAIN_DEPTH = ${skeleton.maxChainDepth};
 const int RIG_ATLAS_BASE_ROW = ${allocation.baseRow};
 const int RIG_ATLAS_ROWS_PER_CLIP = ${allocation.rowsPerClip};
 const float INV_ATLAS_WIDTH = ${(1 / POSE_ATLAS_FRAMES).toFixed(8)};
-const float INV_ATLAS_HEIGHT = ${(1 / atlasHeight).toFixed(8)};
 
 const vec3 RIG_BONE_PIVOTS[${boneCount}] = vec3[${boneCount}](
   ${pivotsGlsl}
@@ -68,7 +67,7 @@ vec4 nlerpQuaternions(vec4 fromQuat, vec4 toQuat, float t) {
 }
 
 EvaluatedClipTiming evaluateClipTiming(uint clipId, uint previousFrame, float elapsedTicks) {
-  uint safeClipId = min(clipId, ${allocation.clipCount - 1}U);
+  uint safeClipId = min(clipId, ${maxClipIndex}U);
   vec4 meta = RIG_CLIP_META[safeClipId];
   uint flags = uint(meta.z + 0.5);
   bool isLoop = (flags & ${ClipMetadataFlag.Loop}U) != 0U;
@@ -89,9 +88,10 @@ EvaluatedClipTiming evaluateClipTiming(uint clipId, uint previousFrame, float el
 }
 
 vec4 fetchPoseAtlasRow(sampler2D poseAtlas, uint clipId, int rowWithinClip, float frame) {
-  int safeClip = int(min(clipId, ${allocation.clipCount - 1}U));
+  int safeClip = int(min(clipId, ${maxClipIndex}U));
   int atlasRow = RIG_ATLAS_BASE_ROW + safeClip * RIG_ATLAS_ROWS_PER_CLIP + rowWithinClip;
-  vec2 uv = vec2((frame + 0.5) * INV_ATLAS_WIDTH, (float(atlasRow) + 0.5) * INV_ATLAS_HEIGHT);
+  float invAtlasHeight = 1.0 / float(textureSize(poseAtlas, 0).y);
+  vec2 uv = vec2((frame + 0.5) * INV_ATLAS_WIDTH, (float(atlasRow) + 0.5) * invAtlasHeight);
   return textureLod(poseAtlas, uv, 0.0);
 }
 

@@ -1,19 +1,6 @@
-import {
-  GameTickUniform,
-  PIConstantHeader,
-  RotationVectorsDeclaration,
-  TerrainHeightMultiplierUniform,
-} from '@3d/common-shader'
-import { AttrType, createFromSpec, Spec, TextureFormat } from '@3d/gpu-resources/ultimate-gpu-pipeline'
-import { generateSkeletalRigGlsl } from '@3d/skeletal/glsl-rig'
-import { TextureSlot } from '@3d/texture-slot-counter'
-import { FACING_TURN_DURATION } from '@game/new-entities/stores/facing'
-import {
-  STEVE_HEAD_CENTER_BYTE,
-  STEVE_HEAD_MAX_PITCH,
-  STEVE_HEAD_MAX_YAW,
-  STEVE_HEAD_TURN_DURATION,
-} from '@game/new-entities/stores/steve-animation'
+import { GameTickUniform } from '@3d/common-shader'
+import { AttrType } from '@3d/gpu-resources/ultimate-gpu-pipeline'
+import { createSkeletalShaderSpec, declareGlslPalette } from '@3d/skeletal/shader'
 import {
   STEVE_EYE_PALETTE,
   STEVE_HAIR_PALETTE,
@@ -48,71 +35,17 @@ const LEFT_FOREARM_BONE = steveSkeleton.boneIndexByName.LeftForearm
 const RIGHT_UPPER_ARM_BONE = steveSkeleton.boneIndexByName.RightUpperArm
 const RIGHT_FOREARM_BONE = steveSkeleton.boneIndexByName.RightForearm
 
-const paletteToGlsl = (palette: readonly number[]) =>
-  palette.map(hex => {
-    const red = (((hex >> 16) & 0xff) / 255).toFixed(6)
-    const green = (((hex >> 8) & 0xff) / 255).toFixed(6)
-    const blue = (((hex >> 0) & 0xff) / 255).toFixed(6)
-    return `vec3(${red}, ${green}, ${blue})`
-  })
+const stevePalettesGlsl = [
+  /* @__PURE__ */ declareGlslPalette('shirtPalette', STEVE_SHIRT_PALETTE),
+  /* @__PURE__ */ declareGlslPalette('pantsPalette', STEVE_PANTS_PALETTE),
+  /* @__PURE__ */ declareGlslPalette('hairPalette', STEVE_HAIR_PALETTE),
+  /* @__PURE__ */ declareGlslPalette('skinPalette', STEVE_SKIN_PALETTE),
+  /* @__PURE__ */ declareGlslPalette('eyePalette', STEVE_EYE_PALETTE),
+  /* @__PURE__ */ declareGlslPalette('shoePalette', STEVE_SHOE_PALETTE),
+].join('\n\n')
 
-const shirtPaletteGlsl = /* @__PURE__ */ paletteToGlsl(STEVE_SHIRT_PALETTE)
-const pantsPaletteGlsl = /* @__PURE__ */ paletteToGlsl(STEVE_PANTS_PALETTE)
-const hairPaletteGlsl = /* @__PURE__ */ paletteToGlsl(STEVE_HAIR_PALETTE)
-const skinPaletteGlsl = /* @__PURE__ */ paletteToGlsl(STEVE_SKIN_PALETTE)
-const eyePaletteGlsl = /* @__PURE__ */ paletteToGlsl(STEVE_EYE_PALETTE)
-const shoePaletteGlsl = /* @__PURE__ */ paletteToGlsl(STEVE_SHOE_PALETTE)
-
-const utilDeclarations = () => `
-${PIConstantHeader()}
-${RotationVectorsDeclaration()}
-${generateSkeletalRigGlsl(steveSkeleton, stevePoseAtlasAllocation)}
-
-const vec3 shirtPalette[${shirtPaletteGlsl.length}] = vec3[${shirtPaletteGlsl.length}](
-  ${shirtPaletteGlsl.join(',\n  ')}
-);
-
-const vec3 pantsPalette[${pantsPaletteGlsl.length}] = vec3[${pantsPaletteGlsl.length}](
-  ${pantsPaletteGlsl.join(',\n  ')}
-);
-
-const vec3 hairPalette[${hairPaletteGlsl.length}] = vec3[${hairPaletteGlsl.length}](
-  ${hairPaletteGlsl.join(',\n  ')}
-);
-
-const vec3 skinPalette[${skinPaletteGlsl.length}] = vec3[${skinPaletteGlsl.length}](
-  ${skinPaletteGlsl.join(',\n  ')}
-);
-
-const vec3 eyePalette[${eyePaletteGlsl.length}] = vec3[${eyePaletteGlsl.length}](
-  ${eyePaletteGlsl.join(',\n  ')}
-);
-
-const vec3 shoePalette[${shoePaletteGlsl.length}] = vec3[${shoePaletteGlsl.length}](
-  ${shoePaletteGlsl.join(',\n  ')}
-);
-
-mat3 rotateAroundY(float angle) {
-  float c = cos(angle);
-  float s = sin(angle);
-  return mat3(c, 0.0, -s, 0.0, 1.0, 0.0, s, 0.0, c);
-}
-
-vec4 quaternionFromYawPitch(float yaw, float pitch) {
-  vec4 qy = vec4(0.0, sin(yaw * 0.5), 0.0, cos(yaw * 0.5));
-  vec4 qz = vec4(0.0, 0.0, sin(pitch * 0.5), cos(pitch * 0.5));
-  return multiplyQuaternions(qy, qz);
-}
-
-vec4 quaternionFromPitchRoll(float pitch, float roll) {
-  vec4 qz = vec4(0.0, 0.0, sin(pitch * 0.5), cos(pitch * 0.5));
-  vec4 qx = vec4(sin(roll * 0.5), 0.0, 0.0, cos(roll * 0.5));
-  return multiplyQuaternions(qz, qx);
-}
-
-float smoothPulse(float riseStart, float riseEnd, float fallStart, float fallEnd, float value) {
-  return smoothstep(riseStart, riseEnd, value) * (1.0 - smoothstep(fallStart, fallEnd, value));
-}
+const steveUtilDeclarations = `
+${stevePalettesGlsl}
 
 // Packed SteveAppearance bitfield extractors (layout defined in steve-metadata.ts)
 uint getShirtColorId(uint appearance) { return (appearance >> ${SteveAppearanceShift.ShirtColor}U) & 15U; }
@@ -134,39 +67,6 @@ bool isArmBone(uint boneId) {
 
 bool isLeftArmBone(uint boneId) {
   return boneId == ${LEFT_UPPER_ARM_BONE}U || boneId == ${LEFT_FOREARM_BONE}U;
-}
-
-float computeFacingAngle(uint packedFacing, float facingElapsedTicks) {
-  int currentDirection = int(packedFacing & 7U);
-  int previousDirection = int((packedFacing >> 3U) & 7U);
-
-  int deltaSteps = currentDirection - previousDirection;
-  if (deltaSteps > 4) {
-    deltaSteps -= 8;
-  } else if (deltaSteps < -4) {
-    deltaSteps += 8;
-  }
-
-  float progress = smoothstep(0.0, ${FACING_TURN_DURATION.toFixed(1)}, facingElapsedTicks);
-  float interpolatedDirection = float(previousDirection) + float(deltaSteps) * progress;
-  return interpolatedDirection * (PI * 0.25);
-}
-
-vec2 decodeHeadPose(uint packedPose) {
-  float yawByte = float(packedPose & 0xFFU);
-  float pitchByte = float((packedPose >> 8U) & 0xFFU);
-  float yaw = ((yawByte - ${STEVE_HEAD_CENTER_BYTE.toFixed(1)}) / 127.0) * ${STEVE_HEAD_MAX_YAW.toFixed(6)};
-  float pitch = ((pitchByte - ${STEVE_HEAD_CENTER_BYTE.toFixed(1)}) / 127.0) * ${STEVE_HEAD_MAX_PITCH.toFixed(6)};
-  return vec2(yaw, pitch);
-}
-
-float hashUintToSignedUnit(uint value) {
-  value = (value ^ 61U) ^ (value >> 16U);
-  value *= 9U;
-  value = value ^ (value >> 4U);
-  value *= 0x27d4eb2dU;
-  value = value ^ (value >> 15U);
-  return float(value & 0xFFFFU) / 32767.5 - 1.0;
 }
 
 vec2 sampleEyeSaccadePixels(uint phaseSeed, uint stepIndex) {
@@ -207,22 +107,15 @@ float computeEyeBlink(uint phaseSeed) {
   return smoothPulse(0.0, 1.4, 1.4, 3.8, cycleTick);
 }
 
-void applyFaceMicroAnimation(
-  inout vec3 model,
-  uint paletteSlot,
-  uint phaseSeed,
-  float ambientWeight,
-  vec2 currentHeadAngles,
-  vec2 targetHeadAngles
-) {
-  if (paletteSlot == ${StevePaletteSlot.EyePupil}U) {
-    vec2 eyeOffset = computeEyeOffset(phaseSeed, ambientWeight, currentHeadAngles, targetHeadAngles);
+void applyFaceMicroAnimation(inout vec3 model, SkeletalContext ctx) {
+  if (ctx.paletteSlot == ${StevePaletteSlot.EyePupil}U) {
+    vec2 eyeOffset = computeEyeOffset(ctx.phaseSeed, ctx.ambientWeight, ctx.currentHeadAngles, ctx.targetHeadAngles);
     model.z += eyeOffset.x;
     model.y += eyeOffset.y;
   }
 
-  if (paletteSlot == ${StevePaletteSlot.EyeWhite}U || paletteSlot == ${StevePaletteSlot.EyePupil}U) {
-    float blink = computeEyeBlink(phaseSeed);
+  if (ctx.paletteSlot == ${StevePaletteSlot.EyeWhite}U || ctx.paletteSlot == ${StevePaletteSlot.EyePupil}U) {
+    float blink = computeEyeBlink(ctx.phaseSeed);
     if (blink > 0.0) {
       model.y = mix(model.y, ${STEVE_EYE_BOTTOM_Y.toFixed(6)}, blink);
       model.x = mix(model.x, ${STEVE_HEAD_FRONT_RETRACT_X.toFixed(6)}, smoothstep(0.6, 1.0, blink));
@@ -230,27 +123,15 @@ void applyFaceMicroAnimation(
   }
 }
 
-vec4 applyProceduralBoneModifiers(
-  int boneIndex,
-  vec4 clipBoneQuat,
-  vec2 headLookAngles,
-  uint phaseSeed,
-  float ambientWeight
-) {
-  if (boneIndex == ${HEAD_BONE}) {
-    vec4 headLookQuat = quaternionFromYawPitch(headLookAngles.x, headLookAngles.y);
-    return multiplyQuaternions(headLookQuat, clipBoneQuat);
-  }
-
+vec4 applyArmBreathing(int boneIndex, vec4 boneQuat, uint phaseSeed, float ambientWeight) {
   if (boneIndex == ${LEFT_UPPER_ARM_BONE} || boneIndex == ${RIGHT_UPPER_ARM_BONE}) {
     float armSign = (boneIndex == ${LEFT_UPPER_ARM_BONE}) ? 1.0 : -1.0;
     float breathPhase = float(phaseSeed) + ${GameTickUniform} * 0.07;
     float breathAbduction = (0.04 + (sin(breathPhase) * 0.5 + 0.5) * 0.035 * ambientWeight) * armSign;
     float ambientSway = sin(breathPhase * 0.85 + 1.3) * 0.03 * ambientWeight * armSign;
-    return multiplyQuaternions(quaternionFromPitchRoll(ambientSway, breathAbduction), clipBoneQuat);
+    return multiplyQuaternions(quaternionFromPitchRoll(ambientSway, breathAbduction), boneQuat);
   }
-
-  return clipBoneQuat;
+  return boneQuat;
 }
 
 bool isFeatureHidden(uint boneId, uint paletteSlot, uint appearance) {
@@ -291,71 +172,11 @@ void applyAppearanceMorph(inout vec3 model, uint boneId, uint paletteSlot, uint 
   }
 }
 
-float poseSteveModel(
-  sampler2D poseAtlas,
-  inout vec3 model,
-  inout vec3 normal,
-  uint boneId,
-  uint paletteSlot,
-  uint appearance,
-  uint animationId,
-  uint previousAnimationId,
-  uint previousAnimationFrame,
-  uvec2 headPoses,
-  float headLookElapsedTicks,
-  uint phaseSeed,
-  EvaluatedClipTiming timing
-) {
-  if (isFeatureHidden(boneId, paletteSlot, appearance)) {
-    // Collapse hidden optional cuboids to zero-area triangles so the rasterizer discards them
-    model = vec3(0.0);
-    return 0.0;
-  }
-
-  applyAppearanceMorph(model, boneId, paletteSlot, appearance);
-
-  vec2 previousHeadAngles = decodeHeadPose(headPoses.x);
-  vec2 targetHeadAngles = decodeHeadPose(headPoses.y);
-  float headTurnProgress = smoothstep(0.0, ${STEVE_HEAD_TURN_DURATION.toFixed(1)}, headLookElapsedTicks);
-  vec2 currentHeadAngles = mix(previousHeadAngles, targetHeadAngles, headTurnProgress);
-
-  if (boneId == ${HEAD_BONE}U) {
-    applyFaceMicroAnimation(model, paletteSlot, phaseSeed, timing.ambientWeight, currentHeadAngles, targetHeadAngles);
-  }
-
-  // Forward kinematics along this vertex's bone ancestor chain (zero per-animation branches)
-  int bone = int(boneId);
-  for (int step = 0; step < RIG_MAX_CHAIN_DEPTH; ++step) {
-    if (bone < 0) break;
-    vec4 clipQuat = sampleBlendedBoneQuaternion(
-      poseAtlas,
-      animationId,
-      timing.frame,
-      previousAnimationId,
-      previousAnimationFrame,
-      timing.blend,
-      bone
-    );
-    vec4 finalQuat = applyProceduralBoneModifiers(bone, clipQuat, currentHeadAngles, phaseSeed, timing.ambientWeight);
-    rotateAroundPivotByQuaternion(model, normal, finalQuat, RIG_BONE_PIVOTS[bone]);
-    bone = RIG_BONE_PARENTS[bone];
-  }
-
-  vec4 rootMotion = sampleBlendedRootMotion(
-    poseAtlas,
-    animationId,
-    timing.frame,
-    previousAnimationId,
-    previousAnimationFrame,
-    timing.blend
-  );
-  model += rootMotion.xyz;
-
+void scaleSteveBodyProportions(inout vec3 model, uint appearance) {
   float heightScale = ${STEVE_MIN_HEIGHT_SCALE.toFixed(3)} + float(getHeightStep(appearance)) * ${STEVE_HEIGHT_SCALE_STEP.toFixed(3)};
   float widthScale = ${STEVE_MIN_WIDTH_SCALE.toFixed(3)} + float(getWidthStep(appearance)) * ${STEVE_WIDTH_SCALE_STEP.toFixed(3)};
   model.y *= heightScale;
   model.xz *= widthScale;
-  return rootMotion.w;
 }
 
 vec3 resolveShirtTrimColor(uint appearance, vec3 shirtColor) {
@@ -416,120 +237,23 @@ vec3 resolveSteveColor(uint paletteSlot, uint appearance, uint entityId) {
 }
 `
 
-const vertexMain = (a: any) => `
-vec3 model = ${a.position};
-vec3 normal = ${a.normal};
-uint boneId = ${a.boneAndPalette}.x;
-uint paletteSlot = ${a.boneAndPalette}.y;
-
-uint entityId = ${a.entityAndAppearance}.x;
-uint appearance = ${a.entityAndAppearance}.y;
-uint animationId = ${a.animationIds}.x;
-uint previousAnimationId = ${a.animationIds}.y;
-uint facing = ${a.facingAndPreviousFrame}.x;
-uint previousAnimationFrame = ${a.facingAndPreviousFrame}.y;
-
-float animationElapsedTicks = max(0.0, ${GameTickUniform} - float(${a.startTicks}.x));
-float headLookElapsedTicks = max(0.0, ${GameTickUniform} - float(${a.startTicks}.y));
-float facingElapsedTicks = max(0.0, ${GameTickUniform} - float(${a.startTicks}.z));
-uint phaseSeed = (entityId & 0xFFFFU) ^ (((entityId >> 16U) & 0x7FU) * 37U);
-
-EvaluatedClipTiming timing = evaluateClipTiming(animationId, previousAnimationFrame, animationElapsedTicks);
-float verticalBlocksOffset = poseSteveModel(
-  ${a.poseAtlas},
-  model,
-  normal,
-  boneId,
-  paletteSlot,
-  appearance,
-  animationId,
-  previousAnimationId,
-  previousAnimationFrame,
-  ${a.headPoses},
-  headLookElapsedTicks,
-  phaseSeed,
-  timing
-);
-
-mat3 facingRotation = rotateAroundY(computeFacingAngle(facing, facingElapsedTicks));
-model = facingRotation * model;
-normal = facingRotation * normal;
-
-vec3 worldStepOffset = timing.hasStepMovement
-  ? rotationVectors[facing & 7U] * (timing.progress - 1.0)
-  : vec3(0.0);
-worldStepOffset.y = verticalBlocksOffset * ${TerrainHeightMultiplierUniform};
-
-vec3 worldPosition = model + vec3(
-  float(${a.tilePosition}.x) + 0.5,
-  float(${a.tilePosition}.y) * ${TerrainHeightMultiplierUniform},
-  float(${a.tilePosition}.z) + 0.5
-) + worldStepOffset;
-
-${a.worldNormal} = normal;
-${a.vertexPaletteSlot} = paletteSlot;
-${a.packedAppearance} = appearance;
-${a.pickedEntityId} = entityId;
-`
-
-const fragmentMain = (a: any) => `
-vec3 baseColor = clamp(resolveSteveColor(${a.vertexPaletteSlot}, ${a.packedAppearance}, ${a.pickedEntityId}), 0.0, 1.0);
-
-float light = clamp(dot(normalize(${a.worldNormal}), u_light.xyz), u_light.w, 1.0);
-vec3 litColor = mix(baseColor, baseColor * light, 0.8);
-uint v_entityId = ${a.pickedEntityId};
-`
-
-export const spec = {
-  buffers: {
-    mesh: {
-      dynamic: false,
-    },
-    instances: {
-      dynamic: true,
-    },
+export const steveShader = createSkeletalShaderSpec({
+  skeleton: steveSkeleton,
+  poseAtlasAllocation: stevePoseAtlasAllocation,
+  headLook: {
+    headBone: { Head: true },
   },
-  textures: {
-    poseAtlas: {
-      textureSlot: TextureSlot.SkeletalPoseAtlas,
-      format: TextureFormat.RGBA16F,
-      linearFiltering: true,
-      clampToEdge: true,
-    },
+  extraInstanceAttributes: {
+    appearance: { count: 1, type: AttrType.UInt, passToFragment: true },
   },
-  programs: {
-    steve: {
-      utilDeclarations,
-      vertexMain,
-      vertexFinalPosition: 'worldPosition',
-      fragmentMain,
-      fragmentFinalColor: 'vec4(litColor, 1.0)',
-      fragmentEntityId: 'v_entityId',
-      textureSamplers: {
-        poseAtlas: {},
-      },
-      varyings: {
-        worldNormal: { type: 'vec3' },
-        vertexPaletteSlot: { type: 'uint', flat: true },
-        packedAppearance: { type: 'uint', flat: true },
-        pickedEntityId: { type: 'uint', flat: true },
-      },
-      attributes: {
-        // Per-vertex static mesh attributes (3 attribute slots, 28-byte stride)
-        position: { count: 3, type: AttrType.Float, bindTo: { mesh: true } },
-        normal: { count: 3, type: AttrType.Float, bindTo: { mesh: true } },
-        boneAndPalette: { count: 2, type: AttrType.UShort, bindTo: { mesh: true } },
-
-        // Per-instance dynamic attributes (6 attribute slots -> 9 total <= 16 WebGL2 limit, 36-byte stride)
-        entityAndAppearance: { count: 2, type: AttrType.UInt, divisor: 1, bindTo: { instances: true } },
-        startTicks: { count: 3, type: AttrType.UInt, divisor: 1, bindTo: { instances: true } },
-        tilePosition: { count: 3, type: AttrType.UShort, divisor: 1, bindTo: { instances: true } },
-        headPoses: { count: 2, type: AttrType.UShort, divisor: 1, bindTo: { instances: true } },
-        animationIds: { count: 2, type: AttrType.UShort, divisor: 1, bindTo: { instances: true } },
-        facingAndPreviousFrame: { count: 2, type: AttrType.UByte, divisor: 1, bindTo: { instances: true } },
-      },
-    },
-  },
-} as const satisfies Spec<any, any, any, any>
-
-export type SpecImplementation = ReturnType<typeof createFromSpec<typeof spec>>
+  utilDeclarations: steveUtilDeclarations,
+  isVertexHidden: attrs => `isFeatureHidden(ctx.boneId, ctx.paletteSlot, ${attrs.appearance})`,
+  preprocessVertex: attrs => `
+    applyAppearanceMorph(model, ctx.boneId, ctx.paletteSlot, ${attrs.appearance});
+    if (ctx.boneId == ${HEAD_BONE}U) {
+      applyFaceMicroAnimation(model, ctx);
+    }`,
+  modifyBoneQuaternion: () => 'applyArmBreathing(boneIndex, boneQuat, ctx.phaseSeed, ctx.ambientWeight)',
+  postprocessPosedModel: attrs => `scaleSteveBodyProportions(model, ${attrs.appearance});`,
+  resolveFragmentColor: attrs => `resolveSteveColor(paletteSlot, ${attrs.appearance}, entityId)`,
+})

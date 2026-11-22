@@ -11,13 +11,9 @@ import * as SteveWalk from '@game/new-entities/activities/steve/walk'
 import * as SteveWavingHand from '@game/new-entities/activities/steve/waving-hand'
 import { CompletedChild, InterruptionResolution } from '@game/new-entities/activities/types'
 import EntityId from '@game/new-entities/id'
+import { CENTER_HEAD_POSE, HEAD_MAX_PITCH, HEAD_MAX_YAW } from '@game/new-entities/stores/head-look'
 import { Interruption, InterruptionType } from '@game/new-entities/stores/interruptions'
-import {
-  STEVE_CENTER_HEAD_POSE,
-  STEVE_HEAD_MAX_PITCH,
-  STEVE_HEAD_MAX_YAW,
-  SteveAnimationId,
-} from '@game/new-entities/stores/steve-animation'
+import { SteveAnimationId } from '@game/new-entities/stores/steve-animation-id'
 import { Direction, getRotationByChangeInCoords } from '@utils/direction'
 
 export { onAbort } from '@game/new-entities/activities/defaults'
@@ -28,22 +24,20 @@ const computeNextIdleWakeTick = (game: GameStateImplementation): number => {
 }
 
 const pickIdleHeadLook = (game: GameStateImplementation, self: EntityId): void => {
-  const currentTargetPose = game.entities2.getSteveTargetHeadPosePacked(self)
-  if (
-    currentTargetPose !== STEVE_CENTER_HEAD_POSE &&
-    game.seededRandom.nextInt(100) < IDLE_GLANCE_RETURN_CENTER_CHANCE
-  ) {
-    game.entities2.setSteveHeadLook(self, 0, 0, game.currentTick)
+  const currentTargetPose = game.entities2.getTargetHeadPosePacked(self)
+  if (currentTargetPose !== CENTER_HEAD_POSE && game.seededRandom.nextInt(100) < IDLE_GLANCE_RETURN_CENTER_CHANCE) {
+    game.entities2.setHeadLook(self, 0, 0, game.currentTick)
     return
   }
 
-  const targetYaw = (game.seededRandom.next() * 2 - 1) * (STEVE_HEAD_MAX_YAW * 0.9)
-  const targetPitch = (game.seededRandom.next() * 2 - 1) * (STEVE_HEAD_MAX_PITCH * 0.75)
-  game.entities2.setSteveHeadLook(self, targetYaw, targetPitch, game.currentTick)
+  const targetYaw = (game.seededRandom.next() * 2 - 1) * (HEAD_MAX_YAW * 0.9)
+  const targetPitch = (game.seededRandom.next() * 2 - 1) * (HEAD_MAX_PITCH * 0.75)
+  game.entities2.setHeadLook(self, targetYaw, targetPitch, game.currentTick)
 }
 
 export const push = (game: GameStateImplementation, self: EntityId): void => {
-  game.entities2.setSteveAnimation(self, SteveAnimationId.Idle, game.currentTick)
+  game.entities2.setSkeletalAnimation(self, SteveAnimationId.Idle, game.currentTick)
+  game.entities2.resetHeadLook(self, game.currentTick)
   game.entities2.pushActivityFrame(self, ActivityId.Steve_Idle, undefined, computeNextIdleWakeTick(game))
 }
 
@@ -73,7 +67,8 @@ export const onChildFinished = (
   _state: undefined,
   _child: CompletedChild,
 ): void => {
-  game.entities2.setSteveAnimation(self, SteveAnimationId.Idle, game.currentTick)
+  game.entities2.setSkeletalAnimation(self, SteveAnimationId.Idle, game.currentTick)
+  game.entities2.resetHeadLook(self, game.currentTick)
   game.entities2.setWakeTick(self, computeNextIdleWakeTick(game))
 }
 

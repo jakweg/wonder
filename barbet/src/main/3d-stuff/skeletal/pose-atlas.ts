@@ -1,3 +1,4 @@
+import { TextureSlot } from '@3d/texture-slot-counter'
 import { AnimationClipSpec, eulerToQuaternion, Quaternion, sampleClipAtProgress } from './clip'
 import { CompiledSkeleton } from './skeleton'
 
@@ -42,6 +43,10 @@ export const createSkeletalPoseAtlasBuilder = () => {
   let totalRows = 0
 
   return {
+    hasRegisteredRows(): boolean {
+      return totalRows > 0
+    },
+
     registerClipSet<BoneName extends string>(
       skeleton: CompiledSkeleton<BoneName>,
       entries: readonly RegisteredClipEntry<BoneName>[],
@@ -169,4 +174,24 @@ export const getSharedSkeletalPoseAtlas = (): BuiltSkeletalPoseAtlas => {
     cachedSharedAtlas = sharedAtlasBuilder.build()
   }
   return cachedSharedAtlas
+}
+
+/**
+ * Allocates and uploads the shared RGBA16F SkeletalPoseAtlas once on `TextureSlot.SkeletalPoseAtlas`
+ * at renderer startup so all skeletal entity shaders share one GPU texture without duplicate uploads.
+ */
+export const uploadSharedSkeletalPoseAtlas = (gl: WebGL2RenderingContext): WebGLTexture | null => {
+  if (!sharedAtlasBuilder.hasRegisteredRows()) return null
+
+  const atlas = getSharedSkeletalPoseAtlas()
+  const texture = gl.createTexture()
+  const target = gl.TEXTURE_2D
+  gl['activeTexture'](gl['TEXTURE0'] + TextureSlot.SkeletalPoseAtlas)
+  gl.bindTexture(target, texture)
+  gl.texParameteri(target, gl.TEXTURE_MIN_FILTER, gl.LINEAR)
+  gl.texParameteri(target, gl.TEXTURE_MAG_FILTER, gl.LINEAR)
+  gl.texParameteri(target, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE)
+  gl.texParameteri(target, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
+  gl.texImage2D(target, 0, gl['RGBA16F'], atlas.width, atlas.height, 0, gl.RGBA, gl.FLOAT, atlas.texels)
+  return texture
 }

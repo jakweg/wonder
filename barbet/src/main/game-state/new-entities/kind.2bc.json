@@ -29,7 +29,8 @@
         { "default-from": "./stores/position" },
         { "default-from": "./stores/facing" },
         { "default-from": "./stores/steve-metadata" },
-        { "default-from": "./stores/steve-animation" },
+        { "default-from": "./stores/skeletal-animation" },
+        { "default-from": "./stores/head-look" },
         { "default-from": "./stores/interruptions" },
         { "default-from": "./stores/activity" }
       ]

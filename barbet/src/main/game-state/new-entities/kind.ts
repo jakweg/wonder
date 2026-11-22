@@ -1,4 +1,5 @@
-import imported_stores_steve_animation_8 from './stores/steve-animation'
+import imported_stores_head_look_9 from './stores/head-look'
+import imported_stores_skeletal_animation_8 from './stores/skeletal-animation'
 import imported_stores_steve_metadata_7 from './stores/steve-metadata'
 import imported_stores_activity_6 from './stores/activity'
 import imported_stores_interruptions_5 from './stores/interruptions'
@@ -53,7 +54,9 @@ export const getEntityKindsByStore = (value: unknown) => {
       return [EntityKind.Slime, EntityKind.Steve]
     case imported_stores_steve_metadata_7:
       return [EntityKind.Steve]
-    case imported_stores_steve_animation_8:
+    case imported_stores_skeletal_animation_8:
+      return [EntityKind.Steve]
+    case imported_stores_head_look_9:
       return [EntityKind.Steve]
     default:
       throw new Error()
@@ -70,6 +73,7 @@ export const listAllStores = () => {
     imported_stores_interruptions_5,
     imported_stores_activity_6,
     imported_stores_steve_metadata_7,
-    imported_stores_steve_animation_8,
+    imported_stores_skeletal_animation_8,
+    imported_stores_head_look_9,
   ]
 }

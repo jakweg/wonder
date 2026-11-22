@@ -4,7 +4,7 @@ import { finishActivity } from '@game/new-entities/activities/runner'
 import { InterruptionResolution } from '@game/new-entities/activities/types'
 import EntityId from '@game/new-entities/id'
 import { Interruption, InterruptionType } from '@game/new-entities/stores/interruptions'
-import { getSteveAnimationDuration, SteveAnimationId } from '@game/new-entities/stores/steve-animation'
+import { getSteveAnimationDuration, SteveAnimationId } from '@game/new-entities/stores/steve-animation-id'
 
 export { onAbort, onChildFinished } from '@game/new-entities/activities/defaults'
 
@@ -12,7 +12,8 @@ export const push = (game: GameStateImplementation, self: EntityId): void => {
   const animationId =
     game.seededRandom.nextInt(2) === 0 ? SteveAnimationId.WavingHandRight : SteveAnimationId.WavingHandLeft
   const duration = getSteveAnimationDuration(animationId)
-  game.entities2.setSteveAnimation(self, animationId, game.currentTick)
+  game.entities2.setSkeletalAnimation(self, animationId, game.currentTick)
+  game.entities2.resetHeadLook(self, game.currentTick)
   game.entities2.pushActivityFrame(self, ActivityId.Steve_WavingHand, undefined, (game.currentTick + duration) >>> 0)
 }
 

@@ -1,9 +1,11 @@
 import { Camera } from '@3d/camera'
 import { newDrawingContextFromGl } from '@3d/gpu-resources/drawing-context'
 import { createFromSpec, Spec } from '@3d/gpu-resources/ultimate-gpu-pipeline'
+import { uploadSharedSkeletalPoseAtlas } from '@3d/skeletal/pose-atlas'
 import * as vec3 from '@matrix/vec3'
 
 export const makeShaderGlobals = (gl: WebGL2RenderingContext) => {
+  uploadSharedSkeletalPoseAtlas(gl)
   const jsBufferForGlobals = new ArrayBuffer(
     (0 +
       16 + // camera matrix

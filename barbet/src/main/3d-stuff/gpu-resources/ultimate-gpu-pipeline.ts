@@ -141,6 +141,11 @@ type TextureSpecification = {
   format?: TextureFormat
   linearFiltering?: boolean
   clampToEdge?: boolean
+  /**
+   * When true, skips creating/binding a per-spec WebGLTexture because `textureSlot`
+   * is already allocated and uploaded centrally in `makeShaderGlobals` (only binds the sampler uniform).
+   */
+  external?: boolean
 }
 
 const resolveTextureFormat = (spec: TextureSpecification): TextureFormat => {
@@ -166,8 +171,7 @@ export interface Spec<
     P,
     {
       utilDeclarations?:
-        | string
-        | ((variables: Record<NeverIfAny<T> | NeverIfAny<U> | NeverIfAny<AM[P]> | string, string>) => string)
+        string | ((variables: Record<NeverIfAny<T> | NeverIfAny<U> | NeverIfAny<AM[P]> | string, string>) => string)
 
       vertexMain: (variables: Record<NeverIfAny<T> | NeverIfAny<U> | NeverIfAny<AM[P]> | string, string>) => string
       vertexFinalPosition: string
@@ -683,6 +687,22 @@ function createTextures<S extends AnySpec<S>>(gl: WebGL2RenderingContext, s: S) 
   return Object.fromEntries(
     Object.entries(s.textures ?? {}).map(entry => {
       const description = entry[1]! as AnySpec<S>['textures'][keyof AnySpec<S>['textures']]
+      if (description.external) {
+        const failExternalWrite = () => {
+          throw new Error(`Texture '${String(entry[0])}' is external and managed centrally.`)
+        }
+        return [
+          entry[0],
+          {
+            unsafePointer: null,
+            spec: description,
+            setContentSquare: failExternalWrite,
+            setContent2D: failExternalWrite,
+            setPartialContent2D: failExternalWrite,
+            setSize: failExternalWrite,
+          },
+        ]
+      }
       const glTexture = gl.createTexture()
 
       const target = gl.TEXTURE_2D

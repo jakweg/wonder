@@ -5,7 +5,7 @@ import { WALK_STEPS_MAX, WALK_STEPS_MIN } from '@game/new-entities/activities/st
 import { InterruptionResolution } from '@game/new-entities/activities/types'
 import EntityId from '@game/new-entities/id'
 import { Interruption, InterruptionType } from '@game/new-entities/stores/interruptions'
-import { getSteveAnimationDuration, SteveAnimationId } from '@game/new-entities/stores/steve-animation'
+import { getSteveAnimationDuration, SteveAnimationId } from '@game/new-entities/stores/steve-animation-id'
 import { BlockId } from '@game/world/block'
 import { Direction, getChangeInXByRotation, getChangeInZByRotation } from '@utils/direction'
 
@@ -88,7 +88,8 @@ const beginWalkStep = (
 
   game.entities2.setFacing(self, direction, game.currentTick)
   game.entities2.setPosition(self, nextX, nextZ)
-  game.entities2.setSteveAnimation(self, animationId, game.currentTick)
+  game.entities2.setSkeletalAnimation(self, animationId, game.currentTick)
+  game.entities2.resetHeadLook(self, game.currentTick)
   return getSteveAnimationDuration(animationId)
 }
 
