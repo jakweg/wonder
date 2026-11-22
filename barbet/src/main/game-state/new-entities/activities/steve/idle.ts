@@ -27,10 +27,6 @@ const computeNextIdleWakeTick = (game: GameStateImplementation): number => {
   return (game.currentTick + sleepTicks) >>> 0
 }
 
-const snapCurrentFacing = (game: GameStateImplementation, self: EntityId): void => {
-  game.entities2.snapFacing(self, game.entities2.getFacing(self) ?? Direction.PositiveX)
-}
-
 const pickIdleHeadLook = (game: GameStateImplementation, self: EntityId): void => {
   const currentTargetPose = game.entities2.getSteveTargetHeadPosePacked(self)
   if (
@@ -47,21 +43,17 @@ const pickIdleHeadLook = (game: GameStateImplementation, self: EntityId): void =
 }
 
 export const push = (game: GameStateImplementation, self: EntityId): void => {
-  snapCurrentFacing(game, self)
   game.entities2.setSteveAnimation(self, SteveAnimationId.Idle, game.currentTick)
   game.entities2.pushActivityFrame(self, ActivityId.Steve_Idle, undefined, computeNextIdleWakeTick(game))
 }
 
 export const perform = (game: GameStateImplementation, self: EntityId, _state: undefined): void => {
-  snapCurrentFacing(game, self)
-
   const actionRoll = game.seededRandom.nextInt(100)
   if (actionRoll < IDLE_WALK_CHANCE) {
     if (SteveWalk.tryPush(game, self)) return
 
     const nextDirection = game.seededRandom.nextInt(8) as Direction
-    game.entities2.setFacing(self, nextDirection)
-    game.entities2.setSteveAnimation(self, SteveAnimationId.Idle, game.currentTick)
+    game.entities2.setFacing(self, nextDirection, game.currentTick)
     game.entities2.setWakeTick(self, computeNextIdleWakeTick(game))
     return
   }
@@ -81,7 +73,6 @@ export const onChildFinished = (
   _state: undefined,
   _child: CompletedChild,
 ): void => {
-  snapCurrentFacing(game, self)
   game.entities2.setSteveAnimation(self, SteveAnimationId.Idle, game.currentTick)
   game.entities2.setWakeTick(self, computeNextIdleWakeTick(game))
 }

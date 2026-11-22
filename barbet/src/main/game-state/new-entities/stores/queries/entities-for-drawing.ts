@@ -3,21 +3,22 @@ import EntityId from '@game/new-entities/id'
 import { EntityKind, getMaxEntitiesByKind } from '@game/new-entities/kind'
 import { GeneralEntityStoreReadonly } from '@game/new-entities/store'
 
-export interface StevesForDrawingQuery {
+export interface EntitiesForDrawingQuery {
   readonly entityIds: readonly EntityId[] // backed by Uint32Array
   refresh(): number
 }
 
-export const createStevesForDrawingQuery = (
+export const createEntitiesForDrawingQuery = (
   entities: GeneralEntityStoreReadonly,
   visibility: ChunkVisibilityIndex,
-): StevesForDrawingQuery => {
-  const rawIds = new Uint32Array(getMaxEntitiesByKind(EntityKind.Steve))
+  kind: EntityKind,
+): EntitiesForDrawingQuery => {
+  const rawIds = new Uint32Array(getMaxEntitiesByKind(kind))
 
   return {
     entityIds: rawIds as unknown as readonly EntityId[],
     refresh(): number {
-      const aliveCount = entities.fillAliveIdsOfKind(EntityKind.Steve, rawIds)
+      const aliveCount = entities.fillAliveIdsOfKind(kind, rawIds)
       let writeIndex = 0
 
       for (let i = 0; i < aliveCount; ++i) {

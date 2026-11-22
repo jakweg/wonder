@@ -7,4 +7,5 @@ export const enum TextureSlot {
   Debug_TPSStats,
   DisplayFinalization,
   EntityId,
+  SkeletalPoseAtlas,
 }

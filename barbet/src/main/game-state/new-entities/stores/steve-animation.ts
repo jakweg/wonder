@@ -1,23 +1,27 @@
 import EntityId from '@game/new-entities/id'
 import { getEntityKindsByStore } from '@game/new-entities/kind'
 import { StoreDescription, StoreInitializer } from '@game/new-entities/stores/factory'
+import {
+  getSteveAnimationDuration,
+  isSteveAnimationLooping,
+  SteveAnimationId,
+} from '@game/new-entities/stores/steve-animation-id'
 
-export const enum SteveAnimationId {
-  Idle = 0,
-  Walk = 1,
-  WalkUp = 2,
-  WalkDown = 3,
-  WavingHand = 4,
-}
+export { getSteveAnimationDuration, isSteveAnimationLooping, SteveAnimationId }
 
 export const STEVE_HEAD_TURN_DURATION = 10
 export const STEVE_HEAD_MAX_YAW = 0.7
 export const STEVE_HEAD_MAX_PITCH = 0.25
 export const STEVE_HEAD_CENTER_BYTE = 128
 export const STEVE_CENTER_HEAD_POSE = (STEVE_HEAD_CENTER_BYTE << 8) | STEVE_HEAD_CENTER_BYTE
+export const STEVE_NO_PREVIOUS_FRAME = 255
+
+const POSE_MAX_FRAME_INDEX = 63
 
 const enum AnimationFields {
   AnimationId,
+  PreviousAnimationId,
+  PreviousAnimationFrame,
   SIZE,
 }
 
@@ -28,7 +32,8 @@ const enum HeadPoseFields {
 }
 
 const enum TickFields {
-  StartTick,
+  AnimationStartTick,
+  HeadLookStartTick,
   SIZE,
 }
 
@@ -65,46 +70,55 @@ const interpolateHeadPose = (previousPacked: number, targetPacked: number, elaps
 }
 
 /**
- * SteveAnimationStore stores SteveAnimationId, previous/target packed head poses (8-bit yaw + 8-bit pitch),
- * and a 32-bit animation start tick per Steve entity.
+ * SteveAnimationStore tracks body clip playback, freeze-frame state for cross-fading transitions,
+ * and an independent head-look clock so Steve can glance around without resetting body animations.
  */
 const Creator = (init: StoreInitializer) => {
   const {
     isEntitySupported,
-    storage: { animationIds, headPoses, animationStartTicks },
+    storage: { animationStates, headPoses, animationTicks },
   } = init.prepareStorage({
     supportedKinds: getEntityKindsByStore(Creator),
     dataBuffers: {
-      animationIds: { internalType: Uint8Array, fieldsPerEntity: AnimationFields.SIZE },
+      animationStates: { internalType: Uint8Array, fieldsPerEntity: AnimationFields.SIZE },
       headPoses: { internalType: Uint16Array, fieldsPerEntity: HeadPoseFields.SIZE },
-      animationStartTicks: { internalType: Uint32Array, fieldsPerEntity: TickFields.SIZE },
+      animationTicks: { internalType: Uint32Array, fieldsPerEntity: TickFields.SIZE },
     },
   })
 
-  const captureCurrentHeadPose = (entityId: EntityId, currentTick: number): number => {
+  const transitionHeadPose = (entityId: EntityId, nextTargetPose: number, normalizedTick: number): void => {
     const previousPose = headPoses.getValueForEntity_orThrow(entityId, HeadPoseFields.PreviousPose)
     const targetPose = headPoses.getValueForEntity_orThrow(entityId, HeadPoseFields.TargetPose)
-    const previousStartTick = animationStartTicks.getValueForEntity_orThrow(entityId, TickFields.StartTick)
-    const elapsedTicks = (currentTick - previousStartTick) >>> 0
-    return interpolateHeadPose(previousPose, targetPose, elapsedTicks)
-  }
+    const previousHeadTick = animationTicks.getValueForEntity_orThrow(entityId, TickFields.HeadLookStartTick)
+    const currentHeadPose = interpolateHeadPose(previousPose, targetPose, (normalizedTick - previousHeadTick) >>> 0)
 
-  const transitionHeadPose = (entityId: EntityId, nextTargetPose: number, startTick: number): void => {
-    const normalizedStartTick = startTick >>> 0
-    const currentHeadPose = captureCurrentHeadPose(entityId, normalizedStartTick)
     headPoses.setValueForEntity_orThrow(entityId, HeadPoseFields.PreviousPose, currentHeadPose)
     headPoses.setValueForEntity_orThrow(entityId, HeadPoseFields.TargetPose, nextTargetPose)
-    animationStartTicks.setValueForEntity_orThrow(entityId, TickFields.StartTick, normalizedStartTick)
+    animationTicks.setValueForEntity_orThrow(entityId, TickFields.HeadLookStartTick, normalizedTick)
   }
 
   return {
     read: {
       getSteveAnimationId(entityId: EntityId): SteveAnimationId {
-        return animationIds.getValueForEntity_orElse(
+        return animationStates.getValueForEntity_orElse(
           entityId,
           AnimationFields.AnimationId,
           SteveAnimationId.Idle,
         ) as SteveAnimationId
+      },
+      getStevePreviousAnimationId(entityId: EntityId): SteveAnimationId {
+        return animationStates.getValueForEntity_orElse(
+          entityId,
+          AnimationFields.PreviousAnimationId,
+          SteveAnimationId.Idle,
+        ) as SteveAnimationId
+      },
+      getStevePreviousAnimationFrame(entityId: EntityId): number {
+        return animationStates.getValueForEntity_orElse(
+          entityId,
+          AnimationFields.PreviousAnimationFrame,
+          STEVE_NO_PREVIOUS_FRAME,
+        )
       },
       getStevePreviousHeadPosePacked(entityId: EntityId): number {
         return headPoses.getValueForEntity_orElse(entityId, HeadPoseFields.PreviousPose, STEVE_CENTER_HEAD_POSE)
@@ -113,30 +127,72 @@ const Creator = (init: StoreInitializer) => {
         return headPoses.getValueForEntity_orElse(entityId, HeadPoseFields.TargetPose, STEVE_CENTER_HEAD_POSE)
       },
       getSteveAnimationStartTick(entityId: EntityId): number {
-        return animationStartTicks.getValueForEntity_orElse(entityId, TickFields.StartTick, 0)
+        return animationTicks.getValueForEntity_orElse(entityId, TickFields.AnimationStartTick, 0)
+      },
+      getSteveHeadLookStartTick(entityId: EntityId): number {
+        return animationTicks.getValueForEntity_orElse(entityId, TickFields.HeadLookStartTick, 0)
       },
     },
     write: {
       setSteveAnimation(entityId: EntityId, animationId: SteveAnimationId, startTick: number): void {
         if (!isEntitySupported(entityId)) return
 
-        animationIds.setValueForEntity_orThrow(entityId, AnimationFields.AnimationId, animationId)
-        transitionHeadPose(entityId, STEVE_CENTER_HEAD_POSE, startTick)
+        const normalizedTick = startTick >>> 0
+        const outgoingId = animationStates.getValueForEntity_orThrow(
+          entityId,
+          AnimationFields.AnimationId,
+        ) as SteveAnimationId
+
+        if (outgoingId === animationId && isSteveAnimationLooping(animationId)) {
+          animationStates.setValueForEntity_orThrow(
+            entityId,
+            AnimationFields.PreviousAnimationFrame,
+            STEVE_NO_PREVIOUS_FRAME,
+          )
+        } else {
+          const outgoingStartTick = animationTicks.getValueForEntity_orThrow(entityId, TickFields.AnimationStartTick)
+          const elapsedTicks = (normalizedTick - outgoingStartTick) >>> 0
+          const duration = Math.max(1, getSteveAnimationDuration(outgoingId))
+          const progress = isSteveAnimationLooping(outgoingId)
+            ? (elapsedTicks % duration) / duration
+            : Math.min(1, elapsedTicks / duration)
+
+          animationStates.setValueForEntity_orThrow(entityId, AnimationFields.PreviousAnimationId, outgoingId)
+          animationStates.setValueForEntity_orThrow(
+            entityId,
+            AnimationFields.PreviousAnimationFrame,
+            Math.round(progress * POSE_MAX_FRAME_INDEX),
+          )
+        }
+
+        animationStates.setValueForEntity_orThrow(entityId, AnimationFields.AnimationId, animationId)
+        animationTicks.setValueForEntity_orThrow(entityId, TickFields.AnimationStartTick, normalizedTick)
+
+        if (headPoses.getValueForEntity_orThrow(entityId, HeadPoseFields.TargetPose) !== STEVE_CENTER_HEAD_POSE) {
+          transitionHeadPose(entityId, STEVE_CENTER_HEAD_POSE, normalizedTick)
+        }
       },
       setSteveHeadLook(entityId: EntityId, targetYaw: number, targetPitch: number, startTick: number): void {
         if (!isEntitySupported(entityId)) return
 
-        transitionHeadPose(entityId, packSteveHeadPose(targetYaw, targetPitch), startTick)
+        transitionHeadPose(entityId, packSteveHeadPose(targetYaw, targetPitch), startTick >>> 0)
       },
     },
     lifecycle: {
       onEntityAllocated(entityId: EntityId): void {
         if (!isEntitySupported(entityId)) return
 
-        animationIds.setValueForEntity_orThrow(entityId, AnimationFields.AnimationId, SteveAnimationId.Idle)
+        animationStates.setValueForEntity_orThrow(entityId, AnimationFields.AnimationId, SteveAnimationId.Idle)
+        animationStates.setValueForEntity_orThrow(entityId, AnimationFields.PreviousAnimationId, SteveAnimationId.Idle)
+        animationStates.setValueForEntity_orThrow(
+          entityId,
+          AnimationFields.PreviousAnimationFrame,
+          STEVE_NO_PREVIOUS_FRAME,
+        )
         headPoses.setValueForEntity_orThrow(entityId, HeadPoseFields.PreviousPose, STEVE_CENTER_HEAD_POSE)
         headPoses.setValueForEntity_orThrow(entityId, HeadPoseFields.TargetPose, STEVE_CENTER_HEAD_POSE)
-        animationStartTicks.setValueForEntity_orThrow(entityId, TickFields.StartTick, 0)
+        animationTicks.setValueForEntity_orThrow(entityId, TickFields.AnimationStartTick, 0)
+        animationTicks.setValueForEntity_orThrow(entityId, TickFields.HeadLookStartTick, 0)
       },
     },
   } satisfies StoreDescription<object, object>

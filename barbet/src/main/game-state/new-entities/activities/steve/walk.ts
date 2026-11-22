@@ -1,21 +1,15 @@
 import { GameStateImplementation } from '@game'
 import { ActivityId } from '@game/new-entities/activities'
 import { finishActivity } from '@game/new-entities/activities/runner'
-import {
-  WALK_DOWN_STEP_DURATION,
-  WALK_STEP_DURATION,
-  WALK_STEPS_MAX,
-  WALK_STEPS_MIN,
-  WALK_UP_STEP_DURATION,
-} from '@game/new-entities/activities/steve/constants'
+import { WALK_STEPS_MAX, WALK_STEPS_MIN } from '@game/new-entities/activities/steve/constants'
 import { InterruptionResolution } from '@game/new-entities/activities/types'
 import EntityId from '@game/new-entities/id'
 import { Interruption, InterruptionType } from '@game/new-entities/stores/interruptions'
-import { SteveAnimationId } from '@game/new-entities/stores/steve-animation'
+import { getSteveAnimationDuration, SteveAnimationId } from '@game/new-entities/stores/steve-animation'
 import { BlockId } from '@game/world/block'
 import { Direction, getChangeInXByRotation, getChangeInZByRotation } from '@utils/direction'
 
-export { onChildFinished } from '@game/new-entities/activities/defaults'
+export { onAbort, onChildFinished } from '@game/new-entities/activities/defaults'
 
 export interface WalkState {
   stepsRemaining: number
@@ -73,14 +67,10 @@ const findWalkDirection = (
   return null
 }
 
-const getWalkStepConfig = (heightDelta: number): { animationId: SteveAnimationId; stepDuration: number } => {
-  if (heightDelta > 0) {
-    return { animationId: SteveAnimationId.WalkUp, stepDuration: WALK_UP_STEP_DURATION }
-  }
-  if (heightDelta < 0) {
-    return { animationId: SteveAnimationId.WalkDown, stepDuration: WALK_DOWN_STEP_DURATION }
-  }
-  return { animationId: SteveAnimationId.Walk, stepDuration: WALK_STEP_DURATION }
+const selectWalkAnimation = (heightDelta: number): SteveAnimationId => {
+  if (heightDelta > 0) return SteveAnimationId.WalkUp
+  if (heightDelta < 0) return SteveAnimationId.WalkDown
+  return SteveAnimationId.Walk
 }
 
 const beginWalkStep = (
@@ -94,16 +84,12 @@ const beginWalkStep = (
   const nextX = x + getChangeInXByRotation(direction)
   const nextZ = z + getChangeInZByRotation(direction)
   const nextHeight = game.world.getHighestBlockHeight_orElse(nextX, nextZ, currentHeight)
-  const { animationId, stepDuration } = getWalkStepConfig(nextHeight - currentHeight)
+  const animationId = selectWalkAnimation(nextHeight - currentHeight)
 
-  game.entities2.setFacing(self, direction)
+  game.entities2.setFacing(self, direction, game.currentTick)
   game.entities2.setPosition(self, nextX, nextZ)
   game.entities2.setSteveAnimation(self, animationId, game.currentTick)
-  return stepDuration
-}
-
-const snapCurrentFacing = (game: GameStateImplementation, self: EntityId): void => {
-  game.entities2.snapFacing(self, game.entities2.getFacing(self) ?? Direction.PositiveX)
+  return getSteveAnimationDuration(animationId)
 }
 
 export const tryPush = (
@@ -130,15 +116,14 @@ export const tryPush = (
 }
 
 export const perform = (game: GameStateImplementation, self: EntityId, state: WalkState | undefined): void => {
-  snapCurrentFacing(game, self)
-
   if (!state || state.stepsRemaining <= 0 || game.entities2.getPendingInterruption(self) !== undefined) {
     finishActivity(game, self, ActivityId.Steve_Walk, null)
     return
   }
 
   const { x, z } = game.entities2.getPosition(self)!
-  const chosenDirection = findWalkDirection(game, x, z, game.entities2.getFacing(self) ?? Direction.PositiveX)
+  const currentDirection = game.entities2.getFacing(self) ?? Direction.PositiveX
+  const chosenDirection = findWalkDirection(game, x, z, currentDirection)
   if (chosenDirection === null) {
     finishActivity(game, self, ActivityId.Steve_Walk, null)
     return
@@ -158,8 +143,4 @@ export const onInterruption = (
   return interruption.type === InterruptionType.Die
     ? InterruptionResolution.AbortAndPassToParent
     : InterruptionResolution.Defer
-}
-
-export const onAbort = (game: GameStateImplementation, self: EntityId, _state: WalkState | undefined): void => {
-  snapCurrentFacing(game, self)
 }

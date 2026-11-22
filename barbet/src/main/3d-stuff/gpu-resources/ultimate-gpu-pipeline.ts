@@ -12,6 +12,12 @@ export enum AttrType {
   UInt,
 }
 
+export enum TextureFormat {
+  R8UI,
+  R32F,
+  RGBA16F,
+}
+
 const getGlName = (count: number, type: AttrType) => {
   switch (count) {
     case 1: {
@@ -61,9 +67,7 @@ export interface InterleavedAttributesLayout<K extends string> {
   readonly elementOffsets: Readonly<Record<K, number>>
 }
 
-export const computeAttributesLayout = <
-  T extends Record<string, { readonly count: number; readonly type: AttrType }>,
->(
+export const computeAttributesLayout = <T extends Record<string, { readonly count: number; readonly type: AttrType }>>(
   attributes: T,
 ): InterleavedAttributesLayout<Extract<keyof T, string>> => {
   let byteOffset = 0
@@ -131,7 +135,18 @@ type AttributeSpecification<B extends string | symbol | number> = {
 type UniformSpecification = { type: string }
 type VaryingSpecification = { type: string; flat?: boolean }
 type TextureSamplerSpecification = {}
-type TextureSpecification = { textureSlot: TextureSlot; float32?: boolean }
+type TextureSpecification = {
+  textureSlot: TextureSlot
+  float32?: boolean
+  format?: TextureFormat
+  linearFiltering?: boolean
+  clampToEdge?: boolean
+}
+
+const resolveTextureFormat = (spec: TextureSpecification): TextureFormat => {
+  if (spec.format !== undefined) return spec.format
+  return spec.float32 ? TextureFormat.R32F : TextureFormat.R8UI
+}
 
 type IfAny<T, Y, N> = 0 extends 1 & T ? Y : N
 type NeverIfAny<T> = IfAny<T, never, T>
@@ -384,8 +399,9 @@ function buildShaderSource(params: {
     availableVariables[n] = 'u_' + n
   }
 
-  for (const [n, u] of Object.entries(params.textureSamplers)) {
-    parts.push('uniform ', params.textures[n].spec.float32 ? 'sampler2D' : 'usampler2D', ' u_', n, ';\n')
+  for (const n of Object.keys(params.textureSamplers)) {
+    const isIntegerTexture = resolveTextureFormat(params.textures[n].spec) === TextureFormat.R8UI
+    parts.push('uniform ', isIntegerTexture ? 'usampler2D' : 'sampler2D', ' u_', n, ';\n')
     availableVariables[n] = 'u_' + n
   }
 
@@ -670,19 +686,35 @@ function createTextures<S extends AnySpec<S>>(gl: WebGL2RenderingContext, s: S) 
       const glTexture = gl.createTexture()
 
       const target = gl.TEXTURE_2D
-      const glSlot = gl.TEXTURE0 + description.textureSlot
+      const glSlot = gl['TEXTURE0'] + description.textureSlot
 
-      gl.activeTexture(glSlot)
+      const filter = description.linearFiltering ? gl.LINEAR : gl.NEAREST
+      gl['activeTexture'](glSlot)
       gl.bindTexture(target, glTexture)
-      gl.texParameteri(target, gl.TEXTURE_MIN_FILTER, gl.NEAREST)
-      gl.texParameteri(target, gl.TEXTURE_MAG_FILTER, gl.NEAREST)
+      gl.texParameteri(target, gl.TEXTURE_MIN_FILTER, filter)
+      gl.texParameteri(target, gl.TEXTURE_MAG_FILTER, filter)
+      if (description.clampToEdge) {
+        gl.texParameteri(target, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE)
+        gl.texParameteri(target, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
+      }
 
       // creating texture or setting content leaves this texture bound to this slot
       // this is intended behavior as we use only single texture per slot
 
-      const internalFormat = description.float32 ? gl.R32F : gl.R8UI
-      const format = description.float32 ? gl.RED : gl.RED_INTEGER
-      const type = description.float32 ? gl.FLOAT : gl.UNSIGNED_BYTE
+      const resolvedFormat = resolveTextureFormat(description)
+      const internalFormat =
+        resolvedFormat === TextureFormat.RGBA16F
+          ? gl['RGBA16F']
+          : resolvedFormat === TextureFormat.R32F
+            ? gl['R32F']
+            : gl['R8UI']
+      const format =
+        resolvedFormat === TextureFormat.RGBA16F
+          ? gl.RGBA
+          : resolvedFormat === TextureFormat.R32F
+            ? gl['RED']
+            : gl['RED_INTEGER']
+      const type = resolvedFormat === TextureFormat.R8UI ? gl.UNSIGNED_BYTE : gl.FLOAT
 
       return [
         entry[0],
@@ -690,12 +722,12 @@ function createTextures<S extends AnySpec<S>>(gl: WebGL2RenderingContext, s: S) 
           unsafePointer: glTexture,
           spec: description,
           setContentSquare: (value: TypedArray, sizeInOneDimension: number) => {
-            gl.activeTexture(glSlot)
+            gl['activeTexture'](glSlot)
             gl.bindTexture(target, glTexture)
             gl.texImage2D(target, 0, internalFormat, sizeInOneDimension, sizeInOneDimension, 0, format, type, value)
           },
           setContent2D: (value: TypedArray, width: number, height: number) => {
-            gl.activeTexture(glSlot)
+            gl['activeTexture'](glSlot)
             gl.bindTexture(target, glTexture)
             gl.texImage2D(target, 0, internalFormat, width, height, 0, format, type, value)
           },
@@ -706,12 +738,12 @@ function createTextures<S extends AnySpec<S>>(gl: WebGL2RenderingContext, s: S) 
             width: number,
             height: number,
           ) => {
-            gl.activeTexture(glSlot)
+            gl['activeTexture'](glSlot)
             gl.bindTexture(target, glTexture)
-            gl.texSubImage2D(target, 0, destinationX, destinationY, width, height, format, type, value)
+            gl['texSubImage2D'](target, 0, destinationX, destinationY, width, height, format, type, value)
           },
           setSize: (width: number, height: number) => {
-            gl.activeTexture(glSlot)
+            gl['activeTexture'](glSlot)
             gl.bindTexture(target, glTexture)
             gl.texImage2D(target, 0, internalFormat, width, height, 0, format, type, null)
           },

@@ -1,7 +1,7 @@
 export const VersionHeader = () => `#version 300 es\n`
 
 export const PrecisionHeader = () =>
-  `precision highp float;\nprecision highp int;\nprecision highp usampler2D;\nprecision mediump sampler2D;\n`
+  `precision highp float;\nprecision highp int;\nprecision highp usampler2D;\nprecision highp sampler2D;\n`
 
 export const PIConstantHeader = () => `const float PI = ${Math.PI};\nconst float PI_OVER1 = ${1 / Math.PI};`
 
@@ -49,7 +49,7 @@ export function calculateNormals(
   vertexSize: number,
   normalsOffset: number,
 ): void {
-  for (let i = 0, l = elements.length; i < l; ) {
+  for (let i = 0, l = elements.length; i < l;) {
     const a = elements[i++]!
     const b = elements[i++]!
     const c = elements[i++]!

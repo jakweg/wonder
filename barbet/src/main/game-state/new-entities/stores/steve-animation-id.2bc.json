@@ -1,0 +1,45 @@
+{
+  "name": "SteveAnimationId",
+  "output-file": "steve-animation-id",
+  "add-size": true,
+  "values": {
+    "Idle": {
+      "#comment": "Standing idle pose with ambient breathing and head glances",
+      "duration-ticks": 80,
+      "loop": true
+    },
+    "Walk": {
+      "#comment": "Flat-ground 1-tile walking stride",
+      "duration-ticks": 20,
+      "loop": true
+    },
+    "WalkUp": {
+      "#comment": "Ascending +1 block terrain step with ballistic hop",
+      "duration-ticks": 25,
+      "loop": false
+    },
+    "WalkDown": {
+      "#comment": "Descending -1 block terrain step with landing knee absorption",
+      "duration-ticks": 18,
+      "loop": false
+    },
+    "WavingHandRight": {
+      "#comment": "Friendly wave with the right forearm",
+      "duration-ticks": 50,
+      "loop": false
+    },
+    "WavingHandLeft": {
+      "#comment": "Friendly wave with the left forearm",
+      "duration-ticks": 50,
+      "loop": false
+    }
+  },
+  "getters": {
+    "getSteveAnimationDuration": {
+      "field": "duration-ticks"
+    },
+    "isSteveAnimationLooping": {
+      "field": "loop"
+    }
+  }
+}
