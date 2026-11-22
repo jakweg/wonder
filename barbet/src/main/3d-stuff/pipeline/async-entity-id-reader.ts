@@ -24,7 +24,7 @@ export class AsyncEntityIdReader {
     const gl = this.gl
     gl.bindBuffer(gl.PIXEL_PACK_BUFFER, this.asyncGpuBufferToRead)
     gl.readBuffer(gl.COLOR_ATTACHMENT1)
-    gl.readPixels(pixelX, gl.canvas.height - 1 - pixelY, 1, 1, gl.RED_INTEGER, gl.UNSIGNED_INT, 0)
+    gl.readPixels(pixelX, gl['canvas']['height'] - 1 - pixelY, 1, 1, gl.RED_INTEGER, gl.UNSIGNED_INT, 0)
     gl.bindBuffer(gl.PIXEL_PACK_BUFFER, null)
 
     return waitForAllGPUOperationsToFinish(gl)

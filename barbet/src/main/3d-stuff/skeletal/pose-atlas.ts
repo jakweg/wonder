@@ -186,12 +186,12 @@ export const uploadSharedSkeletalPoseAtlas = (gl: WebGL2RenderingContext): WebGL
   const atlas = getSharedSkeletalPoseAtlas()
   const texture = gl.createTexture()
   const target = gl.TEXTURE_2D
-  gl['activeTexture'](gl['TEXTURE0'] + TextureSlot.SkeletalPoseAtlas)
+  gl.activeTexture(gl.TEXTURE0 + TextureSlot.SkeletalPoseAtlas)
   gl.bindTexture(target, texture)
   gl.texParameteri(target, gl.TEXTURE_MIN_FILTER, gl.LINEAR)
   gl.texParameteri(target, gl.TEXTURE_MAG_FILTER, gl.LINEAR)
   gl.texParameteri(target, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE)
   gl.texParameteri(target, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
-  gl.texImage2D(target, 0, gl['RGBA16F'], atlas.width, atlas.height, 0, gl.RGBA, gl.FLOAT, atlas.texels)
+  gl.texImage2D(target, 0, gl.RGBA16F, atlas.width, atlas.height, 0, gl.RGBA, gl.FLOAT, atlas.texels)
   return texture
 }

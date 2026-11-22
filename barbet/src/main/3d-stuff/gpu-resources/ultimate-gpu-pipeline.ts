@@ -382,53 +382,73 @@ const getAllAttributes = (gl: WebGL2RenderingContext, program: WebGLProgram) => 
   return DEBUG ? { ...mapped, names: allNames } : mapped
 }
 
-function buildShaderSource(params: {
-  isVertex: boolean
-  skipWorldTransform: boolean
-  textures: any
-  uniforms: Record<string, UniformSpecification>
-  textureSamplers: Partial<Record<string, TextureSamplerSpecification>>
-  attributes?: Record<string, AttributeSpecification<any>>
-  varyings: Record<string, VaryingSpecification>
-  mainSource: (variables: any) => string
-  utilDeclarations: any
-  finalVariable: string | [string, string | undefined]
-}) {
+// Props mangling fix: JS allows names such as "$0", but GLSL does not
+// Rename such attribute names internally in case of having dolar symbol inside
+const makeGlslNameValid = (jsName: string): string => {
+  return jsName['replaceAll']('$', 'dollar_sign_')['replace'](/^_/, 'leading_underscore_')
+}
+
+function buildShaderSource(
+  params: {
+    isVertex: boolean
+    skipWorldTransform: boolean
+    textures: any
+    uniforms: Record<string, UniformSpecification>
+    textureSamplers: Partial<Record<string, TextureSamplerSpecification>>
+    attributes?: Record<string, AttributeSpecification<any>>
+    varyings: Record<string, VaryingSpecification>
+    mainSource: (variables: any) => string
+    utilDeclarations: any
+    finalVariable: string | [string, string | undefined]
+  },
+  nameMappings: Record<string, string>,
+) {
   const availableVariables: any = {}
   const parts: string[] = []
   parts.push(VersionHeader(), PrecisionHeader(), GlobalUniformBlockDeclaration())
 
   for (const [n, u] of Object.entries(params.uniforms)) {
-    parts.push('uniform ', u.type, ' u_', n, ';\n')
-    availableVariables[n] = 'u_' + n
+    const name = makeGlslNameValid(n)
+    parts.push('uniform ', u.type, ' u_', name, ';\n')
+    availableVariables[n] = 'u_' + name
+    nameMappings[name] = n
   }
 
   for (const n of Object.keys(params.textureSamplers)) {
+    const name = makeGlslNameValid(n)
     const isIntegerTexture = resolveTextureFormat(params.textures[n].spec) === TextureFormat.R8UI
-    parts.push('uniform ', isIntegerTexture ? 'usampler2D' : 'sampler2D', ' u_', n, ';\n')
-    availableVariables[n] = 'u_' + n
+    parts.push('uniform ', isIntegerTexture ? 'usampler2D' : 'sampler2D', ' u_', name, ';\n')
+    availableVariables[n] = 'u_' + name
+    nameMappings[name] = n
   }
 
   for (const [n, v] of Object.entries(params.varyings)) {
-    parts.push(v.flat ? 'flat ' : '', params.isVertex ? 'out ' : 'in ', v.type, ' v_', n, ';\n')
-    availableVariables[n] = 'v_' + n
+    const name = makeGlslNameValid(n)
+    parts.push(v.flat ? 'flat ' : '', params.isVertex ? 'out ' : 'in ', v.type, ' v_', name, ';\n')
+    availableVariables[n] = 'v_' + name
+    nameMappings[name] = n
   }
 
   for (const [n, a] of Object.entries(params.attributes ?? {})) {
-    parts.push('in ', getGlName(a.count, a.type), ' a_', n, ';\n')
-    availableVariables[n] = 'a_' + n
+    const name = makeGlslNameValid(n)
+    parts.push('in ', getGlName(a.count, a.type), ' a_', name, ';\n')
+    availableVariables[n] = 'a_' + name
+    nameMappings[name] = n
   }
 
   const handler = {
     get(target: any, property: any, receiver: any) {
       const value = Reflect.get(target, property, receiver)
-      if (!value)
+      if (!value) {
+        console.error(target, property)
         throw `Attempt to read "${String(property)}" in ${
           params.isVertex ? 'vertex' : 'fragment'
         } shader, but not existing!`
+      }
       return value
     },
   }
+
   const safeAvailableVariables = new Proxy(availableVariables, handler)
 
   if (!params.isVertex) {
@@ -518,31 +538,38 @@ function createPrograms<S extends AnySpec<S>>(
   return Object.fromEntries(
     Object.entries(s.programs ?? {}).map(entry => {
       const description = entry[1]! as AnySpec<S>['programs'][keyof AnySpec<S>['programs']]
+      const nameMappings: Record<string, string> = {}
 
-      const vertexSource = buildShaderSource({
-        uniforms: description.uniforms ?? {},
-        textures: textures,
-        textureSamplers: description.textureSamplers ?? {},
-        attributes: description.attributes ?? {},
-        varyings: description.varyings ?? {},
-        isVertex: true,
-        skipWorldTransform: description.skipWorldTransform ?? false,
-        finalVariable: description.vertexFinalPosition,
-        utilDeclarations: description.utilDeclarations,
-        mainSource: description.vertexMain,
-      })
+      const vertexSource = buildShaderSource(
+        {
+          uniforms: description.uniforms ?? {},
+          textures: textures,
+          textureSamplers: description.textureSamplers ?? {},
+          attributes: description.attributes ?? {},
+          varyings: description.varyings ?? {},
+          isVertex: true,
+          skipWorldTransform: description.skipWorldTransform ?? false,
+          finalVariable: description.vertexFinalPosition,
+          utilDeclarations: description.utilDeclarations,
+          mainSource: description.vertexMain,
+        },
+        nameMappings,
+      )
 
-      const fragmentSource = buildShaderSource({
-        uniforms: description.uniforms ?? {},
-        textures: textures,
-        textureSamplers: description.textureSamplers ?? {},
-        varyings: description.varyings ?? {},
-        isVertex: false,
-        skipWorldTransform: description.skipWorldTransform ?? false,
-        finalVariable: [description.fragmentFinalColor, description.fragmentEntityId],
-        utilDeclarations: description.utilDeclarations,
-        mainSource: description.fragmentMain,
-      })
+      const fragmentSource = buildShaderSource(
+        {
+          uniforms: description.uniforms ?? {},
+          textures: textures,
+          textureSamplers: description.textureSamplers ?? {},
+          varyings: description.varyings ?? {},
+          isVertex: false,
+          skipWorldTransform: description.skipWorldTransform ?? false,
+          finalVariable: [description.fragmentFinalColor, description.fragmentEntityId],
+          utilDeclarations: description.utilDeclarations,
+          mainSource: description.fragmentMain,
+        },
+        nameMappings,
+      )
 
       const vertexShader = gl.createShader(gl.VERTEX_SHADER)!
       gl.shaderSource(vertexShader, vertexSource)
@@ -561,17 +588,23 @@ function createPrograms<S extends AnySpec<S>>(
         throw new Error('Compilation failed')
       }
 
-      const attributes = getAllAttributes(gl, program)
-      const uniforms = getAllUniforms(gl, program)
+      const applyNameMapping = (obj: any) => {
+        // to fix props mangling in prod if jsName contains "_" or "$"
+        return Object.fromEntries(Object.entries(obj).map(([k, v]) => [nameMappings[k], v]))
+      }
+
+      const attributes = applyNameMapping(getAllAttributes(gl, program))
+      const uniforms = applyNameMapping(getAllUniforms(gl, program))
 
       gl.useProgram(program)
-      for (const name of Object.keys(description.textureSamplers ?? {})) {
-        const location = uniforms[name]
+      for (const jsName of Object.keys(description.textureSamplers ?? {})) {
+        const glslName = makeGlslNameValid(jsName)
+        const location = uniforms[glslName]
         if (!location) {
-          console.warn('texture', name, 'is declared, but not used')
+          console.warn('texture', jsName, 'or', glslName, 'is declared, but not used')
           continue
         }
-        const bindingPoint = (textures[name]?.spec as TextureSpecification)?.textureSlot
+        const bindingPoint = (textures[jsName]?.spec as TextureSpecification)?.textureSlot
         if (bindingPoint == null) throw new Error()
         gl.uniform1i(location, bindingPoint)
       }
@@ -706,10 +739,10 @@ function createTextures<S extends AnySpec<S>>(gl: WebGL2RenderingContext, s: S) 
       const glTexture = gl.createTexture()
 
       const target = gl.TEXTURE_2D
-      const glSlot = gl['TEXTURE0'] + description.textureSlot
+      const glSlot = gl.TEXTURE0 + description.textureSlot
 
       const filter = description.linearFiltering ? gl.LINEAR : gl.NEAREST
-      gl['activeTexture'](glSlot)
+      gl.activeTexture(glSlot)
       gl.bindTexture(target, glTexture)
       gl.texParameteri(target, gl.TEXTURE_MIN_FILTER, filter)
       gl.texParameteri(target, gl.TEXTURE_MAG_FILTER, filter)
@@ -724,16 +757,16 @@ function createTextures<S extends AnySpec<S>>(gl: WebGL2RenderingContext, s: S) 
       const resolvedFormat = resolveTextureFormat(description)
       const internalFormat =
         resolvedFormat === TextureFormat.RGBA16F
-          ? gl['RGBA16F']
+          ? gl.RGBA16F
           : resolvedFormat === TextureFormat.R32F
-            ? gl['R32F']
-            : gl['R8UI']
+            ? gl.R32F
+            : gl.R8UI
       const format =
         resolvedFormat === TextureFormat.RGBA16F
           ? gl.RGBA
           : resolvedFormat === TextureFormat.R32F
-            ? gl['RED']
-            : gl['RED_INTEGER']
+            ? gl.RED
+            : gl.RED_INTEGER
       const type = resolvedFormat === TextureFormat.R8UI ? gl.UNSIGNED_BYTE : gl.FLOAT
 
       return [
@@ -742,12 +775,12 @@ function createTextures<S extends AnySpec<S>>(gl: WebGL2RenderingContext, s: S) 
           unsafePointer: glTexture,
           spec: description,
           setContentSquare: (value: TypedArray, sizeInOneDimension: number) => {
-            gl['activeTexture'](glSlot)
+            gl.activeTexture(glSlot)
             gl.bindTexture(target, glTexture)
             gl.texImage2D(target, 0, internalFormat, sizeInOneDimension, sizeInOneDimension, 0, format, type, value)
           },
           setContent2D: (value: TypedArray, width: number, height: number) => {
-            gl['activeTexture'](glSlot)
+            gl.activeTexture(glSlot)
             gl.bindTexture(target, glTexture)
             gl.texImage2D(target, 0, internalFormat, width, height, 0, format, type, value)
           },
@@ -758,12 +791,12 @@ function createTextures<S extends AnySpec<S>>(gl: WebGL2RenderingContext, s: S) 
             width: number,
             height: number,
           ) => {
-            gl['activeTexture'](glSlot)
+            gl.activeTexture(glSlot)
             gl.bindTexture(target, glTexture)
-            gl['texSubImage2D'](target, 0, destinationX, destinationY, width, height, format, type, value)
+            gl.texSubImage2D(target, 0, destinationX, destinationY, width, height, format, type, value)
           },
           setSize: (width: number, height: number) => {
-            gl['activeTexture'](glSlot)
+            gl.activeTexture(glSlot)
             gl.bindTexture(target, glTexture)
             gl.texImage2D(target, 0, internalFormat, width, height, 0, format, type, null)
           },

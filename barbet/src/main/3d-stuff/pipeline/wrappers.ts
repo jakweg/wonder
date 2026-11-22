@@ -137,7 +137,7 @@ function prepareForDraw(gl: WebGL2RenderingContext, state: RenderingState) {
 
   gl.drawBuffers([gl.COLOR_ATTACHMENT0, gl.COLOR_ATTACHMENT1])
 
-  gl.viewport(0, 0, gl.canvas.width, gl.canvas.height)
+  gl.viewport(0, 0, gl['canvas']['width'], gl['canvas']['height'])
 
   gl.clearBufferfv(gl.COLOR, 0, [0.1, 0.2, 0.3, 1.0]) // Clear color to dark blue
   gl.clearBufferuiv(gl.COLOR, 1, [0, 0, 0, 0]) // Clear ID to 0

@@ -19,7 +19,11 @@ export interface SkeletalInstanceWriteContext<ExtraAttrName extends string> {
 }
 
 type BaseSkeletalInstanceAttrName =
-  'entityAndTicks' | 'tilePosition' | 'animationIds' | 'headPoses' | 'facingAndPreviousFrame'
+  | 'entityAndTicks'
+  | 'tilePosition'
+  | 'animationIds'
+  | 'headPoses'
+  | 'facingAndPreviousFrame'
 
 export interface SkeletalEntityElementOptions<
   BoneName extends string,
