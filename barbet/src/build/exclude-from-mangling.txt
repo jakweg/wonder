@@ -15,6 +15,7 @@ DEPTH_ATTACHMENT
 DEPTH_BUFFER_BIT
 DEPTH_COMPONENT24
 DEPTH_TEST
+DRAW_FRAMEBUFFER
 DYNAMIC_DRAW
 E
 ELEMENT_ARRAY_BUFFER
@@ -26,7 +27,9 @@ INT
 LEQUAL
 LINEAR
 LINK_STATUS
+MAX_SAMPLES
 NEAREST
+NONE
 ONE_MINUS_SRC_ALPHA
 OffscreenCanvas
 PI
@@ -35,12 +38,15 @@ POSITIVE_INFINITY
 R32F
 R32UI
 R8UI
+READ_FRAMEBUFFER
 RED
 RED_INTEGER
 RENDERBUFFER
 RGB
 RGBA
 RGBA16F
+RGBA8
+SCISSOR_TEST
 SQRT2
 SRC_ALPHA
 STATIC_DRAW
@@ -75,6 +81,7 @@ bindFramebuffer
 bindRenderbuffer
 bindTexture
 bindVertexArray
+blitFramebuffer
 bufferData
 bufferSubData
 byteLength
@@ -114,6 +121,7 @@ deleteSync
 deleteTexture
 deleteVertexArray
 depthFunc
+disable
 disableVertexAttribArray
 drawArrays
 drawArraysInstanced
@@ -146,6 +154,7 @@ getBufferSubData
 getContext
 getElementById
 getExtension
+getParameter
 getProgramInfoLog
 getProgramParameter
 getShaderInfoLog
@@ -192,11 +201,13 @@ reject
 reload
 removeEventListener
 renderbufferStorage
+renderbufferStorageMultisample
 requestAnimationFrame
 resolve
 reverse
 revokeObjectURL
 round
+scissor
 set
 setInterval
 setTimeout

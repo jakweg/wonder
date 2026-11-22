@@ -82,6 +82,10 @@ export const createRenderingSession = async (args: RenderingSessionStartArgs) =>
     scheduler,
   })
 
+  const drawScene = () => {
+    for (const e of pipelineElements) e.draw()
+  }
+
   let lastTrueRenderedTick = -1
   let consecutiveMutexTimeouts = 0
 
@@ -151,8 +155,8 @@ export const createRenderingSession = async (args: RenderingSessionStartArgs) =>
 
     timeMeter.nowStart(DrawPhase.Draw)
     context.prepareForDraw()
-    for (const e of pipelineElements) e.draw()
-    context.finalizeDisplay(elapsedSeconds)
+    drawScene()
+    context.finalizeDisplay(drawScene)
 
     stats.updateWithTimeMeasurements(timeMeter.endSessionAndGetRawResults())
     stats.frames.frameEnded(elapsedSeconds * 1000)

@@ -9,10 +9,33 @@ export default (root: HTMLElement) => {
   Header(root, constant('Video settings'), true)
   const main = createElement('main', root)
 
+  AntialiasingSetting(main)
   FpsCapSetting(main)
   BooleanSwitch(main, 'rendering/show-tile-borders', (v: boolean) => `Tile borders: ${v ? 'ON' : 'OFF'}`)
   PreferredEnvironment(main)
   PreferredPowerPreference(main)
+}
+
+const AntialiasingSetting = (main: HTMLElement) => {
+  const key = 'rendering/msaa-samples'
+  const setting = observeField(CONFIG, key)
+  const titleMapFunction = (v: number) => (v <= 0 ? 'Antialiasing: OFF' : `Antialiasing: ${v}x MSAA`)
+  Button(main, map(setting, titleMapFunction), () => {
+    switch (CONFIG.get(key)) {
+      case 0:
+        CONFIG.set(key, 2)
+        break
+      case 2:
+        CONFIG.set(key, 4)
+        break
+      case 4:
+        CONFIG.set(key, 8)
+        break
+      default:
+        CONFIG.set(key, 0)
+        break
+    }
+  })
 }
 
 const FpsCapSetting = (main: HTMLElement) => {

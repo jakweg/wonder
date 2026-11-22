@@ -26,8 +26,15 @@ export default (({ pipeline: { visibility, terrainSnapshot }, globals, game, sch
   let worldTexturesNeedUpload = false
 
   let cacheDrawChunksCount = 0
-  const cacheFirstsBuffer = new Int32Array(terrainSnapshot.sizeLevel * terrainSnapshot.sizeLevel)
-  const cacheCountsBuffer = new Int32Array(terrainSnapshot.sizeLevel * terrainSnapshot.sizeLevel)
+  let visibleChunksCount = 0
+  const totalChunksCount = terrainSnapshot.sizeLevel * terrainSnapshot.sizeLevel
+  const cacheFirstsBuffer = new Int32Array(totalChunksCount)
+  const cacheCountsBuffer = new Int32Array(totalChunksCount)
+  const visibleChunksStaging = new Uint16Array(totalChunksCount)
+  const visibleChunksUploadViews = createArray(
+    totalChunksCount + 1,
+    count => new Uint16Array(visibleChunksStaging.buffer, 0, count),
+  )
 
   const rawChunkModificationIds = game.world.chunkModificationIds
   const chunks = createArray<ChunkSnapshot>(rawChunkModificationIds.length, chunkId => ({
@@ -122,18 +129,27 @@ export default (({ pipeline: { visibility, terrainSnapshot }, globals, game, sch
         chunk.modelVertexCount = (chunk.buildResult!.sides.byteLength / BYTES_PER_VERTEX) | 0
       }
       chunksThatNeedUpload.length = 0
-    },
-    draw() {
+
       const visibleChunksList = visibility.getVisibleChunkIds()
       prepareCacheAndChunksBeforeDraw(visibleChunksList)
 
-      const visibleChunks = new Uint16Array(visibleChunksList)
-      implementation.buffers.visibleChunks.setContent(visibleChunks)
+      visibleChunksCount = visibleChunksList.length
+      if (visibleChunksCount > 0) {
+        for (let i = 0; i < visibleChunksCount; ++i) {
+          visibleChunksStaging[i] = visibleChunksList[i]!
+        }
+        implementation.buffers.visibleChunks.setContent(visibleChunksUploadViews[visibleChunksCount]!)
+      }
+    },
+    draw() {
+      if (visibleChunksCount === 0) return
 
       const numberOfQuadsPerChunk = GENERIC_CHUNK_SIZE * GENERIC_CHUNK_SIZE
-      implementation.programs.tops.drawArraysInstanced(0, 6 * numberOfQuadsPerChunk, visibleChunksList.length)
+      implementation.programs.tops.drawArraysInstanced(0, 6 * numberOfQuadsPerChunk, visibleChunksCount)
 
-      implementation.programs.sides.multiDrawArrays(cacheFirstsBuffer, cacheCountsBuffer, cacheDrawChunksCount)
+      if (cacheDrawChunksCount > 0) {
+        implementation.programs.sides.multiDrawArrays(cacheFirstsBuffer, cacheCountsBuffer, cacheDrawChunksCount)
+      }
     },
   }
 }) satisfies NewRenderingPipelineElementCreator
