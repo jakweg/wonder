@@ -66,8 +66,8 @@ export const createSkeletalPoseAtlasBuilder = () => {
         const flags =
           (timing.loop ? ClipMetadataFlag.Loop : 0) | (clip.stepMovement ? ClipMetadataFlag.StepMovement : 0)
 
-        const invDuration = (1 / Math.max(1, timing.durationTicks)).toFixed(6)
-        const invBlendIn = blendInTicks > 0 ? (1 / blendInTicks).toFixed(6) : '1000000.0'
+        const invDuration = (1 / Math.max(1, timing.durationTicks)).toFixed(8)
+        const invBlendIn = blendInTicks > 0 ? (1 / blendInTicks).toFixed(8) : '1000000.0'
         clipMetaGlslEntries.push(`vec4(${invDuration}, ${invBlendIn}, ${flags}.0, ${ambientWeight.toFixed(4)})`)
 
         const previousBoneQuaternions: (Quaternion | null)[] = new Array(boneCount).fill(null)

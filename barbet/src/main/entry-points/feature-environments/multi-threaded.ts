@@ -89,7 +89,6 @@ export const bind = async (args: ConnectArguments): Promise<EnvironmentConnectio
           canvas: canvas,
           passedGame: data.game,
           updater: data.updater,
-          workerStartDelayDifference: updateWorker.startupTimeDifference - renderWorker.startupTimeDifference,
         },
         [canvas.element],
       )

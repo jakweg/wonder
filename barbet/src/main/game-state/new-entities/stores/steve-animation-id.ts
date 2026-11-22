@@ -43,7 +43,7 @@ export const isSteveAnimationLooping = (value: SteveAnimationId) => {
     case SteveAnimationId.Idle:
       return true
     case SteveAnimationId.Walk:
-      return true
+      return false
     case SteveAnimationId.WalkUp:
       return false
     case SteveAnimationId.WalkDown:

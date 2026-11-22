@@ -1,6 +1,5 @@
 import { Camera } from '@3d/camera'
-import { GameState } from '@game'
-import { World } from '@game/world/world'
+import { TerrainHeightReader } from '@3d/world-terrain-snapshot'
 import * as vec3 from '@matrix/vec3'
 import { AdditionalFrontedFlags, FrontendVariable, PressedKey } from '@utils/frontend-variables'
 import { UICanvas } from 'src/main/ui/canvas-background'
@@ -48,7 +47,7 @@ const updateDeltaByKeys = (delta: CameraDelta, frontendVariables: UICanvas['fron
 const calculateSolidBlockLookingAt = (
   target: readonly [number, number, number],
   eye: readonly [number, number, number],
-  world: World,
+  terrain: TerrainHeightReader,
   terrainHeight: number,
 ) => {
   const temporaryVectorForBlockTest = vec3.create()
@@ -67,7 +66,7 @@ const calculateSolidBlockLookingAt = (
     const y = temporaryVectorForBlockTest[1] | 0
     const z = temporaryVectorForBlockTest[2] | 0
 
-    const heightAtThisLocation = world.getHighestBlockHeight_orElse(x, z, -1)
+    const heightAtThisLocation = terrain.getHighestBlockHeight_orElse(x, z, -1)
     if (heightAtThisLocation * terrainHeight >= y) {
       // means we hit the block
       break
@@ -99,23 +98,23 @@ export const createNewMouseInterpreter = () => {
   let yaw = 0.5
 
   return {
-    updateCameraBasedOnInputsWithMutexHeld(
+    updateCameraBasedOnInputs(
       camera: Camera,
       frontendVariables: UICanvas['frontendVariables'],
-      game: GameState,
+      terrain: TerrainHeightReader,
       terrainHeight: number,
       dt: number,
     ) {
       // check if camera is in block for some reason
       const terrainHeightAtCameraPosition =
-        (game.world.getHighestBlockHeight_orElse(camera.eye[0] | 0, camera.eye[2] | 0, -1) + 2) * terrainHeight
+        (terrain.getHighestBlockHeight_orElse(camera.eye[0] | 0, camera.eye[2] | 0, -1) + 2) * terrainHeight
       if (camera.eye[1] <= terrainHeightAtCameraPosition) {
         const willBumpCameraBy = terrainHeightAtCameraPosition + terrainHeight * 5 - camera.eye[1]
         camera.eye[1] += willBumpCameraBy
         camera.target[1] += willBumpCameraBy
       }
 
-      const lookingAtPosition = calculateSolidBlockLookingAt(camera.target, camera.eye, game.world, terrainHeight)
+      const lookingAtPosition = calculateSolidBlockLookingAt(camera.target, camera.eye, terrain, terrainHeight)
       vec3.copy(camera.target, lookingAtPosition)
       distance = vec3.distance(camera.eye, camera.target)
 

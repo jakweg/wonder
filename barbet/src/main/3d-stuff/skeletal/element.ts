@@ -19,11 +19,7 @@ export interface SkeletalInstanceWriteContext<ExtraAttrName extends string> {
 }
 
 type BaseSkeletalInstanceAttrName =
-  | 'entityAndTicks'
-  | 'tilePosition'
-  | 'animationIds'
-  | 'headPoses'
-  | 'facingAndPreviousFrame'
+  'entityAndTicks' | 'tilePosition' | 'animationIds' | 'headPoses' | 'facingAndPreviousFrame'
 
 export interface SkeletalEntityElementOptions<
   BoneName extends string,
@@ -89,10 +85,12 @@ export const createSkeletalEntityElement = <
     const uploadViews = createArray(maxEntities + 1, count => new Uint8Array(stagingBuffer, 0, count * strideBytes))
 
     let visibleCount = 0
+    let instancesDirty = false
 
     return {
       updateWorldSync() {
         visibleCount = query.refresh()
+        instancesDirty = true
 
         for (let i = 0; i < visibleCount; ++i) {
           const entityId = query.entityIds[i]!
@@ -137,6 +135,8 @@ export const createSkeletalEntityElement = <
         }
       },
       uploadToGpu() {
+        if (!instancesDirty) return
+        instancesDirty = false
         if (visibleCount > 0) {
           impl.buffers.instances.setContent(uploadViews[visibleCount]!)
         }

@@ -20,21 +20,23 @@ export const waitAsyncCompat: (
       if (load !== value) return { 'async': false, 'value': Promise.resolve('ok') }
 
       const timeoutValue = timeout ?? Number.POSITIVE_INFINITY
+      if (timeoutValue <= 0) return { 'async': false, 'value': Promise.resolve('timed-out') }
+
       const started = performance.now()
+      const pollIntervalMs = 1
       return {
         'async': true,
         'value': new Promise(resolve => {
           const interval = setInterval(() => {
             const load = Atomics.load(typedArray, index) as any
             if (load !== value) {
+              clearInterval(interval)
               resolve('ok')
+            } else if (performance.now() - started >= timeoutValue) {
               clearInterval(interval)
-            }
-            if (timeoutValue < performance.now() - started) {
               resolve('timed-out')
-              clearInterval(interval)
             }
-          }, 5)
+          }, pollIntervalMs)
         }),
       }
     }
@@ -43,8 +45,8 @@ export type GameMutex = {
   enterForUpdate(): void
   enterForUpdateAsync(): Promise<void>
   exitUpdate(): void
-  enterForRender(): void
-  enterForRenderAsync(): Promise<void>
+  tryEnterForRender(timeoutMs: number): boolean
+  tryEnterForRenderAsync(timeoutMs: number): Promise<boolean>
   exitRender(): void
   enterForRenderHelper(id: number): void
   exitRenderHelper(id: number): void
@@ -86,7 +88,7 @@ export const gameMutexFrom = (data: any): GameMutex => {
       }
       // looks like we need to wait for exclusivity
       while (true) {
-        await waitAsyncCompat(array, 0, thisValue as any).value
+        await waitAsyncCompat(array, 0, thisValue as any)['value']
 
         if (Atomics.load(array, 0) === UPDATE_BIT) return // success: now we have exclusivity
       }
@@ -95,34 +97,38 @@ export const gameMutexFrom = (data: any): GameMutex => {
       Atomics.and(array, 0, ~UPDATE_BIT)
       Atomics.notify(array, 0)
     },
-    enterForRender(): void {
+    tryEnterForRender(timeoutMs: number): boolean {
+      const deadline = performance.now() + timeoutMs
       while (true) {
         const value = Atomics.load(array, 0)
         if ((value & UPDATE_BIT) === 0) {
-          // try acquire as update doesn't want that
           const replaced = Atomics.compareExchange(array, 0, value, value | RENDER_BIT)
-          if (replaced === value && (replaced & UPDATE_BIT) === 0) {
+          if (replaced === value) {
             Atomics.notify(array, 0)
-            return // success, we have the lock!}
+            return true
           }
+          continue
         }
-        // update is happening right now, wait for it to finish
-        Atomics.wait(array, 0, value)
+        const remaining = deadline - performance.now()
+        if (remaining <= 0) return false
+        Atomics.wait(array, 0, value, remaining)
       }
     },
-    async enterForRenderAsync(): Promise<void> {
+    async tryEnterForRenderAsync(timeoutMs: number): Promise<boolean> {
+      const deadline = performance.now() + timeoutMs
       while (true) {
         const value = Atomics.load(array, 0)
         if ((value & UPDATE_BIT) === 0) {
-          // try acquire as update doesn't want that
           const replaced = Atomics.compareExchange(array, 0, value, value | RENDER_BIT)
-          if (replaced === value && (replaced & UPDATE_BIT) === 0) {
+          if (replaced === value) {
             Atomics.notify(array, 0)
-            return // success, we have the lock!}
+            return true
           }
+          continue
         }
-        // update is happening right now, wait for it to finish
-        await waitAsyncCompat(array, 0, value as any).value
+        const remaining = deadline - performance.now()
+        if (remaining <= 0) return false
+        await waitAsyncCompat(array, 0, value as any, remaining)['value']
       }
     },
     exitRender(): void {

@@ -18,6 +18,10 @@ export const generateSkeletalRigGlsl = <BoneName extends string>(
   const boneCount = skeleton.boneNames.length
   const maxClipIndex = Math.max(0, allocation.clipCount - 1)
 
+  // NOTE: Step-movement clips (`Walk`, `WalkUp`, `WalkDown`) are non-looping (`loop: false`), and `evaluateClipTiming`
+  // also guards `!hasStepMovement` so `progress` always clamps to [0, 1] on extrapolated/fake frames (`rawProgress >= 1.0`).
+  // Because PositionStore advances only when update-worker commits the next tick, clamping keeps `worldStepOffset` at 0.0
+  // at the destination tile instead of wrapping back to -1.0 for a frame.
   return `
 const int RIG_BONE_COUNT = ${boneCount};
 const int RIG_MAX_CHAIN_DEPTH = ${skeleton.maxChainDepth};
@@ -71,9 +75,10 @@ EvaluatedClipTiming evaluateClipTiming(uint clipId, uint previousFrame, float el
   vec4 meta = RIG_CLIP_META[safeClipId];
   uint flags = uint(meta.z + 0.5);
   bool isLoop = (flags & ${ClipMetadataFlag.Loop}U) != 0U;
+  bool hasStepMovement = (flags & ${ClipMetadataFlag.StepMovement}U) != 0U;
 
   float rawProgress = elapsedTicks * meta.x;
-  float progress = isLoop ? fract(rawProgress) : clamp(rawProgress, 0.0, 1.0);
+  float progress = (isLoop && !hasStepMovement) ? fract(rawProgress) : clamp(rawProgress, 0.0, 1.0);
   float blend = (previousFrame == ${NO_CROSSFADE_FRAME}U)
     ? 1.0
     : clamp(elapsedTicks * meta.y, 0.0, 1.0);
@@ -83,7 +88,7 @@ EvaluatedClipTiming evaluateClipTiming(uint clipId, uint previousFrame, float el
     progress * ${(POSE_ATLAS_FRAMES - 1).toFixed(1)},
     blend,
     meta.w,
-    (flags & ${ClipMetadataFlag.StepMovement}U) != 0U
+    hasStepMovement
   );
 }
 

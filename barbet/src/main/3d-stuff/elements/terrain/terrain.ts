@@ -1,6 +1,5 @@
 import { NewRenderingPipelineElementCreator } from '@3d/new-render-context'
 import { TaskType } from '@3d/pipeline/work-scheduler'
-import { MetadataField } from '@game'
 import { GENERIC_CHUNK_SIZE } from '@game/world/size'
 import TypedArray from '@seampan/typed-array'
 import { createArray } from '@utils/array-utils'
@@ -16,27 +15,22 @@ interface ChunkSnapshot {
   buildResult: null | { top: TypedArray; sides: TypedArray }
 }
 
-export default (({ pipeline: { visibility }, globals, game, scheduler }) => {
+export default (({ pipeline: { visibility, terrainSnapshot }, globals, game, scheduler }) => {
+  const blocksPerAxis = terrainSnapshot.blocksPerAxis
   const implementation = globals.createGpuResources(spec)
-  implementation.textures.ambientOcclusion.setSize(
-    GENERIC_CHUNK_SIZE * game.world.sizeLevel,
-    GENERIC_CHUNK_SIZE * game.world.sizeLevel,
-  )
+  implementation.textures.heightMap.setSize(blocksPerAxis, blocksPerAxis)
+  implementation.textures.terrainType.setSize(blocksPerAxis, blocksPerAxis)
+  implementation.textures.ambientOcclusion.setSize(blocksPerAxis, blocksPerAxis)
 
-  let lastWorldUploadChangeId = -1
+  let lastSyncedWorldChangeId = -1
+  let worldTexturesNeedUpload = false
 
   let cacheDrawChunksCount = 0
-  const cacheFirstsBuffer = new Int32Array(game.world.sizeLevel * game.world.sizeLevel)
-  const cacheCountsBuffer = new Int32Array(game.world.sizeLevel * game.world.sizeLevel)
-
-  const metaData = game.metaData
-  const blocksPerAxis = game.world.sizeLevel * GENERIC_CHUNK_SIZE
-  const rawBlockData = game.world.rawBlockData
-  const rawHeightData = game.world.rawHeightData
+  const cacheFirstsBuffer = new Int32Array(terrainSnapshot.sizeLevel * terrainSnapshot.sizeLevel)
+  const cacheCountsBuffer = new Int32Array(terrainSnapshot.sizeLevel * terrainSnapshot.sizeLevel)
 
   const rawChunkModificationIds = game.world.chunkModificationIds
-  let lastWorldChangeId = -1
-  const chunks = createArray<ChunkSnapshot>(game.world.chunkModificationIds.length, chunkId => ({
+  const chunks = createArray<ChunkSnapshot>(rawChunkModificationIds.length, chunkId => ({
     chunkId,
     lastChunkModificationId: -1,
     needsRebuild: false,
@@ -81,12 +75,13 @@ export default (({ pipeline: { visibility }, globals, game, scheduler }) => {
 
   return {
     updateWorldSync() {
-      const worldChangeId = metaData[MetadataField.LastWorldChange]!
-      if (worldChangeId === lastWorldUploadChangeId) {
+      const worldChangeId = terrainSnapshot.lastWorldChangeId
+      if (worldChangeId === lastSyncedWorldChangeId) {
         // no change in world
         return
       }
-      lastWorldChangeId = worldChangeId
+      lastSyncedWorldChangeId = worldChangeId
+      worldTexturesNeedUpload = true
 
       let chunkIndex = -1
       for (const chunk of chunks) {
@@ -104,16 +99,15 @@ export default (({ pipeline: { visibility }, globals, game, scheduler }) => {
       }
     },
     uploadToGpu() {
-      const worldChangeId = metaData[MetadataField.LastWorldChange]!
-      if (worldChangeId !== lastWorldUploadChangeId) {
-        lastWorldUploadChangeId = worldChangeId
-        implementation.textures.heightMap.setContentSquare(rawHeightData, blocksPerAxis)
-        implementation.textures.terrainType.setContentSquare(rawBlockData, blocksPerAxis)
+      if (worldTexturesNeedUpload) {
+        worldTexturesNeedUpload = false
+        implementation.textures.heightMap.setContentSquare(terrainSnapshot.heightData, blocksPerAxis)
+        implementation.textures.terrainType.setContentSquare(terrainSnapshot.blockData, blocksPerAxis)
       }
 
       for (const chunk of chunksThatNeedUpload) {
-        const chunkZ = (chunk.chunkId % game.world.sizeLevel) | 0
-        const chunkX = (chunk.chunkId / game.world.sizeLevel) | 0
+        const chunkZ = (chunk.chunkId % terrainSnapshot.sizeLevel) | 0
+        const chunkX = (chunk.chunkId / terrainSnapshot.sizeLevel) | 0
         implementation.textures.ambientOcclusion.setPartialContent2D(
           chunk.buildResult!.top,
           chunkX * GENERIC_CHUNK_SIZE,

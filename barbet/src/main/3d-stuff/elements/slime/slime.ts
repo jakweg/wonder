@@ -26,11 +26,13 @@ export default (({ pipeline: { visibility }, globals, game }) => {
   const uploadViews = createArray(maxSlimes + 1, count => new Uint8Array(stagingBuffer, 0, count * strideBytes))
 
   let visibleCount = 0
+  let instancesDirty = false
 
   return {
     updateWorldSync() {
       const count = query.refresh()
       visibleCount = count
+      instancesDirty = true
       const rawIds = query.entityIds
 
       for (let i = 0; i < count; ++i) {
@@ -55,6 +57,8 @@ export default (({ pipeline: { visibility }, globals, game }) => {
       }
     },
     uploadToGpu() {
+      if (!instancesDirty) return
+      instancesDirty = false
       if (visibleCount > 0) {
         impl.buffers.instances.setContent(uploadViews[visibleCount]!)
       }

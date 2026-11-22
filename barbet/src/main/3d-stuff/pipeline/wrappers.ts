@@ -1,7 +1,7 @@
 import { AsyncEntityIdReader } from '@3d/pipeline/async-entity-id-reader'
 import { createNewMouseInterpreter } from '@3d/pipeline/mouse-interpreter'
 import { TextureSlot } from '@3d/texture-slot-counter'
-import { GameState } from '@game'
+import { TerrainHeightReader } from '@3d/world-terrain-snapshot'
 import { sleep } from '@seampan/util'
 import { AdditionalFrontedFlags, FrontendVariable } from '@utils/frontend-variables'
 import CONFIG, { observeSetting } from '@utils/persistence/observable-settings'
@@ -193,8 +193,8 @@ export const newContextWrapper = async ({ element: canvas, frontendVariables }: 
 
       prepareForDraw(gl, state)
     },
-    updateCameraWithMutexHeld(dt: number, game: GameState, terrainHeight: number) {
-      mouse.updateCameraBasedOnInputsWithMutexHeld(camera, frontendVariables, game, terrainHeight, dt)
+    updateCamera(dt: number, terrain: TerrainHeightReader, terrainHeight: number) {
+      mouse.updateCameraBasedOnInputs(camera, frontendVariables, terrain, terrainHeight, dt)
     },
     finalizeDisplay(dt: number) {
       if (entityIdReader.canRead()) {
@@ -207,7 +207,7 @@ export const newContextWrapper = async ({ element: canvas, frontendVariables }: 
             if (entityId !== 0) {
               const isBlock = entityId >>> 31 === 1
               if (!isBlock) {
-                console.log('not a block', { entityId })
+                // console.log('not a block', { entityId })
                 return
               }
               const posMask = 0xffff >> 2

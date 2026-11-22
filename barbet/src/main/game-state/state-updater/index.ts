@@ -3,6 +3,8 @@ import { createNewStateUpdater } from './implementation'
 
 export const STANDARD_GAME_TICK_RATE = 20
 
+export const getSharedWallClockMs = (): number => performance.timeOrigin + performance.now()
+
 export const enum Status {
   Stopped,
   Terminated,
@@ -13,8 +15,12 @@ export const enum Status {
 
 export const enum BufferField {
   Status,
-  FirstTickExecutedAt,
-  LastTickFinishTime,
+  ScheduleVersion,
+  WakeCounter,
+  RunStartTickLow,
+  RunStartTickHigh,
+  RunStartTimeLow,
+  RunStartTimeHigh,
   TicksPerSecond,
   ExpectedTicksPerSecond,
   ExecutedTicksCounter,

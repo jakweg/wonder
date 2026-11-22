@@ -219,6 +219,7 @@ texImage2D
 texParameteri
 texSubImage2D
 then
+timeOrigin
 toFixed
 toString
 transaction

@@ -11,7 +11,7 @@
     "Walk": {
       "#comment": "Flat-ground 1-tile walking stride",
       "duration-ticks": 20,
-      "loop": true
+      "loop": false
     },
     "WalkUp": {
       "#comment": "Ascending +1 block terrain step with ballistic hop",

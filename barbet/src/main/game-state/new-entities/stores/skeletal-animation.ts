@@ -88,20 +88,19 @@ const Creator = (init: StoreInitializer) => {
         const kind = entityId_extractKind(entityId)
         const normalizedTick = startTick >>> 0
         const outgoingId = animationStates.getValueForEntity_orThrow(entityId, AnimationFields.AnimationId)
+        const outgoingStartTick = animationTicks.getValueForEntity_orThrow(entityId, TickFields.AnimationStartTick)
+        const elapsedTicks = (normalizedTick - outgoingStartTick) >>> 0
+        const duration = Math.max(1, getSkeletalAnimationDuration(kind, outgoingId))
+        const outgoingLoops = isSkeletalAnimationLooping(kind, outgoingId)
 
-        if (outgoingId === animationId && isSkeletalAnimationLooping(kind, animationId)) {
+        if (outgoingId === animationId && (outgoingLoops || elapsedTicks >= duration)) {
           animationStates.setValueForEntity_orThrow(
             entityId,
             AnimationFields.PreviousAnimationFrame,
             SKELETAL_NO_PREVIOUS_FRAME,
           )
         } else {
-          const outgoingStartTick = animationTicks.getValueForEntity_orThrow(entityId, TickFields.AnimationStartTick)
-          const elapsedTicks = (normalizedTick - outgoingStartTick) >>> 0
-          const duration = Math.max(1, getSkeletalAnimationDuration(kind, outgoingId))
-          const progress = isSkeletalAnimationLooping(kind, outgoingId)
-            ? (elapsedTicks % duration) / duration
-            : Math.min(1, elapsedTicks / duration)
+          const progress = outgoingLoops ? (elapsedTicks % duration) / duration : Math.min(1, elapsedTicks / duration)
 
           animationStates.setValueForEntity_orThrow(entityId, AnimationFields.PreviousAnimationId, outgoingId)
           animationStates.setValueForEntity_orThrow(

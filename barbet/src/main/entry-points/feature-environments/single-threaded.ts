@@ -75,7 +75,6 @@ export const bind = (args: ConnectArguments): EnvironmentConnection => {
         passedMutex: mutex.pass(),
         passedGame: game.passForRenderer(),
         updater: updaterInstance.pass(),
-        workerStartDelayDifference: 0,
       })
 
       session.stats.updateTimesBuffer = updateDebugStats.get(StatField.UpdateTimes) as any as SharedArrayBuffer
