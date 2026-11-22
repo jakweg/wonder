@@ -46,6 +46,7 @@ RGB
 RGBA
 RGBA16F
 RGBA8
+SAMPLES
 SCISSOR_TEST
 SQRT2
 SRC_ALPHA
@@ -154,6 +155,7 @@ getBufferSubData
 getContext
 getElementById
 getExtension
+getInternalformatParameter
 getParameter
 getProgramInfoLog
 getProgramParameter

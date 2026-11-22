@@ -24,9 +24,11 @@ export default class ChunkVisibilityIndex {
   private cullingDisabled: boolean = false
   private readonly visibleChunkIds: number[] = []
 
-  private constructor(private readonly size: number, private readonly visibility: Uint8Array) {
+  private constructor(
+    private readonly size: number,
+    private readonly visibility: Uint8Array,
+  ) {
     visibility.fill(Status.INVISIBLE)
-    this.setCullingDisabled(true) // TODO remove
   }
 
   public static create(size: number): ChunkVisibilityIndex {
