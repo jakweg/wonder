@@ -3,12 +3,20 @@ import { STANDARD_GAME_TICK_RATE } from '@game/state-updater'
 import State from '../state'
 import { getFromLocalStorage, putInLocalStorage } from './serializable-settings'
 
+export const enum AntialiasMode {
+  Off = 0,
+  Fxaa = 1,
+  Msaa2x = 2,
+  Msaa4x = 4,
+  Msaa8x = 8,
+}
+
 const settingsToDefaults = {
   'other/tps': STANDARD_GAME_TICK_RATE,
   'other/pause-on-blur': false,
   'rendering/fps-cap': 0, // vsync only
   'rendering/fps-cap-on-blur': 15,
-  'rendering/msaa-samples': 4,
+  'rendering/antialias-mode': AntialiasMode.Off as AntialiasMode,
   'rendering/show-tile-borders': false,
   'rendering/ambient-occlusion': true,
   'rendering/terrain-height': 0.6,

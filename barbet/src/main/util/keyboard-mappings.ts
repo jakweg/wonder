@@ -1,11 +1,18 @@
 import KeyboardController from './keyboard-controller'
-import CONFIG from './persistence/observable-settings'
+import CONFIG, { AntialiasMode } from './persistence/observable-settings'
 
 const toggleSetting = (key: Parameters<(typeof CONFIG)['set']>[0]) => CONFIG.set(key, !CONFIG.get(key))
 
 export const initKeyboardMappings = () => {
+  let lastEnabledAntialiasMode: AntialiasMode = AntialiasMode.Fxaa
   KeyboardController.INSTANCE?.setKeyReleasedListener('F2', () => {
-    CONFIG.set('rendering/msaa-samples', CONFIG.get('rendering/msaa-samples') > 0 ? 0 : 4)
+    const current = CONFIG.get('rendering/antialias-mode')
+    if (current !== AntialiasMode.Off) {
+      lastEnabledAntialiasMode = current
+      CONFIG.set('rendering/antialias-mode', AntialiasMode.Off)
+    } else {
+      CONFIG.set('rendering/antialias-mode', lastEnabledAntialiasMode)
+    }
   })
   KeyboardController.INSTANCE?.setKeyReleasedListener('F3', () => {
     toggleSetting('debug/show-info')

@@ -2,9 +2,10 @@ import { AsyncEntityIdReader } from '@3d/pipeline/async-entity-id-reader'
 import { createNewMouseInterpreter } from '@3d/pipeline/mouse-interpreter'
 import { TextureSlot } from '@3d/texture-slot-counter'
 import { TerrainHeightReader } from '@3d/world-terrain-snapshot'
+import { DEBUG } from '@build'
 import { sleep } from '@seampan/util'
 import { AdditionalFrontedFlags, FrontendVariable } from '@utils/frontend-variables'
-import CONFIG, { observeSetting } from '@utils/persistence/observable-settings'
+import CONFIG, { AntialiasMode, observeSetting } from '@utils/persistence/observable-settings'
 import { UICanvas } from 'src/main/ui/canvas-background'
 import { Camera } from '../camera'
 
@@ -38,14 +39,138 @@ interface RenderingState {
   entityIdTexture: WebGLTexture
   depthBuffer: WebGLRenderbuffer
 
-  maxSamples: number
+  supportedMsaaSamples: readonly number[]
   msaaFbo: WebGLFramebuffer | null
   msaaColorBuffer: WebGLRenderbuffer | null
   msaaDepthBuffer: WebGLRenderbuffer | null
 
   fullscreenProgram: WebGLProgram
   screenTextureUniform: WebGLUniformLocation
+
+  fxaaProgram: WebGLProgram
+  fxaaScreenTextureUniform: WebGLUniformLocation
+  fxaaInverseScreenSizeUniform: WebGLUniformLocation
 }
+
+const FULLSCREEN_VS = `#version 300 es
+out vec2 v_uv;
+void main() {
+  float u = float((gl_VertexID << 1) & 2);
+  float v = float(gl_VertexID & 2);
+  v_uv = vec2(u, v);
+  gl_Position = vec4(u * 2.0 - 1.0, v * 2.0 - 1.0, 0.0, 1.0);
+}`
+
+const PASSTHROUGH_FS = `#version 300 es
+precision mediump float;
+uniform sampler2D u_screenTexture;
+in vec2 v_uv;
+out vec4 outColor;
+void main() {
+  outColor = texture(u_screenTexture, v_uv);
+}`
+
+// FXAA 3.11 Quality (variable-step edge search + 3x3 subpixel filter)
+const FXAA_FS = `#version 300 es
+precision highp float;
+
+uniform sampler2D u_screenTexture;
+uniform vec2 u_inverseScreenSize;
+in vec2 v_uv;
+out vec4 outColor;
+
+const float EDGE_THRESHOLD_MIN = 0.0312;
+const float EDGE_THRESHOLD_MAX = 0.125;
+const float SUBPIXEL_QUALITY = 0.75;
+const float STEP_SIZES[11] = float[11](1.0, 1.0, 1.0, 1.5, 2.0, 2.0, 2.0, 2.0, 2.0, 4.0, 8.0);
+
+float rgb2luma(vec3 rgb) {
+  return dot(rgb, vec3(0.299, 0.587, 0.114));
+}
+
+void main() {
+  vec3 rgbM = texture(u_screenTexture, v_uv).rgb;
+  float lumaM = rgb2luma(rgbM);
+
+  float lumaN = rgb2luma(textureOffset(u_screenTexture, v_uv, ivec2(0, 1)).rgb);
+  float lumaS = rgb2luma(textureOffset(u_screenTexture, v_uv, ivec2(0, -1)).rgb);
+  float lumaE = rgb2luma(textureOffset(u_screenTexture, v_uv, ivec2(1, 0)).rgb);
+  float lumaW = rgb2luma(textureOffset(u_screenTexture, v_uv, ivec2(-1, 0)).rgb);
+
+  float lumaMin = min(lumaM, min(min(lumaN, lumaS), min(lumaE, lumaW)));
+  float lumaMax = max(lumaM, max(max(lumaN, lumaS), max(lumaE, lumaW)));
+  float lumaRange = lumaMax - lumaMin;
+
+  if (lumaRange < max(EDGE_THRESHOLD_MIN, lumaMax * EDGE_THRESHOLD_MAX)) {
+    outColor = vec4(rgbM, 1.0);
+    return;
+  }
+
+  float lumaNW = rgb2luma(textureOffset(u_screenTexture, v_uv, ivec2(-1, 1)).rgb);
+  float lumaNE = rgb2luma(textureOffset(u_screenTexture, v_uv, ivec2(1, 1)).rgb);
+  float lumaSW = rgb2luma(textureOffset(u_screenTexture, v_uv, ivec2(-1, -1)).rgb);
+  float lumaSE = rgb2luma(textureOffset(u_screenTexture, v_uv, ivec2(1, -1)).rgb);
+
+  float lumaNS = lumaN + lumaS;
+  float lumaWE = lumaW + lumaE;
+  float lumaNWSW = lumaNW + lumaSW;
+  float lumaNESE = lumaNE + lumaSE;
+
+  float edgeHorizontal =
+    abs(-2.0 * lumaW + lumaNWSW) + abs(-2.0 * lumaM + lumaNS) * 2.0 + abs(-2.0 * lumaE + lumaNESE);
+  float edgeVertical =
+    abs(-2.0 * lumaN + lumaNW + lumaNE) + abs(-2.0 * lumaM + lumaWE) * 2.0 + abs(-2.0 * lumaS + lumaSW + lumaSE);
+  bool isHorizontal = edgeHorizontal >= edgeVertical;
+
+  float luma1 = isHorizontal ? lumaS : lumaW;
+  float luma2 = isHorizontal ? lumaN : lumaE;
+  float gradient1 = abs(luma1 - lumaM);
+  float gradient2 = abs(luma2 - lumaM);
+  bool is1Steepest = gradient1 >= gradient2;
+
+  float gradientScaled = 0.25 * max(gradient1, gradient2);
+  float stepLength = (isHorizontal ? u_inverseScreenSize.y : u_inverseScreenSize.x) * (is1Steepest ? -1.0 : 1.0);
+  float lumaLocalAverage = 0.5 * ((is1Steepest ? luma1 : luma2) + lumaM);
+
+  vec2 stepNormal = isHorizontal ? vec2(0.0, stepLength) : vec2(stepLength, 0.0);
+  vec2 currentUv = v_uv + stepNormal * 0.5;
+  vec2 edgeOffset = isHorizontal ? vec2(u_inverseScreenSize.x, 0.0) : vec2(0.0, u_inverseScreenSize.y);
+
+  vec2 uv1 = currentUv - edgeOffset;
+  vec2 uv2 = currentUv + edgeOffset;
+  float lumaEnd1 = 0.0;
+  float lumaEnd2 = 0.0;
+  bool reached1 = false;
+  bool reached2 = false;
+
+  for (int i = 0; i < 11; ++i) {
+    if (!reached1) {
+      lumaEnd1 = rgb2luma(texture(u_screenTexture, uv1).rgb) - lumaLocalAverage;
+      reached1 = abs(lumaEnd1) >= gradientScaled;
+    }
+    if (!reached2) {
+      lumaEnd2 = rgb2luma(texture(u_screenTexture, uv2).rgb) - lumaLocalAverage;
+      reached2 = abs(lumaEnd2) >= gradientScaled;
+    }
+    if (reached1 && reached2) break;
+    if (!reached1) uv1 -= edgeOffset * STEP_SIZES[i];
+    if (!reached2) uv2 += edgeOffset * STEP_SIZES[i];
+  }
+
+  float distance1 = isHorizontal ? (v_uv.x - uv1.x) : (v_uv.y - uv1.y);
+  float distance2 = isHorizontal ? (uv2.x - v_uv.x) : (uv2.y - v_uv.y);
+  float pixelOffset = 0.5 - min(distance1, distance2) / (distance1 + distance2);
+
+  bool correctVariation = (((distance1 < distance2) ? lumaEnd1 : lumaEnd2) < 0.0) != (lumaM < lumaLocalAverage);
+  float finalOffset = correctVariation ? pixelOffset : 0.0;
+
+  float lumaAverage = (1.0 / 12.0) * (2.0 * (lumaNS + lumaWE) + lumaNWSW + lumaNESE);
+  float subPixelOffset1 = clamp(abs(lumaAverage - lumaM) / lumaRange, 0.0, 1.0);
+  float subPixelOffset2 = (-2.0 * subPixelOffset1 + 3.0) * subPixelOffset1 * subPixelOffset1;
+  finalOffset = max(finalOffset, subPixelOffset2 * subPixelOffset2 * SUBPIXEL_QUALITY);
+
+  outColor = vec4(texture(u_screenTexture, v_uv + stepNormal * finalOffset).rgb, 1.0);
+}`
 
 function createProgram(gl: WebGL2RenderingContext, vsSource: string, fsSource: string): WebGLProgram {
   const vertexShader = gl.createShader(gl.VERTEX_SHADER)!
@@ -61,7 +186,41 @@ function createProgram(gl: WebGL2RenderingContext, vsSource: string, fsSource: s
   gl.attachShader(program, fragmentShader)
   gl.linkProgram(program)
 
+  if (DEBUG && !gl.getProgramParameter(program, gl.LINK_STATUS)) {
+    throw new Error(
+      `Fullscreen shader link error: ${gl.getProgramInfoLog(program)}\nVS: ${gl.getShaderInfoLog(vertexShader)}\nFS: ${gl.getShaderInfoLog(fragmentShader)}`,
+    )
+  }
+
   return program
+}
+
+function querySupportedMsaaSamples(gl: WebGL2RenderingContext): number[] {
+  const colorSamples = gl.getInternalformatParameter(gl.RENDERBUFFER, gl.RGBA8, gl.SAMPLES) as Int32Array | null
+  const depthSamples = gl.getInternalformatParameter(
+    gl.RENDERBUFFER,
+    gl.DEPTH_COMPONENT24,
+    gl.SAMPLES,
+  ) as Int32Array | null
+  if (!colorSamples || !depthSamples) return []
+
+  const depthSet = new Set<number>(depthSamples)
+  const common: number[] = []
+  for (let i = 0; i < colorSamples.length; ++i) {
+    const s = colorSamples[i]!
+    if (s > 1 && depthSet.has(s)) {
+      common.push(s)
+    }
+  }
+  return common
+}
+
+function pickSupportedSampleCount(supportedDescending: readonly number[], requested: number): number {
+  for (let i = 0; i < supportedDescending.length; ++i) {
+    const s = supportedDescending[i]!
+    if (s <= requested) return s
+  }
+  return supportedDescending[supportedDescending.length - 1] ?? 0
 }
 
 function initializeRendering(gl: WebGL2RenderingContext): RenderingState {
@@ -92,15 +251,15 @@ function initializeRendering(gl: WebGL2RenderingContext): RenderingState {
   gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, depthBuffer)
 
   // Integer attachments (R32UI) cannot be multisampled in WebGL2 / OpenGL ES 3.0.
-  // Keep a dedicated multisampled color + depth FBO that resolves into `resolveFbo.colorTexture`,
-  // while 1x1 scissored entity-ID reads render directly into `resolveFbo.entityIdTexture`.
-  const maxSamples = (gl.getParameter(gl.MAX_SAMPLES) as number) | 0
+  // Intersect format-specific sample counts for RGBA8 and DEPTH_COMPONENT24 (e.g. Apple Silicon Metal
+  // or macOS ANGLE where MAX_SAMPLES or RGBA8 may differ from DEPTH_COMPONENT24) so both attachments match.
+  const supportedMsaaSamples = querySupportedMsaaSamples(gl)
   let msaaFbo: WebGLFramebuffer | null = null
   let msaaColorBuffer: WebGLRenderbuffer | null = null
   let msaaDepthBuffer: WebGLRenderbuffer | null = null
 
-  if (maxSamples > 1) {
-    const initialSamples = Math.min(4, maxSamples)
+  if (supportedMsaaSamples.length > 0) {
+    const initialSamples = pickSupportedSampleCount(supportedMsaaSamples, AntialiasMode.Msaa4x)
     msaaFbo = gl.createFramebuffer()!
     gl.bindFramebuffer(gl.FRAMEBUFFER, msaaFbo)
 
@@ -120,40 +279,29 @@ function initializeRendering(gl: WebGL2RenderingContext): RenderingState {
 
   gl.bindRenderbuffer(gl.RENDERBUFFER, null)
 
-  const vs = `#version 300 es
-        out vec2 v_uv;
-        void main() {
-            float u = float((gl_VertexID << 1) & 2);
-            float v = float(gl_VertexID & 2);
-            v_uv = vec2(u, v);
-            gl_Position = vec4(u * 2.0 - 1.0, v * 2.0 - 1.0, 0.0, 1.0);
-        }`
-  const fs = `#version 300 es
-        precision mediump float;
-        uniform sampler2D u_screenTexture;
-        in vec2 v_uv;
-        out vec4 outColor;
-        void main() {
-            outColor = texture(u_screenTexture, v_uv);
-        }`
-
-  const fullscreenProgram = createProgram(gl, vs, fs)
+  const fullscreenProgram = createProgram(gl, FULLSCREEN_VS, PASSTHROUGH_FS)
+  const fxaaProgram = createProgram(gl, FULLSCREEN_VS, FXAA_FS)
 
   gl.bindFramebuffer(gl.FRAMEBUFFER, null)
 
   const screenTextureUniform = gl.getUniformLocation(fullscreenProgram, 'u_screenTexture')!
+  const fxaaScreenTextureUniform = gl.getUniformLocation(fxaaProgram, 'u_screenTexture')!
+  const fxaaInverseScreenSizeUniform = gl.getUniformLocation(fxaaProgram, 'u_inverseScreenSize')!
 
   return {
     resolveFbo,
     colorTexture,
     entityIdTexture,
     depthBuffer,
-    maxSamples,
+    supportedMsaaSamples,
     msaaFbo,
     msaaColorBuffer,
     msaaDepthBuffer,
     fullscreenProgram,
     screenTextureUniform,
+    fxaaProgram,
+    fxaaScreenTextureUniform,
+    fxaaInverseScreenSizeUniform,
   }
 }
 
@@ -239,14 +387,28 @@ function renderScissoredEntityIdPixel(
   gl.disable(gl.SCISSOR_TEST)
 }
 
-function finalizeDisplay(gl: WebGL2RenderingContext, state: RenderingState) {
+function finalizeDisplay(
+  gl: WebGL2RenderingContext,
+  state: RenderingState,
+  useFxaa: boolean,
+  width: number,
+  height: number,
+) {
   // Draw the final color texture to the screen
   gl.bindFramebuffer(gl.FRAMEBUFFER, null)
   gl.disable(gl.DEPTH_TEST)
-  gl.useProgram(state.fullscreenProgram)
   gl.activeTexture(gl.TEXTURE0 + TextureSlot.DisplayFinalization)
   gl.bindTexture(gl.TEXTURE_2D, state.colorTexture)
-  gl.uniform1i(state.screenTextureUniform, TextureSlot.DisplayFinalization)
+
+  if (useFxaa) {
+    gl.useProgram(state.fxaaProgram)
+    gl.uniform1i(state.fxaaScreenTextureUniform, TextureSlot.DisplayFinalization)
+    gl.uniform2f(state.fxaaInverseScreenSizeUniform, 1 / width, 1 / height)
+  } else {
+    gl.useProgram(state.fullscreenProgram)
+    gl.uniform1i(state.screenTextureUniform, TextureSlot.DisplayFinalization)
+  }
+
   gl.drawArrays(gl.TRIANGLES, 0, 3)
 }
 
@@ -260,7 +422,8 @@ export const newContextWrapper = async ({ element: canvas, frontendVariables }: 
   let lastHeight = -1
   let lastMsaaWidth = 1
   let lastMsaaHeight = 1
-  let lastMsaaSamples = state.maxSamples > 1 ? Math.min(4, state.maxSamples) : 0
+  let lastMsaaSamples = pickSupportedSampleCount(state.supportedMsaaSamples, AntialiasMode.Msaa4x)
+  let activeFrameMode: AntialiasMode = AntialiasMode.Off
   let activeFrameUsesMsaa = false
 
   return {
@@ -291,9 +454,11 @@ export const newContextWrapper = async ({ element: canvas, frontendVariables }: 
         handleResize(gl, state, targetWidth, targetHeight)
       }
 
-      const requestedSamples = CONFIG.get('rendering/msaa-samples')
+      activeFrameMode = CONFIG.get('rendering/antialias-mode')
       const effectiveSamples =
-        state.msaaFbo !== null && requestedSamples > 1 ? Math.min(requestedSamples | 0, state.maxSamples) : 0
+        state.msaaFbo !== null && activeFrameMode >= AntialiasMode.Msaa2x
+          ? pickSupportedSampleCount(state.supportedMsaaSamples, activeFrameMode | 0)
+          : 0
       activeFrameUsesMsaa = effectiveSamples > 1
 
       if (activeFrameUsesMsaa) {
@@ -306,7 +471,7 @@ export const newContextWrapper = async ({ element: canvas, frontendVariables }: 
           handleMsaaResize(gl, state, effectiveSamples, safeWidth, safeHeight)
         }
       } else if (state.msaaFbo !== null && (lastMsaaWidth > 1 || lastMsaaHeight > 1)) {
-        // Release full-screen multisample renderbuffer memory when antialiasing is turned off
+        // Release full-screen multisample renderbuffer memory when using OFF or FXAA
         lastMsaaWidth = 1
         lastMsaaHeight = 1
         handleMsaaResize(gl, state, lastMsaaSamples, 1, 1)
@@ -353,7 +518,7 @@ export const newContextWrapper = async ({ element: canvas, frontendVariables }: 
           })
         }
       }
-      finalizeDisplay(gl, state)
+      finalizeDisplay(gl, state, activeFrameMode === AntialiasMode.Fxaa, canvasWidth, canvasHeight)
     },
   }
 }

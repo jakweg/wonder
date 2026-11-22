@@ -1,5 +1,5 @@
 import { Environment } from '@entry/feature-environments/loader'
-import CONFIG from '@utils/persistence/observable-settings'
+import CONFIG, { AntialiasMode } from '@utils/persistence/observable-settings'
 import { constant, map, observeField } from '@utils/state/subject'
 import { createElement } from '../utils'
 import { Header } from './'
@@ -17,22 +17,29 @@ export default (root: HTMLElement) => {
 }
 
 const AntialiasingSetting = (main: HTMLElement) => {
-  const key = 'rendering/msaa-samples'
+  const key = 'rendering/antialias-mode'
   const setting = observeField(CONFIG, key)
-  const titleMapFunction = (v: number) => (v <= 0 ? 'Antialiasing: OFF' : `Antialiasing: ${v}x MSAA`)
+  const titleMapFunction = (v: AntialiasMode) => {
+    if (v === AntialiasMode.Fxaa) return 'Antialiasing: FXAA'
+    if (v >= AntialiasMode.Msaa2x) return `Antialiasing: ${v}x MSAA`
+    return 'Antialiasing: OFF'
+  }
   Button(main, map(setting, titleMapFunction), () => {
     switch (CONFIG.get(key)) {
-      case 0:
-        CONFIG.set(key, 2)
+      case AntialiasMode.Off:
+        CONFIG.set(key, AntialiasMode.Fxaa)
         break
-      case 2:
-        CONFIG.set(key, 4)
+      case AntialiasMode.Fxaa:
+        CONFIG.set(key, AntialiasMode.Msaa2x)
         break
-      case 4:
-        CONFIG.set(key, 8)
+      case AntialiasMode.Msaa2x:
+        CONFIG.set(key, AntialiasMode.Msaa4x)
+        break
+      case AntialiasMode.Msaa4x:
+        CONFIG.set(key, AntialiasMode.Msaa8x)
         break
       default:
-        CONFIG.set(key, 0)
+        CONFIG.set(key, AntialiasMode.Off)
         break
     }
   })
