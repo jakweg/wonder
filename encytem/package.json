@@ -2,8 +2,7 @@
   "type": "module",
   "dependencies": {
     "@types/node": "^26.6.6",
-    "html-minifier": "^4.0.0",
-    "@types/html-minifier": "^4.0.6",
+    "html-minifier": "^5.4.1",
     "esbuild": "^0.28.2"
   }
 }

@@ -211,7 +211,7 @@ await Promise.all(
       const content = await fs.readFile(`src/public/${entry.name}`, {
         encoding: 'utf-8',
       })
-      const newContent = minifier.minify(content, {
+      const newContent = await minifier.minify(content, {
         collapseBooleanAttributes: true,
         collapseInlineTagWhitespace: true,
         collapseWhitespace: true,
@@ -224,7 +224,7 @@ await Promise.all(
         removeOptionalTags: true,
         removeRedundantAttributes: true,
         sortAttributes: true,
-        sortClassName: true,
+        sortClassNames: true,
         trimCustomFragments: true,
         useShortDoctype: true,
       })
