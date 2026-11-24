@@ -1,4 +1,4 @@
-FROM alpine:3.17.0
+FROM alpine:3.24.4
 WORKDIR /app/barbet
 RUN apk update && apk add nodejs npm
 RUN npm i esbuild prettier --location=global

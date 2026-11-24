@@ -6,7 +6,7 @@
       "request": "launch",
       "type": "node-terminal",
       "cwd": "${workspaceFolder}/encytem",
-      "command": "docker-compose up --build",
+      "command": "docker compose up --build",
       "env": {
         "SERVE": "8000",
         "DEV": "vscode"

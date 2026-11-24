@@ -1,4 +1,4 @@
-FROM alpine:3.17.0
+FROM alpine:3.24.4
 WORKDIR /app
 RUN apk update && apk add nodejs npm git docker
 RUN npm i esbuild --location=global

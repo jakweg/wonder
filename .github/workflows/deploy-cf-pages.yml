@@ -16,11 +16,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Setup Node.js
-        uses: actions/setup-node@v3.5.1
+        uses: actions/setup-node@v7
       - name: Set up Docker Compose
-        uses: docker/setup-compose-action@v1
+        uses: docker/setup-compose-action@v2
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
       - name: Build
         run: docker compose up --build
         env:
@@ -33,7 +33,7 @@ jobs:
       - name: Copy Cloudflare configuration
         run: cp ./encytem/cloudflare_headers.txt /tmp/for-public/_headers
       - name: Deploy to Cloudflare Pages
-        uses: cloudflare/wrangler-action@v3
+        uses: cloudflare/wrangler-action@v4
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
