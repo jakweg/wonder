@@ -1,4 +1,3 @@
-import { waitAsyncCompat } from '@utils/game-mutex'
 import { createNewBuffer } from '@utils/shared-memory'
 import TickQueue from '../../network/tick-queue'
 import { TickQueueActionType, UpdaterAction } from '../../network/tick-queue-action'
@@ -38,7 +37,7 @@ const waitForStatusNotStopped = async (memory: Int32Array): Promise<Status> => {
     const status = Atomics.load(memory, BufferField.Status) as Status
     if (status !== Status.Stopped) return status
 
-    await waitAsyncCompat(memory, BufferField.WakeCounter, wakeBefore, 50)['value']
+    await Atomics.waitAsync(memory, BufferField.WakeCounter, wakeBefore, 50)['value']
   }
 }
 
@@ -178,7 +177,7 @@ const runSession = async (
     const nextTickTarget = currentTick + 1
     const msUntilNextTick = (nextTickTarget - currentPhase) * millisPerTick
     if (msUntilNextTick > 0) {
-      await waitAsyncCompat(memory, BufferField.WakeCounter, wakeBefore, msUntilNextTick)['value']
+      await Atomics.waitAsync(memory, BufferField.WakeCounter, wakeBefore, msUntilNextTick)['value']
     } else {
       await new Promise(resolve => setTimeout(resolve, 0))
     }

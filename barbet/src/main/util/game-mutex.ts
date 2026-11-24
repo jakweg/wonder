@@ -1,4 +1,4 @@
-import { createNewBuffer, sharedMemoryIsAvailable } from './shared-memory'
+import { createNewBuffer } from './shared-memory'
 
 type WaitAsyncResult = {
   async: boolean
@@ -6,40 +6,6 @@ type WaitAsyncResult = {
 }
 
 export const isInWorker = !location.reload
-const useNativeWaitAsync: boolean = !!Atomics.waitAsync && sharedMemoryIsAvailable
-
-export const waitAsyncCompat: (
-  typedArray: Int32Array,
-  index: number,
-  value: number,
-  timeout?: number,
-) => WaitAsyncResult = useNativeWaitAsync
-  ? (Atomics.waitAsync as any)
-  : (typedArray: Int32Array, index: number, value: number, timeout?: number): WaitAsyncResult => {
-      const load = Atomics.load(typedArray, index) as any
-      if (load !== value) return { 'async': false, 'value': Promise.resolve('ok') }
-
-      const timeoutValue = timeout ?? Number.POSITIVE_INFINITY
-      if (timeoutValue <= 0) return { 'async': false, 'value': Promise.resolve('timed-out') }
-
-      const started = performance.now()
-      const pollIntervalMs = 1
-      return {
-        'async': true,
-        'value': new Promise(resolve => {
-          const interval = setInterval(() => {
-            const load = Atomics.load(typedArray, index) as any
-            if (load !== value) {
-              clearInterval(interval)
-              resolve('ok')
-            } else if (performance.now() - started >= timeoutValue) {
-              clearInterval(interval)
-              resolve('timed-out')
-            }
-          }, pollIntervalMs)
-        }),
-      }
-    }
 
 export type GameMutex = {
   enterForUpdate(): void
@@ -88,7 +54,7 @@ export const gameMutexFrom = (data: any): GameMutex => {
       }
       // looks like we need to wait for exclusivity
       while (true) {
-        await waitAsyncCompat(array, 0, thisValue as any)['value']
+        await Atomics.waitAsync(array, 0, thisValue as any)['value']
 
         if (Atomics.load(array, 0) === UPDATE_BIT) return // success: now we have exclusivity
       }
@@ -128,7 +94,7 @@ export const gameMutexFrom = (data: any): GameMutex => {
         }
         const remaining = deadline - performance.now()
         if (remaining <= 0) return false
-        await waitAsyncCompat(array, 0, value as any, remaining)['value']
+        await Atomics.waitAsync(array, 0, value as any, remaining)['value']
       }
     },
     exitRender(): void {
