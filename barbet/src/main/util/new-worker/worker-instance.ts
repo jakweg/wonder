@@ -20,8 +20,7 @@ type ListenersFor<T extends WorkerSpecification<any, any>> = {
 }
 
 type LowLevelMessage =
-  | { isReply: false; nonce: number; target: string; argument: any }
-  | { isReply: true; nonce: number; result: any }
+  { isReply: false; nonce: number; target: string; argument: any } | { isReply: true; nonce: number; result: any }
 
 const setupSharedCommunications = <T extends WorkerSpecification<any, any>>(
   s: T,

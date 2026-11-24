@@ -74,7 +74,10 @@ class EntityContainer {
 
   public readonly allStores: Readonly<DataStore<TypedArray>[]>
 
-  constructor(private nextEntityId: number, private readonly allocator: ContainerAllocator) {
+  constructor(
+    private nextEntityId: number,
+    private readonly allocator: ContainerAllocator,
+  ) {
     const MAX_DATA_STORES = 32
     const counts = this.allocator.create(MAX_DATA_STORES, Uint32Array)
 

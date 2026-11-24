@@ -62,7 +62,7 @@ export const createMeshBuffer = (renderer: any): MeshBuffer => {
 export const appendToMesh = (x: number, y: number, z: number, vertexData: number[], elementsData: number[]) => {
   const vertexCountBeforeAdd = (vertexData.length / 4) | 0
   const computedVertexes = vertexes()
-  for (let i = 0, s = computedVertexes.length; i < s; ) {
+  for (let i = 0, s = computedVertexes.length; i < s;) {
     const vx = computedVertexes[i++]! + x
     const vy = computedVertexes[i++]! + y
     const vz = computedVertexes[i++]! + z

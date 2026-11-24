@@ -22,7 +22,10 @@ export class UpdateDebugDataCollector {
   private readonly rawStats = newStatsObject()
   private observingEnabled: boolean = false
   private receiveUpdatesCancelCallback: any = null
-  public constructor(public readonly frames: FramesMeter, public readonly timeMeter: TimeMeter<UpdatePhase>) {
+  public constructor(
+    public readonly frames: FramesMeter,
+    public readonly timeMeter: TimeMeter<UpdatePhase>,
+  ) {
     this.rawStats.set(StatField.UpdateTimes, frames.getFrameTimeRaw()['buffer'])
     this.rawStats.set(StatField.UpdateTimesDetailed, timeMeter.getRawBuffer())
   }

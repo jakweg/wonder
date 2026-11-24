@@ -29,12 +29,7 @@ export const push = (game: GameStateImplementation, self: EntityId, direction?: 
     game.entities2.setSlimeAnimation(self, SlimeAnimationId.Jump, game.currentTick)
   }
 
-  game.entities2.pushActivityFrame(
-    self,
-    ActivityId.Slime_Jump,
-    undefined,
-    (game.currentTick + JUMP_DURATION) >>> 0,
-  )
+  game.entities2.pushActivityFrame(self, ActivityId.Slime_Jump, undefined, (game.currentTick + JUMP_DURATION) >>> 0)
 }
 
 export const perform = (game: GameStateImplementation, self: EntityId, _state: undefined): void => {

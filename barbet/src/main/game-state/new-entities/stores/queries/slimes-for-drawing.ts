@@ -23,7 +23,7 @@ export const createSlimesForDrawingQuery = (
       for (let i = 0; i < aliveCount; ++i) {
         const rawId = rawIds[i]!
         const entityId = rawId as unknown as EntityId
-        const {x, z} = entities.getPosition(entityId)!
+        const { x, z } = entities.getPosition(entityId)!
 
         if (visibility.isPointInViewport(x, z)) {
           rawIds[writeIndex++] = rawId

@@ -5,11 +5,7 @@ import { Callback, createElement } from '../utils'
 type SettingsMap = ReturnType<typeof CONFIG.pass>
 type BooleanSettingKey = { [K in keyof SettingsMap]: SettingsMap[K] extends boolean ? K : never }[keyof SettingsMap]
 
-export const BooleanSwitch = (
-  main: HTMLElement,
-  key: BooleanSettingKey,
-  titleFunction: (v: boolean) => string,
-) => {
+export const BooleanSwitch = (main: HTMLElement, key: BooleanSettingKey, titleFunction: (v: boolean) => string) => {
   const onClick = () => CONFIG.set(key, !CONFIG.get(key))
   Button(main, map(observeField(CONFIG, key), titleFunction), onClick)
 }

@@ -1,4 +1,4 @@
-import { DataOffsetInterruptible } from "../entities/data-offsets"
+import { DataOffsetInterruptible } from '../entities/data-offsets'
 import EntityContainer from '../entities/entity-container'
 import { EntityTrait, EntityTraitIndicesRecord, requireTrait } from '../entities/traits'
 

@@ -1,7 +1,7 @@
-import * as glMatrix from "./common.js"
-import * as mat3 from "./mat3.js"
-import * as vec3 from "./vec3.js"
-import * as vec4 from "./vec4.js"
+import * as glMatrix from './common.js'
+import * as mat3 from './mat3.js'
+import * as vec3 from './vec3.js'
+import * as vec4 from './vec4.js'
 
 /**
  * Quaternion in the format XYZW
@@ -466,42 +466,42 @@ export function fromEuler(out, x, y, z, order = glMatrix.ANGLE_ORDER) {
   let cz = Math.cos(z)
 
   switch (order) {
-    case "xyz":
+    case 'xyz':
       out[0] = sx * cy * cz + cx * sy * sz
       out[1] = cx * sy * cz - sx * cy * sz
       out[2] = cx * cy * sz + sx * sy * cz
       out[3] = cx * cy * cz - sx * sy * sz
       break
 
-    case "xzy":
+    case 'xzy':
       out[0] = sx * cy * cz - cx * sy * sz
       out[1] = cx * sy * cz - sx * cy * sz
       out[2] = cx * cy * sz + sx * sy * cz
       out[3] = cx * cy * cz + sx * sy * sz
       break
 
-    case "yxz":
+    case 'yxz':
       out[0] = sx * cy * cz + cx * sy * sz
       out[1] = cx * sy * cz - sx * cy * sz
       out[2] = cx * cy * sz - sx * sy * cz
       out[3] = cx * cy * cz + sx * sy * sz
       break
 
-    case "yzx":
+    case 'yzx':
       out[0] = sx * cy * cz + cx * sy * sz
       out[1] = cx * sy * cz + sx * cy * sz
       out[2] = cx * cy * sz - sx * sy * cz
       out[3] = cx * cy * cz - sx * sy * sz
       break
 
-    case "zxy":
+    case 'zxy':
       out[0] = sx * cy * cz - cx * sy * sz
       out[1] = cx * sy * cz + sx * cy * sz
       out[2] = cx * cy * sz + sx * sy * cz
       out[3] = cx * cy * cz - sx * sy * sz
       break
 
-    case "zyx":
+    case 'zyx':
       out[0] = sx * cy * cz - cx * sy * sz
       out[1] = cx * sy * cz + sx * cy * sz
       out[2] = cx * cy * sz - sx * sy * cz
@@ -509,7 +509,7 @@ export function fromEuler(out, x, y, z, order = glMatrix.ANGLE_ORDER) {
       break
 
     default:
-      throw new Error("Unknown angle order " + order)
+      throw new Error('Unknown angle order ' + order)
   }
 
   return out
@@ -522,7 +522,7 @@ export function fromEuler(out, x, y, z, order = glMatrix.ANGLE_ORDER) {
  * @returns {String} string representation of the vector
  */
 export function str(a) {
-  return "quat(" + a[0] + ", " + a[1] + ", " + a[2] + ", " + a[3] + ")"
+  return 'quat(' + a[0] + ', ' + a[1] + ', ' + a[2] + ', ' + a[3] + ')'
 }
 
 /**

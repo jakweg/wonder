@@ -1,6 +1,8 @@
 ._css_animated-visibility {
   --_css_duration: 300ms;
-  transition: opacity var(--_css_duration), transform var(--_css_duration);
+  transition:
+    opacity var(--_css_duration),
+    transform var(--_css_duration);
   opacity: var(--_css_opacity, 1);
 }
 

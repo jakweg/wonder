@@ -46,7 +46,7 @@ function extracted(
 ) {
   const vertexCountBeforeAdd = (vertexDataToAppend.length / 6) | 0
   const vertexes = vertexesAndElements().vertexData
-  for (let i = 0, s = vertexes.length; i < s; ) {
+  for (let i = 0, s = vertexes.length; i < s;) {
     const vx = vertexes[i++]! * scale + x
     const vy = vertexes[i++]! * scale + y
     const vz = vertexes[i++]! * scale + z

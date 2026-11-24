@@ -1,75 +1,57 @@
-import { spawn } from "child_process";
-import * as fs from "fs/promises";
+import { spawn } from 'child_process'
+import * as fs from 'fs/promises'
 
 const runProcess = (command: string[], cwd?: string): Promise<void> => {
-  const stdio = "ignore" as "inherit" | "ignore";
-  const [cmd, ...args] = command;
-  const process = spawn(cmd, args, { cwd, stdio });
+  const stdio = 'ignore' as 'inherit' | 'ignore'
+  const [cmd, ...args] = command
+  const process = spawn(cmd, args, { cwd, stdio })
   return new Promise((resolve, reject) => {
-    process.once("exit", (code) =>
-      code === 0
-        ? resolve()
-        : reject("Process " + command.join(" ") + " failed"),
-    );
-  });
-};
+    process.once('exit', code => (code === 0 ? resolve() : reject('Process ' + command.join(' ') + ' failed')))
+  })
+}
 
 const findFiles = async (src: string, condition: (name: string) => boolean) => {
-  const found: string[] = [];
+  const found: string[] = []
   for (const dirEntry of await fs.readdir(src, { withFileTypes: true })) {
     if (dirEntry.isDirectory()) {
-      found.push(...(await findFiles(`${src}/${dirEntry.name}`, condition)));
+      found.push(...(await findFiles(`${src}/${dirEntry.name}`, condition)))
     } else if (dirEntry.isFile()) {
       if (condition(dirEntry.name)) {
-        found.push(`${src}/${dirEntry.name}`);
+        found.push(`${src}/${dirEntry.name}`)
       }
     }
   }
-  return found;
-};
+  return found
+}
 
 const newCompiledContent = () => ({
   _content: [] as string[],
   _imported_paths: new Map<string, string>(), // <fileName, import_in_code>
   _import_counter: 0,
   addImport(fileName: string, propertyName: string): string {
-    const existingName = this._imported_paths.get(fileName);
-    if (existingName) return existingName;
-    const name = `imported${("_" + fileName.replaceAll(/[^a-z0-9]/gi, '_')).replaceAll(/_+/g, '_')}_${this._import_counter++}`;
-    this._imported_paths.set(fileName, name);
+    const existingName = this._imported_paths.get(fileName)
+    if (existingName) return existingName
+    const name = `imported${('_' + fileName.replaceAll(/[^a-z0-9]/gi, '_')).replaceAll(/_+/g, '_')}_${this._import_counter++}`
+    this._imported_paths.set(fileName, name)
     if (propertyName) {
-      this._content.unshift(
-        "import * as ",
-        name,
-        " from ",
-        JSON.stringify(fileName),
-        ";",
-      );
+      this._content.unshift('import * as ', name, ' from ', JSON.stringify(fileName), ';')
     } else {
-      this._content.unshift(
-        "import ",
-        name,
-        " from ",
-        JSON.stringify(fileName),
-        ";",
-      );
+      this._content.unshift('import ', name, ' from ', JSON.stringify(fileName), ';')
     }
-    return name;
+    return name
   },
   push(line: string) {
-    this._content.push(line);
+    this._content.push(line)
   },
   finalize(): string {
-    return this._content.join("");
+    return this._content.join('')
   },
-});
+})
 
 const transformFile = async (fileName: string) => {
-  const compiledContent = newCompiledContent();
+  const compiledContent = newCompiledContent()
 
-  const description = JSON.parse(
-    await fs.readFile(fileName, { encoding: "utf8" }),
-  );
+  const description = JSON.parse(await fs.readFile(fileName, { encoding: 'utf8' }))
 
   compiledContent._content.unshift(`
   /*
@@ -77,145 +59,116 @@ const transformFile = async (fileName: string) => {
   * Any change you make here will be overwritten by a compiler
   * edit appropriate .2bc.json file instead
   */
- `);
-  compiledContent.push(`export const enum `);
-  compiledContent.push(description.name);
-  compiledContent.push("{");
+ `)
+  compiledContent.push(`export const enum `)
+  compiledContent.push(description.name)
+  compiledContent.push('{')
 
-  const enumItems: string[] = [];
+  const enumItems: string[] = []
   for (const [parentName, children] of Object.entries(description.values)) {
-    if (parentName.startsWith("#")) {
+    if (parentName.startsWith('#')) {
       for (const name of Object.keys((children as any).values)) {
-        const fullName = parentName.substring(1) + "_" + name;
+        const fullName = parentName.substring(1) + '_' + name
         enumItems.push(fullName)
-        compiledContent.push(fullName);
-        compiledContent.push(",");
+        compiledContent.push(fullName)
+        compiledContent.push(',')
       }
     } else {
-      if ((children as any)["#comment"])
-        compiledContent.push(`\n/** ${(children as any)["#comment"]} */\n`);
-      compiledContent.push(parentName);
+      if ((children as any)['#comment']) compiledContent.push(`\n/** ${(children as any)['#comment']} */\n`)
+      compiledContent.push(parentName)
       enumItems.push(parentName)
-      compiledContent.push(",");
+      compiledContent.push(',')
     }
   }
-  if (description["add-size"] === true) compiledContent.push("SIZE,");
-  compiledContent.push("};");
+  if (description['add-size'] === true) compiledContent.push('SIZE,')
+  compiledContent.push('};')
 
-  for (const [getterName, getter] of Object.entries(
-    description.getters ?? {},
-  )) {
+  for (const [getterName, getter] of Object.entries(description.getters ?? {})) {
     const getterType = ((getter as any)['type'] ?? 'getter') as 'reverse-mapping' | 'getter' | 'all-values'
     const convertHexColors = (getter as any)['convert-hex-colors'] === true
-      compiledContent.push(`export const `);
-      compiledContent.push(getterName);
+    compiledContent.push(`export const `)
+    compiledContent.push(getterName)
     if (getterType === 'all-values') {
-compiledContent.push(' = (')
+      compiledContent.push(' = (')
     } else {
-      compiledContent.push(" = (value: ");
-      compiledContent.push(getterType === 'reverse-mapping' ? "unknown" : description.name);
+      compiledContent.push(' = (value: ')
+      compiledContent.push(getterType === 'reverse-mapping' ? 'unknown' : description.name)
     }
-    compiledContent.push(") => { ");
-    compiledContent.push(`/* This function was autogenerated, don't change */\n`);
-    if (getterType !== 'all-values') 
-    compiledContent.push(" switch (value) {");
-    
+    compiledContent.push(') => { ')
+    compiledContent.push(`/* This function was autogenerated, don't change */\n`)
+    if (getterType !== 'all-values') compiledContent.push(' switch (value) {')
+
     const actualValues = new Map<string, any[]>()
     for (const name of enumItems) {
-      actualValues.set(description.name + "." + name, [])
+      actualValues.set(description.name + '.' + name, [])
     }
 
     for (const [parentEnumName, values] of Object.entries(description.values)) {
-      const appendCaseForEnum = (
-        name: string,
-        value: any,
-        importPrefix: string,
-      ) => {
-        const fullEnumName = description.name + "." + name;
+      const appendCaseForEnum = (name: string, value: any, importPrefix: string) => {
+        const fullEnumName = description.name + '.' + name
         if (getterType === 'getter') {
-          compiledContent.push("case ");
-          compiledContent.push(fullEnumName);
-          compiledContent.push(": return ");
+          compiledContent.push('case ')
+          compiledContent.push(fullEnumName)
+          compiledContent.push(': return ')
         }
-        if (value === undefined)
-          throw new Error(
-            `Value is missing for getter ${getterName} for enum ${name}`,
-          );
+        if (value === undefined) throw new Error(`Value is missing for getter ${getterName} for enum ${name}`)
         if (convertHexColors) {
-          if (typeof value !== "string" || !/^#[0-9a-fA-F]{6}$/.test(value)) {
-            throw new Error(
-              `Invalid hex color ${JSON.stringify(value)} for getter ${getterName} for enum ${name}`,
-            );
+          if (typeof value !== 'string' || !/^#[0-9a-fA-F]{6}$/.test(value)) {
+            throw new Error(`Invalid hex color ${JSON.stringify(value)} for getter ${getterName} for enum ${name}`)
           }
-          const hexLiteral = `0x${value.substring(1).toLowerCase()}`;
-          actualValues.get(fullEnumName)!.push(hexLiteral);
-          (getterType === 'getter') && compiledContent.push(hexLiteral);
-        } else if (typeof value === "string" || typeof value === "number" || typeof value === "boolean")
-          {
-            const stringValue = JSON.stringify(value)
-            actualValues.get(fullEnumName)!.push(stringValue)
-            ; (getterType === 'getter')  && compiledContent.push(stringValue);
-          }
-        else if (typeof value === "object") {
+          const hexLiteral = `0x${value.substring(1).toLowerCase()}`
+          actualValues.get(fullEnumName)!.push(hexLiteral)
+          getterType === 'getter' && compiledContent.push(hexLiteral)
+        } else if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+          const stringValue = JSON.stringify(value)
+          actualValues.get(fullEnumName)!.push(stringValue)
+          getterType === 'getter' && compiledContent.push(stringValue)
+        } else if (typeof value === 'object') {
           const wasArray = Array.isArray(value)
           if (wasArray) {
-            ; (getterType === 'getter') && compiledContent.push('[')
+            getterType === 'getter' && compiledContent.push('[')
           }
           value = wasArray ? value : [value]
           for (const v of value) {
-            if ("default-from" in v) {
-              const name = compiledContent.addImport(
-                importPrefix + v["default-from"],
-                "",
-              );
+            if ('default-from' in v) {
+              const name = compiledContent.addImport(importPrefix + v['default-from'], '')
               actualValues.get(fullEnumName)!.push(name)
-              ; (getterType === 'getter') && compiledContent.push(name);
+              getterType === 'getter' && compiledContent.push(name)
             } else {
-              const name = compiledContent.addImport(
-                importPrefix + v["from"],
-                v["property"],
-              );
+              const name = compiledContent.addImport(importPrefix + v['from'], v['property'])
               let fullName = name
-              if (v["property"]) {
-                fullName += (".");
-                fullName += (v["property"]);
+              if (v['property']) {
+                fullName += '.'
+                fullName += v['property']
               }
-              ; (getterType === 'getter') && compiledContent.push(fullName);
+              getterType === 'getter' && compiledContent.push(fullName)
               actualValues.get(fullEnumName)!.push(fullName)
             }
-          if (wasArray) {
-            ; (getterType === 'getter') && compiledContent.push(',')
+            if (wasArray) {
+              getterType === 'getter' && compiledContent.push(',')
+            }
           }
-          }
           if (wasArray) {
-            ; (getterType === 'getter') && compiledContent.push(']')
+            getterType === 'getter' && compiledContent.push(']')
           }
         } else {
-          console.error({ value });
-          throw new Error("Invalid field type");
+          console.error({ value })
+          throw new Error('Invalid field type')
         }
-        ; (getterType === 'getter') && compiledContent.push(";");
-      };
+        getterType === 'getter' && compiledContent.push(';')
+      }
 
-      const fieldName = (getter as any).field;
-      if (parentEnumName.startsWith("#")) {
-        const importPrefix = (values as any)["import-prefix"];
-        for (const [childEnumName, childValues] of Object.entries(
-          (values as any).values,
-        )) {
+      const fieldName = (getter as any).field
+      if (parentEnumName.startsWith('#')) {
+        const importPrefix = (values as any)['import-prefix']
+        for (const [childEnumName, childValues] of Object.entries((values as any).values)) {
           appendCaseForEnum(
             `${parentEnumName.substring(1)}_${childEnumName}`,
-            (childValues as any)[fieldName] ??
-              (childValues as any)["@" + fieldName],
-            importPrefix || "",
-          );
+            (childValues as any)[fieldName] ?? (childValues as any)['@' + fieldName],
+            importPrefix || '',
+          )
         }
-      } else
-        appendCaseForEnum(
-          parentEnumName,
-          (values as any)[fieldName] ?? (values as any)["@" + fieldName],
-          "",
-        );
+      } else appendCaseForEnum(parentEnumName, (values as any)[fieldName] ?? (values as any)['@' + fieldName], '')
     }
 
     if (getterType === 'reverse-mapping') {
@@ -240,50 +193,44 @@ compiledContent.push(' = (')
         }
       }
       compiledContent.push(`return [`)
-      for (const v of values){
+      for (const v of values) {
         compiledContent.push(v)
         compiledContent.push(',')
       }
       compiledContent.push(`];`)
     } else {
-      switch ((getter as any)["if-invalid-enum"] ?? "throw") {
-      case "throw":
-        compiledContent.push("default: throw new Error();");
-        break;
-      case "return-null":
-        compiledContent.push("default: return null;");
-        break;
-      case "return-undefined":
-        compiledContent.push("default: return undefined;");
-        break;
+      switch ((getter as any)['if-invalid-enum'] ?? 'throw') {
+        case 'throw':
+          compiledContent.push('default: throw new Error();')
+          break
+        case 'return-null':
+          compiledContent.push('default: return null;')
+          break
+        case 'return-undefined':
+          compiledContent.push('default: return undefined;')
+          break
+      }
+      compiledContent.push('}')
     }
-      compiledContent.push("}");
-    }
-    compiledContent.push("};");
+    compiledContent.push('};')
   }
 
   const finalName =
-    description["output-file"] ||
-    fileName.substring(
-      fileName.lastIndexOf("/") + 1,
-      fileName.indexOf(".", fileName.lastIndexOf("/") + 1),
-    );
-  const finalPath =
-    fileName.substring(0, fileName.lastIndexOf("/")) + "/" + finalName + ".ts";
+    description['output-file'] ||
+    fileName.substring(fileName.lastIndexOf('/') + 1, fileName.indexOf('.', fileName.lastIndexOf('/') + 1))
+  const finalPath = fileName.substring(0, fileName.lastIndexOf('/')) + '/' + finalName + '.ts'
   await fs.writeFile(finalPath, compiledContent.finalize(), {
-    encoding: "utf8",
-  });
+    encoding: 'utf8',
+  })
   try {
-    await runProcess(["npx", "--no-install", "prettier", "--write", finalPath]);
+    await runProcess(['npx', '--no-install', 'prettier', '--write', finalPath])
   } catch (e) {
     // ignore, probably npx or prettier not found
   }
-};
+}
 
 export const doEnumCompilation = async () => {
-  const candidates = await findFiles("src", (name) =>
-    name.endsWith(".2bc.json"),
-  );
-  await Promise.all(candidates.map((name) => transformFile(name)));
-};
-await doEnumCompilation();
+  const candidates = await findFiles('src', name => name.endsWith('.2bc.json'))
+  await Promise.all(candidates.map(name => transformFile(name)))
+}
+await doEnumCompilation()

@@ -120,9 +120,7 @@ const SLIME_CUBE_PARTS: readonly SlimeCubePartSpec[] = [
   },
 ]
 
-export const buildSlimeMesh = (
-  layout: InterleavedAttributesLayout<'position' | 'normal' | 'partId'>,
-): Uint8Array => {
+export const buildSlimeMesh = (layout: InterleavedAttributesLayout<'position' | 'normal' | 'partId'>): Uint8Array => {
   const { strideBytes, elementOffsets } = layout
   const wordsPerVertex = strideBytes / Uint32Array.BYTES_PER_ELEMENT
 

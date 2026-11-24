@@ -11,50 +11,49 @@ const port = +process?.env?.PORT || 3719
 const server = new WebSocketServer({ port })
 
 const contex: ServerState = {
-    players: new PlayersStore(),
-    rooms: new RoomStore(),
+  players: new PlayersStore(),
+  rooms: new RoomStore(),
 }
 
 server.on('listening', () => {
-    const address = server.address()
-    const asString =
-        typeof address === 'string' ? address : 'localhost:' + address.port
-    console.log(`Listening at http://${asString}`)
+  const address = server.address()
+  const asString =
+    typeof address === 'string' ? address : 'localhost:' + address.port
+  console.log(`Listening at http://${asString}`)
 })
 
 server.on('connection', async (socket) => {
-    const player = contex.players.addPlayerFromSocket(socket)
+  const player = contex.players.addPlayerFromSocket(socket)
 
-    player.ws.connection.awaitDisconnected()
-        .then(() => contex.rooms.removePlayerFromRoom(player))
-        .then(() => info('Disconnected player', player.id))
+  player.ws.connection
+    .awaitDisconnected()
+    .then(() => contex.rooms.removePlayerFromRoom(player))
+    .then(() => info('Disconnected player', player.id))
 
-    info('Connected player', player.id)
+  info('Connected player', player.id)
 
-    await serveNewPlayer(player)
+  await serveNewPlayer(player)
 })
 
 contex.rooms.on('updated-room', ({ roomId, snapshot }) => {
-
-    for (const playerId of contex.rooms.listPlayerIdsInRoom(roomId)) {
-        contex.players.getById(playerId)?.ws?.send
-            ?.send('room-info-update', snapshot)
-    }
+  for (const playerId of contex.rooms.listPlayerIdsInRoom(roomId)) {
+    contex.players
+      .getById(playerId)
+      ?.ws?.send?.send('room-info-update', snapshot)
+  }
 })
 
-
 export const serveNewPlayer = async (p: Player) => {
-    while (p.ws.connection.isConnected()) {
-        const [type, data] = await p.ws.receive.awaitNext()
+  while (p.ws.connection.isConnected()) {
+    const [type, data] = await p.ws.receive.awaitNext()
 
-        const handler = allHandlers[type]
-        if (handler !== undefined) {
-            handler.handle(contex, p, data[type] as any)
-        } else {
-            console.error('Received invalid packet', type);
-            p.ws.connection.close()
-            return
-        }
+    const handler = allHandlers[type]
+    if (handler !== undefined) {
+      handler.handle(contex, p, data[type] as any)
+    } else {
+      console.error('Received invalid packet', type)
+      p.ws.connection.close()
+      return
     }
+  }
 }
-

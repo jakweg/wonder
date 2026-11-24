@@ -228,8 +228,8 @@ export class World implements GameStatePiece {
     const chunkX = (x / GENERIC_CHUNK_SIZE) | 0
     const chunkZ = (z / GENERIC_CHUNK_SIZE) | 0
 
-    const withinChunkX = x % GENERIC_CHUNK_SIZE | 0
-    const withinChunkZ = z % GENERIC_CHUNK_SIZE | 0
+    const withinChunkX = (x % GENERIC_CHUNK_SIZE) | 0
+    const withinChunkZ = (z % GENERIC_CHUNK_SIZE) | 0
 
     const chunkIndex = (((chunkX * this.sizeLevel) | 0) + chunkZ) | 0
     const withinChunkIndex = (((withinChunkZ * GENERIC_CHUNK_SIZE) | 0) + withinChunkX) | 0

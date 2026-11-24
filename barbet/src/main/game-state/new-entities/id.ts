@@ -2,7 +2,9 @@ import { EntityKind } from '@game/new-entities/kind'
 
 export class EntityId {
   private _thisIsPhantomClass: 'does not use directly!' = null as any
-  private constructor() { void(this._thisIsPhantomClass) }
+  private constructor() {
+    void this._thisIsPhantomClass
+  }
 }
 
 export default EntityId

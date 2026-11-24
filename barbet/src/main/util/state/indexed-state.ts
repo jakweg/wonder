@@ -6,7 +6,10 @@ interface Batch<T> {
 
 export default class IndexedState<T> {
   private everythingObservers: ((value: any) => void)[] = []
-  private constructor(private readonly values: any[], private readonly fieldObservers: ((value: any) => void)[][]) {}
+  private constructor(
+    private readonly values: any[],
+    private readonly fieldObservers: ((value: any) => void)[][],
+  ) {}
 
   public static fromObject<T>(initial: T): IndexedState<T> {
     const keys = Object['keys'](initial as any)

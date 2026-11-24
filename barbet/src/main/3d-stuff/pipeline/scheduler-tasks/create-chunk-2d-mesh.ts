@@ -178,7 +178,7 @@ const createVertexBufferForSideLayers = (chunkX: number, chunkY: number, world: 
 export default async (env: Environment, task: Task & { type: TaskType.Create2dChunkMesh }): Promise<TaskResult> => {
   const world = env.world
   const i = (task.chunkIndex / world.sizeLevel) | 0
-  const j = task.chunkIndex % world.sizeLevel | 0
+  const j = (task.chunkIndex % world.sizeLevel) | 0
 
   env.mutexEnter()
   const recreationId = world.chunkModificationIds[task.chunkIndex]!

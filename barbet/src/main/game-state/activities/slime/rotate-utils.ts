@@ -12,9 +12,9 @@ export const setSize = (game: GameStateImplementation, unit: EntityTraitIndicesR
 export const setColor = (game: GameStateImplementation, unit: EntityTraitIndicesRecord, color: number) => {
   const drawables = game.entities.drawables.rawData
 
-  drawables[unit.drawable + DrawableFields.ColorR] = (color >> 16) & 0xFF
-  drawables[unit.drawable + DrawableFields.ColorG] = (color >> 8) & 0xFF
-  drawables[unit.drawable + DrawableFields.ColorB] = (color >> 0) & 0xFF
+  drawables[unit.drawable + DrawableFields.ColorR] = (color >> 16) & 0xff
+  drawables[unit.drawable + DrawableFields.ColorG] = (color >> 8) & 0xff
+  drawables[unit.drawable + DrawableFields.ColorB] = (color >> 0) & 0xff
 }
 
 export const setRotation = (game: GameStateImplementation, unit: EntityTraitIndicesRecord, newRotation: Direction) => {
