@@ -4,7 +4,11 @@ export class AsyncEntityIdReader {
   private isWaitingForRead = false
   private asyncGpuBufferToRead: WebGLBuffer
   private readPixelsBuffer = new Uint32Array(4)
-  constructor(private readonly gl: WebGL2RenderingContext) {
+  private lastReadTime = 0
+  constructor(
+    private readonly gl: WebGL2RenderingContext,
+    private readonly throttleReadMs: number = 100,
+  ) {
     this.asyncGpuBufferToRead = gl.createBuffer()
     gl.bindBuffer(gl.PIXEL_PACK_BUFFER, this.asyncGpuBufferToRead)
     // Use DYNAMIC_DRAW instead of STREAM_READ to avoid a Chromium ReadbackBufferShadowTracker bug
@@ -14,7 +18,7 @@ export class AsyncEntityIdReader {
   }
 
   canRead() {
-    return !this.isWaitingForRead
+    return !this.isWaitingForRead && performance.now() > this.lastReadTime + this.throttleReadMs
   }
 
   readEntityId(pixelX: number, pixelY: number): Promise<number> | null {
@@ -35,6 +39,9 @@ export class AsyncEntityIdReader {
 
         return this.readPixelsBuffer[0]!
       })
-      .finally(() => (this.isWaitingForRead = false))
+      .finally(() => {
+        this.isWaitingForRead = false
+        this.lastReadTime = performance.now()
+      })
   }
 }

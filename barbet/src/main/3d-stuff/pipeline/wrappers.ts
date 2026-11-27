@@ -495,7 +495,6 @@ export const newContextWrapper = async ({ element: canvas, frontendVariables }: 
         const x = frontendVariables[FrontendVariable.MouseCursorPositionX]
         const y = frontendVariables[FrontendVariable.MouseCursorPositionY]
         if (x >= 0 && y >= 0 && x < canvasWidth && y < canvasHeight) {
-          // TODO: throttle mouse picker execution (e.g. max 15-20 Hz or on-demand) to avoid redundant scissored scene redraws
           if (activeFrameUsesMsaa) {
             renderScissoredEntityIdPixel(gl, state, x, canvasHeight - 1 - y, drawScene)
           } else {
