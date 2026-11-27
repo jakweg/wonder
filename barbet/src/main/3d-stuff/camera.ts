@@ -2,7 +2,7 @@ import * as mat4 from '@matrix/mat4'
 import * as vec3 from '@matrix/vec3'
 import { createNewBuffer } from '@utils/shared-memory'
 
-const FOV = Math.PI / 3
+export const CAMERA_FOV = Math.PI / 3
 export const universalUpVector = vec3.fromValues(0, 1, 0)
 
 export class Camera {
@@ -42,7 +42,7 @@ export class Camera {
   }
 
   public setAspectRatio(aspect: number): void {
-    mat4.perspectiveNO(this.perspectiveMatrix, FOV, aspect, 0.1, 5000)
+    mat4.perspectiveNO(this.perspectiveMatrix, CAMERA_FOV, aspect, 0.1, 5000)
   }
 
   public updateMatrix(): void {

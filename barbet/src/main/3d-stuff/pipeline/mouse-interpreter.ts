@@ -1,13 +1,14 @@
-import { Camera } from '@3d/camera'
+import { Camera, CAMERA_FOV } from '@3d/camera'
 import { TerrainHeightReader } from '@3d/world-terrain-snapshot'
 import * as vec3 from '@matrix/vec3'
-import { AdditionalFrontedFlags, FrontendVariable, PressedKey } from '@utils/frontend-variables'
-import { UICanvas } from 'src/main/ui/canvas-background'
+import { FrontendVariable, PressedKey } from '@utils/frontend-variables'
 
 interface CameraDelta {
   distance: number
   pitch: number
   yaw: number
+  panX: number
+  panY: number
   forward: number
   sideways: number
 }
@@ -16,14 +17,20 @@ const DISTANCE_MIN = 2
 const PITCH_MIN = (-Math.PI / 2) * 0.8
 const PITCH_MAX = (-Math.PI / 2) * 0.2
 const CAMERA_MOVE_SPEED = 15
+const CAMERA_MOVE_DAMPING = 10
+const ORBIT_SENSITIVITY = 0.6 // TODO make that a setting in CONFIG?
+const ORBIT_DAMPING = 10
+const PAN_SENSITIVITY = 1 // 1 = 1:1 ground-plane tracking under the cursor
+const PAN_DAMPING = 14
+const ZOOM_SENSITIVITY = 0.0014 // TODO make that a setting in CONFIG?
+const ZOOM_DAMPING = 10
+const TAN_HALF_FOV = Math.tan(CAMERA_FOV / 2)
 
-const updateDeltaByKeys = (delta: CameraDelta, frontendVariables: UICanvas['frontendVariables']) => {
-  const keys = Atomics.load(frontendVariables as any as Int16Array, FrontendVariable.PressedKeys) as PressedKey
-  const zoomDelta = Atomics['exchange'](frontendVariables as any, FrontendVariable.MouseWheelDelta, 0)
+const updateDeltaByKeys = (delta: CameraDelta, frontendVariables: Int16Array) => {
+  const keys = Atomics.load(frontendVariables, FrontendVariable.PressedKeys) as PressedKey
 
   let dx = 0,
-    dz = 0,
-    dy = 0
+    dz = 0
   if ((keys & PressedKey.Forward) === PressedKey.Forward) {
     dz += 1
   }
@@ -37,11 +44,8 @@ const updateDeltaByKeys = (delta: CameraDelta, frontendVariables: UICanvas['fron
     dx += 1
   }
 
-  dy += Math['sign'](zoomDelta) * Math['pow'](Math['abs'](zoomDelta), 0.1)
-
   if (dz !== 0) delta.forward = dz
   if (dx !== 0) delta.sideways = dx
-  if (dy !== 0) delta.distance = dy
 }
 
 const calculateSolidBlockLookingAt = (
@@ -77,18 +81,12 @@ const calculateSolidBlockLookingAt = (
 }
 
 export const createNewMouseInterpreter = () => {
-  let isDragging = false
-
-  let rotateStartX = 0
-  let rotateStartY = 0
-
-  let rotateEndX = 0
-  let rotateEndY = 0
-
   const delta: CameraDelta = {
     distance: 0,
     forward: 0,
     sideways: 0,
+    panX: 0,
+    panY: 0,
     pitch: 0,
     yaw: 0,
   }
@@ -100,7 +98,7 @@ export const createNewMouseInterpreter = () => {
   return {
     updateCameraBasedOnInputs(
       camera: Camera,
-      frontendVariables: UICanvas['frontendVariables'],
+      variables: Int16Array,
       terrain: TerrainHeightReader,
       terrainHeight: number,
       dt: number,
@@ -114,38 +112,25 @@ export const createNewMouseInterpreter = () => {
         camera.target[1] += willBumpCameraBy
       }
 
+      const orbitDeltaX = Atomics.exchange(variables, FrontendVariable.CameraOrbitDeltaX8, 0) / 8
+      const orbitDeltaY = Atomics.exchange(variables, FrontendVariable.CameraOrbitDeltaY8, 0) / 8
+      const panDeltaX = Atomics.exchange(variables, FrontendVariable.CameraPanDeltaX8, 0) / 8
+      const panDeltaY = Atomics.exchange(variables, FrontendVariable.CameraPanDeltaY8, 0) / 8
+      const zoomDelta = Atomics.exchange(variables, FrontendVariable.MouseWheelDelta, 0)
+
       const lookingAtPosition = calculateSolidBlockLookingAt(camera.target, camera.eye, terrain, terrainHeight)
       vec3.copy(camera.target, lookingAtPosition)
       distance = vec3.distance(camera.eye, camera.target)
 
-      const width = frontendVariables[FrontendVariable.CanvasDrawingWidth]
-      const height = frontendVariables[FrontendVariable.CanvasDrawingHeight]
-      const currentX = frontendVariables[FrontendVariable.MouseCursorPositionX]
-      const currentY = frontendVariables[FrontendVariable.MouseCursorPositionY]
+      const width = Atomics.load(variables, FrontendVariable.CanvasDrawingWidth)
+      const height = Atomics.load(variables, FrontendVariable.CanvasDrawingHeight)
 
-      const flags = frontendVariables[FrontendVariable.AdditionalFlags]
-      const isMouseDown =
-        (flags & AdditionalFrontedFlags.LeftMouseButtonPressed) === AdditionalFrontedFlags.LeftMouseButtonPressed
-
-      if (isMouseDown) {
-        if (!isDragging) {
-          isDragging = true
-          rotateStartX = currentX
-          rotateStartY = currentY
-        }
-
-        rotateEndX = currentX
-        rotateEndY = currentY
-
-        delta.pitch = rotateEndY - rotateStartY
-        delta.yaw = rotateEndX - rotateStartX
-
-        rotateStartX = rotateEndX
-        rotateStartY = rotateEndY
-      } else {
-        isDragging = false
-      }
-      updateDeltaByKeys(delta, frontendVariables)
+      delta.pitch += orbitDeltaY
+      delta.yaw += orbitDeltaX
+      delta.panX += panDeltaX
+      delta.panY += panDeltaY
+      delta.distance += zoomDelta
+      updateDeltaByKeys(delta, variables)
 
       const sinYaw = Math.sin(yaw)
       const cosYaw = Math.cos(yaw)
@@ -156,23 +141,52 @@ export const createNewMouseInterpreter = () => {
       const rightX = cosYaw
       const rightZ = -sinYaw
 
-      const cameraSpeed = Math.log(distance) * dt * CAMERA_MOVE_SPEED
+      const clampedDt = Math.min(dt, 0.1)
+      const cameraSpeed = Math.log(distance) * clampedDt * CAMERA_MOVE_SPEED
       camera.target[0] += (rightX * delta.sideways + forwardX * delta.forward) * cameraSpeed
       camera.target[2] += (rightZ * delta.sideways + forwardZ * delta.forward) * cameraSpeed
 
-      pitch += ((2 * Math.PI * delta.pitch) / height) * 0.4
-      pitch = Math.min(PITCH_MAX, Math.max(pitch, PITCH_MIN))
+      const panDecay = 1 - Math.exp(-PAN_DAMPING * clampedDt)
+      const stepPanX = delta.panX * panDecay
+      const stepPanY = delta.panY * panDecay
+      delta.panX -= stepPanX
+      delta.panY -= stepPanY
 
-      yaw += ((2 * Math.PI * delta.yaw) / width) * 0.4
-      const zoomSensitivity = 2 * dt
-      distance += distance * delta.distance * zoomSensitivity
-      distance = Math.max(distance, DISTANCE_MIN)
+      if (height > 0) {
+        const worldPerPixel = (2 * distance * TAN_HALF_FOV) / height
+        const panRight = -stepPanX * worldPerPixel * PAN_SENSITIVITY
+        const panForward = (stepPanY * worldPerPixel * PAN_SENSITIVITY) / -Math.sin(pitch)
+        camera.target[0] += rightX * panRight + forwardX * panForward
+        camera.target[2] += rightZ * panRight + forwardZ * panForward
+      }
 
-      delta.pitch *= Math.max(0, 1 - dt * 10)
-      delta.yaw *= Math.max(0, 1 - dt * 10)
-      delta.distance *= Math.max(0, 1 - dt * 10)
-      delta.forward *= Math.max(0, 1 - dt * 10)
-      delta.sideways *= Math.max(0, 1 - dt * 10)
+      const orbitDecay = 1 - Math.exp(-ORBIT_DAMPING * clampedDt)
+      const stepPitch = delta.pitch * orbitDecay
+      const stepYaw = delta.yaw * orbitDecay
+      delta.pitch -= stepPitch
+      delta.yaw -= stepYaw
+
+      if (height > 0) {
+        const unclampedPitch = pitch + ((2 * Math.PI * stepPitch) / height) * ORBIT_SENSITIVITY
+        pitch = Math.min(PITCH_MAX, Math.max(unclampedPitch, PITCH_MIN))
+        if (pitch !== unclampedPitch) delta.pitch = 0
+      }
+
+      if (width > 0) {
+        yaw += ((2 * Math.PI * stepYaw) / width) * ORBIT_SENSITIVITY
+      }
+
+      const zoomDecay = 1 - Math.exp(-ZOOM_DAMPING * clampedDt)
+      const stepZoom = delta.distance * zoomDecay
+      delta.distance -= stepZoom
+
+      const unclampedDistance = distance * Math.exp(stepZoom * ZOOM_SENSITIVITY)
+      distance = Math.max(unclampedDistance, DISTANCE_MIN)
+      if (distance !== unclampedDistance) delta.distance = 0
+
+      const moveDecay = Math.exp(-CAMERA_MOVE_DAMPING * clampedDt)
+      delta.forward *= moveDecay
+      delta.sideways *= moveDecay
 
       const target = camera.target
       const eye = camera.eye

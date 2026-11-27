@@ -1,6 +1,6 @@
 import { AdditionalFrontedFlags, FrontendVariable, PressedKey } from './frontend-variables'
 
-const defaultKeyMapping: { [key: string]: PressedKey } = {
+const defaultKeyMapping: { [key: KeyboardEvent['code']]: PressedKey } = {
   'KeyW': PressedKey.Forward,
   'ArrowUp': PressedKey.Forward,
 

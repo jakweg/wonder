@@ -1,8 +1,8 @@
 import KeyboardController from '@utils/keyboard-controller'
 import { UICanvas } from 'src/main/ui/canvas-background'
-import { AdditionalFrontedFlags, FrontendVariable } from './frontend-variables'
+import { FrontendVariable } from './frontend-variables'
 
-function observeCanvasSize(canvas: HTMLCanvasElement, frontendVariables: Int16Array, aferResize: () => void) {
+function observeCanvasSize(canvas: HTMLCanvasElement, frontendVariables: Int16Array) {
   let timeoutId: number = 0
   let frameId: number = 0
   const lastSizes = { lastResizeTime: 0, width: 0, height: 0, pixelRatio: 0 }
@@ -44,92 +44,179 @@ function observeCanvasSize(canvas: HTMLCanvasElement, frontendVariables: Int16Ar
   }
 }
 
-export const bindFrontendVariablesToCanvas = ({ element: canvas, frontendVariables: rawVars }: UICanvas) => {
-  const frontendVariables = rawVars as any as Int16Array
+type DragMode = null | 'orbit' | 'pan'
 
-  const mouseMoveListener = (event: MouseEvent) => {
-    Atomics.store(
-      frontendVariables,
-      FrontendVariable.MouseCursorPositionX,
-      event['offsetX'] * window['devicePixelRatio'],
-    )
-    Atomics.store(
-      frontendVariables,
-      FrontendVariable.MouseCursorPositionY,
-      event['offsetY'] * window['devicePixelRatio'],
-    )
+const DRAG_THRESHOLD_PX = 5
+const WHEEL_LINEAR_KNEE = 24
+const WHEEL_EXCESS_SCALE = 0.3
+const WHEEL_EVENT_MAX_DELTA = 60
+
+const handlePointerEvents = (canvas: HTMLCanvasElement, frontendVariables: Int16Array) => {
+  const abortController = new AbortController()
+  const signal = abortController['signal']
+
+  canvas.addEventListener('contextmenu', e => e.preventDefault(), { 'signal': signal })
+
+  const updateMousePosition = (x: number, y: number) => {
+    Atomics.store(frontendVariables, FrontendVariable.MouseCursorPositionX, Math.round(x))
+    Atomics.store(frontendVariables, FrontendVariable.MouseCursorPositionY, Math.round(y))
   }
 
-  const defaultMouseListener = (event: MouseEvent) => {
-    event.preventDefault()
-    const isNowDown = event['type'] !== 'mouseup'
-    const buttonAsFlag =
-      event['button'] === 0
-        ? AdditionalFrontedFlags.LeftMouseButtonPressed
-        : AdditionalFrontedFlags.RightMouseButtonPressed
+  let dragPointerId = -1
+  let downStartX = -1
+  let downStartY = -1
+  let lastX = -1
+  let lastY = -1
+  let dragMode: DragMode = null
+  let dragCloseEnoughForClick = false
 
-    if (isNowDown) frontendVariables[FrontendVariable.AdditionalFlags]! |= buttonAsFlag
-    else {
-      const newFlags =
-        Atomics.load(frontendVariables, FrontendVariable.AdditionalFlags) &
-        ~AdditionalFrontedFlags.LastMouseButtonUnpressedWasRight
-      Atomics.store(
-        frontendVariables,
-        FrontendVariable.AdditionalFlags,
-        (newFlags & ~buttonAsFlag) |
-          (buttonAsFlag === AdditionalFrontedFlags.RightMouseButtonPressed
-            ? AdditionalFrontedFlags.LastMouseButtonUnpressedWasRight
-            : 0),
-      )
-      Atomics.add(frontendVariables, FrontendVariable.LastMouseClickId, 1)
-    }
-
-    Atomics.store(
-      frontendVariables,
-      FrontendVariable.MouseCursorPositionX,
-      event['offsetX'] * window['devicePixelRatio'],
-    )
-    Atomics.store(
-      frontendVariables,
-      FrontendVariable.MouseCursorPositionY,
-      event['offsetY'] * window['devicePixelRatio'],
-    )
+  const resetDrag = () => {
+    dragPointerId = -1
+    dragMode = null
+    dragCloseEnoughForClick = false
+    canvas['classList']['remove']('_css_cursor_grabbing', '_css_cursor_move')
   }
 
-  const wheelListener = (event: WheelEvent) => {
-    const rawDelta = event['deltaY']
-    Atomics.store(frontendVariables, FrontendVariable.MouseWheelDelta, rawDelta | 0)
-  }
+  canvas.addEventListener(
+    'pointerdown',
+    function (event) {
+      const pointerId = event['pointerId']
+      if (dragPointerId !== -1) return
+      this['setPointerCapture'](pointerId)
+      dragPointerId = pointerId
 
-  const leaveListener = () => {
-    Atomics.and(
-      frontendVariables,
-      FrontendVariable.AdditionalFlags,
-      ~(AdditionalFrontedFlags.RightMouseButtonPressed | AdditionalFrontedFlags.LeftMouseButtonPressed),
-    )
-    Atomics.store(frontendVariables, FrontendVariable.MouseCursorPositionX, -1)
-    Atomics.store(frontendVariables, FrontendVariable.MouseCursorPositionY, -1)
-    Atomics.store(frontendVariables, FrontendVariable.MouseWheelDelta, 0)
-  }
+      const isMetaPressed = event['metaKey']
+      const isAltPressed = event['altKey']
 
-  const unobserveCanvasSize = observeCanvasSize(canvas, frontendVariables, leaveListener)
+      dragMode = null
+      if (isMetaPressed && !isAltPressed) dragMode = 'pan'
+      if (!isMetaPressed && isAltPressed) dragMode = 'orbit'
 
-  canvas.addEventListener('mousemove', mouseMoveListener, { 'passive': true })
-  canvas.addEventListener('mousedown', defaultMouseListener)
-  canvas.addEventListener('mouseup', defaultMouseListener)
-  canvas.addEventListener('contextmenu', defaultMouseListener)
-  canvas.addEventListener('wheel', wheelListener, { 'passive': true })
-  canvas.addEventListener('mouseleave', leaveListener, { 'passive': true })
+      const devicePixelRatio = window['devicePixelRatio']
+      lastX = downStartX = event['offsetX'] * devicePixelRatio
+      lastY = downStartY = event['offsetY'] * devicePixelRatio
+      dragCloseEnoughForClick = true
+      updateMousePosition(downStartX, downStartY)
+    },
+    { 'signal': signal },
+  )
 
-  const unobserveKeyboard = KeyboardController.INSTANCE?.addFrontendVariableListener(frontendVariables)
+  canvas.addEventListener(
+    'pointerup',
+    function (event) {
+      const pointerId = event['pointerId']
+      if (pointerId !== dragPointerId) return
+
+      const devicePixelRatio = window['devicePixelRatio']
+      const x = event['offsetX'] * devicePixelRatio
+      const y = event['offsetY'] * devicePixelRatio
+      updateMousePosition(x, y)
+      if (dragCloseEnoughForClick) {
+        // TODO: trigger click pick
+      }
+      resetDrag()
+    },
+    { 'signal': signal },
+  )
+
+  canvas.addEventListener(
+    'pointermove',
+    function (event) {
+      const pointerId = event['pointerId']
+      const devicePixelRatio = window['devicePixelRatio']
+      const x = event['offsetX'] * devicePixelRatio
+      const y = event['offsetY'] * devicePixelRatio
+      if (dragPointerId === -1) {
+        updateMousePosition(x, y)
+        return
+      }
+      if (pointerId !== dragPointerId) return
+
+      const threshold = DRAG_THRESHOLD_PX * devicePixelRatio
+      dragCloseEnoughForClick &&= (downStartX - x) ** 2 + (downStartY - y) ** 2 < threshold ** 2
+
+      if (!dragCloseEnoughForClick) {
+        if (dragMode === 'orbit') {
+          canvas['classList']['add']('_css_cursor_grabbing')
+          Atomics.add(frontendVariables, FrontendVariable.CameraOrbitDeltaX8, Math.round((x - lastX) * 8))
+          Atomics.add(frontendVariables, FrontendVariable.CameraOrbitDeltaY8, Math.round((y - lastY) * 8))
+        } else if (dragMode === 'pan') {
+          canvas['classList']['add']('_css_cursor_move')
+          Atomics.add(frontendVariables, FrontendVariable.CameraPanDeltaX8, Math.round((x - lastX) * 8))
+          Atomics.add(frontendVariables, FrontendVariable.CameraPanDeltaY8, Math.round((y - lastY) * 8))
+        }
+      }
+
+      lastX = x
+      lastY = y
+    },
+    { 'passive': true, 'signal': signal },
+  )
+
+  canvas.addEventListener(
+    'pointercancel',
+    function (event) {
+      if (event['pointerId'] !== dragPointerId) return
+      resetDrag()
+      updateMousePosition(-1, -1)
+    },
+    { 'signal': signal },
+  )
+
+  canvas.addEventListener(
+    'lostpointercapture',
+    function (event) {
+      if (event['pointerId'] !== dragPointerId) return
+      resetDrag()
+    },
+    { 'signal': signal },
+  )
+
+  canvas.addEventListener(
+    'pointerleave',
+    function () {
+      if (dragPointerId !== -1) return
+      updateMousePosition(-1, -1)
+    },
+    { 'passive': true, 'signal': signal },
+  )
+
+  canvas.addEventListener(
+    'wheel',
+    function (event) {
+      event.preventDefault()
+      let deltaY = event['deltaY']
+      const deltaMode = event['deltaMode']
+      if (deltaMode === 1) deltaY *= 33
+      else if (deltaMode === 2) deltaY *= 120
+
+      // Touchpads emit many small pixel deltas; notched mouse wheels emit large spikes (100..300+).
+      // Keep small deltas linear for smooth touchpad control and compress large per-event spikes.
+      const absDelta = Math.abs(deltaY)
+      const compressed =
+        absDelta <= WHEEL_LINEAR_KNEE
+          ? absDelta
+          : WHEEL_LINEAR_KNEE + (absDelta - WHEEL_LINEAR_KNEE) * WHEEL_EXCESS_SCALE
+      const clamped = Math.min(compressed, WHEEL_EVENT_MAX_DELTA)
+      Atomics.add(frontendVariables, FrontendVariable.MouseWheelDelta, Math.round(Math.sign(deltaY) * clamped))
+    },
+    { 'passive': false, 'signal': signal },
+  )
+
   return () => {
+    resetDrag()
+    abortController['abort']()
+  }
+}
+
+export const bindFrontendVariablesToCanvas = ({ element: canvas, frontendVariables }: UICanvas) => {
+  const unobservePointer = handlePointerEvents(canvas, frontendVariables)
+  const unobserveCanvasSize = observeCanvasSize(canvas, frontendVariables)
+  const unobserveKeyboard = KeyboardController.INSTANCE?.addFrontendVariableListener(frontendVariables)
+
+  return () => {
+    unobservePointer()
     unobserveCanvasSize()
     unobserveKeyboard?.()
-    canvas.removeEventListener('mousemove', mouseMoveListener)
-    canvas.removeEventListener('mousedown', defaultMouseListener)
-    canvas.removeEventListener('mouseup', defaultMouseListener)
-    canvas.removeEventListener('contextmenu', defaultMouseListener)
-    canvas.removeEventListener('wheel', wheelListener)
-    canvas.removeEventListener('mouseleave', leaveListener)
   }
 }

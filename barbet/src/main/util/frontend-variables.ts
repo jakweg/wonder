@@ -10,9 +10,6 @@ export const enum PressedKey {
 
 export const enum AdditionalFrontedFlags {
   WindowHasFocus = 1 << 0,
-  LeftMouseButtonPressed = 1 << 1,
-  RightMouseButtonPressed = 1 << 2,
-  LastMouseButtonUnpressedWasRight = 1 << 3,
 }
 
 export const enum FrontendVariable {
@@ -20,8 +17,15 @@ export const enum FrontendVariable {
   MouseCursorPositionX,
   MouseCursorPositionY,
   MouseWheelDelta,
+  /** Delta multiplied by 8 */
+  CameraOrbitDeltaX8,
+  /** Delta multiplied by 8 */
+  CameraOrbitDeltaY8,
+  /** Delta multiplied by 8 */
+  CameraPanDeltaX8,
+  /** Delta multiplied by 8 */
+  CameraPanDeltaY8,
   AdditionalFlags,
-  LastMouseClickId,
   CanvasDrawingWidth,
   CanvasDrawingHeight,
   SIZE,

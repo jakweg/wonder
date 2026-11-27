@@ -36,6 +36,13 @@ canvas._css_fade-out {
   place-items: center;
 }
 
+._css_cursor_grabbing {
+  cursor: grabbing;
+}
+._css_cursor_move {
+  cursor: move;
+}
+
 ._css_root > * {
   position: absolute;
 }

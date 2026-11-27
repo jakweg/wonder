@@ -133,6 +133,8 @@ enable
 enableVertexAttribArray
 entries
 error
+exchange
+exp
 fenceSync
 fill
 filter

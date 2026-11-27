@@ -5,7 +5,7 @@ import { createElement } from './utils'
 
 export interface UICanvas {
   element: HTMLCanvasElement
-  frontendVariables: Record<FrontendVariable, number>
+  frontendVariables: Int16Array
 }
 
 export default (parent: HTMLElement) => {
@@ -34,7 +34,7 @@ export default (parent: HTMLElement) => {
 
       const returnedValue = {
         element: newElement,
-        frontendVariables: new Int16Array(createNewBuffer(Int16Array.BYTES_PER_ELEMENT * FrontendVariable.SIZE)) as any,
+        frontendVariables: new Int16Array(createNewBuffer(Int16Array.BYTES_PER_ELEMENT * FrontendVariable.SIZE)),
       } satisfies UICanvas
 
       cancelListenersCallback = bindFrontendVariablesToCanvas(returnedValue)

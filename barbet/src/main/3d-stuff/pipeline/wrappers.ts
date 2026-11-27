@@ -432,8 +432,8 @@ export const newContextWrapper = async ({ element: canvas, frontendVariables }: 
       return obtainRendererNameFromContext(gl) ?? '<unknown renderer>'
     },
     prepareForDraw() {
-      const width = frontendVariables[FrontendVariable.CanvasDrawingWidth]
-      const height = frontendVariables[FrontendVariable.CanvasDrawingHeight]
+      const width = Atomics.load(frontendVariables, FrontendVariable.CanvasDrawingWidth)
+      const height = Atomics.load(frontendVariables, FrontendVariable.CanvasDrawingHeight)
 
       const pixelMultiplier = 1.0
 
@@ -492,8 +492,8 @@ export const newContextWrapper = async ({ element: canvas, frontendVariables }: 
       }
 
       if (entityIdReader.canRead()) {
-        const x = frontendVariables[FrontendVariable.MouseCursorPositionX]
-        const y = frontendVariables[FrontendVariable.MouseCursorPositionY]
+        const x = Atomics.load(frontendVariables, FrontendVariable.MouseCursorPositionX)
+        const y = Atomics.load(frontendVariables, FrontendVariable.MouseCursorPositionY)
         if (x >= 0 && y >= 0 && x < canvasWidth && y < canvasHeight) {
           if (activeFrameUsesMsaa) {
             renderScissoredEntityIdPixel(gl, state, x, canvasHeight - 1 - y, drawScene)
@@ -506,14 +506,14 @@ export const newContextWrapper = async ({ element: canvas, frontendVariables }: 
             if (entityId !== 0) {
               const isBlock = entityId >>> 31 === 1
               if (!isBlock) {
-                console.log('not a block', { entityId })
+                // console.log('not a block', { entityId })
                 return
               }
               const posMask = 0xffff >> 2
               blockZ = entityId & posMask
               blockX = (entityId >> 14) & posMask
             }
-            console.log({ x, y, entityId, blockX, blockZ })
+            // console.log({ x, y, entityId, blockX, blockZ })
           })
         }
       }
@@ -535,7 +535,7 @@ export const newFramesLimiter = (frontendVariables: UICanvas['frontendVariables'
 
   return {
     shouldRender: (dt: number): boolean => {
-      const variables = Atomics.load(frontendVariables as any as Int16Array, FrontendVariable.AdditionalFlags)
+      const variables = Atomics.load(frontendVariables, FrontendVariable.AdditionalFlags)
       const hasFocus = (variables & AdditionalFrontedFlags.WindowHasFocus) === AdditionalFrontedFlags.WindowHasFocus
       return dt >= (hasFocus ? minSecondsBetweenFramesFocus : minSecondsBetweenFramesBlur) * 0.97
     },
