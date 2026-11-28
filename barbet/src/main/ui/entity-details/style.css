@@ -1,0 +1,9 @@
+._css_entity-details {
+  align-self: end;
+  justify-self: end;
+  background-color: rgba(0, 0, 0, 0.7);
+  margin: 8px;
+  padding: 4px;
+  border-radius: 4px;
+  white-space: pre;
+}

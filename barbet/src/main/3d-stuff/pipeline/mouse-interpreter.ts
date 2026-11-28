@@ -26,7 +26,7 @@ const ZOOM_SENSITIVITY = 0.0014 // TODO make that a setting in CONFIG?
 const ZOOM_DAMPING = 10
 const TAN_HALF_FOV = Math.tan(CAMERA_FOV / 2)
 
-const updateDeltaByKeys = (delta: CameraDelta, frontendVariables: Int16Array) => {
+const updateDeltaByKeys = (delta: CameraDelta, frontendVariables: Int32Array) => {
   const keys = Atomics.load(frontendVariables, FrontendVariable.PressedKeys) as PressedKey
 
   let dx = 0,
@@ -98,7 +98,7 @@ export const createNewMouseInterpreter = () => {
   return {
     updateCameraBasedOnInputs(
       camera: Camera,
-      variables: Int16Array,
+      variables: Int32Array,
       terrain: TerrainHeightReader,
       terrainHeight: number,
       dt: number,

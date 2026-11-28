@@ -2,7 +2,7 @@ import KeyboardController from '@utils/keyboard-controller'
 import { UICanvas } from 'src/main/ui/canvas-background'
 import { FrontendVariable } from './frontend-variables'
 
-function observeCanvasSize(canvas: HTMLCanvasElement, frontendVariables: Int16Array) {
+function observeCanvasSize(canvas: HTMLCanvasElement, frontendVariables: Int32Array) {
   let timeoutId: number = 0
   let frameId: number = 0
   const lastSizes = { lastResizeTime: 0, width: 0, height: 0, pixelRatio: 0 }
@@ -51,7 +51,7 @@ const WHEEL_LINEAR_KNEE = 24
 const WHEEL_EXCESS_SCALE = 0.3
 const WHEEL_EVENT_MAX_DELTA = 60
 
-const handlePointerEvents = (canvas: HTMLCanvasElement, frontendVariables: Int16Array) => {
+const handlePointerEvents = (canvas: HTMLCanvasElement, frontendVariables: Int32Array) => {
   const abortController = new AbortController()
   const signal = abortController['signal']
 
@@ -159,6 +159,7 @@ const handlePointerEvents = (canvas: HTMLCanvasElement, frontendVariables: Int16
       if (event['pointerId'] !== dragPointerId) return
       resetDrag()
       updateMousePosition(-1, -1)
+      Atomics.store(frontendVariables, FrontendVariable.HoveredEntityIdOrBlock, 0)
     },
     { 'signal': signal },
   )
@@ -177,6 +178,7 @@ const handlePointerEvents = (canvas: HTMLCanvasElement, frontendVariables: Int16
     function () {
       if (dragPointerId !== -1) return
       updateMousePosition(-1, -1)
+      Atomics.store(frontendVariables, FrontendVariable.HoveredEntityIdOrBlock, 0)
     },
     { 'passive': true, 'signal': signal },
   )

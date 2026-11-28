@@ -23,7 +23,7 @@ class KeyboardController {
   private keyReleasedListeners: Map<string, (code: string) => void> = new Map()
   private maskEnabled: boolean = false
 
-  private readonly frontedVariableListeners: Set<Int16Array> = new Set()
+  private readonly frontedVariableListeners: Set<Int32Array> = new Set()
 
   private constructor() {}
 
@@ -92,7 +92,7 @@ class KeyboardController {
     this.keyReleasedListeners['set'](code, callback as (code: string) => void)
   }
 
-  public addFrontendVariableListener(frontendVariables: Int16Array): () => void {
+  public addFrontendVariableListener(frontendVariables: Int32Array): () => void {
     this.frontedVariableListeners.add(frontendVariables)
     this.updateWindowFocus()
     return () => this.frontedVariableListeners.delete(frontendVariables)

@@ -5,13 +5,17 @@ import { createElement } from './utils'
 
 export interface UICanvas {
   element: HTMLCanvasElement
-  frontendVariables: Int16Array
+  frontendVariables: Int32Array
 }
 
 export default (parent: HTMLElement) => {
   let element = createElement('canvas', parent) as HTMLCanvasElement
   let cancelListenersCallback = () => {}
+  let frontendVariables = new Int32Array(createNewBuffer(Int32Array.BYTES_PER_ELEMENT * FrontendVariable.SIZE))
   return {
+    getFrontendVariables() {
+      return frontendVariables
+    },
     recreate(): UICanvas {
       const oldCancelListenersCallback = cancelListenersCallback
       const newElement = document['createElement']('canvas') as HTMLCanvasElement
@@ -34,8 +38,9 @@ export default (parent: HTMLElement) => {
 
       const returnedValue = {
         element: newElement,
-        frontendVariables: new Int16Array(createNewBuffer(Int16Array.BYTES_PER_ELEMENT * FrontendVariable.SIZE)),
+        frontendVariables: new Int32Array(createNewBuffer(Int32Array.BYTES_PER_ELEMENT * FrontendVariable.SIZE)),
       } satisfies UICanvas
+      frontendVariables = returnedValue.frontendVariables
 
       cancelListenersCallback = bindFrontendVariablesToCanvas(returnedValue)
       return returnedValue

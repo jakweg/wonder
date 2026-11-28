@@ -501,20 +501,17 @@ export const newContextWrapper = async ({ element: canvas, frontendVariables }: 
             gl.bindFramebuffer(gl.READ_FRAMEBUFFER, state.resolveFbo)
           }
           entityIdReader.readEntityId(x, y)?.then(entityId => {
-            let blockX = -1
-            let blockZ = -1
-            if (entityId !== 0) {
-              const isBlock = entityId >>> 31 === 1
-              if (!isBlock) {
-                // console.log('not a block', { entityId })
-                return
-              }
-              const posMask = 0xffff >> 2
-              blockZ = entityId & posMask
-              blockX = (entityId >> 14) & posMask
+            // Cursor may have left the canvas while the GPU readback was in flight
+            const currentMouseX = Atomics.load(frontendVariables, FrontendVariable.MouseCursorPositionX)
+            const currentMouseY = Atomics.load(frontendVariables, FrontendVariable.MouseCursorPositionY)
+            if (currentMouseX < 0 || currentMouseY < 0) {
+              Atomics.store(frontendVariables, FrontendVariable.HoveredEntityIdOrBlock, 0)
+              return
             }
-            // console.log({ x, y, entityId, blockX, blockZ })
+            Atomics.store(frontendVariables, FrontendVariable.HoveredEntityIdOrBlock, entityId | 0)
           })
+        } else {
+          Atomics.store(frontendVariables, FrontendVariable.HoveredEntityIdOrBlock, 0)
         }
       }
       finalizeDisplay(gl, state, activeFrameMode === AntialiasMode.Fxaa, canvasWidth, canvasHeight)
