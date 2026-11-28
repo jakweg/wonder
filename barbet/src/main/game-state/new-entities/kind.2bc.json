@@ -37,6 +37,10 @@
     }
   },
   "getters": {
+    "getEntityKindName": {
+      "type": "value-identifier",
+      "field": ""
+    },
     "getMaxEntitiesByKind": {
       "field": "max-entities"
     },

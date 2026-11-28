@@ -73,29 +73,31 @@
                 {
                   "type": "array",
                   "items": {
-                    "anyOf": [{
-                  "type": "object",
-                  "additionalProperties": false,
-                  "properties": {
-                    "from": {
-                      "type": "string"
-                    },
-                    "property": {
-                      "type": ["string", "null"]
-                    }
-                  },
-                  "required": ["from", "property"]
-                },
-                {
-                  "type": "object",
-                  "additionalProperties": false,
-                  "properties": {
-                    "default-from": {
-                      "type": "string"
-                    }
-                  },
-                  "required": ["default-from"]
-                }]
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "properties": {
+                          "from": {
+                            "type": "string"
+                          },
+                          "property": {
+                            "type": ["string", "null"]
+                          }
+                        },
+                        "required": ["from", "property"]
+                      },
+                      {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "properties": {
+                          "default-from": {
+                            "type": "string"
+                          }
+                        },
+                        "required": ["default-from"]
+                      }
+                    ]
                   }
                 },
                 {
@@ -146,7 +148,7 @@
               "enum": ["throw", "return-null", "return-undefined"]
             },
             "type": {
-              "enum": ["getter", "reverse-mapping", "all-values"]
+              "enum": ["getter", "reverse-mapping", "all-values", "value-identifier"]
             },
             "convert-hex-colors": {
               "type": "boolean"
