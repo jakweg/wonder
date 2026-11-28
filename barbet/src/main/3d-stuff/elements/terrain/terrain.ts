@@ -30,10 +30,11 @@ export default (({ pipeline: { visibility, terrainSnapshot }, globals, game, sch
   const totalChunksCount = terrainSnapshot.sizeLevel * terrainSnapshot.sizeLevel
   const cacheFirstsBuffer = new Int32Array(totalChunksCount)
   const cacheCountsBuffer = new Int32Array(totalChunksCount)
-  const visibleChunksStaging = new Uint16Array(totalChunksCount)
+  const visibleChunksBuffer = new ArrayBuffer(totalChunksCount * Uint16Array.BYTES_PER_ELEMENT)
+  const visibleChunksStaging = new Uint16Array(visibleChunksBuffer)
   const visibleChunksUploadViews = createArray(
     totalChunksCount + 1,
-    count => new Uint16Array(visibleChunksStaging.buffer, 0, count),
+    count => new Uint16Array(visibleChunksBuffer, 0, count),
   )
 
   const rawChunkModificationIds = game.world.chunkModificationIds
